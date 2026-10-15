@@ -18,6 +18,12 @@ from filterdesk.analysis.derived import (
 )
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
+from filterdesk.components_std import (
+    ESeries,
+    SnapReport,
+    SnapStrategy,
+    snap_circuit,
+)
 from filterdesk.domain.circuit import (
     IdealBruneLC,
     IdealCapacitor,
@@ -122,6 +128,29 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "gui",
         help="Launch the FilterDesk desktop GUI",
+    )
+
+    snap = sub.add_parser(
+        "snap",
+        help="Synthesize a filter and snap component values to an E-series",
+    )
+    _add_spec_args(snap)
+    snap.add_argument(
+        "--series",
+        choices=[s.value for s in ESeries],
+        default=ESeries.E24.value,
+        help="Preferred number series (IEC 60063)",
+    )
+    snap.add_argument(
+        "--strategy",
+        choices=[s.value for s in SnapStrategy],
+        default=SnapStrategy.INDEPENDENT.value,
+        help="Snap strategy for L/C (and resonators)",
+    )
+    snap.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON (snap report + snapped components)",
     )
 
     est = sub.add_parser(
@@ -411,6 +440,39 @@ def _synth_to_json(result: SynthesisResult) -> dict[str, object]:
     }
 
 
+def _print_snap_report(report: SnapReport) -> None:
+    print(
+        f"Snap to {report.series.value} ({report.strategy.value}); "
+        f"max change {report.max_delta_pct:.2f}%"
+    )
+    for entry in report.entries:
+        print(
+            f"  {entry.element_id:6s} {entry.part:2s}  "
+            f"{entry.original:.6g} -> {entry.snapped:.6g}  "
+            f"({entry.delta_pct:+.2f}%)"
+        )
+
+
+def _snap_to_json(result: SynthesisResult, report: SnapReport) -> dict[str, object]:
+    payload = _synth_to_json(result)
+    payload["snap"] = {
+        "series": report.series.value,
+        "strategy": report.strategy.value,
+        "max_delta_pct": report.max_delta_pct,
+        "entries": [
+            {
+                "ref": e.element_id,
+                "part": e.part,
+                "original": e.original,
+                "snapped": e.snapped,
+                "delta_pct": e.delta_pct,
+            }
+            for e in report.entries
+        ],
+    }
+    return payload
+
+
 def _default_sweep(spec: FilterSpec, args: argparse.Namespace) -> SweepConfig:
     base = default_sweep_for_spec(spec, n_points=int(args.points))
     f_start = parse_si(args.f_start) if args.f_start else base.f_start_hz
@@ -464,6 +526,28 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(_synth_to_json(result), indent=2))
         else:
             _print_synth_human(result)
+        return 0
+
+    if args.command == "snap":
+        try:
+            spec = _spec_from_cli(args)
+            result = synthesize(spec)
+            snapped_circuit, report = snap_circuit(
+                result.circuit, ESeries(args.series), SnapStrategy(args.strategy)
+            )
+            snapped_result = SynthesisResult(
+                spec=result.spec,
+                prototype=result.prototype,
+                circuit=snapped_circuit,
+            )
+        except (SpecValidationError, OSError, json.JSONDecodeError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(_snap_to_json(snapped_result, report), indent=2))
+        else:
+            _print_snap_report(report)
+            _print_synth_human(snapped_result)
         return 0
 
     if args.command == "analyze":

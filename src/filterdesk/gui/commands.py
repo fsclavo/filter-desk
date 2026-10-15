@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QUndoCommand
 
+from filterdesk.components_std import ESeries, SnapReport, SnapStrategy
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion, Marker
 from filterdesk.domain.specs import FilterSpec
@@ -103,6 +104,37 @@ class SynthesizeCommand(QUndoCommand):
         self._session.prototype = self._old_prototype
         self._session.analysis = None
         self._session.dirty = True
+        if self._on_applied is not None:
+            self._on_applied()
+
+
+class SnapCommand(QUndoCommand):
+    """Snap all component values to an E-series (whole-circuit snapshot)."""
+
+    def __init__(
+        self,
+        session: DesignSession,
+        series: ESeries | str,
+        strategy: SnapStrategy | str,
+        *,
+        on_applied: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__("Snap to E-series")
+        self._session = session
+        self._series = ESeries(series)
+        self._strategy = SnapStrategy(strategy)
+        self._old = deepcopy(session.circuit)
+        self._on_applied = on_applied
+        self.report: SnapReport | None = None
+
+    def redo(self) -> None:
+        self.report = self._session.snap_components(self._series, self._strategy)
+        if self._on_applied is not None:
+            self._on_applied()
+
+    def undo(self) -> None:
+        assert self._old is not None
+        self._session.replace_circuit(deepcopy(self._old))
         if self._on_applied is not None:
             self._on_applied()
 

@@ -8,6 +8,12 @@ from filterdesk import __version__
 from filterdesk.analysis.derived import mag_db
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
+from filterdesk.components_std import (
+    ESeries,
+    SnapReport,
+    SnapStrategy,
+    snap_circuit,
+)
 from filterdesk.domain import circuit_edit
 from filterdesk.domain.circuit import (
     Circuit,
@@ -284,6 +290,18 @@ class DesignSession:
         self.circuit = circuit
         self.analysis = None
         self.dirty = True
+
+    def snap_components(
+        self,
+        series: ESeries | str = ESeries.E24,
+        strategy: SnapStrategy | str = SnapStrategy.INDEPENDENT,
+    ) -> SnapReport:
+        """Snap the current circuit's values to an E-series and invalidate analysis."""
+        if self.circuit is None:
+            raise ValueError("no circuit")
+        snapped, report = snap_circuit(self.circuit, series, strategy)
+        self.replace_circuit(snapped)
+        return report
 
     def insert_arm(
         self,

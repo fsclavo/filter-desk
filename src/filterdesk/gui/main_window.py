@@ -34,6 +34,7 @@ from filterdesk.gui.commands import (
     SetElementValueCommand,
     SetLimitsCommand,
     SetMarkersCommand,
+    SnapCommand,
     SynthesizeCommand,
 )
 from filterdesk.gui.panels.component_table import ComponentTablePanel
@@ -42,7 +43,7 @@ from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
-from filterdesk.gui.widgets import EngineeringLineEdit
+from filterdesk.gui.widgets import EngineeringLineEdit, SnapDialog
 from filterdesk.gui.workers import start_analyze_thread, start_import_thread
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
@@ -226,6 +227,9 @@ class MainWindow(QMainWindow):
         act_syn.setShortcut("Ctrl+Return")
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         design_menu.addAction(act_syn)
+        act_snap = QAction("Sna&p to E-series…", self)
+        act_snap.triggered.connect(self._run_snap)
+        design_menu.addAction(act_snap)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -305,6 +309,32 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Synthesize failed", _exc_text(exc))
             return
         self._status.setText("Synthesized — analyzing…")
+        self._run_analyze()
+
+    def _run_snap(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Snap to E-series", "Synthesize a circuit first."
+            )
+            return
+        choice = SnapDialog.ask(self)
+        if choice is None:
+            return
+        series, strategy = choice
+        cmd = SnapCommand(
+            self._session, series, strategy, on_applied=self._after_circuit_change
+        )
+        self._undo.push(cmd)
+        report = cmd.report
+        if report is None or not report.entries:
+            self._status.setText(
+                f"Snap to {series.value}: values already on the grid"
+            )
+        else:
+            self._status.setText(
+                f"Snapped to {series.value} ({strategy.value}) — "
+                f"max change {report.max_delta_pct:.2f}%"
+            )
         self._run_analyze()
 
     def _run_analyze(self) -> None:

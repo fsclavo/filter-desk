@@ -207,3 +207,75 @@ def test_file_menu_has_import_touchstone() -> None:
     assert any("Import Touchstone" in a.text() for a in file_menu.actions())
     window.close()
     assert app is not None
+
+
+def test_snap_command_apply_and_undo() -> None:
+    from PySide6.QtGui import QUndoStack
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import ESeries, SnapStrategy, nearest_e_series
+    from filterdesk.domain.circuit import IdealCapacitor, IdealInductor
+    from filterdesk.gui.commands import SnapCommand
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    before = [
+        (el.id, el.value_h if isinstance(el, IdealInductor) else el.value_f)
+        for el in session.circuit.elements
+        if isinstance(el, (IdealInductor, IdealCapacitor))
+    ]
+
+    stack = QUndoStack()
+    stack.push(SnapCommand(session, ESeries.E24, SnapStrategy.INDEPENDENT))
+    assert session.circuit is not None
+    for el in session.circuit.elements:
+        if isinstance(el, IdealInductor):
+            assert el.value_h == nearest_e_series(el.value_h, ESeries.E24)
+        elif isinstance(el, IdealCapacitor):
+            assert el.value_f == nearest_e_series(el.value_f, ESeries.E24)
+
+    stack.undo()
+    assert session.circuit is not None
+    after = [
+        (el.id, el.value_h if isinstance(el, IdealInductor) else el.value_f)
+        for el in session.circuit.elements
+        if isinstance(el, (IdealInductor, IdealCapacitor))
+    ]
+    assert after == before
+    assert app is not None
+
+
+def test_main_window_snap_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import ESeries, SnapStrategy, nearest_e_series
+    from filterdesk.domain.circuit import IdealCapacitor, IdealInductor
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    class _FakeSnapDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> tuple[ESeries, SnapStrategy]:
+            return (ESeries.E24, SnapStrategy.INDEPENDENT)
+
+    monkeypatch.setattr(mw, "SnapDialog", _FakeSnapDialog)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_snap()
+
+    assert "Snapped to E24" in window._status.text()
+    assert session.circuit is not None
+    for el in session.circuit.elements:
+        if isinstance(el, IdealInductor):
+            assert el.value_h == nearest_e_series(el.value_h, ESeries.E24)
+        elif isinstance(el, IdealCapacitor):
+            assert el.value_f == nearest_e_series(el.value_f, ESeries.E24)
+    window.close()
+    assert app is not None

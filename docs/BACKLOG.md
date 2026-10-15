@@ -48,7 +48,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | --- | --- | --- | --- | --- |
 | B1.1 | **Even-order Chebyshev Type I** | Modified even-order prototype for equal terminations (reflection zero relocated to DC): exact continued-fraction Darlington synthesis, symmetric positive arms, least-squares fallback at high order. `docs/math/chebyshev_type_i.md` §5 | — | **DONE (2026-10-15)** |
 | B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, `docs/math/transforms.md` §3 | Pending |
-| B1.3 | **M-derived BP/BS** | Only LP/HP implemented | `docs/math/constant_k_m_derived.md`, ADR-013 | Pending |
+| B1.3 | **M-derived BP/BS** | Shipped in v0.5.5 via generic LP→BP/BS finite-zero transform (`test_m_derived_bp_smoke`); ADR-013 | `docs/phase5b/BPBS_FINITE_ZERO_STATUS.md` | **DONE (2026-10-15)** |
 | B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |
 | B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre/Constant-K/M-derived unsupported (no classical formula) | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | Pending |
 | B1.6 | **Even-order elliptic** | Equal-R is an |S21| fit approximation, not exact classic theory (transformer-free) | ADR-013, `EVEN_ORDER_CAUER_STATUS.md` | Pending |
@@ -82,11 +82,12 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### Phase 6 — Practical components (Q, ESR, parasitics, tolerances, E-series)
 
-- [ ] **E-series module** `components_std/e_series.py` + `snap.py` (E6–E96) — FR-P1
-- [ ] Snap strategies: independent / L-only / C-only / preserve LC resonances — FR-P1
+- [x] **E-series module** `components_std/e_series.py` (E6/E12/E24/E48/E96) + `snap.py` — FR-P1 (engine + CLI `snap`)
+- [x] Snap strategies: independent / L-only / C-only / preserve LC resonances — FR-P1
 - [ ] **Non-ideal element layers** (composition, blueprint §22): `NonIdealInductor` (series R / Q@f, Cpar), `NonIdealCapacitor` (ESR, ESL) — FR-P2
 - [ ] Extend ABCD analyzer for lossy/parasitic elements
-- [ ] GUI: E-series snap action; non-ideal fields in component table
+- [x] GUI: **Design → Snap to E-series…** dialog (series + strategy) with undo/redo — FR-P1
+- [ ] GUI: non-ideal fields in component table
 - [ ] Golden tests for finite-Q and E24-snapped cases (blueprint §29 items 9–10)
 - [ ] Manual library R / L / C / jX (core RLC) in schematic library (blueprint §7)
 
