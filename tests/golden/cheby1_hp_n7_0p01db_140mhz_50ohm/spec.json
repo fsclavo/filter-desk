@@ -1,0 +1,11 @@
+{
+  "family": "chebyshev_type_i",
+  "response": "high_pass",
+  "order": 7,
+  "passband_ripple_db": 0.01,
+  "cutoff_hz": 140000000.0,
+  "cutoff_definition": "ripple_edge",
+  "z_source_ohm": 50.0,
+  "z_load_ohm": 50.0,
+  "topology_id": "ladder_hp_series_c_input"
+}

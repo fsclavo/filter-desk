@@ -1,0 +1,85 @@
+{
+  "unit_system": "SI",
+  "components": [
+    {
+      "ref": "C1",
+      "role": "series",
+      "type": "capacitor",
+      "value_F": 2.8529493322049135e-11,
+      "g": 0.7969444176608422
+    },
+    {
+      "ref": "L2",
+      "role": "shunt",
+      "type": "inductor",
+      "value_H": 4.082170590256691e-08,
+      "g": 1.3924222383042084
+    },
+    {
+      "ref": "C3",
+      "role": "series",
+      "type": "capacitor",
+      "value_F": 1.3006114178416675e-11,
+      "g": 1.7481332340930744
+    },
+    {
+      "ref": "L4",
+      "role": "shunt",
+      "type": "inductor",
+      "value_H": 3.4804970044113334e-08,
+      "g": 1.6331302981213751
+    },
+    {
+      "ref": "C5",
+      "role": "series",
+      "type": "capacitor",
+      "value_F": 1.3006114178416678e-11,
+      "g": 1.7481332340930742
+    },
+    {
+      "ref": "L6",
+      "role": "shunt",
+      "type": "inductor",
+      "value_H": 4.0821705902566884e-08,
+      "g": 1.3924222383042093
+    },
+    {
+      "ref": "C7",
+      "role": "series",
+      "type": "capacitor",
+      "value_F": 2.8529493322049177e-11,
+      "g": 0.7969444176608411
+    }
+  ],
+  "display_engineering": [
+    {
+      "ref": "C1",
+      "value": "28.52949332 pF"
+    },
+    {
+      "ref": "L2",
+      "value": "40.82170590 nH"
+    },
+    {
+      "ref": "C3",
+      "value": "13.00611418 pF"
+    },
+    {
+      "ref": "L4",
+      "value": "34.80497004 nH"
+    },
+    {
+      "ref": "C5",
+      "value": "13.00611418 pF"
+    },
+    {
+      "ref": "L6",
+      "value": "40.82170590 nH"
+    },
+    {
+      "ref": "C7",
+      "value": "28.52949332 pF"
+    }
+  ],
+  "component_relative_tolerance": 1e-09
+}

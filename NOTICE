@@ -1,0 +1,39 @@
+FilterDesk
+Copyright 2026 FilterDesk contributors
+
+This product includes software developed by FilterDesk contributors.
+Licensed under the Apache License, Version 2.0.
+
+---------------------------------------------------------------------------
+Third-party components (runtime / packaging — versions pinned in lockfile)
+
+This NOTICE will be expanded as dependencies are added. Planned major items:
+
+- PySide6 / Qt for Python — LGPL-3.0 (The Qt Company / Qt Project)
+- NumPy — BSD-style
+- SciPy — BSD-style
+- scikit-rf — BSD-3-Clause
+- PyQtGraph — MIT
+
+---------------------------------------------------------------------------
+Inspiration / interoperability (not distributed as source dependencies)
+
+- ELSIE™ filter design software by Jim Tonne / Tonne Software — proprietary.
+  Used only as a functional reference and optional external validation oracle.
+  FilterDesk is an independent implementation and is not affiliated with
+  Tonne Software.
+
+- Marki Microwave LC Filter Design Tool — web application used as a UX and
+  capability reference.
+
+- NanoVNASaver — GPL-3.0-or-later. Used only as an architectural/operational
+  reference for Python/PySide6 packaging patterns. No NanoVNASaver source code
+  is included in this repository.
+
+---------------------------------------------------------------------------
+File formats
+
+- Touchstone / SnP — industry standard interchange.
+- ELSIE .lct — proprietary design file; FilterDesk may implement best-effort
+  import/export for interoperability where lawful. The .lct format is not the
+  FilterDesk native project model.

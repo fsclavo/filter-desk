@@ -1,0 +1,58 @@
+[project]
+name = "filterdesk"
+version = "0.5.11"
+description = "Desktop application for passive lumped-element RF filter synthesis and analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "FilterDesk contributors" }]
+keywords = ["rf", "filter", "synthesis", "microwave", "ham-radio"]
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "scikit-rf>=1.0",
+    "pyside6>=6.6",
+    "pyqtgraph>=0.13",
+    "matplotlib>=3.8",
+]
+
+[project.scripts]
+filterdesk = "filterdesk.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/filterdesk"]
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["skrf.*", "scipy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["PySide6.*", "pyqtgraph.*", "matplotlib.*"]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+    "mypy>=1.14",
+]

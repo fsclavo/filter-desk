@@ -1,0 +1,20 @@
+# ADR-007: Deferred distributed / transformer elements
+
+- **Status:** Accepted
+- **Date:** 2026-03-29
+- **Phase:** 0
+
+## Context
+
+ELSIE supports transmission lines, stubs, transformers, coupled inductors, and distributed equivalents. Implementing them early would distort the lumped-filter product.
+
+## Decision
+
+- **Out of scope** until after Monte Carlo / LCT phases (roadmap “later”).
+- Domain `Element` hierarchy may reserve abstract extension points / unused enum values, but **no physics**, GUI editors, or synthesizers for these types in Phases 0–8.
+- Analysis backends must not assume only R/L/C forever (protocol stays general).
+
+## Consequences
+
+- Cleaner Phase 1–8 delivery.
+- Schematic library stays R/L/C (+ non-ideal RLC layers) initially.

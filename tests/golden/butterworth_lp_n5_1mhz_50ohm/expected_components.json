@@ -1,0 +1,41 @@
+{
+  "unit_system": "SI",
+  "components": [
+    {
+      "ref": "L1",
+      "role": "series",
+      "type": "inductor",
+      "value_H": 4.918158215417329e-06,
+      "g": 0.6180339887498948
+    },
+    {
+      "ref": "C2",
+      "role": "shunt",
+      "type": "capacitor",
+      "value_F": 5.15036214800484e-09,
+      "g": 1.618033988749895
+    },
+    {
+      "ref": "L3",
+      "role": "series",
+      "type": "inductor",
+      "value_H": 1.5915494309189534e-05,
+      "g": 2.0
+    },
+    {
+      "ref": "C4",
+      "role": "shunt",
+      "type": "capacitor",
+      "value_F": 5.15036214800484e-09,
+      "g": 1.618033988749895
+    },
+    {
+      "ref": "L5",
+      "role": "series",
+      "type": "inductor",
+      "value_H": 4.918158215417332e-06,
+      "g": 0.618033988749895
+    }
+  ],
+  "component_relative_tolerance": 1e-09
+}
