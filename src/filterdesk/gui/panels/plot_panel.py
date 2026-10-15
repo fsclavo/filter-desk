@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import Qt, Signal
@@ -12,6 +14,9 @@ from filterdesk.analysis.types import AnalysisResult
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
+
+if TYPE_CHECKING:
+    from filterdesk.montecarlo import MonteCarloResult
 
 
 def _plain_decimal(value: float) -> str:
@@ -81,6 +86,8 @@ class PlotPanel(QWidget):
         self._measured: AnalysisResult | None = None
         self._measured_name = ""
         self._show_measured = True
+        self._mc_result: MonteCarloResult | None = None
+        self._show_mc = True
         self._freq = np.array([], dtype=float)
         self._s21_db = np.array([], dtype=float)
         self._s11_db = np.array([], dtype=float)
@@ -108,6 +115,18 @@ class PlotPanel(QWidget):
         self._curve_s11_meas = self._mag.plot(
             pen=pg.mkPen("#d62728", width=1.4, style=dash), name="S11 meas"
         )
+        self._curve_mc_min = self._mag.plot(
+            pen=pg.mkPen("#7f7f7f", width=1, style=dash)
+        )
+        self._curve_mc_max = self._mag.plot(
+            pen=pg.mkPen("#7f7f7f", width=1, style=dash)
+        )
+        self._mc_fill = pg.FillBetweenItem(
+            self._curve_mc_min,
+            self._curve_mc_max,
+            brush=pg.mkBrush(127, 127, 127, 55),
+        )
+        self._mag.addItem(self._mc_fill)
 
         self._vswr_plot = _freq_plot("VSWR")
         self._vswr_plot.setLabel("left", "VSWR")
@@ -187,6 +206,30 @@ class PlotPanel(QWidget):
 
     def has_measured(self) -> bool:
         return self._measured is not None
+
+    def set_monte_carlo(self, result: MonteCarloResult | None) -> None:
+        self._mc_result = result
+        self._update_monte_carlo()
+
+    def set_monte_carlo_visible(self, visible: bool) -> None:
+        self._show_mc = bool(visible)
+        self._update_monte_carlo()
+
+    def has_monte_carlo(self) -> bool:
+        return self._mc_result is not None
+
+    def _update_monte_carlo(self) -> None:
+        empty = np.array([], dtype=float)
+        mc = self._mc_result
+        if mc is None or not self._show_mc:
+            self._curve_mc_min.setData(empty, empty)
+            self._curve_mc_max.setData(empty, empty)
+            self._mc_fill.setVisible(False)
+            return
+        f = np.asarray(mc.frequency_hz, dtype=float)
+        self._curve_mc_min.setData(f, np.asarray(mc.s21_db_min, dtype=float))
+        self._curve_mc_max.setData(f, np.asarray(mc.s21_db_max, dtype=float))
+        self._mc_fill.setVisible(True)
 
     def _update_measured(self) -> None:
         empty = np.array([], dtype=float)

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QLineEdit,
+    QSpinBox,
     QWidget,
 )
 
@@ -17,6 +18,7 @@ from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
 )
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -231,5 +233,67 @@ class ParasiticDialog(QDialog):
         dialog = cls(parent, **kwargs)  # type: ignore[arg-type]
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.kwargs()
+        return None
+
+
+class MonteCarloDialog(QDialog):
+    """Configure a Monte-Carlo tolerance run."""
+
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        initial: MonteCarloConfig | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Monte-Carlo tolerances")
+        base = initial or MonteCarloConfig()
+        self._trials = QSpinBox()
+        self._trials.setRange(1, 100_000)
+        self._trials.setValue(base.n_trials)
+        self._tol = EngineeringLineEdit()
+        self._tol.setText(f"{base.tolerance_pct:g}")
+        self._dist = QComboBox()
+        for dist in ToleranceDistribution:
+            self._dist.addItem(dist.value, dist)
+        self._dist.setCurrentIndex(
+            list(ToleranceDistribution).index(base.distribution)
+        )
+        self._seed = QLineEdit()
+        self._seed.setPlaceholderText("optional integer")
+        if base.seed is not None:
+            self._seed.setText(str(base.seed))
+        form = QFormLayout(self)
+        form.addRow("Trials", self._trials)
+        form.addRow("Tolerance ± (%)", self._tol)
+        form.addRow("Distribution", self._dist)
+        form.addRow("Seed", self._seed)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def to_config(self) -> MonteCarloConfig:
+        seed_text = self._seed.text().strip()
+        return MonteCarloConfig(
+            n_trials=int(self._trials.value()),
+            tolerance_pct=parse_si(self._tol.text().strip() or "0"),
+            distribution=ToleranceDistribution(self._dist.currentData()),
+            seed=int(seed_text) if seed_text else None,
+        )
+
+    @classmethod
+    def ask(
+        cls,
+        parent: QWidget | None = None,
+        *,
+        initial: MonteCarloConfig | None = None,
+    ) -> MonteCarloConfig | None:
+        dialog = cls(parent, initial=initial)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.to_config()
         return None
 

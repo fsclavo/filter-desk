@@ -412,3 +412,115 @@ def test_main_window_edit_parasitics(monkeypatch: pytest.MonkeyPatch) -> None:
     assert target.series_resistance_ohm == 1.0
     window.close()
     assert app is not None
+
+
+def test_monte_carlo_overlay_toggles() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.montecarlo import MonteCarloConfig, run_monte_carlo
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None and session.sweep is not None
+    result = run_monte_carlo(
+        session.circuit,
+        session.sweep,
+        MonteCarloConfig(n_trials=8, tolerance_pct=3.0, seed=1),
+    )
+    panel = PlotPanel()
+    panel.set_monte_carlo(result)
+    assert panel.has_monte_carlo()
+    n = result.frequency_hz.size
+    assert panel._curve_mc_min.getData()[0].size == n
+    panel.set_monte_carlo_visible(False)
+    assert panel._curve_mc_min.getData()[0] is None
+    panel.set_monte_carlo_visible(True)
+    assert panel._curve_mc_max.getData()[0].size == n
+    assert app is not None
+
+
+def test_monte_carlo_dialog_builds_config() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import MonteCarloDialog
+    from filterdesk.montecarlo import ToleranceDistribution
+
+    app = QApplication.instance() or QApplication([])
+    dialog = MonteCarloDialog()
+    dialog._trials.setValue(250)
+    dialog._tol.setText("2.5")
+    dialog._seed.setText("7")
+    dialog._dist.setCurrentIndex(list(ToleranceDistribution).index(
+        ToleranceDistribution.NORMAL
+    ))
+    config = dialog.to_config()
+    assert config.n_trials == 250
+    assert config.tolerance_pct == 2.5
+    assert config.seed == 7
+    assert config.distribution == ToleranceDistribution.NORMAL
+    assert app is not None
+
+
+def test_main_window_monte_carlo_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.montecarlo import (
+        MonteCarloConfig,
+        ToleranceDistribution,
+        run_monte_carlo,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    class _FakeThread:
+        def start(self) -> None:
+            pass
+
+        def isRunning(self) -> bool:  # noqa: N802
+            return False
+
+        def quit(self) -> None:
+            pass
+
+        def wait(self, *_args: object) -> bool:
+            return True
+
+    def _fake_start(
+        circuit: object,
+        sweep: object,
+        config: MonteCarloConfig,
+        limits: object,
+        on_finished: object,
+        on_failed: object,
+    ) -> tuple[object, object]:
+        on_finished(  # type: ignore[operator]
+            run_monte_carlo(circuit, sweep, config, limits=limits)  # type: ignore[arg-type]
+        )
+        return _FakeThread(), None
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> MonteCarloConfig:
+            return MonteCarloConfig(
+                n_trials=10,
+                tolerance_pct=2.0,
+                distribution=ToleranceDistribution.UNIFORM,
+                seed=1,
+            )
+
+    monkeypatch.setattr(mw, "MonteCarloDialog", _FakeDialog)
+    monkeypatch.setattr(mw, "start_monte_carlo_thread", _fake_start)
+    window._run_monte_carlo()
+
+    assert "Monte-Carlo" in window._status.text()
+    assert window._plots.has_monte_carlo()
+    window.close()
+    assert app is not None

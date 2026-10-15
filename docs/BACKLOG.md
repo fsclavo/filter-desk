@@ -109,7 +109,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] Envelopes, yield vs limits, percentiles — FR-P3 core
 - [ ] Per-element tolerance/distribution on instances (uniform global tolerance now)
 - [ ] Performance: reuse freq grid; 1k usable, 10k with progress — NFR-5
-- [ ] GUI: MC run dialog + envelope overlay
+- [x] GUI: MC run dialog (`MonteCarloDialog`) + envelope overlay (View toggle)
 
 ### Phase 9 — ELSIE `.lct` I/O (best-effort)
 

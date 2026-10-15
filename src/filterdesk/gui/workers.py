@@ -10,7 +10,9 @@ from PySide6.QtCore import QObject, QThread, Signal
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import Circuit
+from filterdesk.domain.overlays import LimitRegion
 from filterdesk.io.touchstone import TouchstoneData, read_touchstone
+from filterdesk.montecarlo import MonteCarloConfig, run_monte_carlo
 
 
 class AnalyzeWorker(QObject):
@@ -60,6 +62,55 @@ def start_analyze_thread(
     return thread, worker
 
 
+class MonteCarloWorker(QObject):
+    finished = Signal(object)  # MonteCarloResult
+    failed = Signal(str)
+
+    def __init__(
+        self,
+        circuit: Circuit,
+        sweep: SweepConfig,
+        config: MonteCarloConfig,
+        limits: list[LimitRegion],
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._circuit = circuit
+        self._sweep = sweep
+        self._config = config
+        self._limits = limits
+
+    def run(self) -> None:
+        try:
+            result = run_monte_carlo(
+                self._circuit, self._sweep, self._config, limits=self._limits
+            )
+            self.finished.emit(result)
+        except Exception as exc:  # noqa: BLE001 — surface to UI
+            self.failed.emit(str(exc))
+
+
+def start_monte_carlo_thread(
+    circuit: Circuit,
+    sweep: SweepConfig,
+    config: MonteCarloConfig,
+    limits: list[LimitRegion],
+    on_finished: Callable[[object], None],
+    on_failed: Callable[[str], None],
+) -> tuple[QThread, MonteCarloWorker]:
+    thread = QThread()
+    worker = MonteCarloWorker(circuit, sweep, config, limits)
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    worker.finished.connect(on_finished)
+    worker.failed.connect(on_failed)
+    worker.finished.connect(thread.quit)
+    worker.failed.connect(thread.quit)
+    thread.finished.connect(worker.deleteLater)
+    thread._filterdesk_worker = worker  # type: ignore[attr-defined]
+    return thread, worker
+
+
 class ImportTouchstoneWorker(QObject):
     """Load a Touchstone file off the UI thread."""
 
@@ -100,7 +151,9 @@ __all__ = [
     "AnalyzeWorker",
     "AnalysisResult",
     "ImportTouchstoneWorker",
+    "MonteCarloWorker",
     "TouchstoneData",
     "start_analyze_thread",
     "start_import_thread",
+    "start_monte_carlo_thread",
 ]

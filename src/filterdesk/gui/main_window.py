@@ -54,13 +54,19 @@ from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import (
     EngineeringLineEdit,
+    MonteCarloDialog,
     NonIdealDialog,
     ParasiticDialog,
     SnapDialog,
 )
-from filterdesk.gui.workers import start_analyze_thread, start_import_thread
+from filterdesk.gui.workers import (
+    start_analyze_thread,
+    start_import_thread,
+    start_monte_carlo_thread,
+)
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
+from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import DesignSession
@@ -97,6 +103,7 @@ class MainWindow(QMainWindow):
         self._selected_element: str | None = None
         self._analyze_thread: QThread | None = None
         self._import_thread: QThread | None = None
+        self._mc_thread: QThread | None = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(80)
@@ -235,6 +242,11 @@ class MainWindow(QMainWindow):
         self._act_measured.setChecked(True)
         self._act_measured.toggled.connect(self._plots.set_measured_visible)
         view_menu.addAction(self._act_measured)
+        self._act_mc = QAction("Show Monte-Carlo &envelope", self)
+        self._act_mc.setCheckable(True)
+        self._act_mc.setChecked(True)
+        self._act_mc.toggled.connect(self._plots.set_monte_carlo_visible)
+        view_menu.addAction(self._act_mc)
 
         design_menu = self.menuBar().addMenu("&Design")
         act_syn = QAction("&Synthesize + Analyze", self)
@@ -247,6 +259,9 @@ class MainWindow(QMainWindow):
         act_nonideal = QAction("Apply &parasitics / Q…", self)
         act_nonideal.triggered.connect(self._run_nonideal)
         design_menu.addAction(act_nonideal)
+        act_mc = QAction("&Monte-Carlo tolerances…", self)
+        act_mc.triggered.connect(self._run_monte_carlo)
+        design_menu.addAction(act_mc)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -261,6 +276,7 @@ class MainWindow(QMainWindow):
         self._table.set_circuit(self._session.circuit)
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
+        self._plots.set_monte_carlo(None)
         self._plots.set_measured(
             self._session.measured, self._session.measured_name or ""
         )
@@ -306,6 +322,7 @@ class MainWindow(QMainWindow):
         self._spec.set_spec(self._session.spec)
         if self._selected_element_obj() is None:
             self._selected_element = None
+        self._plots.set_monte_carlo(None)
         self._update_title()
         self._debounce.start()
 
@@ -373,6 +390,54 @@ class MainWindow(QMainWindow):
         self._undo.push(cmd)
         self._status.setText(f"Applied parasitics ({len(kwargs)} term(s))")
         self._run_analyze()
+
+    def _run_monte_carlo(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Monte-Carlo", "Synthesize a circuit first."
+            )
+            return
+        try:
+            self._apply_spec_and_sweep_from_ui()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            return
+        config = MonteCarloDialog.ask(self)
+        if config is None:
+            return
+        assert self._session.sweep is not None
+        assert self._session.circuit is not None
+        self._status.setText(f"Monte-Carlo: {config.n_trials} trials…")
+        if self._mc_thread is not None and self._mc_thread.isRunning():
+            self._mc_thread.quit()
+            self._mc_thread.wait(100)
+        thread, _worker = start_monte_carlo_thread(
+            self._session.circuit,
+            self._session.sweep,
+            config,
+            self._session.limits,
+            self._on_mc_finished,
+            self._on_mc_failed,
+        )
+        self._mc_thread = thread
+        thread.start()
+
+    def _on_mc_finished(self, result: object) -> None:
+        assert isinstance(result, MonteCarloResult)
+        self._plots.set_monte_carlo(result)
+        if not self._act_mc.isChecked():
+            self._act_mc.setChecked(True)
+        msg = (
+            f"Monte-Carlo: {result.n_trials} trials, worst-case spread "
+            f"{result.max_spread_db:.2f} dB"
+        )
+        if result.yield_fraction is not None:
+            msg += f" — yield {100.0 * result.yield_fraction:.1f}%"
+        self._status.setText(msg)
+
+    def _on_mc_failed(self, message: str) -> None:
+        QMessageBox.warning(self, "Monte-Carlo failed", message)
+        self._status.setText("Monte-Carlo failed")
 
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
@@ -935,4 +1000,7 @@ class MainWindow(QMainWindow):
         if self._import_thread is not None and self._import_thread.isRunning():
             self._import_thread.quit()
             self._import_thread.wait(500)
+        if self._mc_thread is not None and self._mc_thread.isRunning():
+            self._mc_thread.quit()
+            self._mc_thread.wait(2000)
         super().closeEvent(event)
