@@ -550,3 +550,24 @@ def test_main_window_monte_carlo_action(monkeypatch: pytest.MonkeyPatch) -> None
     assert window._plots.has_monte_carlo()
     window.close()
     assert app is not None
+
+
+def test_main_window_scale_response_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    before = session.spec.cutoff_hz
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.QInputDialog, "getText", lambda *a, **k: ("2.0", True))
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_scale_response()
+
+    assert session.spec.cutoff_hz == pytest.approx(before * 2.0)
+    assert "Scaled response" in window._status.text()
+    window.close()
+    assert app is not None

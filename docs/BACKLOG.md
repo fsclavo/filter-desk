@@ -95,12 +95,14 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### Phase 7 — Interactive tuning + optimization + limits
 
-- [ ] `services/retune.py` — tune part / width / center (redesign on tune) — FR-U2
+- [x] `services/retune.py` — retune cutoff/center/bandwidth/Z + `scale_response` (redesign on tune) — FR-U2 core
+- [ ] Per-part continuous tune (component value / step size)
 - [ ] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py` — FR-P4
 - [ ] Solver: limit-residual least squares + bounded Nelder–Mead (SciPy); global methods later — blueprint §20
 - [ ] Wire optimizer to `LimitRegion[]` (B3.3)
 - [ ] Background workers + debounce + cancel stale jobs — NFR-4
-- [ ] GUI Tune/Optimize toolbar actions; undo integration
+- [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
+- [ ] GUI Tune/Optimize toolbar actions; interactive marker-driven retune
 
 ### Phase 8 — Monte Carlo
 

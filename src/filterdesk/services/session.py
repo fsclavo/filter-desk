@@ -50,6 +50,13 @@ from filterdesk.domain.project import Project, ProjectMetadata
 from filterdesk.domain.prototype import Prototype
 from filterdesk.domain.specs import FilterSpec, validate_spec
 from filterdesk.montecarlo import MonteCarloConfig, MonteCarloResult, run_monte_carlo
+from filterdesk.services.retune import (
+    RetuneRequest,
+    retune_spec,
+)
+from filterdesk.services.retune import (
+    scale_response as _scale_spec_response,
+)
 from filterdesk.synthesis import synthesize
 
 
@@ -168,6 +175,16 @@ class DesignSession:
     def synthesize_and_analyze(self) -> AnalysisResult:
         self.synthesize()
         return self.analyze()
+
+    def retune(self, request: RetuneRequest) -> None:
+        """Redesign the current spec with overridden fields and re-synthesize."""
+        self.set_spec(retune_spec(self.spec, request))
+        self.synthesize()
+
+    def scale_response(self, factor: float) -> None:
+        """Scale all frequency landmarks by ``factor`` and re-synthesize."""
+        self.set_spec(_scale_spec_response(self.spec, factor))
+        self.synthesize()
 
     def update_element_value(self, element_id: str, value_si: float) -> None:
         if self.circuit is None:

@@ -69,6 +69,7 @@ from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.retune import scale_response
 from filterdesk.services.session import DesignSession
 
 
@@ -262,6 +263,9 @@ class MainWindow(QMainWindow):
         act_mc = QAction("&Monte-Carlo tolerances…", self)
         act_mc.triggered.connect(self._run_monte_carlo)
         design_menu.addAction(act_mc)
+        act_scale = QAction("Scale &response…", self)
+        act_scale.triggered.connect(self._run_scale_response)
+        design_menu.addAction(act_scale)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -438,6 +442,33 @@ class MainWindow(QMainWindow):
     def _on_mc_failed(self, message: str) -> None:
         QMessageBox.warning(self, "Monte-Carlo failed", message)
         self._status.setText("Monte-Carlo failed")
+
+    def _run_scale_response(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Scale response", "Synthesize a circuit first."
+            )
+            return
+        text, ok = QInputDialog.getText(
+            self,
+            "Scale response",
+            "Scale factor (e.g. 0.5 halves, 2 doubles):",
+            text="1.0",
+        )
+        if not ok or not text.strip():
+            return
+        try:
+            factor = float(text)
+            new_spec = scale_response(self._session.spec, factor)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Scale response", _exc_text(exc))
+            return
+        cmd = SynthesizeCommand(
+            self._session, new_spec, on_applied=self._after_circuit_change
+        )
+        self._undo.push(cmd)
+        self._status.setText(f"Scaled response ×{factor:g}")
+        self._run_analyze()
 
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
