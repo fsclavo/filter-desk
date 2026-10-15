@@ -19,6 +19,7 @@ from filterdesk.components_std import (
 )
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
+from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -292,6 +293,65 @@ class MonteCarloDialog(QDialog):
         *,
         initial: MonteCarloConfig | None = None,
     ) -> MonteCarloConfig | None:
+        dialog = cls(parent, initial=initial)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.to_config()
+        return None
+
+
+class OptimizeDialog(QDialog):
+    """Configure a component-value optimization run."""
+
+    _METHOD_LABELS: dict[OptimizeMethod, str] = {
+        OptimizeMethod.LEAST_SQUARES: "Least squares (limit residuals)",
+        OptimizeMethod.NELDER_MEAD: "Nelder–Mead (bounded)",
+    }
+
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        initial: OptimizationConfig | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Optimize to limits")
+        base = initial or OptimizationConfig()
+        self._method = QComboBox()
+        for method in OptimizeMethod:
+            self._method.addItem(self._METHOD_LABELS[method], method)
+        self._method.setCurrentIndex(list(OptimizeMethod).index(base.method))
+        self._bound = EngineeringLineEdit()
+        self._bound.setText(f"{base.bound_pct:g}")
+        self._bound.setPlaceholderText("e.g. 0.2 = ±20%")
+        self._max_iter = QSpinBox()
+        self._max_iter.setRange(1, 100_000)
+        self._max_iter.setValue(base.max_iter)
+        form = QFormLayout(self)
+        form.addRow("Method", self._method)
+        form.addRow("Bound (± fraction)", self._bound)
+        form.addRow("Max iterations", self._max_iter)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def to_config(self) -> OptimizationConfig:
+        return OptimizationConfig(
+            method=OptimizeMethod(self._method.currentData()),
+            bound_pct=float(self._bound.text().strip() or "0.2"),
+            max_iter=int(self._max_iter.value()),
+        )
+
+    @classmethod
+    def ask(
+        cls,
+        parent: QWidget | None = None,
+        *,
+        initial: OptimizationConfig | None = None,
+    ) -> OptimizationConfig | None:
         dialog = cls(parent, initial=initial)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.to_config()

@@ -23,6 +23,11 @@ def _metric_trace(result: AnalysisResult, metric: LimitMetric) -> np.ndarray:
     raise ValueError(f"unknown metric: {metric}")
 
 
+def metric_trace(result: AnalysisResult, metric: LimitMetric) -> np.ndarray:
+    """Public wrapper around the metric extraction used for limit evaluation."""
+    return _metric_trace(result, metric)
+
+
 def evaluate_limit(result: AnalysisResult, limit: LimitRegion) -> bool | None:
     """Return True if pass, False if fail, None if no samples in band / disabled."""
     if not limit.enabled:

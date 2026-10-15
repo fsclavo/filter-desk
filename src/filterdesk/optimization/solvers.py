@@ -1,0 +1,147 @@
+"""Derivative-free limit optimizer over tunable component values (FR-P4)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+
+import numpy as np
+from numpy.typing import NDArray
+from scipy.optimize import least_squares, minimize
+
+from filterdesk.analysis.service import analyze_circuit
+from filterdesk.analysis.types import SweepConfig
+from filterdesk.domain.circuit import Circuit
+from filterdesk.domain.overlays import LimitRegion
+from filterdesk.optimization.constraints import relative_bounds
+from filterdesk.optimization.objectives import limit_residuals, residual_norm
+from filterdesk.optimization.variables import apply_values, tunable_params
+
+
+class OptimizeMethod(StrEnum):
+    LEAST_SQUARES = "least_squares"
+    NELDER_MEAD = "nelder_mead"
+
+
+class OptimizationError(ValueError):
+    """Raised when an optimization run cannot start."""
+
+
+@dataclass(frozen=True, slots=True)
+class OptimizationConfig:
+    method: OptimizeMethod = OptimizeMethod.LEAST_SQUARES
+    bound_pct: float = 0.2
+    max_iter: int = 200
+    backend: str = "abcd"
+
+    def __post_init__(self) -> None:
+        if self.bound_pct < 0.0:
+            raise OptimizationError("bound_pct must be >= 0")
+        if self.max_iter < 1:
+            raise OptimizationError("max_iter must be >= 1")
+
+
+@dataclass(slots=True)
+class OptimizationResult:
+    method: OptimizeMethod
+    success: bool
+    message: str
+    initial_cost: float
+    final_cost: float
+    n_evaluations: int
+    refs: list[str]
+    initial_values: NDArray[np.float64]
+    final_values: NDArray[np.float64]
+    circuit: Circuit
+
+    @property
+    def improvement(self) -> float:
+        return self.initial_cost - self.final_cost
+
+
+def optimize_circuit(
+    circuit: Circuit,
+    sweep: SweepConfig,
+    limits: list[LimitRegion],
+    config: OptimizationConfig | None = None,
+) -> OptimizationResult:
+    """Minimise limit violations by tuning component values within ``bound_pct``.
+
+    Uses the residual vector from :func:`limit_residuals`: least-squares
+    minimizes its 2-norm; Nelder–Mead minimizes the squared norm.
+    """
+    cfg = config or OptimizationConfig()
+    params = tunable_params(circuit)
+    if not params:
+        raise OptimizationError("circuit has no tunable components")
+    active = [lim for lim in limits if lim.enabled]
+    if not active:
+        raise OptimizationError("no enabled limit regions to optimize against")
+
+    x0 = np.asarray([p.value for p in params], dtype=float)
+    bounds = relative_bounds(x0, cfg.bound_pct)
+    evaluations = 0
+
+    def residuals(x: NDArray[np.float64]) -> NDArray[np.float64]:
+        nonlocal evaluations
+        evaluations += 1
+        trial = apply_values(circuit, params, x)
+        result = analyze_circuit(trial, sweep, backend=cfg.backend)
+        return limit_residuals(result, active)
+
+    def scalar(x: NDArray[np.float64]) -> float:
+        r = residuals(x)
+        return float(np.sum(r * r))
+
+    initial_cost = residual_norm(residuals(x0))
+
+    if cfg.method == OptimizeMethod.LEAST_SQUARES:
+        solution = least_squares(
+            residuals,
+            x0,
+            bounds=(bounds.lower, bounds.upper),
+            max_nfev=cfg.max_iter,
+        )
+        final_x = np.asarray(solution.x, dtype=float)
+        success = bool(solution.success)
+        message = str(solution.message)
+    else:
+        nm = minimize(
+            scalar,
+            x0,
+            method="Nelder-Mead",
+            bounds=list(zip(bounds.lower.tolist(), bounds.upper.tolist(), strict=True)),
+            options={"maxiter": cfg.max_iter},
+        )
+        final_x = np.asarray(nm.x, dtype=float)
+        success = bool(nm.success)
+        message = str(nm.message)
+
+    final_circuit = apply_values(circuit, params, final_x)
+    final_cost = residual_norm(
+        limit_residuals(
+            analyze_circuit(final_circuit, sweep, backend=cfg.backend), active
+        )
+    )
+
+    return OptimizationResult(
+        method=cfg.method,
+        success=success,
+        message=message,
+        initial_cost=initial_cost,
+        final_cost=final_cost,
+        n_evaluations=evaluations,
+        refs=[p.ref for p in params],
+        initial_values=x0,
+        final_values=final_x,
+        circuit=final_circuit,
+    )
+
+
+__all__ = [
+    "OptimizeMethod",
+    "OptimizationConfig",
+    "OptimizationError",
+    "OptimizationResult",
+    "optimize_circuit",
+]

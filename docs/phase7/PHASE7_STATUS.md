@@ -27,6 +27,29 @@ Let designers move passband landmarks and impedances and re-run synthesis
 - GUI — **Design → Scale response…** asks for a factor and applies it through
   `SynthesizeCommand` (spec + circuit undo/redo), then re-analyzes.
 
+### Component-value optimizer (FR-P4)
+
+- `optimization/variables.py` — `TunableParam` + `tunable_params` (every reactive/R
+  nominal, including LC/Brune sub-parts and non-ideal L/C) and `apply_values`
+  (returns a copy with new values).
+- `optimization/objectives.py` — `limit_residuals` (per-sample, per-bound
+  violations `≥ 0`) and `residual_norm`.
+- `optimization/constraints.py` — `relative_bounds` (±`bound_pct` box, floored > 0).
+- `optimization/solvers.py` — `OptimizeMethod` (least_squares / nelder_mead),
+  `OptimizationConfig` (bound_pct, max_iter, backend), `OptimizationResult`
+  (initial/final cost, values, circuit, improvement) and `optimize_circuit`.
+- `services/session.py` — `DesignSession.optimize(config)` (no mutation).
+- CLI — `filterdesk optimize … --limits limits.json [--method] [--bound]
+  [--max-iter] [--json]`.
+- GUI — **Design → Optimize to limits…** opens `OptimizeDialog` (method/bound/
+  max-iter), runs off-thread, applies the tuned circuit through
+  `EditCircuitCommand` (undo/redo) and re-analyzes; the status bar shows the
+  cost change.
+- GUI limits editor — the **Limits** dock gains an **Add limit** preset menu
+  (passband/stopband |S21|, return loss, VSWR, Smith |S11|/|S22|); adding a
+  preset selects the new row for inline editing, and enabled limits drive the
+  optimizer.
+
 ## Design notes
 
 - Retune only produces a **validated spec**; the caller re-synthesizes. This keeps
@@ -34,19 +57,27 @@ Let designers move passband landmarks and impedances and re-run synthesis
   conventions, topology↔response rules).
 - `scale_response` preserves the fractional bandwidth for BP/BS, so the relative
   shape does not change.
+- The optimizer drives **per-sample** limit residuals (not a single worst point):
+  the richer residual vector gives `least_squares` a usable numerical gradient
+  where a kinked worst-point residual stalls. Nelder–Mead minimizes the squared
+  norm and usually reaches zero violation on easy targets.
 
 ## Deferred (rest of Phase 7)
 
 - Per-part continuous tune (drag a component value / step size).
-- `optimization/` package (objectives/constraints/solvers — limit-residual least
-  squares + bounded Nelder–Mead) wired to `LimitRegion[]` (also B3.3).
-- Background workers + debounce + cancel stale jobs for tune/optimize (NFR-4).
-- GUI Tune/Optimize toolbar actions and interactive marker-driven retune.
+- Background workers + debounce + cancel stale jobs for tune (NFR-4).
+- GUI Tune toolbar actions and interactive marker-driven retune.
+- Global optimizers (differential evolution / dual annealing) and composable
+  objectives beyond limit residuals (blueprint §20).
 
 ## Tests
 
 - `tests/unit/test_retune.py` — cutoff/center/bandwidth retune, response-type
   guards, LP/HP and BP/BS scaling (fractional-BW preservation), non-positive
   factor rejection, impedance retune, and session retune/scale re-synthesis.
-- `tests/unit/test_gui_smoke.py` — **Design → Scale response…** action
-  (`QInputDialog` stubbed) doubling the cutoff via `SynthesizeCommand`.
+- `tests/unit/test_optimization.py` — tunable enumeration, `apply_values`,
+  relative bounds, residual satisfaction/violation, both solvers reducing cost,
+  enabled-limit and config validation, session no-mutation, and the CLI.
+- `tests/unit/test_gui_smoke.py` — **Design → Scale response…** and
+  **Design → Optimize to limits…** actions (dialogs + workers stubbed), plus
+  `OptimizeDialog` config building and the limits-panel preset menu.

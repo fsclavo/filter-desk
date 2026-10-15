@@ -56,6 +56,7 @@ from filterdesk.gui.widgets import (
     EngineeringLineEdit,
     MonteCarloDialog,
     NonIdealDialog,
+    OptimizeDialog,
     ParasiticDialog,
     SnapDialog,
 )
@@ -63,10 +64,12 @@ from filterdesk.gui.workers import (
     start_analyze_thread,
     start_import_thread,
     start_monte_carlo_thread,
+    start_optimize_thread,
 )
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.montecarlo import MonteCarloResult
+from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.retune import scale_response
@@ -105,6 +108,7 @@ class MainWindow(QMainWindow):
         self._analyze_thread: QThread | None = None
         self._import_thread: QThread | None = None
         self._mc_thread: QThread | None = None
+        self._optimize_thread: QThread | None = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(80)
@@ -266,6 +270,9 @@ class MainWindow(QMainWindow):
         act_scale = QAction("Scale &response…", self)
         act_scale.triggered.connect(self._run_scale_response)
         design_menu.addAction(act_scale)
+        act_opt = QAction("&Optimize to limits…", self)
+        act_opt.triggered.connect(self._run_optimize)
+        design_menu.addAction(act_opt)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -469,6 +476,59 @@ class MainWindow(QMainWindow):
         self._undo.push(cmd)
         self._status.setText(f"Scaled response ×{factor:g}")
         self._run_analyze()
+
+    def _run_optimize(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(self, "Optimize", "Synthesize a circuit first.")
+            return
+        if not [lim for lim in self._session.limits if lim.enabled]:
+            QMessageBox.information(
+                self, "Optimize", "Add at least one enabled limit region first."
+            )
+            return
+        try:
+            self._apply_spec_and_sweep_from_ui()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            return
+        config = OptimizeDialog.ask(self)
+        if config is None:
+            return
+        assert self._session.circuit is not None
+        assert self._session.sweep is not None
+        self._status.setText("Optimizing…")
+        if self._optimize_thread is not None and self._optimize_thread.isRunning():
+            self._optimize_thread.quit()
+            self._optimize_thread.wait(100)
+        thread, _worker = start_optimize_thread(
+            self._session.circuit,
+            self._session.sweep,
+            self._session.limits,
+            config,
+            self._on_optimize_finished,
+            self._on_optimize_failed,
+        )
+        self._optimize_thread = thread
+        thread.start()
+
+    def _on_optimize_finished(self, result: object) -> None:
+        assert isinstance(result, OptimizationResult)
+        cmd = EditCircuitCommand(
+            self._session,
+            result.circuit,
+            text="Optimize",
+            on_applied=self._after_circuit_change,
+        )
+        self._undo.push(cmd)
+        self._status.setText(
+            f"Optimized ({result.method.value}): cost "
+            f"{result.initial_cost:.4f} → {result.final_cost:.4f}"
+        )
+        self._run_analyze()
+
+    def _on_optimize_failed(self, message: str) -> None:
+        QMessageBox.warning(self, "Optimize failed", message)
+        self._status.setText("Optimize failed")
 
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
@@ -1034,4 +1094,7 @@ class MainWindow(QMainWindow):
         if self._mc_thread is not None and self._mc_thread.isRunning():
             self._mc_thread.quit()
             self._mc_thread.wait(2000)
+        if self._optimize_thread is not None and self._optimize_thread.isRunning():
+            self._optimize_thread.quit()
+            self._optimize_thread.wait(2000)
         super().closeEvent(event)

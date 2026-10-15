@@ -62,6 +62,12 @@ from filterdesk.montecarlo import (
     run_monte_carlo,
     wilson_interval,
 )
+from filterdesk.optimization import (
+    OptimizationConfig,
+    OptimizationResult,
+    OptimizeMethod,
+    optimize_circuit,
+)
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
@@ -232,6 +238,47 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON (envelope summary + yield)",
+    )
+
+    opt = sub.add_parser(
+        "optimize",
+        help="Tune component values to satisfy limit regions (FR-P4)",
+    )
+    _add_spec_args(opt)
+    opt.add_argument("--f-start", default=None, help="Sweep start (Hz), e.g. 10M")
+    opt.add_argument("--f-stop", default=None, help="Sweep stop (Hz), e.g. 1G")
+    opt.add_argument("--points", type=int, default=512, help="Number of points")
+    opt.add_argument(
+        "--spacing",
+        choices=[s.value for s in SweepSpacing],
+        default=SweepSpacing.LOGARITHMIC.value,
+        help="Frequency spacing",
+    )
+    opt.add_argument(
+        "--limits",
+        type=Path,
+        required=True,
+        help="JSON file with a list of limit regions",
+    )
+    opt.add_argument(
+        "--method",
+        choices=[m.value for m in OptimizeMethod],
+        default=OptimizeMethod.LEAST_SQUARES.value,
+        help="Optimization method",
+    )
+    opt.add_argument(
+        "--bound",
+        type=float,
+        default=0.2,
+        help="Per-component relative bound (fraction, e.g. 0.2 = ±20%%)",
+    )
+    opt.add_argument(
+        "--max-iter", type=int, default=200, help="Maximum solver iterations"
+    )
+    opt.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON (costs + tuned values)",
     )
 
     est = sub.add_parser(
@@ -660,6 +707,35 @@ def _mc_to_json(spec: FilterSpec, result: MonteCarloResult) -> dict[str, object]
     return payload
 
 
+def _print_optimize_human(result: OptimizationResult) -> None:
+    print(
+        f"Optimize ({result.method.value}): cost {result.initial_cost:.5f} -> "
+        f"{result.final_cost:.5f} (evals {result.n_evaluations})"
+    )
+    for ref, x0, x1 in zip(
+        result.refs, result.initial_values, result.final_values, strict=True
+    ):
+        pct = 0.0 if x0 == 0 else 100.0 * (x1 - x0) / x0
+        print(f"  {ref:6s} {x0:.6g} -> {x1:.6g} ({pct:+.2f}%)")
+
+
+def _optimize_to_json(result: OptimizationResult) -> dict[str, object]:
+    return {
+        "method": result.method.value,
+        "success": result.success,
+        "message": result.message,
+        "initial_cost": result.initial_cost,
+        "final_cost": result.final_cost,
+        "n_evaluations": result.n_evaluations,
+        "components": [
+            {"ref": ref, "initial": float(x0), "final": float(x1)}
+            for ref, x0, x1 in zip(
+                result.refs, result.initial_values, result.final_values, strict=True
+            )
+        ],
+    }
+
+
 def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
     """Collect non-ideal analysis flags; returns {} when none are given."""
     kwargs: dict[str, float] = {}
@@ -747,6 +823,34 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(_mc_to_json(spec, mc_result), indent=2))
         else:
             _print_mc_human(spec, mc_result)
+        return 0
+
+    if args.command == "optimize":
+        try:
+            spec = _spec_from_cli(args)
+            synth = synthesize(spec)
+            sweep = _default_sweep(spec, args)
+            data = json.loads(args.limits.read_text(encoding="utf-8"))
+            limits = limits_from_mapping(data)
+            opt_config = OptimizationConfig(
+                method=OptimizeMethod(args.method),
+                bound_pct=float(args.bound),
+                max_iter=int(args.max_iter),
+            )
+            opt_result = optimize_circuit(synth.circuit, sweep, limits, opt_config)
+        except (
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(_optimize_to_json(opt_result), indent=2))
+        else:
+            _print_optimize_human(opt_result)
         return 0
 
     if args.command == "analyze":

@@ -571,3 +571,116 @@ def test_main_window_scale_response_action(monkeypatch: pytest.MonkeyPatch) -> N
     assert "Scaled response" in window._status.text()
     window.close()
     assert app is not None
+
+
+def test_optimize_dialog_builds_config() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import OptimizeDialog
+    from filterdesk.optimization import OptimizeMethod
+
+    app = QApplication.instance() or QApplication([])
+    dialog = OptimizeDialog()
+    dialog._method.setCurrentIndex(
+        list(OptimizeMethod).index(OptimizeMethod.NELDER_MEAD)
+    )
+    dialog._bound.setText("0.35")
+    dialog._max_iter.setValue(123)
+    config = dialog.to_config()
+    assert config.method == OptimizeMethod.NELDER_MEAD
+    assert config.bound_pct == pytest.approx(0.35)
+    assert config.max_iter == 123
+    assert app is not None
+
+
+def test_main_window_optimize_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.overlays import LimitMetric, LimitRegion
+    from filterdesk.gui import main_window as mw
+    from filterdesk.optimization import (
+        OptimizationConfig,
+        OptimizeMethod,
+        optimize_circuit,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    session.limits = [
+        LimitRegion(
+            id="pb",
+            metric=LimitMetric.S21_DB,
+            f_low_hz=200e6,
+            f_high_hz=500e6,
+            y_min=-3.0,
+        )
+    ]
+    window = mw.MainWindow(session, auto_run=False)
+
+    class _FakeThread:
+        def start(self) -> None:
+            pass
+
+        def isRunning(self) -> bool:  # noqa: N802
+            return False
+
+        def quit(self) -> None:
+            pass
+
+        def wait(self, *_args: object) -> bool:
+            return True
+
+    def _fake_start(
+        circuit: object,
+        sweep: object,
+        limits: object,
+        config: OptimizationConfig,
+        on_finished: object,
+        on_failed: object,
+    ) -> tuple[object, object]:
+        on_finished(  # type: ignore[operator]
+            optimize_circuit(circuit, sweep, limits, config)  # type: ignore[arg-type]
+        )
+        return _FakeThread(), None
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> OptimizationConfig:
+            return OptimizationConfig(
+                method=OptimizeMethod.NELDER_MEAD, bound_pct=0.5, max_iter=50
+            )
+
+    monkeypatch.setattr(mw, "OptimizeDialog", _FakeDialog)
+    monkeypatch.setattr(mw, "start_optimize_thread", _fake_start)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_optimize()
+
+    assert "Optimized" in window._status.text()
+    window.close()
+    assert app is not None
+
+
+def test_limits_panel_add_preset() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.overlays import LimitMetric
+    from filterdesk.gui.panels import limits_panel as lp
+
+    app = QApplication.instance() or QApplication([])
+    panel = lp.LimitsPanel()
+    recorded: list[object] = []
+    panel.limits_changed.connect(recorded.append)
+
+    panel._add_preset(lp._PRESETS[0])  # passband |S21| min
+    panel._add_preset(lp._PRESETS[1])  # stopband |S21| max
+    limits = panel.limits()
+    assert len(limits) == 2
+    assert limits[0].metric == LimitMetric.S21_DB
+    assert limits[0].y_min == pytest.approx(-0.5)
+    assert limits[1].y_max == pytest.approx(-40.0)
+    assert limits[0].id != limits[1].id
+    assert panel._table.currentRow() == 1
+    assert recorded
+    assert app is not None

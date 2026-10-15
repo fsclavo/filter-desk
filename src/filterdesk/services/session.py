@@ -50,6 +50,11 @@ from filterdesk.domain.project import Project, ProjectMetadata
 from filterdesk.domain.prototype import Prototype
 from filterdesk.domain.specs import FilterSpec, validate_spec
 from filterdesk.montecarlo import MonteCarloConfig, MonteCarloResult, run_monte_carlo
+from filterdesk.optimization import (
+    OptimizationConfig,
+    OptimizationResult,
+    optimize_circuit,
+)
 from filterdesk.services.retune import (
     RetuneRequest,
     retune_spec,
@@ -185,6 +190,14 @@ class DesignSession:
         """Scale all frequency landmarks by ``factor`` and re-synthesize."""
         self.set_spec(_scale_spec_response(self.spec, factor))
         self.synthesize()
+
+    def optimize(
+        self, config: OptimizationConfig | None = None
+    ) -> OptimizationResult:
+        """Tune component values to minimise limit violations (no mutation)."""
+        if self.circuit is None or self.sweep is None:
+            raise ValueError("no circuit/sweep")
+        return optimize_circuit(self.circuit, self.sweep, self.limits, config)
 
     def update_element_value(self, element_id: str, value_si: float) -> None:
         if self.circuit is None:

@@ -13,6 +13,7 @@ from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion
 from filterdesk.io.touchstone import TouchstoneData, read_touchstone
 from filterdesk.montecarlo import MonteCarloConfig, run_monte_carlo
+from filterdesk.optimization import OptimizationConfig, optimize_circuit
 
 
 class AnalyzeWorker(QObject):
@@ -111,6 +112,55 @@ def start_monte_carlo_thread(
     return thread, worker
 
 
+class OptimizeWorker(QObject):
+    finished = Signal(object)  # OptimizationResult
+    failed = Signal(str)
+
+    def __init__(
+        self,
+        circuit: Circuit,
+        sweep: SweepConfig,
+        limits: list[LimitRegion],
+        config: OptimizationConfig,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._circuit = circuit
+        self._sweep = sweep
+        self._limits = limits
+        self._config = config
+
+    def run(self) -> None:
+        try:
+            result = optimize_circuit(
+                self._circuit, self._sweep, self._limits, self._config
+            )
+            self.finished.emit(result)
+        except Exception as exc:  # noqa: BLE001 — surface to UI
+            self.failed.emit(str(exc))
+
+
+def start_optimize_thread(
+    circuit: Circuit,
+    sweep: SweepConfig,
+    limits: list[LimitRegion],
+    config: OptimizationConfig,
+    on_finished: Callable[[object], None],
+    on_failed: Callable[[str], None],
+) -> tuple[QThread, OptimizeWorker]:
+    thread = QThread()
+    worker = OptimizeWorker(circuit, sweep, limits, config)
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    worker.finished.connect(on_finished)
+    worker.failed.connect(on_failed)
+    worker.finished.connect(thread.quit)
+    worker.failed.connect(thread.quit)
+    thread.finished.connect(worker.deleteLater)
+    thread._filterdesk_worker = worker  # type: ignore[attr-defined]
+    return thread, worker
+
+
 class ImportTouchstoneWorker(QObject):
     """Load a Touchstone file off the UI thread."""
 
@@ -152,8 +202,10 @@ __all__ = [
     "AnalysisResult",
     "ImportTouchstoneWorker",
     "MonteCarloWorker",
+    "OptimizeWorker",
     "TouchstoneData",
     "start_analyze_thread",
     "start_import_thread",
     "start_monte_carlo_thread",
+    "start_optimize_thread",
 ]

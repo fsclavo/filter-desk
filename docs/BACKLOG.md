@@ -66,7 +66,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | --- | --- | --- | --- |
 | B3.1 | **Schematic topology editor** | Select an element, then **Design → Component**: edit value, convert L↔C (reactance-preserving), insert series/shunt L/C before/after, delete; right-click shortcut too; full undo/redo — `PHASE3_STATUS.md`, blueprint §23/§35 | **DONE (2026-10-15)** |
 | B3.2 | **Smith limit regions** | Constant-\|Γ\| limits (`s11_mag` / `s22_mag`) drawn on the Smith chart and evaluated in pass/fail | **DONE (2026-10-15)** |
-| B3.3 | **Optimizer ↔ limits wiring** | Limits exist but nothing consumes them yet | Pending (→ Phase 7) |
+| B3.3 | **Optimizer ↔ limits wiring** | `optimization/` minimizes per-sample limit residuals (`LimitRegion[]`); CLI `optimize` + GUI **Design → Optimize to limits…** | **DONE (2026-10-15)** |
 
 ### B4. Interop / IO
 
@@ -97,12 +97,13 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 - [x] `services/retune.py` — retune cutoff/center/bandwidth/Z + `scale_response` (redesign on tune) — FR-U2 core
 - [ ] Per-part continuous tune (component value / step size)
-- [ ] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py` — FR-P4
-- [ ] Solver: limit-residual least squares + bounded Nelder–Mead (SciPy); global methods later — blueprint §20
-- [ ] Wire optimizer to `LimitRegion[]` (B3.3)
-- [ ] Background workers + debounce + cancel stale jobs — NFR-4
+- [x] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py`, `variables.py` — FR-P4
+- [x] Solver: limit-residual least squares + bounded Nelder–Mead (SciPy) — FR-P4
+- [x] Wire optimizer to `LimitRegion[]` (B3.3) — CLI `optimize` + GUI **Design → Optimize to limits…**
+- [ ] Background workers + debounce + cancel stale jobs for tune — NFR-4
 - [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
-- [ ] GUI Tune/Optimize toolbar actions; interactive marker-driven retune
+- [x] GUI **Design → Optimize to limits…** action (undo/redo) — FR-P4
+- [ ] GUI Tune toolbar actions; interactive marker-driven retune
 
 ### Phase 8 — Monte Carlo
 
