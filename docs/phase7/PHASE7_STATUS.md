@@ -50,6 +50,18 @@ Let designers move passband landmarks and impedances and re-run synthesis
   preset selects the new row for inline editing, and enabled limits drive the
   optimizer.
 
+### Per-part continuous tune (FR-U2)
+
+- `services/retune.py` — `nudge_value(value, step_fraction, direction)`
+  (multiplicative `value·(1 ± step)`, must stay positive).
+- `services/session.py` — `element_steps` map (per-part relative step, default
+  2%), `step_fraction` / `set_element_step`, and `nudged_value` (pure) /
+  `nudge_element` (in-place).
+- GUI — **Design → Component → Tune ±step / Set tune step…** (Design menu and
+  schematic context menu) plus window shortcuts **Ctrl+]** / **Ctrl+[** on the
+  selected component; each nudge goes through `SetElementValueCommand` (undo/redo)
+  and the existing 80 ms debounce re-analyzes.
+
 ## Design notes
 
 - Retune only produces a **validated spec**; the caller re-synthesizes. This keeps
@@ -64,8 +76,7 @@ Let designers move passband landmarks and impedances and re-run synthesis
 
 ## Deferred (rest of Phase 7)
 
-- Per-part continuous tune (drag a component value / step size).
-- Background workers + debounce + cancel stale jobs for tune (NFR-4).
+- Background workers + cancel-stale hardening for tune (NFR-4).
 - GUI Tune toolbar actions and interactive marker-driven retune.
 - Global optimizers (differential evolution / dual annealing) and composable
   objectives beyond limit residuals (blueprint §20).
@@ -74,10 +85,12 @@ Let designers move passband landmarks and impedances and re-run synthesis
 
 - `tests/unit/test_retune.py` — cutoff/center/bandwidth retune, response-type
   guards, LP/HP and BP/BS scaling (fractional-BW preservation), non-positive
-  factor rejection, impedance retune, and session retune/scale re-synthesis.
+  factor rejection, impedance retune, `nudge_value`, per-part step + nudge, and
+  session retune/scale re-synthesis.
 - `tests/unit/test_optimization.py` — tunable enumeration, `apply_values`,
   relative bounds, residual satisfaction/violation, both solvers reducing cost,
   enabled-limit and config validation, session no-mutation, and the CLI.
 - `tests/unit/test_gui_smoke.py` — **Design → Scale response…** and
-  **Design → Optimize to limits…** actions (dialogs + workers stubbed), plus
-  `OptimizeDialog` config building and the limits-panel preset menu.
+  **Design → Optimize to limits…** actions (dialogs + workers stubbed),
+  `OptimizeDialog` and the limits-panel preset menu, and per-part tune nudging
+  (menu shortcuts present; value steps up/down via `SetElementValueCommand`).

@@ -31,6 +31,7 @@ from filterdesk.domain.circuit import (
     Element,
     IdealCapacitor,
     IdealInductor,
+    IdealResistor,
     NonIdealCapacitor,
     NonIdealInductor,
 )
@@ -273,6 +274,14 @@ class MainWindow(QMainWindow):
         act_opt = QAction("&Optimize to limits…", self)
         act_opt.triggered.connect(self._run_optimize)
         design_menu.addAction(act_opt)
+        act_tune_up = QAction("Tune selected +step", self)
+        act_tune_up.setShortcut("Ctrl+]")
+        act_tune_up.triggered.connect(self._tune_selected_increase)
+        design_menu.addAction(act_tune_up)
+        act_tune_dn = QAction("Tune selected −step", self)
+        act_tune_dn.setShortcut("Ctrl+[")
+        act_tune_dn.triggered.connect(self._tune_selected_decrease)
+        design_menu.addAction(act_tune_dn)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -686,6 +695,75 @@ class MainWindow(QMainWindow):
         target = self._selected_element
         return next((e for e in circuit.elements if e.id == target), None)
 
+    @staticmethod
+    def _is_tunable(el: Element) -> bool:
+        return isinstance(
+            el,
+            (
+                IdealCapacitor,
+                IdealInductor,
+                IdealResistor,
+                NonIdealCapacitor,
+                NonIdealInductor,
+            ),
+        )
+
+    def _add_tune_actions(
+        self, menu: QMenu, el: Element, element_id: str
+    ) -> None:
+        if not self._is_tunable(el):
+            return
+        pct = self._session.step_fraction(element_id) * 100.0
+        act_up = menu.addAction(f"Tune +{pct:g}%")
+        act_up.triggered.connect(
+            lambda *_: self._nudge_element(element_id, 1)
+        )
+        act_dn = menu.addAction(f"Tune −{pct:g}%")
+        act_dn.triggered.connect(
+            lambda *_: self._nudge_element(element_id, -1)
+        )
+        act_step = menu.addAction("Set tune &step…")
+        act_step.triggered.connect(
+            lambda *_: self._set_element_step(element_id)
+        )
+
+    def _tune_selected_increase(self) -> None:
+        if self._selected_element is not None:
+            self._nudge_element(self._selected_element, 1)
+
+    def _tune_selected_decrease(self) -> None:
+        if self._selected_element is not None:
+            self._nudge_element(self._selected_element, -1)
+
+    def _nudge_element(self, element_id: str, direction: int) -> None:
+        if self._session.circuit is None:
+            return
+        try:
+            new_value = self._session.nudged_value(element_id, direction)
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Tune", _exc_text(exc))
+            return
+        self._on_value_edited(element_id, new_value)
+        self._status.setText(f"Tuned {element_id} → {new_value:.6g}")
+
+    def _set_element_step(self, element_id: str) -> None:
+        current = self._session.step_fraction(element_id)
+        text, ok = QInputDialog.getText(
+            self,
+            "Tune step",
+            f"Relative step per nudge for {element_id} (0.02 = 2%):",
+            text=f"{current:g}",
+        )
+        if not ok or not text.strip():
+            return
+        try:
+            fraction = float(text)
+            self._session.set_element_step(element_id, fraction)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Tune step", _exc_text(exc))
+            return
+        self._status.setText(f"Tune step for {element_id}: {fraction * 100:g}%")
+
     def _populate_component_menu(self) -> None:
         """Rebuild the Design → Component menu for the selected element."""
         menu = self._component_menu
@@ -698,6 +776,7 @@ class MainWindow(QMainWindow):
         element_id = el.id
         act_edit = menu.addAction("Edit value…")
         act_edit.triggered.connect(lambda *_: self._edit_element_value(element_id))
+        self._add_tune_actions(menu, el, element_id)
         if isinstance(
             el, (IdealCapacitor, IdealInductor, NonIdealCapacitor, NonIdealInductor)
         ):
@@ -756,6 +835,7 @@ class MainWindow(QMainWindow):
         act_edit.triggered.connect(
             lambda *_: self._edit_element_value(element_id)
         )
+        self._add_tune_actions(menu, el, element_id)
         if isinstance(
             el, (IdealCapacitor, IdealInductor, NonIdealCapacitor, NonIdealInductor)
         ):

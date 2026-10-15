@@ -684,3 +684,51 @@ def test_limits_panel_add_preset() -> None:
     assert panel._table.currentRow() == 1
     assert recorded
     assert app is not None
+
+
+def test_main_window_tune_nudge(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    l_id = next(el.id for el in session.circuit.elements if el.id.startswith("L"))
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_after_circuit_change", lambda: None)
+    window._selected_element = l_id
+    base = session.lookup_element_value(l_id)
+
+    window._tune_selected_increase()
+
+    assert session.lookup_element_value(l_id) == pytest.approx(
+        base * (1.0 + session.DEFAULT_TUNE_STEP)
+    )
+    assert "Tuned" in window._status.text()
+    window._tune_selected_decrease()
+    step = session.DEFAULT_TUNE_STEP
+    assert session.lookup_element_value(l_id) == pytest.approx(
+        base * (1.0 + step) * (1.0 - step)
+    )
+    window.close()
+    assert app is not None
+
+
+def test_design_menu_has_tune_shortcuts() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = mw.MainWindow(DesignSession(), auto_run=False)
+    menu_actions = window.menuBar().actions()
+    design_menu = next(a.menu() for a in menu_actions if "&Design" in a.text())
+    labels = [a.text() for a in design_menu.actions()]
+    assert any("Tune selected +step" in t for t in labels)
+    assert any("Tune selected −step" in t for t in labels)
+    window.close()
+    assert app is not None

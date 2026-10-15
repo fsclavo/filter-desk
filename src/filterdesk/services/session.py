@@ -57,12 +57,20 @@ from filterdesk.optimization import (
 )
 from filterdesk.services.retune import (
     RetuneRequest,
+    nudge_value,
     retune_spec,
 )
 from filterdesk.services.retune import (
     scale_response as _scale_spec_response,
 )
 from filterdesk.synthesis import synthesize
+
+
+def _base_element_id(ref: str) -> str:
+    for suffix in (".Ls", ".Cs", ".Lp", ".Cp", ".L", ".C"):
+        if ref.endswith(suffix):
+            return ref[: -len(suffix)]
+    return ref
 
 
 def _element_value_si(circuit: Circuit, element_id: str) -> float:
@@ -150,6 +158,9 @@ class DesignSession:
     limits: list[LimitRegion] = field(default_factory=list)
     measured: AnalysisResult | None = None
     measured_name: str | None = None
+    element_steps: dict[str, float] = field(default_factory=dict)
+
+    DEFAULT_TUNE_STEP = 0.02
 
     def __post_init__(self) -> None:
         if self.sweep is None:
@@ -198,6 +209,28 @@ class DesignSession:
         if self.circuit is None or self.sweep is None:
             raise ValueError("no circuit/sweep")
         return optimize_circuit(self.circuit, self.sweep, self.limits, config)
+
+    def step_fraction(self, element_id: str) -> float:
+        """Per-part relative tune step (falls back to ``DEFAULT_TUNE_STEP``)."""
+        default = self.DEFAULT_TUNE_STEP
+        return self.element_steps.get(_base_element_id(element_id), default)
+
+    def set_element_step(self, element_id: str, fraction: float) -> None:
+        if fraction <= 0.0:
+            raise ValueError("tune step must be > 0")
+        self.element_steps[_base_element_id(element_id)] = float(fraction)
+        self.dirty = True
+
+    def nudged_value(self, element_id: str, direction: int) -> float:
+        """Value after one multiplicative tune step (no mutation)."""
+        value = self.lookup_element_value(element_id)
+        return nudge_value(value, self.step_fraction(element_id), direction)
+
+    def nudge_element(self, element_id: str, direction: int) -> float:
+        """Apply one tune step in place and return the new value."""
+        new_value = self.nudged_value(element_id, direction)
+        self.update_element_value(element_id, new_value)
+        return new_value
 
     def update_element_value(self, element_id: str, value_si: float) -> None:
         if self.circuit is None:

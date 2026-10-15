@@ -13,6 +13,7 @@ from filterdesk.domain.enums import (
 from filterdesk.domain.specs import FilterSpec, SpecValidationError
 from filterdesk.services.retune import (
     RetuneRequest,
+    nudge_value,
     retune_bandwidth,
     retune_center,
     retune_cutoff,
@@ -130,3 +131,30 @@ def test_session_scale_response() -> None:
     session.scale_response(2.0)
     assert session.spec.f_center_hz == pytest.approx(200e6)
     assert session.spec.bandwidth_hz == pytest.approx(40e6)
+
+
+def test_nudge_value() -> None:
+    assert nudge_value(100.0, 0.02, 1) == pytest.approx(102.0)
+    assert nudge_value(100.0, 0.02, -1) == pytest.approx(98.0)
+    with pytest.raises(ValueError):
+        nudge_value(100.0, 0.0, 1)
+    with pytest.raises(ValueError):
+        nudge_value(100.0, 0.5, 3)
+
+
+def test_session_tune_step_and_nudge() -> None:
+    session = DesignSession()
+    session.set_spec(_lp())
+    session.synthesize()
+    assert session.circuit is not None
+    l_id = next(el.id for el in session.circuit.elements if el.id.startswith("L"))
+    assert session.step_fraction(l_id) == pytest.approx(session.DEFAULT_TUNE_STEP)
+    session.set_element_step(l_id, 0.05)
+    assert session.step_fraction(l_id) == pytest.approx(0.05)
+    base = session.lookup_element_value(l_id)
+    new = session.nudge_element(l_id, 1)
+    assert new == pytest.approx(base * 1.05)
+    assert session.lookup_element_value(l_id) == pytest.approx(new)
+    assert session.nudged_value(l_id, -1) == pytest.approx(new * 0.95)
+    with pytest.raises(ValueError):
+        session.set_element_step(l_id, 0.0)

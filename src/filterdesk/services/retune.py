@@ -87,3 +87,18 @@ def scale_response(spec: FilterSpec, factor: float) -> FilterSpec:
             ),
         )
     return retune_spec(spec, RetuneRequest(cutoff_hz=spec.cutoff_hz * factor))
+
+
+def nudge_value(value: float, step_fraction: float, direction: int) -> float:
+    """Multiplicative single-step tune: ``value · (1 + direction·step)``.
+
+    ``direction`` is ``+1`` (up) or ``-1`` (down); the result must stay positive.
+    """
+    if step_fraction <= 0.0:
+        raise ValueError("step_fraction must be > 0")
+    if direction not in (-1, 1):
+        raise ValueError("direction must be +1 or -1")
+    new_value = value * (1.0 + direction * step_fraction)
+    if new_value <= 0.0:
+        raise ValueError("tuned value would not be positive")
+    return new_value
