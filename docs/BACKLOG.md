@@ -93,18 +93,18 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [ ] Golden tests for finite-Q and E24-snapped cases (blueprint §29 items 9–10)
 - [ ] Manual library R / L / C / jX (core RLC) in schematic library (blueprint §7)
 
-### Phase 7 — Interactive tuning + optimization + limits
+### Phase 7 — Interactive tuning + optimization + limits — **DONE (2026-10-15)**
 
 - [x] `services/retune.py` — retune cutoff/center/bandwidth/Z + `scale_response` (redesign on tune) — FR-U2 core
 - [x] Per-part continuous tune (relative step per component, `nudge_value`; GUI Tune ±step + Ctrl+]/Ctrl+[) — FR-U2
 - [x] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py`, `variables.py` — FR-P4
 - [x] Solver: limit-residual least squares + bounded Nelder–Mead (SciPy) — FR-P4
 - [x] Wire optimizer to `LimitRegion[]` (B3.3) — CLI `optimize` + GUI **Design → Optimize to limits…**
-- [ ] Background workers + cancel-stale hardening for tune — NFR-4 (debounce exists)
+- [x] Background workers + debounce + cancel-stale for tune — NFR-4 (80 ms debounce + analyze-thread cancel)
 - [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
 - [x] GUI **Design → Optimize to limits…** action (undo/redo) — FR-P4
-- [x] GUI **Design → Component → Tune ±step / Set tune step…** + shortcuts — FR-U2
-- [ ] GUI Tune toolbar actions; interactive marker-driven retune
+- [x] GUI **Design → Component → Tune ±step / Set tune step…**, toolbar buttons + shortcuts — FR-U2
+- [ ] (optional polish) interactive marker-driven retune — see §D
 
 ### Phase 8 — Monte Carlo
 
@@ -145,6 +145,8 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 ## D. Cross-cutting / open questions (when relevant)
 
 - **pytest-qt** investment timing (GUI interaction tests) — blueprint §37.12
+- **Interactive marker-driven retune** (bind a marker to a spec landmark and drag to redesign) — Phase 7 optional polish
+- **Global optimizers** (differential evolution / dual annealing) + composable objectives — blueprint §20
 - **Project extension** `.filterdesk.json` vs compressed `.fdsk` — §37.9
 - Native Rust/C acceleration for MC *only if* ABCD Python insufficient — §37.13
 - Product naming / trademark (avoid ELSIE/Tonne marks) — §37.14

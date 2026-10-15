@@ -718,7 +718,7 @@ def test_main_window_tune_nudge(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_design_menu_has_tune_shortcuts() -> None:
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QToolBar
 
     from filterdesk.gui import main_window as mw
     from filterdesk.services.session import DesignSession
@@ -728,7 +728,14 @@ def test_design_menu_has_tune_shortcuts() -> None:
     menu_actions = window.menuBar().actions()
     design_menu = next(a.menu() for a in menu_actions if "&Design" in a.text())
     labels = [a.text() for a in design_menu.actions()]
-    assert any("Tune selected +step" in t for t in labels)
-    assert any("Tune selected −step" in t for t in labels)
+    assert any("Tune +" in t for t in labels)
+    assert any("Tune −" in t for t in labels)
+
+    toolbar = window.findChild(QToolBar, "MainToolBar")
+    assert toolbar is not None
+    tb_labels = [a.text() for a in toolbar.actions()]
+    assert "Tune +" in tb_labels and "Tune −" in tb_labels
+    assert window._act_tune_up.shortcut().toString() == "Ctrl+]"
+    assert window._act_tune_dn.shortcut().toString() == "Ctrl+["
     window.close()
     assert app is not None

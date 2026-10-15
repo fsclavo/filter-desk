@@ -1,13 +1,14 @@
 # Phase 7 — Interactive tuning + optimization (status)
 
 **Date:** 2026-10-15  
-**Status:** In progress  
+**Status:** Complete  
 **Version:** 0.5.11
 
 ## Goal
 
 Let designers move passband landmarks and impedances and re-run synthesis
-(redesign-on-tune), then optimize component values against limit regions.
+(redesign-on-tune), tune individual parts, then optimize component values against
+limit regions.
 
 ## Delivered
 
@@ -58,9 +59,11 @@ Let designers move passband landmarks and impedances and re-run synthesis
   2%), `step_fraction` / `set_element_step`, and `nudged_value` (pure) /
   `nudge_element` (in-place).
 - GUI — **Design → Component → Tune ±step / Set tune step…** (Design menu and
-  schematic context menu) plus window shortcuts **Ctrl+]** / **Ctrl+[** on the
-  selected component; each nudge goes through `SetElementValueCommand` (undo/redo)
-  and the existing 80 ms debounce re-analyzes.
+  schematic context menu), **Tune +** / **Tune −** toolbar buttons, and window
+  shortcuts **Ctrl+]** / **Ctrl+[** on the selected component; each nudge goes
+  through `SetElementValueCommand` (undo/redo) and the existing 80 ms debounce
+  re-analyzes (NFR-4: debounced, and a running analyze thread is cancelled before
+  a new one starts).
 
 ## Design notes
 
@@ -74,10 +77,10 @@ Let designers move passband landmarks and impedances and re-run synthesis
   where a kinked worst-point residual stalls. Nelder–Mead minimizes the squared
   norm and usually reaches zero violation on easy targets.
 
-## Deferred (rest of Phase 7)
+## Deferred (future polish, not blocking)
 
-- Background workers + cancel-stale hardening for tune (NFR-4).
-- GUI Tune toolbar actions and interactive marker-driven retune.
+- Marker-driven retune (bind a marker to a spec landmark and drag to redesign) —
+  markers remain frequency annotations; see backlog §D.
 - Global optimizers (differential evolution / dual annealing) and composable
   objectives beyond limit residuals (blueprint §20).
 
@@ -92,5 +95,6 @@ Let designers move passband landmarks and impedances and re-run synthesis
   enabled-limit and config validation, session no-mutation, and the CLI.
 - `tests/unit/test_gui_smoke.py` — **Design → Scale response…** and
   **Design → Optimize to limits…** actions (dialogs + workers stubbed),
-  `OptimizeDialog` and the limits-panel preset menu, and per-part tune nudging
-  (menu shortcuts present; value steps up/down via `SetElementValueCommand`).
+  `OptimizeDialog` and the limits-panel preset menu, per-part tune nudging
+  (toolbar/menu actions + shortcuts present; value steps up/down via
+  `SetElementValueCommand`).
