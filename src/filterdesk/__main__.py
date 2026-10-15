@@ -40,6 +40,7 @@ from filterdesk.domain.enums import (
     FilterResponse,
     TopologyId,
 )
+from filterdesk.domain.overlays import limits_from_mapping
 from filterdesk.domain.specs import (
     FilterSpec,
     SpecValidationError,
@@ -53,6 +54,13 @@ from filterdesk.io.touchstone import (
     TouchstoneError,
     read_touchstone,
     write_touchstone_s2p,
+)
+from filterdesk.montecarlo import (
+    MonteCarloConfig,
+    MonteCarloResult,
+    ToleranceDistribution,
+    run_monte_carlo,
+    wilson_interval,
 )
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.compare import CompareError, compare_results
@@ -185,6 +193,45 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON (snap report + snapped components)",
+    )
+
+    mc = sub.add_parser(
+        "montecarlo",
+        help="Tolerance Monte-Carlo sweep over a synthesized filter",
+    )
+    _add_spec_args(mc)
+    mc.add_argument("--f-start", default=None, help="Sweep start (Hz), e.g. 10M")
+    mc.add_argument("--f-stop", default=None, help="Sweep stop (Hz), e.g. 1G")
+    mc.add_argument("--points", type=int, default=512, help="Number of points")
+    mc.add_argument(
+        "--spacing",
+        choices=[s.value for s in SweepSpacing],
+        default=SweepSpacing.LOGARITHMIC.value,
+        help="Frequency spacing",
+    )
+    mc.add_argument(
+        "--trials", type=int, default=1000, help="Number of Monte-Carlo trials"
+    )
+    mc.add_argument(
+        "--tol", type=float, default=1.0, help="Relative tolerance in percent"
+    )
+    mc.add_argument(
+        "--distribution",
+        choices=[d.value for d in ToleranceDistribution],
+        default=ToleranceDistribution.UNIFORM.value,
+        help="Tolerance distribution",
+    )
+    mc.add_argument("--seed", type=int, default=None, help="RNG seed")
+    mc.add_argument(
+        "--limits",
+        type=Path,
+        default=None,
+        help="JSON file with a list of limit regions (for yield)",
+    )
+    mc.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON (envelope summary + yield)",
     )
 
     est = sub.add_parser(
@@ -567,6 +614,52 @@ def _print_analysis_human(
     )
 
 
+def _print_mc_human(spec: FilterSpec, result: MonteCarloResult) -> None:
+    cfg = result.config
+    print(
+        f"Monte-Carlo: {result.n_trials} trials  tol=±{cfg.tolerance_pct:g}%  "
+        f"({cfg.distribution.value})  seed={cfg.seed}"
+    )
+    f = result.frequency_hz
+    idxs = [0, f.shape[0] // 2, f.shape[0] - 1]
+    print("S21 envelope (min … max dB) at sample points:")
+    for i in idxs:
+        print(
+            f"  f={format_engineering(float(f[i]), 'Hz')}  "
+            f"{result.s21_db_min[i]:.3f} … {result.s21_db_max[i]:.3f} dB  "
+            f"(p05..p95 {result.s21_db_p05[i]:.3f} … "
+            f"{result.s21_db_p95[i]:.3f})"
+        )
+    print(f"Worst-case spread: {result.max_spread_db:.3f} dB")
+    if result.yield_fraction is not None:
+        lo, hi = wilson_interval(result.passes, result.n_trials)
+        print(
+            f"Yield: {100.0 * result.yield_fraction:.2f}% "
+            f"({result.passes}/{result.n_trials}; 95% CI "
+            f"{100.0 * lo:.1f}–{100.0 * hi:.1f}%)"
+        )
+
+
+def _mc_to_json(spec: FilterSpec, result: MonteCarloResult) -> dict[str, object]:
+    cfg = result.config
+    payload: dict[str, object] = {
+        "spec": filter_spec_to_mapping(spec),
+        "trials": result.n_trials,
+        "tolerance_pct": cfg.tolerance_pct,
+        "distribution": cfg.distribution.value,
+        "seed": cfg.seed,
+        "max_spread_db": result.max_spread_db,
+    }
+    if result.yield_fraction is not None:
+        lo, hi = wilson_interval(result.passes, result.n_trials)
+        payload["yield"] = {
+            "fraction": result.yield_fraction,
+            "passes": result.passes,
+            "ci95": [lo, hi],
+        }
+    return payload
+
+
 def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
     """Collect non-ideal analysis flags; returns {} when none are given."""
     kwargs: dict[str, float] = {}
@@ -623,6 +716,37 @@ def main(argv: list[str] | None = None) -> int:
         else:
             _print_snap_report(report)
             _print_synth_human(snapped_result)
+        return 0
+
+    if args.command == "montecarlo":
+        try:
+            spec = _spec_from_cli(args)
+            synth = synthesize(spec)
+            sweep = _default_sweep(spec, args)
+            limits = None
+            if args.limits is not None:
+                data = json.loads(args.limits.read_text(encoding="utf-8"))
+                limits = limits_from_mapping(data)
+            config = MonteCarloConfig(
+                n_trials=int(args.trials),
+                tolerance_pct=float(args.tol),
+                distribution=ToleranceDistribution(args.distribution),
+                seed=args.seed,
+            )
+            mc_result = run_monte_carlo(synth.circuit, sweep, config, limits=limits)
+        except (
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(_mc_to_json(spec, mc_result), indent=2))
+        else:
+            _print_mc_human(spec, mc_result)
         return 0
 
     if args.command == "analyze":

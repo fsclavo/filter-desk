@@ -89,7 +89,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] Apply parasitics end-to-end: `session.apply_nonideal`, CLI `analyze` flags, GUI **Design → Apply parasitics / Q…** (undo/redo) — FR-P2
 - [x] GUI: **Design → Snap to E-series…** dialog (series + strategy) with undo/redo — FR-P1
 - [x] GUI: non-ideal fields in component table (Parasitic column + per-part Edit parasitics / Q) — FR-P2
-- [ ] Tolerances: Monte-Carlo / worst-case passband analysis
+- [x] Tolerances: Monte-Carlo / worst-case passband analysis — `montecarlo/` engine + stats + CLI `montecarlo` (FR-P3 core)
 - [ ] Golden tests for finite-Q and E24-snapped cases (blueprint §29 items 9–10)
 - [ ] Manual library R / L / C / jX (core RLC) in schematic library (blueprint §7)
 
@@ -104,9 +104,10 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### Phase 8 — Monte Carlo
 
-- [ ] `montecarlo/` package: `engine.py`, `stats.py` — FR-P3
-- [ ] Uniform ±tol first (then Normal); per-element tolerance/distribution on instances
-- [ ] Envelopes, yield vs limits, percentiles, optional thin sample traces
+- [x] `montecarlo/` package: `engine.py` (`run_monte_carlo`), `stats.py` (`wilson_interval`) — FR-P3 core
+- [x] Uniform ±tol (then Normal) — FR-P3 core
+- [x] Envelopes, yield vs limits, percentiles — FR-P3 core
+- [ ] Per-element tolerance/distribution on instances (uniform global tolerance now)
 - [ ] Performance: reuse freq grid; 1k usable, 10k with progress — NFR-5
 - [ ] GUI: MC run dialog + envelope overlay
 

@@ -60,6 +60,18 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   (table + schematic context menus) opens `ParasiticDialog` (DCR/Cp with optional
   Q@f, or ESR/ESL) applied via `EditCircuitCommand`.
 
+### Monte-Carlo tolerances (FR-P3 core)
+
+- `montecarlo/engine.py` — `MonteCarloConfig` (`n_trials`, `tolerance_pct`,
+  `ToleranceDistribution` uniform/normal, `seed`, `backend`), `perturb_circuit`
+  (independent per-component scaling of every L/C/R nominal, non-mutating) and
+  `run_monte_carlo` → `MonteCarloResult` (S21/S11 min–max envelope, p05/p50/p95,
+  `max_spread_db`, yield vs `LimitRegion[]`).
+- `montecarlo/stats.py` — `wilson_interval` (95% yield CI), `yield_fraction`.
+- `services/session.py` — `DesignSession.monte_carlo(config)` (uses session limits).
+- CLI — `filterdesk montecarlo … --trials --tol --distribution --seed
+  [--limits limits.json] [--json]`.
+
 ## Design notes
 
 - Snapping never mutates the input circuit (frozen dataclasses + `replace`);
@@ -73,12 +85,17 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   omnibus component: an inductor is `(R + jωL) || 1/(jωCp)`, a capacitor is
   `R + jωL + 1/(jωC)`. A zero loss/parasitic value reproduces the ideal element
   exactly (verified by equality against `IdealInductor`/`IdealCapacitor`).
+- Monte-Carlo perturbs each component's nominal independently (uniform ±tol, or
+  normal with sigma = tol/100); `tolerance_pct = 0` reproduces the nominal
+  response exactly. Yield counts a trial as passing unless a limit actively fails
+  (bands with no samples are ignored).
 
 ## Deferred (rest of Phase 6)
 
-- Tolerances (Monte-Carlo / worst-case).
 - Golden tests for finite-Q and E24-snapped cases.
 - Manual library R / L / C / jX in the schematic library.
+- Monte-Carlo GUI (run dialog + envelope overlay), per-element tolerance fields,
+  and the 10k-trial performance path (Phase 8).
 
 ## Tests
 
@@ -94,3 +111,7 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 - `tests/unit/test_gui_smoke.py` — `NonIdealCommand` apply/undo, the
   Design → Apply parasitics action (dialog stubbed), the Parasitic column text,
   and per-part Edit parasitics via `EditCircuitCommand`.
+- `tests/unit/test_montecarlo.py` — perturbation bounds + seed reproducibility,
+  zero-tolerance ≡ nominal, envelope/percentile ordering, deterministic seeds,
+  loose-limit yield, no-limit yield is `None`, normal mean ≈ 1, config validation,
+  Wilson interval, and CLI (human + JSON with `--limits`).

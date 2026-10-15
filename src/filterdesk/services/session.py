@@ -49,6 +49,7 @@ from filterdesk.domain.overlays import (
 from filterdesk.domain.project import Project, ProjectMetadata
 from filterdesk.domain.prototype import Prototype
 from filterdesk.domain.specs import FilterSpec, validate_spec
+from filterdesk.montecarlo import MonteCarloConfig, MonteCarloResult, run_monte_carlo
 from filterdesk.synthesis import synthesize
 
 
@@ -360,6 +361,22 @@ class DesignSession:
         )
         self.replace_circuit(lossy)
         return lossy
+
+    def monte_carlo(
+        self,
+        config: MonteCarloConfig,
+        *,
+        limits: list[LimitRegion] | None = None,
+    ) -> MonteCarloResult:
+        """Tolerance-sweep the current circuit/sweep (defaults to session limits)."""
+        if self.circuit is None or self.sweep is None:
+            raise ValueError("no circuit/sweep")
+        return run_monte_carlo(
+            self.circuit,
+            self.sweep,
+            config,
+            limits=self.limits if limits is None else limits,
+        )
 
     def insert_arm(
         self,
