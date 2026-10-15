@@ -6,6 +6,12 @@ from filterdesk.components_std.e_series import (
     e_series_values,
     nearest_e_series,
 )
+from filterdesk.components_std.nonideal import (
+    inductor_resistance_ohm_from_q,
+    make_nonideal_capacitor,
+    make_nonideal_inductor,
+    nonidealize_circuit,
+)
 from filterdesk.components_std.snap import (
     SnapEntry,
     SnapReport,
@@ -20,6 +26,10 @@ __all__ = [
     "SnapStrategy",
     "base_values",
     "e_series_values",
+    "inductor_resistance_ohm_from_q",
+    "make_nonideal_capacitor",
+    "make_nonideal_inductor",
     "nearest_e_series",
+    "nonidealize_circuit",
     "snap_circuit",
 ]

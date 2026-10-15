@@ -16,6 +16,8 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
 )
 from filterdesk.domain.enums import ElementRole
 
@@ -56,6 +58,28 @@ def _y_parallel_lc(
     return 1.0 / (1j * omega * l_h) + 1j * omega * c_f
 
 
+def _z_nonideal_inductor(
+    omega: NDArray[np.floating],
+    l_h: float,
+    r_ohm: float,
+    c_parallel_f: float,
+) -> NDArray[np.complexfloating]:
+    z_series = r_ohm + 1j * omega * l_h
+    if c_parallel_f <= 0.0:
+        return z_series
+    z_parallel = 1.0 / (1j * omega * c_parallel_f)
+    return np.asarray(1.0 / (1.0 / z_series + 1.0 / z_parallel), dtype=np.complex128)
+
+
+def _z_nonideal_capacitor(
+    omega: NDArray[np.floating],
+    c_f: float,
+    esr_ohm: float,
+    esl_h: float,
+) -> NDArray[np.complexfloating]:
+    return esr_ohm + 1j * omega * esl_h + 1.0 / (1j * omega * c_f)
+
+
 def _element_abcd(
     el: Element, omega: NDArray[np.floating]
 ) -> NDArray[np.complexfloating]:
@@ -70,6 +94,18 @@ def _element_abcd(
         return _shunt_abcd(1.0 / z)
     if isinstance(el, IdealCapacitor):
         z = 1.0 / (1j * omega * el.value_f)
+        if el.role == ElementRole.SERIES:
+            return _series_abcd(z)
+        return _shunt_abcd(1.0 / z)
+    if isinstance(el, NonIdealInductor):
+        z = _z_nonideal_inductor(
+            omega, el.value_h, el.series_resistance_ohm, el.parallel_capacitance_f
+        )
+        if el.role == ElementRole.SERIES:
+            return _series_abcd(z)
+        return _shunt_abcd(1.0 / z)
+    if isinstance(el, NonIdealCapacitor):
+        z = _z_nonideal_capacitor(omega, el.value_f, el.esr_ohm, el.esl_h)
         if el.role == ElementRole.SERIES:
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)

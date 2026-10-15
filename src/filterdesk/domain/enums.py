@@ -60,3 +60,6 @@ class ElementType(StrEnum):
     BRUNE_LC = "brune_lc"
     # Parallel of (series-LC) || (parallel-LC)
     DUAL_BRUNE_LC = "dual_brune_lc"
+    # Lossy / parasitic-bearing parts (Phase 6, FR-P2)
+    NONIDEAL_INDUCTOR = "nonideal_inductor"
+    NONIDEAL_CAPACITOR = "nonideal_capacitor"

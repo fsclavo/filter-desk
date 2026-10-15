@@ -32,6 +32,23 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   applies through `SnapCommand` (full undo/redo over the whole circuit), refreshes
   the table/schematic, reports the max change in the status bar and re-analyzes.
 
+### Non-ideal element layers (FR-P2) — engine + analysis
+
+- `domain/circuit.py` — `NonIdealInductor` (`series_resistance_ohm`,
+  `parallel_capacitance_f`) modeling `(R + jωL) || 1/(jωCp)` and
+  `NonIdealCapacitor` (`esr_ohm`, `esl_h`) modeling `R + jωL + 1/(jωC)`; both
+  expose `self_resonant_frequency_hz` (`None` when the parasitic is absent) and
+  join the `Element` union / `component_table`.
+- `analysis/adapters/abcd_ladder.py` — series/shunt ABCD for both types via
+  `Z_nonideal_inductor` / `Z_nonideal_capacitor`.
+- `components_std/nonideal.py` — `inductor_resistance_ohm_from_q`
+  (`2π·f_ref·L/Q`), `make_nonideal_inductor` / `make_nonideal_capacitor`, and
+  `nonidealize_circuit(...)` (copy; Q or explicit DCR on inductors, ESR/ESL on
+  capacitors; untouched elements are left ideal).
+- `domain/project.py` — field serialization/deserialization for both types.
+- `services/session.py`, `gui/panels/component_table.py` — value lookup/edit and
+  table display preserve the loss/parasitic fields.
+
 ## Design notes
 
 - Snapping never mutates the input circuit (frozen dataclasses + `replace`);
@@ -41,12 +58,15 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   the improvement can be nil, and it grows toward E96/E192.
 - Resistors snap under `independent` / `preserve_lc_resonances`, and are left
   untouched under `l_only` / `c_only`.
+- Non-ideal elements use an explicit physical model (R/L/C) rather than a single
+  omnibus component: an inductor is `(R + jωL) || 1/(jωCp)`, a capacitor is
+  `R + jωL + 1/(jωC)`. A zero loss/parasitic value reproduces the ideal element
+  exactly (verified by equality against `IdealInductor`/`IdealCapacitor`).
 
 ## Deferred (rest of Phase 6)
 
-- Non-ideal element layers (`NonIdealInductor`, `NonIdealCapacitor`) + ABCD
-  support for lossy/parasitic elements (FR-P2).
-- GUI: non-ideal fields in the component table.
+- GUI: non-ideal fields in the component table (display/edit of Q/ESR/parasitics).
+- Tolerances (Monte-Carlo / worst-case).
 - Golden tests for finite-Q and E24-snapped cases.
 - Manual library R / L / C / jX in the schematic library.
 
@@ -57,3 +77,6 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   improvement (E96), session + CLI (`snap`, `--json`).
 - `tests/unit/test_gui_smoke.py` — `SnapCommand` apply/undo and the
   Design → Snap action (dialog stubbed) with on-grid result.
+- `tests/unit/test_nonideal.py` — self-resonant frequencies, lossless
+  non-ideal ≡ ideal S-parameters, `ω_ref·L/Q` helper, finite-Q and ESR passband
+  loss, `q_frequency_hz` requirement, and project round-trip field preservation.

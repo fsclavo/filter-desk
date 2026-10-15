@@ -25,6 +25,8 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
 )
 from filterdesk.domain.enums import (
     ApproximationFamily,
@@ -63,6 +65,10 @@ def _element_value_si(circuit: Circuit, element_id: str) -> float:
         if isinstance(el, IdealCapacitor):
             return float(el.value_f)
         if isinstance(el, IdealInductor):
+            return float(el.value_h)
+        if isinstance(el, NonIdealCapacitor):
+            return float(el.value_f)
+        if isinstance(el, NonIdealInductor):
             return float(el.value_h)
         if isinstance(el, IdealResistor):
             return float(el.value_ohm)
@@ -233,6 +239,32 @@ class DesignSession:
                         node_a=el.node_a,
                         node_b=el.node_b,
                         role=el.role,
+                        g=el.g,
+                    )
+                )
+            elif isinstance(el, NonIdealCapacitor):
+                new_elements.append(
+                    NonIdealCapacitor(
+                        id=el.id,
+                        value_f=value_si,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        esr_ohm=el.esr_ohm,
+                        esl_h=el.esl_h,
+                        g=el.g,
+                    )
+                )
+            elif isinstance(el, NonIdealInductor):
+                new_elements.append(
+                    NonIdealInductor(
+                        id=el.id,
+                        value_h=value_si,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        series_resistance_ohm=el.series_resistance_ohm,
+                        parallel_capacitance_f=el.parallel_capacitance_f,
                         g=el.g,
                     )
                 )

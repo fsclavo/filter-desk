@@ -84,10 +84,11 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 - [x] **E-series module** `components_std/e_series.py` (E6/E12/E24/E48/E96) + `snap.py` — FR-P1 (engine + CLI `snap`)
 - [x] Snap strategies: independent / L-only / C-only / preserve LC resonances — FR-P1
-- [ ] **Non-ideal element layers** (composition, blueprint §22): `NonIdealInductor` (series R / Q@f, Cpar), `NonIdealCapacitor` (ESR, ESL) — FR-P2
-- [ ] Extend ABCD analyzer for lossy/parasitic elements
+- [x] **Non-ideal element layers** (composition, blueprint §22): `NonIdealInductor` (series R / Q@f, Cpar), `NonIdealCapacitor` (ESR, ESL) — FR-P2
+- [x] Extend ABCD analyzer for lossy/parasitic elements — FR-P2
 - [x] GUI: **Design → Snap to E-series…** dialog (series + strategy) with undo/redo — FR-P1
-- [ ] GUI: non-ideal fields in component table
+- [ ] GUI: non-ideal fields in component table (display/edit of Q/ESR/parasitics)
+- [ ] Tolerances: Monte-Carlo / worst-case passband analysis
 - [ ] Golden tests for finite-Q and E24-snapped cases (blueprint §29 items 9–10)
 - [ ] Manual library R / L / C / jX (core RLC) in schematic library (blueprint §7)
 

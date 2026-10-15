@@ -16,6 +16,8 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
     Port,
 )
 from filterdesk.domain.enums import ElementRole, TopologyId
@@ -71,6 +73,14 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
             row["series_C_F"] = el.series_c_f
             row["parallel_L_H"] = el.parallel_l_h
             row["parallel_C_F"] = el.parallel_c_f
+        elif isinstance(el, NonIdealInductor):
+            row["value_H"] = el.value_h
+            row["series_R_Ohm"] = el.series_resistance_ohm
+            row["parallel_C_F"] = el.parallel_capacitance_f
+        elif isinstance(el, NonIdealCapacitor):
+            row["value_F"] = el.value_f
+            row["esr_Ohm"] = el.esr_ohm
+            row["esl_H"] = el.esl_h
         else:
             row["value_Ohm"] = el.value_ohm
         elements.append(row)
@@ -183,6 +193,32 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     node_a=str(row["node_a"]),
                     node_b=str(row["node_b"]),
                     role=role,
+                    g=g,
+                )
+            )
+        elif etype == "nonideal_inductor":
+            elements.append(
+                NonIdealInductor(
+                    id=str(row["id"]),
+                    value_h=float(row["value_H"]),
+                    node_a=str(row["node_a"]),
+                    node_b=str(row["node_b"]),
+                    role=role,
+                    series_resistance_ohm=float(row.get("series_R_Ohm", 0.0)),
+                    parallel_capacitance_f=float(row.get("parallel_C_F", 0.0)),
+                    g=g,
+                )
+            )
+        elif etype == "nonideal_capacitor":
+            elements.append(
+                NonIdealCapacitor(
+                    id=str(row["id"]),
+                    value_f=float(row["value_F"]),
+                    node_a=str(row["node_a"]),
+                    node_b=str(row["node_b"]),
+                    role=role,
+                    esr_ohm=float(row.get("esr_Ohm", 0.0)),
+                    esl_h=float(row.get("esl_H", 0.0)),
                     g=g,
                 )
             )

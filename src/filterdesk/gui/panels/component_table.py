@@ -21,6 +21,8 @@ from filterdesk.domain.circuit import (
     IdealInductor,
     IdealParallelLC,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
 )
 from filterdesk.domain.units import format_engineering, parse_si
 
@@ -98,6 +100,10 @@ class ComponentTablePanel(QWidget):
                 value_text = format_engineering(el.value_f, "F", digits=6)
             elif isinstance(el, IdealInductor):
                 value_text = format_engineering(el.value_h, "H", digits=6)
+            elif isinstance(el, NonIdealInductor):
+                value_text = format_engineering(el.value_h, "H", digits=6)
+            elif isinstance(el, NonIdealCapacitor):
+                value_text = format_engineering(el.value_f, "F", digits=6)
             else:
                 value_text = format_engineering(el.value_ohm, "Ohm", digits=6)
             self._add_row(el.id, el.role.value, el.element_type.value, value_text)

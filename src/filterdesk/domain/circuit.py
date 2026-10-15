@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -129,6 +130,62 @@ class IdealDualBruneLC:
         return ElementType.DUAL_BRUNE_LC
 
 
+@dataclass(frozen=True, slots=True)
+class NonIdealInductor:
+    """Inductor with series resistance (DCR / finite Q) and parasitic parallel C.
+
+    Two-terminal model: ``(R + jw L) || 1/(jw Cp)``. Used as a series or shunt arm.
+    """
+
+    id: str
+    value_h: float
+    node_a: str
+    node_b: str
+    role: ElementRole
+    series_resistance_ohm: float = 0.0
+    parallel_capacitance_f: float = 0.0
+    g: float | None = None
+
+    @property
+    def element_type(self) -> ElementType:
+        return ElementType.NONIDEAL_INDUCTOR
+
+    @property
+    def self_resonant_frequency_hz(self) -> float | None:
+        if self.parallel_capacitance_f <= 0.0:
+            return None
+        return 1.0 / (
+            2.0 * math.pi * math.sqrt(self.value_h * self.parallel_capacitance_f)
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class NonIdealCapacitor:
+    """Capacitor with series resistance (ESR) and series inductance (ESL).
+
+    Two-terminal model: ``R + jw L + 1/(jw C)``. Used as a series or shunt arm.
+    """
+
+    id: str
+    value_f: float
+    node_a: str
+    node_b: str
+    role: ElementRole
+    esr_ohm: float = 0.0
+    esl_h: float = 0.0
+    g: float | None = None
+
+    @property
+    def element_type(self) -> ElementType:
+        return ElementType.NONIDEAL_CAPACITOR
+
+    @property
+    def self_resonant_frequency_hz(self) -> float | None:
+        if self.esl_h <= 0.0:
+            return None
+        return 1.0 / (2.0 * math.pi * math.sqrt(self.esl_h * self.value_f))
+
+
 Element = (
     IdealResistor
     | IdealCapacitor
@@ -137,6 +194,8 @@ Element = (
     | IdealParallelLC
     | IdealBruneLC
     | IdealDualBruneLC
+    | NonIdealInductor
+    | NonIdealCapacitor
 )
 
 
@@ -187,6 +246,14 @@ class Circuit:
                 row["series_C_F"] = el.series_c_f
                 row["parallel_L_H"] = el.parallel_l_h
                 row["parallel_C_F"] = el.parallel_c_f
+            elif isinstance(el, NonIdealInductor):
+                row["value_H"] = el.value_h
+                row["series_R_Ohm"] = el.series_resistance_ohm
+                row["parallel_C_F"] = el.parallel_capacitance_f
+            elif isinstance(el, NonIdealCapacitor):
+                row["value_F"] = el.value_f
+                row["esr_Ohm"] = el.esr_ohm
+                row["esl_H"] = el.esl_h
             else:
                 row["value_Ohm"] = el.value_ohm
             rows.append(row)
