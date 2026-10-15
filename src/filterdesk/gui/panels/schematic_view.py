@@ -8,6 +8,7 @@ from PySide6.QtGui import (
     QColor,
     QContextMenuEvent,
     QFont,
+    QMouseEvent,
     QPainter,
     QPalette,
     QPen,
@@ -60,13 +61,27 @@ def _is_composite_lc(el: object) -> bool:
 
 
 class _LadderView(QGraphicsView):
-    """QGraphicsView that reports right-clicks (QGraphicsView consumes the
-    generic ``customContextMenuRequested`` signal, so we handle it directly)."""
+    """QGraphicsView that reports right-clicks.
 
-    context_requested = Signal(QPoint)  # viewport-local position
+    ``QGraphicsView`` consumes the generic ``customContextMenuRequested``
+    signal and forwards right-clicks to the scene, so we intercept the
+    right-button *press* ourselves (this also stops the scene from clearing
+    the current selection before the menu opens).
+    """
+
+    context_requested = Signal(QPoint, QPoint)  # viewport-local, global
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.RightButton:
+            pos = event.position().toPoint()
+            self.context_requested.emit(pos, event.globalPosition().toPoint())
+            event.accept()
+            return
+        super().mousePressEvent(event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:  # noqa: N802
-        self.context_requested.emit(event.pos())
+        # Already handled on the right-button press; swallow the default
+        # (which would otherwise clear the selection).
         event.accept()
 
 
@@ -532,10 +547,9 @@ class SchematicPanel(QWidget):
             item = item.parentItem()
         return None
 
-    def _on_context_menu_requested(self, pos: QPoint) -> None:
+    def _on_context_menu_requested(self, pos: QPoint, global_pos: QPoint) -> None:
         group = self._group_for_item(self._view.itemAt(pos))
         if group is None:
             return
         self.set_highlighted(group.element_id)
-        global_pos = self._view.viewport().mapToGlobal(pos)
         self.context_menu_requested.emit(group.element_id, global_pos)

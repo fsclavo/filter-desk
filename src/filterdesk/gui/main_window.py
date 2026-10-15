@@ -444,12 +444,17 @@ class MainWindow(QMainWindow):
     def _on_schematic_context_menu(
         self, element_id: str, global_pos: QPoint
     ) -> None:
+        menu = self._build_schematic_menu(element_id)
+        if menu is not None:
+            menu.exec(global_pos)
+
+    def _build_schematic_menu(self, element_id: str) -> QMenu | None:
         circuit = self._session.circuit
         if circuit is None:
-            return
+            return None
         el = next((e for e in circuit.elements if e.id == element_id), None)
         if el is None:
-            return
+            return None
         menu = QMenu(self)
         act_edit = menu.addAction("Edit value…")
         act_edit.triggered.connect(
@@ -474,7 +479,7 @@ class MainWindow(QMainWindow):
         menu.addSeparator()
         act_del = menu.addAction("Delete element")
         act_del.triggered.connect(lambda *_: self._delete_arm(element_id))
-        menu.exec(global_pos)
+        return menu
 
     def _edit_element_value(self, element_id: str) -> None:
         circuit = self._session.circuit
