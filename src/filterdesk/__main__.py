@@ -40,7 +40,11 @@ from filterdesk.domain.specs import (
     filter_spec_to_mapping,
 )
 from filterdesk.domain.units import format_engineering, parse_si
-from filterdesk.io.touchstone import write_touchstone_s2p
+from filterdesk.io.touchstone import (
+    TouchstoneError,
+    read_touchstone,
+    write_touchstone_s2p,
+)
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesize
@@ -164,6 +168,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stopband attenuation As (dB)",
     )
     est.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+
+    tsinfo = sub.add_parser(
+        "touchstone-info",
+        help="Inspect a Touchstone file (.s1p / .s2p)",
+    )
+    tsinfo.add_argument("path", type=Path, help="Touchstone file path")
+    tsinfo.add_argument(
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
@@ -559,6 +574,36 @@ def main(argv: list[str] | None = None) -> int:
                 f"{format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "touchstone-info":
+        try:
+            data = read_touchstone(args.path)
+        except (TouchstoneError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            f = data.frequency_hz
+            print(
+                json.dumps(
+                    {
+                        "source": data.source,
+                        "n_ports": data.n_ports,
+                        "n_points": data.n_points,
+                        "f_min_hz": float(f.min()),
+                        "f_max_hz": float(f.max()),
+                        "z0_ohm": data.z0_ohm,
+                        "freq_unit": data.freq_unit,
+                        "data_format": data.data_format,
+                        "comments": data.comments,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(data.summary())
+            if data.source:
+                print(f"source: {data.source}")
         return 0
 
     parser.print_help()

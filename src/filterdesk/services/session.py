@@ -122,6 +122,8 @@ class DesignSession:
     title: str = "Milestone Chebyshev HP"
     markers: list[Marker] = field(default_factory=list)
     limits: list[LimitRegion] = field(default_factory=list)
+    measured: AnalysisResult | None = None
+    measured_name: str | None = None
 
     def __post_init__(self) -> None:
         if self.sweep is None:
@@ -331,6 +333,11 @@ class DesignSession:
             raise ValueError(f"at most {MAX_LIMITS} limits")
         self.limits = list(limits)
         self.dirty = True
+
+    def set_measured(self, result: AnalysisResult | None, name: str = "") -> None:
+        """Store imported measured data (Touchstone) for compare/overlay."""
+        self.measured = result
+        self.measured_name = (name or None) if result is not None else None
 
     def to_project(self) -> Project:
         assert self.sweep is not None

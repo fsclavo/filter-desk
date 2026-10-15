@@ -43,8 +43,9 @@ from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import EngineeringLineEdit
-from filterdesk.gui.workers import start_analyze_thread
+from filterdesk.gui.workers import start_analyze_thread, start_import_thread
 from filterdesk.io.native import load_project, save_project
+from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.plotting import export_smith_chart
 from filterdesk.services.session import DesignSession
 
@@ -79,6 +80,7 @@ class MainWindow(QMainWindow):
         self._undo = QUndoStack(self)
         self._selected_element: str | None = None
         self._analyze_thread: QThread | None = None
+        self._import_thread: QThread | None = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(80)
@@ -179,6 +181,8 @@ class MainWindow(QMainWindow):
         act_save.triggered.connect(self._save_project)
         act_save_as = QAction("Save &As…", self)
         act_save_as.triggered.connect(self._save_project_as)
+        act_import_ts = QAction("&Import Touchstone…", self)
+        act_import_ts.triggered.connect(self._import_touchstone)
         act_export_smith = QAction("Export &Smith chart…", self)
         act_export_smith.triggered.connect(self._export_smith_chart)
         act_quit = QAction("&Quit", self)
@@ -188,6 +192,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_save)
         file_menu.addAction(act_save_as)
         file_menu.addSeparator()
+        file_menu.addAction(act_import_ts)
         file_menu.addAction(act_export_smith)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
@@ -697,6 +702,49 @@ class MainWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Save failed", _exc_text(exc))
 
+    def _import_touchstone(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import Touchstone",
+            "",
+            "Touchstone (*.s1p *.s2p *.s3p *.snp *.ts);;All files (*)",
+        )
+        if not path:
+            return
+        if self._import_thread is not None and self._import_thread.isRunning():
+            self._import_thread.quit()
+            self._import_thread.wait(100)
+        thread, _worker = start_import_thread(
+            path, self._on_touchstone_loaded, self._on_touchstone_failed
+        )
+        self._import_thread = thread
+        thread.start()
+        self._status.setText("Importing measured data…")
+
+    def _on_touchstone_loaded(self, data: object) -> None:
+        assert isinstance(data, TouchstoneData)
+        name = Path(data.source).name if data.source else "measured"
+        try:
+            result = data.to_analysis_result()
+        except TouchstoneError as exc:
+            QMessageBox.information(
+                self,
+                "Import Touchstone",
+                f"Loaded {name}\n{data.summary()}\n\n"
+                f"Compare/overlay currently supports 2-port data only ({exc}).",
+            )
+            return
+        self._session.set_measured(result, name)
+        self._status.setText(f"Imported {name}: {data.summary()}")
+        QMessageBox.information(
+            self,
+            "Import Touchstone",
+            f"Imported measured data from {name}\n{data.summary()}",
+        )
+
+    def _on_touchstone_failed(self, message: str) -> None:
+        QMessageBox.critical(self, "Import Touchstone", message)
+
     def _export_smith_chart(self) -> None:
         result = self._session.analysis
         if result is None:
@@ -739,4 +787,7 @@ class MainWindow(QMainWindow):
         if self._analyze_thread is not None and self._analyze_thread.isRunning():
             self._analyze_thread.quit()
             self._analyze_thread.wait(500)
+        if self._import_thread is not None and self._import_thread.isRunning():
+            self._import_thread.quit()
+            self._import_thread.wait(500)
         super().closeEvent(event)

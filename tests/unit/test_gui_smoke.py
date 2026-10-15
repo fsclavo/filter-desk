@@ -160,3 +160,21 @@ def test_schematic_edit_insert_and_undo(monkeypatch: pytest.MonkeyPatch) -> None
     assert len(window._schematic._groups) == n
     window.close()
     assert app is not None
+
+
+def test_file_menu_has_import_touchstone() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    menus = {
+        a.text(): a.menu() for a in window.menuBar().actions() if a.menu()
+    }
+    file_menu = menus.get("&File")
+    assert file_menu is not None
+    assert any("Import Touchstone" in a.text() for a in file_menu.actions())
+    window.close()
+    assert app is not None

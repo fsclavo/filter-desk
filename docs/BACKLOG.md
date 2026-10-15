@@ -70,11 +70,11 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### B4. Interop / IO
 
-| ID | Item | Detail | Refs |
+| ID | Item | Detail | Status |
 | --- | --- | --- | --- |
-| B4.1 | **Touchstone reader (import)** | Only `io/touchstone/writer.py` exists; FR-I2 required import + export. Add `reader.py` + worker | blueprint FR-I2, §27 |
-| B4.2 | **`services.compare`** | Compare simulated vs measured `AnalysisResult` (overlay) | blueprint §27, Phase 10 |
-| B4.3 | **`plotting/protocol.py` `PlotBackend`** | GUI imports PyQtGraph directly; plotting backend abstraction never materialized | blueprint §24 |
+| B4.1 | **Touchstone reader (import)** | `io/touchstone/reader.py` (`TouchstoneData`/`read_touchstone`/`parse_touchstone`); HZ..GHZ, RI/MA/DB, `R z0`, comments, wrapped records, `.s1p`/`.sNp` port inference; GUI **File → Import Touchstone…** (worker + `DesignSession.set_measured`) and CLI `touchstone-info` — blueprint FR-I2, §27 | **DONE (2026-10-15)** |
+| B4.2 | **`services.compare`** | Compare simulated vs measured `AnalysisResult` (overlay) | Pending (→ Phase 10) |
+| B4.3 | **`plotting/protocol.py` `PlotBackend`** | GUI imports PyQtGraph directly; plotting backend abstraction never materialized | Pending (blueprint §24) |
 
 ---
 
@@ -121,7 +121,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [ ] LTspice `.asc` exporter (from `Circuit` + schematic layout)
 - [ ] Qucs `.sch` exporter
 - [ ] CSV / two-column DAT trace export
-- [ ] Touchstone Type I/II + `.s1p` (finish B4.1)
+- [x] Touchstone reader import + `.s1p` (B4.1 — `touchstone-info` CLI + GUI import)
 - [ ] Measured-vs-simulated overlay UX (`services.compare`, B4.2)
 
 ### Phase 11 — Packaging & Windows

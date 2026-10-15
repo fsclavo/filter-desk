@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import QObject, QThread, Signal
 
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import Circuit
+from filterdesk.io.touchstone import TouchstoneData, read_touchstone
 
 
 class AnalyzeWorker(QObject):
@@ -58,4 +60,47 @@ def start_analyze_thread(
     return thread, worker
 
 
-__all__ = ["AnalyzeWorker", "AnalysisResult", "start_analyze_thread"]
+class ImportTouchstoneWorker(QObject):
+    """Load a Touchstone file off the UI thread."""
+
+    finished = Signal(object)  # TouchstoneData
+    failed = Signal(str)
+
+    def __init__(self, path: Path | str, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._path = Path(path)
+
+    def run(self) -> None:
+        try:
+            data = read_touchstone(self._path)
+            self.finished.emit(data)
+        except Exception as exc:  # noqa: BLE001 — surface to UI
+            self.failed.emit(str(exc))
+
+
+def start_import_thread(
+    path: Path | str,
+    on_finished: Callable[[object], None],
+    on_failed: Callable[[str], None],
+) -> tuple[QThread, ImportTouchstoneWorker]:
+    thread = QThread()
+    worker = ImportTouchstoneWorker(path)
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    worker.finished.connect(on_finished)
+    worker.failed.connect(on_failed)
+    worker.finished.connect(thread.quit)
+    worker.failed.connect(thread.quit)
+    thread.finished.connect(worker.deleteLater)
+    thread._filterdesk_worker = worker  # type: ignore[attr-defined]
+    return thread, worker
+
+
+__all__ = [
+    "AnalyzeWorker",
+    "AnalysisResult",
+    "ImportTouchstoneWorker",
+    "TouchstoneData",
+    "start_analyze_thread",
+    "start_import_thread",
+]
