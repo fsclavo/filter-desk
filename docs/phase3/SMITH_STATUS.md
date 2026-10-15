@@ -19,10 +19,19 @@
 - Pure helpers in `filterdesk.analysis.smith` (no Qt dependency)
 - Static export in `filterdesk.plotting.smith_export` (Agg backend)
 
+## Smith limit regions (2026-10-15)
+
+- New `LimitMetric.S11_MAG` / `S22_MAG` — linear |Γ| (0…1) pass/fail metric
+- Constant-|Γ| boundary circles drawn on the Smith chart (dashed = y_max,
+  dotted = y_min; orange = S11, purple = S22) via `SmithChartWidget.set_limits`
+- Evaluated by `analysis.limits_eval` alongside the cartesian metrics; persisted
+  in `extensions.limits` (backward compatible)
+- Limits panel: **Add Smith |S11|** button (default |S11| ≤ 0.1)
+
 ## Still deferred
 
-- Smith-specific limit regions
+- None for the Smith chart itself.
 
 ## Tests
 
-`tests/unit/test_smith.py`, `tests/unit/test_smith_export.py`
+`tests/unit/test_smith.py` (geometry incl. `gamma_circle`), `tests/unit/test_smith_export.py`, `tests/unit/test_marker_drag.py` (Smith limit circles), `tests/unit/test_phase3_ux.py` (`s11_mag` eval + round-trip)

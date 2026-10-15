@@ -31,6 +31,8 @@ class LimitsPanel(QWidget):
 
         btn_add = QPushButton("Add S21 max")
         btn_add.clicked.connect(self._add_default)
+        btn_smith = QPushButton("Add Smith |S11|")
+        btn_smith.clicked.connect(self._add_smith_s11)
         btn_del = QPushButton("Delete")
         btn_del.clicked.connect(self._delete_selected)
         btn_clear = QPushButton("Clear")
@@ -38,6 +40,7 @@ class LimitsPanel(QWidget):
 
         row = QHBoxLayout()
         row.addWidget(btn_add)
+        row.addWidget(btn_smith)
         row.addWidget(btn_del)
         row.addWidget(btn_clear)
         layout = QVBoxLayout(self)
@@ -108,6 +111,23 @@ class LimitsPanel(QWidget):
             y_max=-40.0,
             enabled=True,
             label="S21 stopband",
+        )
+        self._limits.append(lim)
+        self.set_limits(self._limits)
+        self._emit()
+
+    def _add_smith_s11(self) -> None:
+        if len(self._limits) >= MAX_LIMITS:
+            return
+        lim = LimitRegion(
+            id=self._next_id(),
+            metric=LimitMetric.S11_MAG,
+            f_low_hz=1e6,
+            f_high_hz=1e9,
+            y_min=None,
+            y_max=0.1,
+            enabled=True,
+            label="|S11| <= 0.1",
         )
         self._limits.append(lim)
         self.set_limits(self._limits)

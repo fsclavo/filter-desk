@@ -50,6 +50,16 @@ def unit_circle(*, n: int = 361) -> tuple[NDArray[np.floating], NDArray[np.float
     return np.cos(theta), np.sin(theta)
 
 
+def gamma_circle(
+    radius: float, *, n: int = 361
+) -> tuple[NDArray[np.floating], NDArray[np.floating]]:
+    """Constant-|Γ| circle (centered at the origin) in the Γ plane."""
+    if radius < 0.0:
+        raise ValueError("radius must be >= 0")
+    re, im = unit_circle(n=n)
+    return radius * re, radius * im
+
+
 DEFAULT_R_CIRCLES = (0.0, 0.2, 0.5, 1.0, 2.0, 5.0)
 DEFAULT_X_ARCS = (0.2, 0.5, 1.0, 2.0, 5.0)
 

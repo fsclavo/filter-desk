@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from filterdesk.analysis.smith import (
+    gamma_circle,
     gamma_to_z,
     nearest_gamma_index,
     reactance_arc,
@@ -42,6 +43,11 @@ def test_resistance_circle_r1_through_origin() -> None:
 def test_unit_circle_radius() -> None:
     re, im = unit_circle()
     assert np.allclose(np.hypot(re, im), 1.0)
+
+
+def test_gamma_circle_radius() -> None:
+    re, im = gamma_circle(0.3, n=128)
+    assert np.allclose(np.hypot(re, im), 0.3)
 
 
 def test_reactance_arc_inside_unit_disk() -> None:

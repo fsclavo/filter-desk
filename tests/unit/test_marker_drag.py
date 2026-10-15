@@ -73,6 +73,50 @@ def test_marker_drag_no_emit_when_unchanged() -> None:
     assert received == []
 
 
+def test_smith_limit_circles() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.overlays import LimitMetric, LimitRegion
+    from filterdesk.gui.panels.smith_chart import SmithChartWidget
+
+    _ = QApplication.instance() or QApplication([])
+    widget = SmithChartWidget()
+    assert widget._limit_items == []
+    widget.set_limits(
+        [
+            # S11 max → one boundary circle
+            LimitRegion(
+                id="L1",
+                metric=LimitMetric.S11_MAG,
+                f_low_hz=1e6,
+                f_high_hz=1e9,
+                y_max=0.1,
+            ),
+            # Cartesian metric → ignored on Smith
+            LimitRegion(
+                id="L2",
+                metric=LimitMetric.S21_DB,
+                f_low_hz=1e6,
+                f_high_hz=1e9,
+                y_max=-40.0,
+            ),
+            # annulus → two boundary circles
+            LimitRegion(
+                id="L3",
+                metric=LimitMetric.S11_MAG,
+                f_low_hz=1e6,
+                f_high_hz=1e9,
+                y_min=0.05,
+                y_max=0.2,
+            ),
+        ]
+    )
+    assert len(widget._limit_items) == 3
+    # Disabling clears the overlays
+    widget.set_limits([])
+    assert widget._limit_items == []
+
+
 def test_smith_marker_drag_snaps_emits_and_syncs_cartesian() -> None:
     from PySide6.QtWidgets import QApplication
 

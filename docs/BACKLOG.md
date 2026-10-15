@@ -12,14 +12,14 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ---
 
-## A. Quality / CI debt (P0)
+## A. Quality / CI debt (P0) — **DONE (2026-10-15)**
 
-| ID | Task | Refs | Effort |
-| --- | --- | --- | --- |
-| Q1 | Make `mypy` (strict) green — **49 errors in 8 files**; CI `.github/workflows/test.yml` currently fails | see table below | M |
-| Q2 | Add `scipy-stubs` to dev deps *or* add `scipy.*` to `[tool.mypy.overrides]` (resolves 6 `import-untyped`) | `pyproject.toml` | S |
-| Q3 | De-duplicate dev deps: `[project.optional-dependencies].dev` and `[dependency-groups].dev` list the same tools | `pyproject.toml:19,60` | S |
-| Q4 | Add `uv.lock` for reproducible builds (blueprint NFR-6) and switch CI to `uv sync --frozen` | blueprint §10,§30 | S |
+| ID | Task | Resolution |
+| --- | --- | --- |
+| Q1 | Make `mypy` (strict) green — **49 errors** | Fixed in `__main__.py`, `spec_panel.py`, `cauer_extract.py`, `component_table.py`, `pyqtgraph_patches.py`; mypy now clean (61 files) |
+| Q2 | `scipy` `import-untyped` | Added `scipy.*` to `[tool.mypy.overrides]` (matches existing skrf/Qt pattern) |
+| Q3 | Duplicate dev deps | Removed `[project.optional-dependencies].dev`; `[dependency-groups].dev` is now the single source |
+| Q4 | Reproducible builds | Added `uv.lock`; CI (`.github/workflows/test.yml`) and README now use `uv sync --frozen` / `uv run` |
 
 ### Q1 breakdown — mypy error map
 
@@ -34,9 +34,9 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | `gui/panels/component_table.py` | 4 | `str` assigned to `float`; `_add_row` arg type (lines 98–103) |
 | `gui/pyqtgraph_patches.py` | 2 | monkey-patch attr `_filterdesk_svg_qt6_patch` (lines 66, 72) |
 
-### A2 — Repo / process (deferred by user request)
+### A2 — Repo / process — **DONE (2026-10-15)**
 
-- [ ] `git init` + baseline commit (currently **not** a git repository).
+- [x] `git init` (branch `main`) + baseline commit `4a32d65`.
 
 ---
 
@@ -62,11 +62,11 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### B3. GUI / UX
 
-| ID | Item | Detail | Refs |
+| ID | Item | Detail | Status |
 | --- | --- | --- | --- |
-| B3.1 | **Schematic topology editor** | View is read-only; no insert / delete / change element type (largest deferred UX item) | `PHASE3_STATUS.md`, `PHASE3_UX_STATUS.md`, blueprint §23/§35 |
-| B3.2 | **Smith limit regions** | Limits not drawn/evaluated on the Smith chart | `SMITH_STATUS.md` |
-| B3.3 | **Optimizer ↔ limits wiring** | Limits exist but nothing consumes them yet | `PHASE3_UX_STATUS.md` (→ Phase 7) |
+| B3.1 | **Schematic topology editor** | View is read-only; no insert / delete / change element type (largest deferred UX item) — `PHASE3_STATUS.md`, blueprint §23/§35 | Pending |
+| B3.2 | **Smith limit regions** | Constant-\|Γ\| limits (`s11_mag` / `s22_mag`) drawn on the Smith chart and evaluated in pass/fail | **DONE (2026-10-15)** |
+| B3.3 | **Optimizer ↔ limits wiring** | Limits exist but nothing consumes them yet | Pending (→ Phase 7) |
 
 ### B4. Interop / IO
 

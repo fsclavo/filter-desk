@@ -8,12 +8,16 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from filterdesk.analysis.smith import (
+    gamma_circle,
     gamma_to_z,
     nearest_gamma_index,
     smith_grid_polylines,
 )
-from filterdesk.domain.overlays import Marker
+from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
+
+_GRID_Z = -20
+_LIMIT_Z = -15
 
 _MARKER_COLORS = (
     "#ff7f0e",
@@ -60,6 +64,9 @@ class SmithChartWidget(QWidget):
 
         self._grid_items: list[pg.PlotDataItem] = []
         self._draw_grid()
+
+        self._limits: list[LimitRegion] = []
+        self._limit_items: list[pg.PlotDataItem] = []
 
         self._curve_s11 = self._plot.plot(
             pen=pg.mkPen("#d62728", width=2), name="S11"
@@ -164,6 +171,42 @@ class SmithChartWidget(QWidget):
             np.array([], dtype=np.complex128),
             np.array([], dtype=np.complex128),
         )
+
+    def set_limits(self, limits: list[LimitRegion]) -> None:
+        self._limits = list(limits)
+        self._redraw_limits()
+
+    def _clear_limit_items(self) -> None:
+        for item in self._limit_items:
+            self._plot.removeItem(item)
+        self._limit_items.clear()
+
+    def _redraw_limits(self) -> None:
+        self._clear_limit_items()
+        pen_colors = {
+            LimitMetric.S11_MAG: "#ff9900",
+            LimitMetric.S22_MAG: "#9467bd",
+        }
+        for lim in self._limits:
+            if not lim.enabled or lim.metric not in pen_colors:
+                continue
+            color = pen_colors[lim.metric]
+            # y_max → dashed boundary; y_min → dotted inner boundary.
+            boundaries = (
+                (lim.y_max, Qt.PenStyle.DashLine),
+                (lim.y_min, Qt.PenStyle.DotLine),
+            )
+            for radius, style in boundaries:
+                if radius is None:
+                    continue
+                re, im = gamma_circle(float(radius))
+                item = self._plot.plot(
+                    re,
+                    im,
+                    pen=pg.mkPen(color, width=1.5, style=style),
+                )
+                item.setZValue(_LIMIT_Z)
+                self._limit_items.append(item)
 
     def nearest_index_at_gamma(self, gamma: complex) -> int | None:
         if self._s11.size == 0:

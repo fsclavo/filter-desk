@@ -16,6 +16,10 @@ def _metric_trace(result: AnalysisResult, metric: LimitMetric) -> np.ndarray:
         return np.asarray(mag_db(result.s11), dtype=float)
     if metric == LimitMetric.VSWR:
         return np.asarray(vswr(result), dtype=float)
+    if metric == LimitMetric.S11_MAG:
+        return np.asarray(np.abs(result.s11), dtype=float)
+    if metric == LimitMetric.S22_MAG:
+        return np.asarray(np.abs(result.s22), dtype=float)
     raise ValueError(f"unknown metric: {metric}")
 
 

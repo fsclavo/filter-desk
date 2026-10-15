@@ -161,6 +161,7 @@ class PlotPanel(QWidget):
     def set_limits(self, limits: list[LimitRegion]) -> None:
         self._limits = list(limits)
         self._redraw_limits()
+        self._smith.set_limits(limits)
 
     def set_result(self, result: AnalysisResult | None) -> None:
         self._result = result

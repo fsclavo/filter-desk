@@ -11,6 +11,9 @@ class LimitMetric(StrEnum):
     S21_DB = "s21_db"
     S11_DB = "s11_db"
     VSWR = "vswr"
+    # Smith-chart metrics: linear reflection coefficient (0..1).
+    S11_MAG = "s11_mag"
+    S22_MAG = "s22_mag"
 
 
 @dataclass(frozen=True, slots=True)
