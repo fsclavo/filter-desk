@@ -142,18 +142,32 @@ def build_parser() -> argparse.ArgumentParser:
     est.add_argument(
         "--response",
         required=True,
-        choices=[FilterResponse.LOW_PASS.value, FilterResponse.HIGH_PASS.value],
-        help="LP or HP",
+        choices=[r.value for r in FilterResponse],
+        help="LP, HP, BP, or BS",
     )
     est.add_argument(
         "--f-pass",
-        required=True,
-        help="Passband edge frequency (Hz), e.g. 1M",
+        default=None,
+        help="Passband edge (Hz, LP/HP), e.g. 1M",
     )
     est.add_argument(
         "--f-stop",
-        required=True,
-        help="Stopband edge frequency (Hz), e.g. 2M",
+        default=None,
+        help="Stopband edge (Hz, LP/HP), e.g. 2M",
+    )
+    est.add_argument(
+        "--pass-band",
+        nargs=2,
+        metavar=("LOW", "HIGH"),
+        default=None,
+        help="Passband edges (Hz, BP/BS), e.g. --pass-band 0.9M 1.1M",
+    )
+    est.add_argument(
+        "--stop-band",
+        nargs=2,
+        metavar=("LOW", "HIGH"),
+        default=None,
+        help="Stopband edges (Hz, BP/BS), e.g. --stop-band 0.7M 1.4M",
     )
     est.add_argument(
         "--ap",
@@ -535,50 +549,101 @@ def main(argv: list[str] | None = None) -> int:
         return run_gui()
 
     if args.command == "estimate-order":
+        response = FilterResponse(args.response)
+        band = response in (
+            FilterResponse.BAND_PASS,
+            FilterResponse.BAND_STOP,
+        )
+        band_kwargs: dict[str, float] = {}
         try:
+            if band:
+                if args.pass_band is None or args.stop_band is None:
+                    raise OrderEstimateError(
+                        "band-pass/band-stop require --pass-band and --stop-band"
+                    )
+                band_kwargs = {
+                    "f_pass_low_hz": parse_si(str(args.pass_band[0])),
+                    "f_pass_high_hz": parse_si(str(args.pass_band[1])),
+                    "f_stop_low_hz": parse_si(str(args.stop_band[0])),
+                    "f_stop_high_hz": parse_si(str(args.stop_band[1])),
+                }
+                scalar_kwargs: dict[str, float] = {}
+            else:
+                if args.f_pass is None or args.f_stop is None:
+                    raise OrderEstimateError(
+                        "low-pass/high-pass require --f-pass and --f-stop"
+                    )
+                scalar_kwargs = {
+                    "f_pass_hz": parse_si(str(args.f_pass)),
+                    "f_stop_hz": parse_si(str(args.f_stop)),
+                }
             estimate = estimate_minimum_order(
                 ApproximationFamily(args.family),
-                FilterResponse(args.response),
-                f_pass_hz=parse_si(str(args.f_pass)),
-                f_stop_hz=parse_si(str(args.f_stop)),
+                response,
                 passband_attenuation_db=float(args.ap),
                 stopband_attenuation_db=float(args.as_db),
+                **scalar_kwargs,
+                **band_kwargs,
             )
         except (OrderEstimateError, SpecValidationError, ValueError) as exc:
             print(f"estimate-order failed: {exc}", file=sys.stderr)
             return 1
         if args.json:
-            print(
-                json.dumps(
+            estimate_payload: dict[str, object] = {
+                "order": estimate.order,
+                "family": estimate.family.value,
+                "response": estimate.response.value,
+                "passband_attenuation_db": estimate.passband_attenuation_db,
+                "stopband_attenuation_db": estimate.stopband_attenuation_db,
+                "omega_ratio": estimate.omega_ratio,
+                "natural_freq_hz": estimate.natural_freq_hz,
+                "notes": estimate.notes,
+            }
+            if band:
+                estimate_payload.update(
                     {
-                        "order": estimate.order,
-                        "family": estimate.family.value,
-                        "response": estimate.response.value,
+                        "f_pass_low_hz": estimate.f_pass_low_hz,
+                        "f_pass_high_hz": estimate.f_pass_high_hz,
+                        "f_stop_low_hz": estimate.f_stop_low_hz,
+                        "f_stop_high_hz": estimate.f_stop_high_hz,
+                        "natural_freq_low_hz": estimate.natural_freq_low_hz,
+                        "natural_freq_high_hz": estimate.natural_freq_high_hz,
+                    }
+                )
+            else:
+                estimate_payload.update(
+                    {
                         "f_pass_hz": estimate.f_pass_hz,
                         "f_stop_hz": estimate.f_stop_hz,
-                        "passband_attenuation_db": (
-                            estimate.passband_attenuation_db
-                        ),
-                        "stopband_attenuation_db": (
-                            estimate.stopband_attenuation_db
-                        ),
-                        "omega_ratio": estimate.omega_ratio,
-                        "natural_freq_hz": estimate.natural_freq_hz,
-                        "notes": estimate.notes,
-                    },
-                    indent=2,
+                    }
                 )
-            )
+            print(json.dumps(estimate_payload, indent=2))
         else:
             print(f"Minimum order: {estimate.order}")
             print(f"Family:        {estimate.family.value}")
             print(f"Response:      {estimate.response.value}")
-            print(
-                f"f_pass:        {format_engineering(estimate.f_pass_hz, 'Hz')}"
-            )
-            print(
-                f"f_stop:        {format_engineering(estimate.f_stop_hz, 'Hz')}"
-            )
+            if band:
+                print(
+                    "Passband:      "
+                    f"{format_engineering(estimate.f_pass_low_hz or 0.0, 'Hz')}"
+                    " – "
+                    f"{format_engineering(estimate.f_pass_high_hz or 0.0, 'Hz')}"
+                )
+                print(
+                    "Stopband:      "
+                    f"{format_engineering(estimate.f_stop_low_hz or 0.0, 'Hz')}"
+                    " – "
+                    f"{format_engineering(estimate.f_stop_high_hz or 0.0, 'Hz')}"
+                )
+            else:
+                print(
+                    "f_pass:        "
+                    f"{format_engineering(estimate.f_pass_hz, 'Hz')}"
+                )
+                print(
+                    "f_stop:        "
+                    f"{format_engineering(estimate.f_stop_hz, 'Hz')}"
+                )
             print(f"Ap:            {estimate.passband_attenuation_db:g} dB")
             print(f"As:            {estimate.stopband_attenuation_db:g} dB")
             print(f"Ωs ratio:      {estimate.omega_ratio:.6g}")

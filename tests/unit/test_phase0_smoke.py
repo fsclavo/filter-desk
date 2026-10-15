@@ -82,6 +82,51 @@ def test_cli_touchstone_info(tmp_path: Path) -> None:
     assert main(["touchstone-info", "--json", str(path)]) == 0
 
 
+def test_cli_estimate_order_bandpass() -> None:
+    assert (
+        main(
+            [
+                "estimate-order",
+                "--family",
+                "chebyshev_type_i",
+                "--response",
+                "band_pass",
+                "--pass-band",
+                "0.9M",
+                "1.1M",
+                "--stop-band",
+                "0.7M",
+                "1.4M",
+                "--ap",
+                "0.5",
+                "--as",
+                "40",
+                "--json",
+            ]
+        )
+        == 0
+    )
+
+
+def test_cli_estimate_order_band_requires_edges() -> None:
+    assert (
+        main(
+            [
+                "estimate-order",
+                "--family",
+                "butterworth",
+                "--response",
+                "band_pass",
+                "--ap",
+                "3",
+                "--as",
+                "40",
+            ]
+        )
+        == 1
+    )
+
+
 def test_cli_compare(tmp_path: Path) -> None:
     from filterdesk.io.touchstone import write_touchstone_s2p
     from filterdesk.services.session import DesignSession

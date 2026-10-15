@@ -44,15 +44,15 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### B1. Synthesis / math
 
-| ID | Item | Detail / limitation | Refs |
-| --- | --- | --- | --- |
-| B1.1 | **Even-order Chebyshev Type I** | Still assumes \(g_{n+1}=1\); genuine equal-ripple asymmetric termination not handled | `docs/math/chebyshev_type_i.md` §7, ADR-011 |
-| B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, `docs/math/transforms.md` §3 |
-| B1.3 | **M-derived BP/BS** | Only LP/HP implemented | `docs/math/constant_k_m_derived.md`, ADR-013 |
-| B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` supports LP/HP only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` |
-| B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre/Constant-K/M-derived unsupported (no classical formula) | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` |
-| B1.6 | **Even-order elliptic** | Equal-R is an |S21| fit approximation, not exact classic theory (transformer-free) | ADR-013, `EVEN_ORDER_CAUER_STATUS.md` |
-| B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; decide closed-form/root extension | `domain/specs.py:141-150` |
+| ID | Item | Detail / limitation | Refs | Status |
+| --- | --- | --- | --- | --- |
+| B1.1 | **Even-order Chebyshev Type I** | Still assumes \(g_{n+1}=1\); genuine equal-ripple asymmetric termination not handled | `docs/math/chebyshev_type_i.md` §7, ADR-011 | Pending |
+| B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, `docs/math/transforms.md` §3 | Pending |
+| B1.3 | **M-derived BP/BS** | Only LP/HP implemented | `docs/math/constant_k_m_derived.md`, ADR-013 | Pending |
+| B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |
+| B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre/Constant-K/M-derived unsupported (no classical formula) | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | Pending |
+| B1.6 | **Even-order elliptic** | Equal-R is an |S21| fit approximation, not exact classic theory (transformer-free) | ADR-013, `EVEN_ORDER_CAUER_STATUS.md` | Pending |
+| B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; decide closed-form/root extension | `domain/specs.py:141-150` | Pending |
 
 ### B2. Analysis
 
