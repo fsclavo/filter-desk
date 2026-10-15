@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QResizeEvent
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QContextMenuEvent,
+    QFont,
+    QPainter,
+    QPalette,
+    QPen,
+    QResizeEvent,
+)
 from PySide6.QtWidgets import (
     QGraphicsItem,
     QGraphicsItemGroup,
@@ -50,6 +59,17 @@ def _is_composite_lc(el: object) -> bool:
     )
 
 
+class _LadderView(QGraphicsView):
+    """QGraphicsView that reports right-clicks (QGraphicsView consumes the
+    generic ``customContextMenuRequested`` signal, so we handle it directly)."""
+
+    context_requested = Signal(QPoint)  # viewport-local position
+
+    def contextMenuEvent(self, event: QContextMenuEvent) -> None:  # noqa: N802
+        self.context_requested.emit(event.pos())
+        event.accept()
+
+
 class ElementGroup(QGraphicsItemGroup):
     """Selectable schematic symbol for one ladder element."""
 
@@ -84,14 +104,13 @@ class SchematicPanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._view = QGraphicsView()
+        self._view = _LadderView()
         self._view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self._view.setFrameShape(QGraphicsView.Shape.NoFrame)
         self._view.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._view.setMinimumHeight(220)
         self._view.setDragMode(QGraphicsView.DragMode.NoDrag)
-        self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self._view.customContextMenuRequested.connect(self._on_context_menu_requested)
+        self._view.context_requested.connect(self._on_context_menu_requested)
         self._scene = QGraphicsScene(self)
         self._view.setScene(self._scene)
         self._circuit: Circuit | None = None
@@ -518,6 +537,5 @@ class SchematicPanel(QWidget):
         if group is None:
             return
         self.set_highlighted(group.element_id)
-        self.context_menu_requested.emit(
-            group.element_id, self._view.mapToGlobal(pos)
-        )
+        global_pos = self._view.viewport().mapToGlobal(pos)
+        self.context_menu_requested.emit(group.element_id, global_pos)

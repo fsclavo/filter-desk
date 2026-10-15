@@ -26,6 +26,39 @@ def test_main_window_constructs() -> None:
     assert app is not None
 
 
+def test_schematic_context_menu_emits_on_right_click() -> None:
+    from PySide6.QtGui import QContextMenuEvent
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.schematic_view import SchematicPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    panel = SchematicPanel()
+    panel.resize(900, 300)
+    panel.set_circuit(session.circuit)
+    panel.show()
+    app.processEvents()
+
+    group = next(iter(panel._groups.values()))
+    view_pt = panel._view.mapFromScene(group.sceneBoundingRect().center())
+    received: list[str] = []
+    panel.context_menu_requested.connect(lambda eid, pos: received.append(eid))
+    event = QContextMenuEvent(
+        QContextMenuEvent.Reason.Mouse,
+        view_pt,
+        panel._view.viewport().mapToGlobal(view_pt),
+    )
+    app.sendEvent(panel._view.viewport(), event)
+    app.processEvents()
+    assert received == [group.element_id]
+    panel.close()
+    assert app is not None
+
+
 def test_schematic_edit_insert_and_undo(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication, QInputDialog
 
