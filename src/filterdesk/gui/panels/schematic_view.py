@@ -222,13 +222,18 @@ class SchematicPanel(QWidget):
             self._scene.addItem(stub)
 
         elements = circuit.elements
+        prev_shunt = False
         for index, el in enumerate(elements):
             if el.role == ElementRole.SERIES:
                 x = self._draw_series_arm(el, x, y, pitch, pen, brush, label_font)
+                prev_shunt = False
                 continue
-            self._draw_shunt_arm(el, x, y, pen, brush, label_font)
             # Consecutive shunt arms tap the same node: separate them along the
-            # signal line (with a connecting wire) so the symbols don't overlap.
+            # signal line (with a connecting wire) and stagger their labels so
+            # neither the symbols nor the captions overlap.
+            self._draw_shunt_arm(
+                el, x, y, pen, brush, label_font, label_dy=22.0 if prev_shunt else 0.0
+            )
             nxt = elements[index + 1] if index + 1 < len(elements) else None
             if nxt is not None and nxt.role == ElementRole.SHUNT:
                 nx = x + _PITCH_SHUNT
@@ -236,6 +241,7 @@ class SchematicPanel(QWidget):
                 link.setPen(pen)
                 self._scene.addItem(link)
                 x = nx
+            prev_shunt = True
 
         tail = QGraphicsLineItem(x, y, x + 44, y)
         tail.setPen(pen)
@@ -315,6 +321,8 @@ class SchematicPanel(QWidget):
         pen: QPen,
         brush: QBrush,
         label_font: QFont,
+        *,
+        label_dy: float = 0.0,
     ) -> None:
         group = self._new_group(el, pen)
         # Short stub from signal line into the shunt branch (not through components).
@@ -335,7 +343,7 @@ class SchematicPanel(QWidget):
         text = QGraphicsSimpleTextItem(self._label_for(el))
         text.setBrush(brush)
         text.setFont(label_font)
-        text.setPos(x - text.boundingRect().width() / 2, gy + 18)
+        text.setPos(x - text.boundingRect().width() / 2, gy + 18 + label_dy)
         self._scene.addItem(text)
 
     def _label_for(self, el: object) -> str:
