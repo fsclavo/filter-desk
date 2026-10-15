@@ -231,6 +231,24 @@ class PlotPanel(QWidget):
         self._curve_mc_max.setData(f, np.asarray(mc.s21_db_max, dtype=float))
         self._mc_fill.setVisible(True)
 
+    def _mc_readout_bits(self, freq_hz: float) -> str:
+        """Cursor readout segment for the Monte-Carlo envelope at ``freq_hz``."""
+        mc = self._mc_result
+        if mc is None or not self._show_mc:
+            return ""
+        f_mc = np.asarray(mc.frequency_hz, dtype=float)
+        if not f_mc.size:
+            return ""
+        j = int(np.argmin(np.abs(f_mc - freq_hz)))
+        lo = float(mc.s21_db_min[j])
+        hi = float(mc.s21_db_max[j])
+        return (
+            f"   | MC S21 {lo:.3f} … {hi:.3f} dB "
+            f"(spread {hi - lo:.3f}, "
+            f"p05…p95 {float(mc.s21_db_p05[j]):.3f}…"
+            f"{float(mc.s21_db_p95[j]):.3f})"
+        )
+
     def _update_measured(self) -> None:
         empty = np.array([], dtype=float)
         measured = self._measured
@@ -297,6 +315,8 @@ class PlotPanel(QWidget):
         if self._measured is not None and self._show_measured:
             label = self._measured_name or "measured"
             readout += f"  Dashed = {label} overlay."
+        if self._mc_result is not None and self._show_mc:
+            readout += "  Grey band = Monte-Carlo envelope (hover for min…max)."
         self._readout.setText(readout)
         self._redraw_markers()
         self._redraw_limits()
@@ -523,6 +543,7 @@ class PlotPanel(QWidget):
         s11 = float(self._s11_db[idx])
         vs = float(self._vswr[idx])
         gd = float(self._gd[idx])
+        mc_bits = self._mc_readout_bits(f_hz)
         marker_bits = ""
         if self._markers:
             parts = [
@@ -536,5 +557,6 @@ class PlotPanel(QWidget):
             f"S11 = {s11:.3f} dB   "
             f"VSWR = {vs:.3f}   "
             f"GD = {format_engineering(gd, 's', digits=4)}"
+            f"{mc_bits}"
             f"{marker_bits}"
         )

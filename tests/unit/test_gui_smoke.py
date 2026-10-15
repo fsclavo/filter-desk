@@ -442,6 +442,32 @@ def test_monte_carlo_overlay_toggles() -> None:
     assert app is not None
 
 
+def test_monte_carlo_readout_bits() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.montecarlo import MonteCarloConfig, run_monte_carlo
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None and session.sweep is not None
+    result = run_monte_carlo(
+        session.circuit,
+        session.sweep,
+        MonteCarloConfig(n_trials=8, tolerance_pct=3.0, seed=1),
+    )
+    panel = PlotPanel()
+    panel.set_monte_carlo(result)
+    f0 = float(result.frequency_hz[0])
+    bits = panel._mc_readout_bits(f0)
+    assert "MC S21" in bits and "spread" in bits
+    panel.set_monte_carlo_visible(False)
+    assert panel._mc_readout_bits(f0) == ""
+    assert app is not None
+
+
 def test_monte_carlo_dialog_builds_config() -> None:
     from PySide6.QtWidgets import QApplication
 

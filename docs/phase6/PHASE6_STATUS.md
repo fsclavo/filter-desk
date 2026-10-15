@@ -75,7 +75,9 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   (trials/tol/distribution/seed) and runs off-thread; the S21 |S11| plot shows a
   shaded **envelope** (min–max, with p05/p50/p95 stored on the result) toggled by
   **View → Show Monte-Carlo envelope**; the status bar reports worst-case spread
-  and yield when limits are set. The envelope clears when the circuit changes.
+  and yield when limits are set. The cursor readout adds the envelope
+  `min … max` dB, its spread, and the p05…p95 band at the hovered frequency.
+  The envelope clears when the circuit changes.
 
 ## Design notes
 
@@ -121,5 +123,5 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   loose-limit yield, no-limit yield is `None`, normal mean ≈ 1, config validation,
   Wilson interval, and CLI (human + JSON with `--limits`).
 - `tests/unit/test_gui_smoke.py` — Monte-Carlo envelope overlay toggling,
-  `MonteCarloDialog` config building, and the Design → Monte-Carlo action
-  (dialog + worker stubbed).
+  the cursor envelope readout (`min…max`/spread/p05–p95), `MonteCarloDialog`
+  config building, and the Design → Monte-Carlo action (dialog + worker stubbed).
