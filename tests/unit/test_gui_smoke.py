@@ -57,6 +57,42 @@ def test_schematic_context_menu_emits_on_right_click() -> None:
     assert app is not None
 
 
+def test_component_menu_reflects_selection() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    window = MainWindow(session, auto_run=False)
+
+    window._selected_element = None
+    window._populate_component_menu()
+    actions = window._component_menu.actions()
+    assert [a.text() for a in actions] == ["(select a component first)"]
+    assert not actions[0].isEnabled()
+
+    first = session.circuit.elements[0]
+    window._selected_element = first.id
+    window._populate_component_menu()
+    labels = [a.text() for a in window._component_menu.actions()]
+    assert "Edit value…" in labels
+    assert "Delete element" in labels
+    assert "Convert to Inductor" in labels  # HP ladder starts with series C
+    sub_labels = [
+        a.text()
+        for action in window._component_menu.actions()
+        if action.menu() is not None
+        for a in action.menu().actions()
+    ]
+    assert "Shunt capacitor" in sub_labels
+    window.close()
+    assert app is not None
+
+
 def test_schematic_edit_insert_and_undo(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication, QInputDialog
 

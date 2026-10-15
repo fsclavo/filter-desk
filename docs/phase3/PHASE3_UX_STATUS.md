@@ -13,11 +13,14 @@
   - Marker drag on response plots and Smith (`Move marker`)
 - **Markers** (≤8): dock editor, add-at-cursor (`Ctrl+M`), vertical lines on all plots; drag lines or Smith S11 spots to retune (snaps to sweep); persisted in project `extensions.markers`
 - **Limits** (≤10): dock editor, frequency band + y min/max overlays, PASS/FAIL status; persisted in `extensions.limits`
-- **Schematic topology editor** (2026-10-15): right-click an element in the ladder
-  view to edit its value, convert L↔C (preserving `|X|` at the reference
-  frequency), insert a series/shunt L/C before or after it, or delete it. Node
-  labels and refs are rebuilt after each edit (`domain/circuit_edit.py`); every
-  edit is a single undoable `EditCircuitCommand` and triggers a re-analyze.
+- **Schematic topology editor** (2026-10-15): select an element (left-click in
+  the ladder or component table), then use **Design → Component** to edit its
+  value, convert L↔C (preserving `|X|` at the reference frequency), insert a
+  series/shunt L/C before or after it, or delete it. (Right-clicking a symbol
+  opens the same menu on platforms where Qt delivers the event, e.g. Windows;
+  the menu path is the portable entry point.) Node labels and refs are rebuilt
+  after each edit (`domain/circuit_edit.py`); every edit is a single undoable
+  `EditCircuitCommand` and triggers a re-analyze.
 
 ## Still deferred
 

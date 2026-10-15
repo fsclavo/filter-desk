@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.domain import circuit_edit
-from filterdesk.domain.circuit import Circuit, IdealCapacitor, IdealInductor
+from filterdesk.domain.circuit import Circuit, Element, IdealCapacitor, IdealInductor
 from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.units import format_engineering, parse_si
@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
         self._session = session or DesignSession()
         self._undo = QUndoStack(self)
+        self._selected_element: str | None = None
         self._analyze_thread: QThread | None = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
@@ -213,8 +214,12 @@ class MainWindow(QMainWindow):
         act_syn.setShortcut("Ctrl+Return")
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         design_menu.addAction(act_syn)
+        design_menu.addSeparator()
+        self._component_menu = design_menu.addMenu("&Component")
+        self._component_menu.aboutToShow.connect(self._populate_component_menu)
 
     def _load_session_into_ui(self) -> None:
+        self._selected_element = None
         self._spec.set_spec(self._session.spec)
         assert self._session.sweep is not None
         self._f_start.setText(self._eng_freq(self._session.sweep.f_start_hz))
@@ -263,6 +268,8 @@ class MainWindow(QMainWindow):
         self._table.set_circuit(self._session.circuit)
         self._schematic.set_circuit(self._session.circuit)
         self._spec.set_spec(self._session.spec)
+        if self._selected_element_obj() is None:
+            self._selected_element = None
         self._update_title()
         self._debounce.start()
 
@@ -427,10 +434,54 @@ class MainWindow(QMainWindow):
         self._undo.push(cmd)
 
     def _on_schematic_element_selected(self, element_id: str) -> None:
+        self._selected_element = element_id
         self._table.select_element(element_id)
 
     def _on_table_element_selected(self, element_id: str) -> None:
+        self._selected_element = element_id
         self._schematic.set_highlighted(element_id)
+
+    def _selected_element_obj(self) -> Element | None:
+        circuit = self._session.circuit
+        if circuit is None or self._selected_element is None:
+            return None
+        target = self._selected_element
+        return next((e for e in circuit.elements if e.id == target), None)
+
+    def _populate_component_menu(self) -> None:
+        """Rebuild the Design → Component menu for the selected element."""
+        menu = self._component_menu
+        menu.clear()
+        el = self._selected_element_obj()
+        if el is None:
+            placeholder = menu.addAction("(select a component first)")
+            placeholder.setEnabled(False)
+            return
+        element_id = el.id
+        act_edit = menu.addAction("Edit value…")
+        act_edit.triggered.connect(lambda *_: self._edit_element_value(element_id))
+        if isinstance(el, (IdealCapacitor, IdealInductor)):
+            name = "Inductor" if isinstance(el, IdealCapacitor) else "Capacitor"
+            act_conv = menu.addAction(f"Convert to {name}")
+            act_conv.triggered.connect(lambda *_: self._convert_arm(element_id))
+        menu.addSeparator()
+        before_menu = menu.addMenu("Insert before")
+        after_menu = menu.addMenu("Insert after")
+        for label, role, kind in _INSERT_CHOICES:
+            act_b = before_menu.addAction(label)
+            act_b.triggered.connect(
+                lambda *_, r=role, k=kind: self._insert_arm(element_id, r, k, True)
+            )
+            act_a = after_menu.addAction(label)
+            act_a.triggered.connect(
+                lambda *_, r=role, k=kind: self._insert_arm(element_id, r, k, False)
+            )
+        menu.addSeparator()
+        circuit = self._session.circuit
+        act_del = menu.addAction("Delete element")
+        act_del.triggered.connect(lambda *_: self._delete_arm(element_id))
+        if circuit is not None and len(circuit.elements) <= 1:
+            act_del.setEnabled(False)
 
     def _push_circuit_edit(self, new_circuit: Circuit, text: str) -> None:
         cmd = EditCircuitCommand(
