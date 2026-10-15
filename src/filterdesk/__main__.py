@@ -22,6 +22,7 @@ from filterdesk.components_std import (
     ESeries,
     SnapReport,
     SnapStrategy,
+    nonidealize_circuit,
     snap_circuit,
 )
 from filterdesk.domain.circuit import (
@@ -31,6 +32,8 @@ from filterdesk.domain.circuit import (
     IdealInductor,
     IdealParallelLC,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
 )
 from filterdesk.domain.enums import (
     ApproximationFamily,
@@ -106,6 +109,37 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["abcd", "skrf"],
         default="abcd",
         help="Analysis backend",
+    )
+    ana.add_argument(
+        "--inductor-q",
+        type=float,
+        default=None,
+        help="Apply finite unloaded Q to inductors (needs --q-frequency)",
+    )
+    ana.add_argument(
+        "--q-frequency",
+        default=None,
+        help="Reference frequency for --inductor-q, e.g. 100M",
+    )
+    ana.add_argument(
+        "--inductor-dcr",
+        default=None,
+        help="Add series resistance to inductors, e.g. 0.5 (ohm)",
+    )
+    ana.add_argument(
+        "--inductor-cpar",
+        default=None,
+        help="Inductor parasitic parallel capacitance, e.g. 0.2p",
+    )
+    ana.add_argument(
+        "--capacitor-esr",
+        default=None,
+        help="Capacitor equivalent series resistance, e.g. 0.05",
+    )
+    ana.add_argument(
+        "--capacitor-esl",
+        default=None,
+        help="Capacitor equivalent series inductance, e.g. 0.5n",
     )
     ana.add_argument(
         "--export-s2p",
@@ -370,6 +404,20 @@ def _print_synth_human(result: SynthesisResult) -> None:
         elif isinstance(el, IdealInductor):
             eng = format_engineering(el.value_h, "H")
             print(f"  {el.id:4s}  {el.role.value:6s}  {eng}  (g={g_txt})")
+        elif isinstance(el, NonIdealInductor):
+            print(
+                f"  {el.id:4s}  {el.role.value:6s}  "
+                f"L={format_engineering(el.value_h, 'H')} "
+                f"R={format_engineering(el.series_resistance_ohm, 'Ohm')} "
+                f"Cp={format_engineering(el.parallel_capacitance_f, 'F')}  (g={g_txt})"
+            )
+        elif isinstance(el, NonIdealCapacitor):
+            print(
+                f"  {el.id:4s}  {el.role.value:6s}  "
+                f"C={format_engineering(el.value_f, 'F')} "
+                f"ESR={format_engineering(el.esr_ohm, 'Ohm')} "
+                f"ESL={format_engineering(el.esl_h, 'H')}  (g={g_txt})"
+            )
         elif isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             join = "+" if isinstance(el, IdealSeriesLC) else "||"
             print(
@@ -403,6 +451,14 @@ def _synth_to_json(result: SynthesisResult) -> dict[str, object]:
             row["value_F"] = el.value_f
         elif isinstance(el, IdealInductor):
             row["value_H"] = el.value_h
+        elif isinstance(el, NonIdealInductor):
+            row["value_H"] = el.value_h
+            row["series_R_Ohm"] = el.series_resistance_ohm
+            row["parallel_C_F"] = el.parallel_capacitance_f
+        elif isinstance(el, NonIdealCapacitor):
+            row["value_F"] = el.value_f
+            row["esr_Ohm"] = el.esr_ohm
+            row["esl_H"] = el.esl_h
         elif isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             row["value_H"] = el.value_h
             row["value_F"] = el.value_f
@@ -511,6 +567,25 @@ def _print_analysis_human(
     )
 
 
+def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
+    """Collect non-ideal analysis flags; returns {} when none are given."""
+    kwargs: dict[str, float] = {}
+    if getattr(args, "inductor_q", None) is not None:
+        kwargs["inductor_q"] = float(args.inductor_q)
+        if args.q_frequency is None:
+            raise SpecValidationError("--inductor-q requires --q-frequency")
+        kwargs["q_frequency_hz"] = parse_si(str(args.q_frequency))
+    if getattr(args, "inductor_dcr", None) is not None:
+        kwargs["inductor_dcr_ohm"] = parse_si(str(args.inductor_dcr))
+    if getattr(args, "inductor_cpar", None) is not None:
+        kwargs["inductor_parallel_capacitance_f"] = parse_si(str(args.inductor_cpar))
+    if getattr(args, "capacitor_esr", None) is not None:
+        kwargs["capacitor_esr_ohm"] = parse_si(str(args.capacitor_esr))
+    if getattr(args, "capacitor_esl", None) is not None:
+        kwargs["capacitor_esl_h"] = parse_si(str(args.capacitor_esl))
+    return kwargs
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -554,6 +629,13 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
+            nonideal = _nonideal_kwargs(args)
+            if nonideal:
+                synth = SynthesisResult(
+                    spec=synth.spec,
+                    prototype=synth.prototype,
+                    circuit=nonidealize_circuit(synth.circuit, **nonideal),
+                )
             sweep = _default_sweep(spec, args)
             analysis = analyze_circuit(
                 synth.circuit, sweep, backend=str(args.backend)
@@ -613,6 +695,8 @@ def main(argv: list[str] | None = None) -> int:
                 "n_points": n,
                 "samples": samples,
             }
+            if nonideal:
+                payload["nonideal"] = nonideal
             print(json.dumps(payload, indent=2))
         else:
             _print_analysis_human(

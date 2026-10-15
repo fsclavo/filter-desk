@@ -31,6 +31,7 @@ from filterdesk.domain.overlays import Marker
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.commands import (
     EditCircuitCommand,
+    NonIdealCommand,
     SetElementValueCommand,
     SetLimitsCommand,
     SetMarkersCommand,
@@ -43,7 +44,7 @@ from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
-from filterdesk.gui.widgets import EngineeringLineEdit, SnapDialog
+from filterdesk.gui.widgets import EngineeringLineEdit, NonIdealDialog, SnapDialog
 from filterdesk.gui.workers import start_analyze_thread, start_import_thread
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
@@ -230,6 +231,9 @@ class MainWindow(QMainWindow):
         act_snap = QAction("Sna&p to E-series…", self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
+        act_nonideal = QAction("Apply &parasitics / Q…", self)
+        act_nonideal.triggered.connect(self._run_nonideal)
+        design_menu.addAction(act_nonideal)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -335,6 +339,26 @@ class MainWindow(QMainWindow):
                 f"Snapped to {series.value} ({strategy.value}) — "
                 f"max change {report.max_delta_pct:.2f}%"
             )
+        self._run_analyze()
+
+    def _run_nonideal(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Apply parasitics", "Synthesize a circuit first."
+            )
+            return
+        try:
+            kwargs = NonIdealDialog.ask(self)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Apply parasitics", _exc_text(exc))
+            return
+        if not kwargs:
+            return
+        cmd = NonIdealCommand(
+            self._session, kwargs, on_applied=self._after_circuit_change
+        )
+        self._undo.push(cmd)
+        self._status.setText(f"Applied parasitics ({len(kwargs)} term(s))")
         self._run_analyze()
 
     def _run_analyze(self) -> None:

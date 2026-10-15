@@ -279,3 +279,73 @@ def test_main_window_snap_action(monkeypatch: pytest.MonkeyPatch) -> None:
             assert el.value_f == nearest_e_series(el.value_f, ESeries.E24)
     window.close()
     assert app is not None
+
+
+def test_nonideal_command_apply_and_undo() -> None:
+    from PySide6.QtGui import QUndoStack
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import (
+        IdealCapacitor,
+        IdealInductor,
+        NonIdealCapacitor,
+        NonIdealInductor,
+    )
+    from filterdesk.gui.commands import NonIdealCommand
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    assert all(
+        isinstance(el, (IdealInductor, IdealCapacitor))
+        for el in session.circuit.elements
+    )
+
+    stack = QUndoStack()
+    stack.push(
+        NonIdealCommand(
+            session,
+            {"inductor_q": 100.0, "q_frequency_hz": 100e6, "capacitor_esr_ohm": 0.5},
+        )
+    )
+    assert session.circuit is not None
+    assert any(isinstance(el, NonIdealInductor) for el in session.circuit.elements)
+    assert any(isinstance(el, NonIdealCapacitor) for el in session.circuit.elements)
+
+    stack.undo()
+    assert session.circuit is not None
+    assert not any(
+        isinstance(el, (NonIdealInductor, NonIdealCapacitor))
+        for el in session.circuit.elements
+    )
+    assert app is not None
+
+
+def test_main_window_nonideal_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import NonIdealCapacitor
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> dict[str, float]:
+            return {"capacitor_esr_ohm": 0.5}
+
+    monkeypatch.setattr(mw, "NonIdealDialog", _FakeDialog)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_nonideal()
+
+    assert "Applied parasitics" in window._status.text()
+    assert session.circuit is not None
+    assert any(isinstance(el, NonIdealCapacitor) for el in session.circuit.elements)
+    window.close()
+    assert app is not None

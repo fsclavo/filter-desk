@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pytest
 
+from filterdesk.__main__ import main
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
@@ -178,6 +181,81 @@ def test_nonidealize_requires_frequency_for_q() -> None:
     circuit = synthesize(_lp_spec()).circuit
     with pytest.raises(ValueError):
         nonidealize_circuit(circuit, inductor_q=100.0)
+
+
+def test_cli_analyze_nonideal_human(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "analyze",
+            "--family",
+            "chebyshev_type_i",
+            "--response",
+            "low_pass",
+            "--order",
+            "5",
+            "--cutoff",
+            "100M",
+            "--ripple",
+            "0.1",
+            "--points",
+            "128",
+            "--inductor-q",
+            "100",
+            "--q-frequency",
+            "100M",
+        ]
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "R=" in out and "series" in out
+
+
+def test_cli_analyze_q_requires_frequency(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "analyze",
+            "--family",
+            "chebyshev_type_i",
+            "--response",
+            "low_pass",
+            "--order",
+            "5",
+            "--cutoff",
+            "100M",
+            "--ripple",
+            "0.1",
+            "--inductor-q",
+            "100",
+        ]
+    )
+    assert code == 2
+    assert "error:" in capsys.readouterr().err
+
+
+def test_cli_analyze_nonideal_json(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "analyze",
+            "--family",
+            "chebyshev_type_i",
+            "--response",
+            "low_pass",
+            "--order",
+            "5",
+            "--cutoff",
+            "100M",
+            "--ripple",
+            "0.1",
+            "--points",
+            "64",
+            "--capacitor-esr",
+            "0.5",
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["nonideal"]["capacitor_esr_ohm"] == pytest.approx(0.5)
 
 
 def test_project_roundtrip_preserves_nonideal() -> None:

@@ -12,6 +12,7 @@ from filterdesk.components_std import (
     ESeries,
     SnapReport,
     SnapStrategy,
+    nonidealize_circuit,
     snap_circuit,
 )
 from filterdesk.domain import circuit_edit
@@ -334,6 +335,31 @@ class DesignSession:
         snapped, report = snap_circuit(self.circuit, series, strategy)
         self.replace_circuit(snapped)
         return report
+
+    def apply_nonideal(
+        self,
+        *,
+        inductor_q: float | None = None,
+        q_frequency_hz: float | None = None,
+        inductor_dcr_ohm: float = 0.0,
+        inductor_parallel_capacitance_f: float = 0.0,
+        capacitor_esr_ohm: float = 0.0,
+        capacitor_esl_h: float = 0.0,
+    ) -> Circuit:
+        """Replace inductors/capacitors with lossy/parasitic models; re-invalidate."""
+        if self.circuit is None:
+            raise ValueError("no circuit")
+        lossy = nonidealize_circuit(
+            self.circuit,
+            inductor_q=inductor_q,
+            q_frequency_hz=q_frequency_hz,
+            inductor_dcr_ohm=inductor_dcr_ohm,
+            inductor_parallel_capacitance_f=inductor_parallel_capacitance_f,
+            capacitor_esr_ohm=capacitor_esr_ohm,
+            capacitor_esl_h=capacitor_esl_h,
+        )
+        self.replace_circuit(lossy)
+        return lossy
 
     def insert_arm(
         self,

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.components_std import ESeries, SnapStrategy
+from filterdesk.domain.units import parse_si
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -82,5 +83,66 @@ class SnapDialog(QDialog):
         dialog = cls(parent, series=series, strategy=strategy)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.series, dialog.strategy
+        return None
+
+
+class NonIdealDialog(QDialog):
+    """Enter finite-Q / ESR / parasitic values for the whole circuit."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Apply parasitics / finite Q")
+        self._ind_q = EngineeringLineEdit()
+        self._ind_q.setPlaceholderText("e.g. 100 (blank = ideal)")
+        self._q_freq = EngineeringLineEdit()
+        self._q_freq.setPlaceholderText("e.g. 100M (required for Q)")
+        self._ind_dcr = EngineeringLineEdit()
+        self._ind_dcr.setPlaceholderText("e.g. 0.5 (ohm, optional)")
+        self._ind_cpar = EngineeringLineEdit()
+        self._ind_cpar.setPlaceholderText("e.g. 0.2p (F, optional)")
+        self._cap_esr = EngineeringLineEdit()
+        self._cap_esr.setPlaceholderText("e.g. 0.05 (ohm, optional)")
+        self._cap_esl = EngineeringLineEdit()
+        self._cap_esl.setPlaceholderText("e.g. 0.5n (H, optional)")
+        form = QFormLayout(self)
+        form.addRow("Inductor Q", self._ind_q)
+        form.addRow("Q reference freq", self._q_freq)
+        form.addRow("Inductor DCR", self._ind_dcr)
+        form.addRow("Inductor Cpar", self._ind_cpar)
+        form.addRow("Capacitor ESR", self._cap_esr)
+        form.addRow("Capacitor ESL", self._cap_esl)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def kwargs(self) -> dict[str, float]:
+        kwargs: dict[str, float] = {}
+        q_text = self._ind_q.text().strip()
+        if q_text:
+            kwargs["inductor_q"] = float(q_text)
+            freq_text = self._q_freq.text().strip()
+            if not freq_text:
+                raise ValueError("Q reference frequency is required when Q is set")
+            kwargs["q_frequency_hz"] = parse_si(freq_text)
+        for key, field in (
+            ("inductor_dcr_ohm", self._ind_dcr),
+            ("inductor_parallel_capacitance_f", self._ind_cpar),
+            ("capacitor_esr_ohm", self._cap_esr),
+            ("capacitor_esl_h", self._cap_esl),
+        ):
+            text = field.text().strip()
+            if text:
+                kwargs[key] = parse_si(text)
+        return kwargs
+
+    @classmethod
+    def ask(cls, parent: QWidget | None = None) -> dict[str, float] | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.kwargs()
         return None
 

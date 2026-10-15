@@ -48,6 +48,12 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 - `domain/project.py` — field serialization/deserialization for both types.
 - `services/session.py`, `gui/panels/component_table.py` — value lookup/edit and
   table display preserve the loss/parasitic fields.
+- `services/session.py` — `DesignSession.apply_nonideal(...)`.
+- CLI — `filterdesk analyze … [--inductor-q Q --q-frequency F] [--inductor-dcr R]
+  [--inductor-cpar C] [--capacitor-esr R] [--capacitor-esl L]` applies the losses
+  before analysis (and echoes them in `--json` under `nonideal`).
+- GUI — **Design → Apply parasitics / Q…** opens `NonIdealDialog`, applies through
+  `NonIdealCommand` (full undo/redo), then refresh + re-analyze.
 
 ## Design notes
 
@@ -79,4 +85,7 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   Design → Snap action (dialog stubbed) with on-grid result.
 - `tests/unit/test_nonideal.py` — self-resonant frequencies, lossless
   non-ideal ≡ ideal S-parameters, `ω_ref·L/Q` helper, finite-Q and ESR passband
-  loss, `q_frequency_hz` requirement, and project round-trip field preservation.
+  loss, `q_frequency_hz` requirement, project round-trip field preservation, and
+  the `analyze` CLI flags (human / JSON / missing-frequency error).
+- `tests/unit/test_gui_smoke.py` — `NonIdealCommand` apply/undo and the
+  Design → Apply parasitics action (dialog stubbed).

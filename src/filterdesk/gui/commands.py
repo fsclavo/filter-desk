@@ -139,6 +139,34 @@ class SnapCommand(QUndoCommand):
             self._on_applied()
 
 
+class NonIdealCommand(QUndoCommand):
+    """Apply finite-Q / ESR / parasitics to the whole circuit (snapshot undo)."""
+
+    def __init__(
+        self,
+        session: DesignSession,
+        kwargs: dict[str, float],
+        *,
+        on_applied: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__("Apply parasitics")
+        self._session = session
+        self._kwargs = dict(kwargs)
+        self._old = deepcopy(session.circuit)
+        self._on_applied = on_applied
+
+    def redo(self) -> None:
+        self._session.apply_nonideal(**self._kwargs)
+        if self._on_applied is not None:
+            self._on_applied()
+
+    def undo(self) -> None:
+        assert self._old is not None
+        self._session.replace_circuit(deepcopy(self._old))
+        if self._on_applied is not None:
+            self._on_applied()
+
+
 class SetMarkersCommand(QUndoCommand):
     def __init__(
         self,
