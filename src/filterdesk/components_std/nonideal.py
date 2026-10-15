@@ -119,3 +119,111 @@ def nonidealize_circuit(
         topology_id=circuit.topology_id,
         meta=dict(circuit.meta),
     )
+
+
+def set_element_parasitics(
+    circuit: Circuit,
+    element_id: str,
+    *,
+    series_resistance_ohm: float | None = None,
+    parallel_capacitance_f: float | None = None,
+    esr_ohm: float | None = None,
+    esl_h: float | None = None,
+) -> Circuit:
+    """Return a copy with one L/C arm's parasitics changed (per-part editing).
+
+    For an inductor, ``series_resistance_ohm`` / ``parallel_capacitance_f`` are
+    applied; for a capacitor, ``esr_ohm`` / ``esl_h``. ``None`` keeps the current
+    value. An element with all-zero parasitics is converted back to its ideal
+    type, a non-zero one to the non-ideal type. Raises ``KeyError`` if the id is
+    unknown and ``ValueError`` if it is not a two-terminal L/C arm.
+    """
+    target = next((el for el in circuit.elements if el.id == element_id), None)
+    if target is None:
+        raise KeyError(element_id)
+    new_elements: list[Element] = []
+    replaced = False
+    for el in circuit.elements:
+        if el.id != element_id:
+            new_elements.append(el)
+            continue
+        if isinstance(el, (IdealInductor, NonIdealInductor)):
+            cur_r = (
+                el.series_resistance_ohm if isinstance(el, NonIdealInductor) else 0.0
+            )
+            cur_cp = (
+                el.parallel_capacitance_f if isinstance(el, NonIdealInductor) else 0.0
+            )
+            r = cur_r if series_resistance_ohm is None else series_resistance_ohm
+            cp = (
+                cur_cp
+                if parallel_capacitance_f is None
+                else parallel_capacitance_f
+            )
+            replaced = True
+            if r == 0.0 and cp == 0.0:
+                new_elements.append(
+                    IdealInductor(
+                        id=el.id,
+                        value_h=el.value_h,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        g=el.g,
+                    )
+                )
+            else:
+                new_elements.append(
+                    NonIdealInductor(
+                        id=el.id,
+                        value_h=el.value_h,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        series_resistance_ohm=r,
+                        parallel_capacitance_f=cp,
+                        g=el.g,
+                    )
+                )
+        elif isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
+            cur_esr = el.esr_ohm if isinstance(el, NonIdealCapacitor) else 0.0
+            cur_esl = el.esl_h if isinstance(el, NonIdealCapacitor) else 0.0
+            esr = cur_esr if esr_ohm is None else esr_ohm
+            esl = cur_esl if esl_h is None else esl_h
+            replaced = True
+            if esr == 0.0 and esl == 0.0:
+                new_elements.append(
+                    IdealCapacitor(
+                        id=el.id,
+                        value_f=el.value_f,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        g=el.g,
+                    )
+                )
+            else:
+                new_elements.append(
+                    NonIdealCapacitor(
+                        id=el.id,
+                        value_f=el.value_f,
+                        node_a=el.node_a,
+                        node_b=el.node_b,
+                        role=el.role,
+                        esr_ohm=esr,
+                        esl_h=esl,
+                        g=el.g,
+                    )
+                )
+        else:
+            raise ValueError(f"element {element_id} is not an L/C arm")
+    if not replaced:
+        raise KeyError(element_id)
+    return Circuit(
+        elements=new_elements,
+        port_in=circuit.port_in,
+        port_out=circuit.port_out,
+        ground=circuit.ground,
+        topology_id=circuit.topology_id,
+        meta=dict(circuit.meta),
+    )

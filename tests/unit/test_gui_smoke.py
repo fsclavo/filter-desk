@@ -349,3 +349,66 @@ def test_main_window_nonideal_action(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any(isinstance(el, NonIdealCapacitor) for el in session.circuit.elements)
     window.close()
     assert app is not None
+
+
+def test_component_table_shows_parasitics() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import Circuit, NonIdealInductor, Port
+    from filterdesk.domain.enums import ElementRole
+    from filterdesk.gui.panels.component_table import ComponentTablePanel
+
+    app = QApplication.instance() or QApplication([])
+    el = NonIdealInductor(
+        id="L1",
+        value_h=1e-6,
+        node_a="in",
+        node_b="out",
+        role=ElementRole.SERIES,
+        series_resistance_ohm=1.0,
+        parallel_capacitance_f=1e-12,
+    )
+    circuit = Circuit(
+        elements=[el],
+        port_in=Port(name="in", node="in", impedance_ohm=50.0),
+        port_out=Port(name="out", node="out", impedance_ohm=50.0),
+    )
+    panel = ComponentTablePanel()
+    panel.set_circuit(circuit)
+    text = panel._table.item(0, 4).text()
+    assert "R=" in text and "Cp=" in text
+    assert app is not None
+
+
+def test_main_window_edit_parasitics(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import IdealInductor, NonIdealInductor
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    l_id = next(
+        el.id for el in session.circuit.elements if isinstance(el, IdealInductor)
+    )
+    window = mw.MainWindow(session, auto_run=False)
+
+    class _FakeParasiticDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> dict[str, float]:
+            return {"series_resistance_ohm": 1.0}
+
+    monkeypatch.setattr(mw, "ParasiticDialog", _FakeParasiticDialog)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._edit_element_parasitics(l_id)
+
+    assert "Updated parasitics" in window._status.text()
+    assert session.circuit is not None
+    target = next(el for el in session.circuit.elements if el.id == l_id)
+    assert isinstance(target, NonIdealInductor)
+    assert target.series_resistance_ohm == 1.0
+    window.close()
+    assert app is not None

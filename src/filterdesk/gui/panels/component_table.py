@@ -34,14 +34,31 @@ def _base_element_id(ref: str) -> str:
     return ref
 
 
+def _parasitic_text(el: object) -> str:
+    parts: list[str] = []
+    if isinstance(el, NonIdealInductor):
+        if el.series_resistance_ohm:
+            parts.append(f"R={format_engineering(el.series_resistance_ohm, 'Ohm')}")
+        if el.parallel_capacitance_f:
+            parts.append(f"Cp={format_engineering(el.parallel_capacitance_f, 'F')}")
+    elif isinstance(el, NonIdealCapacitor):
+        if el.esr_ohm:
+            parts.append(f"ESR={format_engineering(el.esr_ohm, 'Ohm')}")
+        if el.esl_h:
+            parts.append(f"ESL={format_engineering(el.esl_h, 'H')}")
+    return "  ".join(parts)
+
+
 class ComponentTablePanel(QWidget):
     value_edited = Signal(str, float)  # element_id, SI value
     element_selected = Signal(str)  # base element id
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._table = QTableWidget(0, 4)
-        self._table.setHorizontalHeaderLabels(["Ref", "Role", "Type", "Value"])
+        self._table = QTableWidget(0, 5)
+        self._table.setHorizontalHeaderLabels(
+            ["Ref", "Role", "Type", "Value", "Parasitic"]
+        )
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
@@ -106,7 +123,13 @@ class ComponentTablePanel(QWidget):
                 value_text = format_engineering(el.value_f, "F", digits=6)
             else:
                 value_text = format_engineering(el.value_ohm, "Ohm", digits=6)
-            self._add_row(el.id, el.role.value, el.element_type.value, value_text)
+            self._add_row(
+                el.id,
+                el.role.value,
+                el.element_type.value,
+                value_text,
+                _parasitic_text(el),
+            )
         self._updating = False
         self._block_sel = False
 
@@ -135,7 +158,9 @@ class ComponentTablePanel(QWidget):
                 self._table.scrollToItem(item)
         self._block_sel = False
 
-    def _add_row(self, ref: str, role: str, etype: str, value: str) -> None:
+    def _add_row(
+        self, ref: str, role: str, etype: str, value: str, parasitic: str = ""
+    ) -> None:
         row = self._table.rowCount()
         self._table.insertRow(row)
         ref_item = QTableWidgetItem(ref)
@@ -145,10 +170,13 @@ class ComponentTablePanel(QWidget):
         type_item = QTableWidgetItem(etype)
         type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         val_item = QTableWidgetItem(value)
+        par_item = QTableWidgetItem(parasitic)
+        par_item.setFlags(par_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         self._table.setItem(row, 0, ref_item)
         self._table.setItem(row, 1, role_item)
         self._table.setItem(row, 2, type_item)
         self._table.setItem(row, 3, val_item)
+        self._table.setItem(row, 4, par_item)
 
     def _on_cell_changed(self, row: int, column: int) -> None:
         if self._updating or column != 3:

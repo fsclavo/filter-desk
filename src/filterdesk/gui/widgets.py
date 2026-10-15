@@ -11,8 +11,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from filterdesk.components_std import ESeries, SnapStrategy
-from filterdesk.domain.units import parse_si
+from filterdesk.components_std import (
+    ESeries,
+    SnapStrategy,
+    inductor_resistance_ohm_from_q,
+)
+from filterdesk.domain.units import format_engineering, parse_si
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -142,6 +146,89 @@ class NonIdealDialog(QDialog):
     @classmethod
     def ask(cls, parent: QWidget | None = None) -> dict[str, float] | None:
         dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.kwargs()
+        return None
+
+
+class ParasiticDialog(QDialog):
+    """Edit the parasitics of a single inductor or capacitor arm."""
+
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        kind: str,
+        value: float = 0.0,
+        series_resistance_ohm: float = 0.0,
+        parallel_capacitance_f: float = 0.0,
+        esr_ohm: float = 0.0,
+        esl_h: float = 0.0,
+    ) -> None:
+        super().__init__(parent)
+        self._kind = kind
+        self._value = value
+        form = QFormLayout(self)
+        if kind == "inductor":
+            self.setWindowTitle("Inductor parasitics")
+            self._r = EngineeringLineEdit()
+            self._r.setText(format_engineering(series_resistance_ohm, "Ohm", digits=6))
+            self._cp = EngineeringLineEdit()
+            self._cp.setText(
+                format_engineering(parallel_capacitance_f, "F", digits=6)
+            )
+            self._q = EngineeringLineEdit()
+            self._q.setPlaceholderText("optional; overrides DCR")
+            self._q_freq = EngineeringLineEdit()
+            self._q_freq.setPlaceholderText("e.g. 100M")
+            form.addRow("Series R (DCR)", self._r)
+            form.addRow("Parallel C (Cp)", self._cp)
+            form.addRow("Q", self._q)
+            form.addRow("Q reference freq", self._q_freq)
+        else:
+            self.setWindowTitle("Capacitor parasitics")
+            self._esr = EngineeringLineEdit()
+            self._esr.setText(format_engineering(esr_ohm, "Ohm", digits=6))
+            self._esl = EngineeringLineEdit()
+            self._esl.setText(format_engineering(esl_h, "H", digits=6))
+            form.addRow("ESR", self._esr)
+            form.addRow("ESL", self._esl)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def kwargs(self) -> dict[str, float]:
+        if self._kind == "inductor":
+            kwargs = {
+                "parallel_capacitance_f": parse_si(self._cp.text().strip() or "0"),
+            }
+            q_text = self._q.text().strip()
+            if q_text:
+                freq_text = self._q_freq.text().strip()
+                if not freq_text:
+                    raise ValueError("Q reference frequency is required when Q is set")
+                kwargs["series_resistance_ohm"] = inductor_resistance_ohm_from_q(
+                    self._value, float(q_text), parse_si(freq_text)
+                )
+            else:
+                kwargs["series_resistance_ohm"] = parse_si(
+                    self._r.text().strip() or "0"
+                )
+            return kwargs
+        return {
+            "esr_ohm": parse_si(self._esr.text().strip() or "0"),
+            "esl_h": parse_si(self._esl.text().strip() or "0"),
+        }
+
+    @classmethod
+    def ask(
+        cls, parent: QWidget | None = None, **kwargs: object
+    ) -> dict[str, float] | None:
+        dialog = cls(parent, **kwargs)  # type: ignore[arg-type]
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.kwargs()
         return None

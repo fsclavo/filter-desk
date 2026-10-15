@@ -13,11 +13,13 @@ from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
     nonidealize_circuit,
+    set_element_parasitics,
 )
 from filterdesk.domain.circuit import (
     Circuit,
     IdealCapacitor,
     IdealInductor,
+    IdealResistor,
     NonIdealCapacitor,
     NonIdealInductor,
     Port,
@@ -258,7 +260,45 @@ def test_cli_analyze_nonideal_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert payload["nonideal"]["capacitor_esr_ohm"] == pytest.approx(0.5)
 
 
-def test_project_roundtrip_preserves_nonideal() -> None:
+def test_set_element_parasitics_per_part() -> None:
+    circuit = synthesize(_lp_spec()).circuit
+    l_id = next(el.id for el in circuit.elements if isinstance(el, IdealInductor))
+    c_id = next(el.id for el in circuit.elements if isinstance(el, IdealCapacitor))
+
+    changed = set_element_parasitics(circuit, l_id, series_resistance_ohm=1.0)
+    l_el = next(el for el in changed.elements if el.id == l_id)
+    assert isinstance(l_el, NonIdealInductor)
+    assert l_el.series_resistance_ohm == pytest.approx(1.0)
+    assert all(
+        isinstance(el, IdealCapacitor)
+        for el in changed.elements
+        if isinstance(el, (IdealCapacitor, NonIdealCapacitor))
+    )
+    assert isinstance(
+        next(el for el in circuit.elements if el.id == l_id), IdealInductor
+    )
+
+    back = set_element_parasitics(changed, l_id, series_resistance_ohm=0.0)
+    assert isinstance(next(el for el in back.elements if el.id == l_id), IdealInductor)
+
+    cap = set_element_parasitics(circuit, c_id, esr_ohm=0.5)
+    assert isinstance(
+        next(el for el in cap.elements if el.id == c_id), NonIdealCapacitor
+    )
+
+    with pytest.raises(KeyError):
+        set_element_parasitics(circuit, "nope")
+
+
+def test_set_element_parasitics_rejects_non_lc() -> None:
+    circuit = _one_element_circuit(
+        IdealResistor(
+            id="R1", value_ohm=50.0, node_a="in", node_b="out", role=ElementRole.SERIES
+        )
+    )
+    with pytest.raises(ValueError):
+        set_element_parasitics(circuit, "R1", esr_ohm=1.0)
+
     circuit = synthesize(_lp_spec()).circuit
     lossy = nonidealize_circuit(
         circuit,

@@ -24,8 +24,16 @@ from PySide6.QtWidgets import (
 
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
+from filterdesk.components_std import set_element_parasitics
 from filterdesk.domain import circuit_edit
-from filterdesk.domain.circuit import Circuit, Element, IdealCapacitor, IdealInductor
+from filterdesk.domain.circuit import (
+    Circuit,
+    Element,
+    IdealCapacitor,
+    IdealInductor,
+    NonIdealCapacitor,
+    NonIdealInductor,
+)
 from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.units import format_engineering, parse_si
@@ -44,7 +52,12 @@ from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
-from filterdesk.gui.widgets import EngineeringLineEdit, NonIdealDialog, SnapDialog
+from filterdesk.gui.widgets import (
+    EngineeringLineEdit,
+    NonIdealDialog,
+    ParasiticDialog,
+    SnapDialog,
+)
 from filterdesk.gui.workers import start_analyze_thread, start_import_thread
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
@@ -529,6 +542,13 @@ class MainWindow(QMainWindow):
         element_id = el.id
         act_edit = menu.addAction("Edit value…")
         act_edit.triggered.connect(lambda *_: self._edit_element_value(element_id))
+        if isinstance(
+            el, (IdealCapacitor, IdealInductor, NonIdealCapacitor, NonIdealInductor)
+        ):
+            act_par = menu.addAction("Edit parasitics…")
+            act_par.triggered.connect(
+                lambda *_: self._edit_element_parasitics(element_id)
+            )
         if isinstance(el, (IdealCapacitor, IdealInductor)):
             name = "Inductor" if isinstance(el, IdealCapacitor) else "Capacitor"
             act_conv = menu.addAction(f"Convert to {name}")
@@ -580,6 +600,13 @@ class MainWindow(QMainWindow):
         act_edit.triggered.connect(
             lambda *_: self._edit_element_value(element_id)
         )
+        if isinstance(
+            el, (IdealCapacitor, IdealInductor, NonIdealCapacitor, NonIdealInductor)
+        ):
+            act_par = menu.addAction("Edit parasitics…")
+            act_par.triggered.connect(
+                lambda *_: self._edit_element_parasitics(element_id)
+            )
         if isinstance(el, (IdealCapacitor, IdealInductor)):
             name = "Inductor" if isinstance(el, IdealCapacitor) else "Capacitor"
             act_conv = menu.addAction(f"Convert to {name}")
@@ -606,9 +633,9 @@ class MainWindow(QMainWindow):
         if circuit is None:
             return
         el = next((e for e in circuit.elements if e.id == element_id), None)
-        if isinstance(el, IdealCapacitor):
+        if isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
             current, unit = el.value_f, "F"
-        elif isinstance(el, IdealInductor):
+        elif isinstance(el, (IdealInductor, NonIdealInductor)):
             current, unit = el.value_h, "H"
         else:
             QMessageBox.information(
@@ -629,6 +656,54 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Edit element", _exc_text(exc))
             return
         self._on_value_edited(element_id, value)
+
+    def _edit_element_parasitics(self, element_id: str) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        el = next((e for e in circuit.elements if e.id == element_id), None)
+        if isinstance(el, (IdealInductor, NonIdealInductor)):
+            kind = "inductor"
+            dialog_kwargs: dict[str, float | str] = {
+                "kind": kind,
+                "value": el.value_h,
+                "series_resistance_ohm": (
+                    el.series_resistance_ohm
+                    if isinstance(el, NonIdealInductor)
+                    else 0.0
+                ),
+                "parallel_capacitance_f": (
+                    el.parallel_capacitance_f
+                    if isinstance(el, NonIdealInductor)
+                    else 0.0
+                ),
+            }
+        elif isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
+            kind = "capacitor"
+            dialog_kwargs = {
+                "kind": kind,
+                "value": el.value_f,
+                "esr_ohm": (
+                    el.esr_ohm if isinstance(el, NonIdealCapacitor) else 0.0
+                ),
+                "esl_h": el.esl_h if isinstance(el, NonIdealCapacitor) else 0.0,
+            }
+        else:
+            QMessageBox.information(
+                self, "Edit parasitics", "Only L/C arms have parasitics."
+            )
+            return
+        try:
+            kwargs = ParasiticDialog.ask(self, **dialog_kwargs)
+            if not kwargs:
+                return
+            new_circuit = set_element_parasitics(circuit, element_id, **kwargs)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Edit parasitics", _exc_text(exc))
+            return
+        self._push_circuit_edit(new_circuit, f"Edit {element_id} parasitics")
+        self._status.setText(f"Updated parasitics on {element_id}")
+        self._run_analyze()
 
     def _insert_arm(
         self, element_id: str, role: ElementRole, kind: str, before: bool

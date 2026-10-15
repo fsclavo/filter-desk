@@ -54,6 +54,11 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   before analysis (and echoes them in `--json` under `nonideal`).
 - GUI — **Design → Apply parasitics / Q…** opens `NonIdealDialog`, applies through
   `NonIdealCommand` (full undo/redo), then refresh + re-analyze.
+- Per-part editing — `components_std.set_element_parasitics(circuit, id, …)`
+  (converts ideal ↔ non-ideal, all-zero reverts to ideal); component table gains
+  a read-only **Parasitic** column; **Design → Component → Edit parasitics…**
+  (table + schematic context menus) opens `ParasiticDialog` (DCR/Cp with optional
+  Q@f, or ESR/ESL) applied via `EditCircuitCommand`.
 
 ## Design notes
 
@@ -71,7 +76,6 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 
 ## Deferred (rest of Phase 6)
 
-- GUI: non-ideal fields in the component table (display/edit of Q/ESR/parasitics).
 - Tolerances (Monte-Carlo / worst-case).
 - Golden tests for finite-Q and E24-snapped cases.
 - Manual library R / L / C / jX in the schematic library.
@@ -87,5 +91,6 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   non-ideal ≡ ideal S-parameters, `ω_ref·L/Q` helper, finite-Q and ESR passband
   loss, `q_frequency_hz` requirement, project round-trip field preservation, and
   the `analyze` CLI flags (human / JSON / missing-frequency error).
-- `tests/unit/test_gui_smoke.py` — `NonIdealCommand` apply/undo and the
-  Design → Apply parasitics action (dialog stubbed).
+- `tests/unit/test_gui_smoke.py` — `NonIdealCommand` apply/undo, the
+  Design → Apply parasitics action (dialog stubbed), the Parasitic column text,
+  and per-part Edit parasitics via `EditCircuitCommand`.
