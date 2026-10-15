@@ -15,6 +15,7 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealSeriesLC,
     Port,
+    series_node_path,
 )
 from filterdesk.domain.enums import ElementRole, FilterResponse, TopologyId
 from filterdesk.domain.prototype import NormalizedArm, Prototype
@@ -85,15 +86,6 @@ def scale_resonator_arm(
     if kind == "shunt_series_LC":
         return z0 / (g_k * b), g_k * b / (w2 * z0)
     raise SpecValidationError(f"unknown resonator arm kind: {kind}")
-
-
-def _series_node_path(num_series: int) -> list[str]:
-    """Node sequence spanning series arms: in, n1, ..., out."""
-    if num_series <= 0:
-        return ["in"]
-    if num_series == 1:
-        return ["in", "out"]
-    return ["in", *[f"n{i}" for i in range(1, num_series)], "out"]
 
 
 def _is_series_kind(kind: ArmKind) -> bool:
@@ -362,7 +354,7 @@ def realize_ladder(spec: FilterSpec, prototype: Prototype) -> Circuit:
     kinds = arm_kinds_for_topology(spec.topology_id, spec.order)
     section_g = prototype.section_g
     num_series = sum(1 for k in kinds if _is_series_kind(k))
-    nodes_path = _series_node_path(num_series)
+    nodes_path = series_node_path(num_series)
     series_cursor = 0
     current_node = "in"
     elements: list[Element] = []
@@ -454,7 +446,7 @@ def _realize_from_arms(
         # Remap kinds via scale helper
         pass
     num_series = sum(1 for k in kinds if _is_series_kind(k))
-    nodes_path = _series_node_path(num_series)
+    nodes_path = series_node_path(num_series)
     series_cursor = 0
     current_node = "in"
     elements: list[Element] = []

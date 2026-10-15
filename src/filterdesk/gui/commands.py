@@ -8,11 +8,41 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QUndoCommand
 
+from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion, Marker
 from filterdesk.domain.specs import FilterSpec
 
 if TYPE_CHECKING:
     from filterdesk.services.session import DesignSession
+
+
+class EditCircuitCommand(QUndoCommand):
+    """Topology edit (insert/delete/convert) with full circuit snapshot."""
+
+    def __init__(
+        self,
+        session: DesignSession,
+        new_circuit: Circuit,
+        *,
+        text: str = "Edit circuit",
+        on_applied: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__(text)
+        self._session = session
+        self._new = deepcopy(new_circuit)
+        self._old = deepcopy(session.circuit)
+        self._on_applied = on_applied
+
+    def redo(self) -> None:
+        self._session.replace_circuit(deepcopy(self._new))
+        if self._on_applied is not None:
+            self._on_applied()
+
+    def undo(self) -> None:
+        assert self._old is not None
+        self._session.replace_circuit(deepcopy(self._old))
+        if self._on_applied is not None:
+            self._on_applied()
 
 
 class SetElementValueCommand(QUndoCommand):

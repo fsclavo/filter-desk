@@ -64,7 +64,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 | ID | Item | Detail | Status |
 | --- | --- | --- | --- |
-| B3.1 | **Schematic topology editor** | View is read-only; no insert / delete / change element type (largest deferred UX item) — `PHASE3_STATUS.md`, blueprint §23/§35 | Pending |
+| B3.1 | **Schematic topology editor** | Right-click an element: edit value, convert L↔C (reactance-preserving), insert series/shunt L/C before/after, delete; full undo/redo — `PHASE3_STATUS.md`, blueprint §23/§35 | **DONE (2026-10-15)** |
 | B3.2 | **Smith limit regions** | Constant-\|Γ\| limits (`s11_mag` / `s22_mag`) drawn on the Smith chart and evaluated in pass/fail | **DONE (2026-10-15)** |
 | B3.3 | **Optimizer ↔ limits wiring** | Limits exist but nothing consumes them yet | Pending (→ Phase 7) |
 

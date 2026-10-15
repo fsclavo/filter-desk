@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QPointF, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QResizeEvent
 from PySide6.QtWidgets import (
     QGraphicsItem,
@@ -80,6 +80,7 @@ class SchematicPanel(QWidget):
     """Read-only ladder schematic; click an element to select it."""
 
     element_selected = Signal(str)  # base element id (e.g. X3, C1)
+    context_menu_requested = Signal(str, QPoint)  # element id, global position
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -89,6 +90,8 @@ class SchematicPanel(QWidget):
         self._view.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._view.setMinimumHeight(220)
         self._view.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self._view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._view.customContextMenuRequested.connect(self._on_context_menu_requested)
         self._scene = QGraphicsScene(self)
         self._view.setScene(self._scene)
         self._circuit: Circuit | None = None
@@ -502,3 +505,19 @@ class SchematicPanel(QWidget):
     def _refresh_highlight_pens(self) -> None:
         for eid, group in self._groups.items():
             group.apply_highlight(eid == self._highlighted)
+
+    def _group_for_item(self, item: QGraphicsItem | None) -> ElementGroup | None:
+        while item is not None:
+            if isinstance(item, ElementGroup):
+                return item
+            item = item.parentItem()
+        return None
+
+    def _on_context_menu_requested(self, pos: QPoint) -> None:
+        group = self._group_for_item(self._view.itemAt(pos))
+        if group is None:
+            return
+        self.set_highlighted(group.element_id)
+        self.context_menu_requested.emit(
+            group.element_id, self._view.mapToGlobal(pos)
+        )

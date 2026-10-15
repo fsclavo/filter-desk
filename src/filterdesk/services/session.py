@@ -8,6 +8,7 @@ from filterdesk import __version__
 from filterdesk.analysis.derived import mag_db
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
+from filterdesk.domain import circuit_edit
 from filterdesk.domain.circuit import (
     Circuit,
     Element,
@@ -22,6 +23,7 @@ from filterdesk.domain.circuit import (
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
+    ElementRole,
     FilterResponse,
     TopologyId,
 )
@@ -274,6 +276,49 @@ class DesignSession:
         if self.circuit is None:
             raise ValueError("no circuit")
         return _element_value_si(self.circuit, element_id)
+
+    def replace_circuit(self, circuit: Circuit) -> None:
+        """Swap in a topologically edited circuit and invalidate analysis."""
+        self.circuit = circuit
+        self.analysis = None
+        self.dirty = True
+
+    def insert_arm(
+        self,
+        *,
+        role: ElementRole,
+        kind: str,
+        value_si: float,
+        before_id: str | None = None,
+    ) -> None:
+        if self.circuit is None:
+            raise ValueError("no circuit")
+        self.replace_circuit(
+            circuit_edit.insert_simple_arm(
+                self.circuit,
+                role=role,
+                kind=kind,
+                value_si=value_si,
+                before_id=before_id,
+            )
+        )
+
+    def delete_arm(self, element_id: str) -> None:
+        if self.circuit is None:
+            raise ValueError("no circuit")
+        self.replace_circuit(circuit_edit.delete_arm(self.circuit, element_id))
+
+    def change_arm_type(self, element_id: str, target_kind: str) -> None:
+        if self.circuit is None:
+            raise ValueError("no circuit")
+        reference_hz = circuit_edit.reference_frequency_hz(self.circuit)
+        if reference_hz is None:
+            raise ValueError("circuit has no reference frequency for conversion")
+        self.replace_circuit(
+            circuit_edit.convert_simple_arm(
+                self.circuit, element_id, target_kind, reference_hz
+            )
+        )
 
     def set_markers(self, markers: list[Marker]) -> None:
         if len(markers) > MAX_MARKERS:

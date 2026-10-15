@@ -23,7 +23,8 @@
 
 ## Limitations
 
-- Schematic is view-only (no drag topology editor) — still deferred
+- Schematic supports context-menu edits (insert/delete/convert/value) but still
+  no free-form drag-and-drop topology editing
 - Plot log-x assumed (cartesian tabs)
 
 ## UX follow-up (2026-10-01)

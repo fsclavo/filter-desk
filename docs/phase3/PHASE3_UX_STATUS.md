@@ -13,12 +13,17 @@
   - Marker drag on response plots and Smith (`Move marker`)
 - **Markers** (≤8): dock editor, add-at-cursor (`Ctrl+M`), vertical lines on all plots; drag lines or Smith S11 spots to retune (snaps to sweep); persisted in project `extensions.markers`
 - **Limits** (≤10): dock editor, frequency band + y min/max overlays, PASS/FAIL status; persisted in `extensions.limits`
+- **Schematic topology editor** (2026-10-15): right-click an element in the ladder
+  view to edit its value, convert L↔C (preserving `|X|` at the reference
+  frequency), insert a series/shunt L/C before or after it, or delete it. Node
+  labels and refs are rebuilt after each edit (`domain/circuit_edit.py`); every
+  edit is a single undoable `EditCircuitCommand` and triggers a re-analyze.
 
 ## Still deferred
 
-- Full schematic topology editor (insert / delete / type change)
 - Optimizer wiring to limits (Phase 7)
 
 ## Tests
 
-`tests/unit/test_phase3_ux.py`, `tests/unit/test_marker_drag.py`
+`tests/unit/test_phase3_ux.py`, `tests/unit/test_marker_drag.py`,
+`tests/unit/test_circuit_edit.py`, `tests/unit/test_gui_smoke.py`

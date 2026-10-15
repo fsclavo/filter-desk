@@ -140,6 +140,15 @@ Element = (
 )
 
 
+def series_node_path(num_series: int) -> list[str]:
+    """Node sequence spanning series arms: ``in, n1, …, out``."""
+    if num_series <= 0:
+        return ["in"]
+    if num_series == 1:
+        return ["in", "out"]
+    return ["in", *[f"n{i}" for i in range(1, num_series)], "out"]
+
+
 @dataclass(slots=True)
 class Circuit:
     """Canonical circuit: ports + ideal R/L/C elements on named nodes."""

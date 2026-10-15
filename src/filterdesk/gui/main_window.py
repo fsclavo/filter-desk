@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThread, QTimer
+from PySide6.QtCore import QPoint, Qt, QThread, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QSpinBox,
     QStatusBar,
@@ -21,9 +24,13 @@ from PySide6.QtWidgets import (
 
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
+from filterdesk.domain import circuit_edit
+from filterdesk.domain.circuit import Circuit, IdealCapacitor, IdealInductor
+from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.overlays import Marker
-from filterdesk.domain.units import parse_si
+from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.commands import (
+    EditCircuitCommand,
     SetElementValueCommand,
     SetLimitsCommand,
     SetMarkersCommand,
@@ -48,6 +55,14 @@ def _exc_text(exc: BaseException) -> str:
     if text:
         return f"{type(exc).__name__}: {text}"
     return f"{type(exc).__name__} (no message)"
+
+
+_INSERT_CHOICES: tuple[tuple[str, ElementRole, str], ...] = (
+    ("Series inductor", ElementRole.SERIES, "L"),
+    ("Series capacitor", ElementRole.SERIES, "C"),
+    ("Shunt inductor", ElementRole.SHUNT, "L"),
+    ("Shunt capacitor", ElementRole.SHUNT, "C"),
+)
 
 
 class MainWindow(QMainWindow):
@@ -106,6 +121,9 @@ class MainWindow(QMainWindow):
         self._spec.spec_changed.connect(self._mark_dirty)
         self._table.value_edited.connect(self._on_value_edited)
         self._schematic.element_selected.connect(self._on_schematic_element_selected)
+        self._schematic.context_menu_requested.connect(
+            self._on_schematic_context_menu
+        )
         self._table.element_selected.connect(self._on_table_element_selected)
         self._markers_panel.markers_changed.connect(self._on_markers_edited)
         self._markers_panel.add_at_cursor_requested.connect(self._add_marker_at_cursor)
@@ -413,6 +431,163 @@ class MainWindow(QMainWindow):
 
     def _on_table_element_selected(self, element_id: str) -> None:
         self._schematic.set_highlighted(element_id)
+
+    def _push_circuit_edit(self, new_circuit: Circuit, text: str) -> None:
+        cmd = EditCircuitCommand(
+            self._session,
+            new_circuit,
+            text=text,
+            on_applied=self._after_circuit_change,
+        )
+        self._undo.push(cmd)
+
+    def _on_schematic_context_menu(
+        self, element_id: str, global_pos: QPoint
+    ) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        el = next((e for e in circuit.elements if e.id == element_id), None)
+        if el is None:
+            return
+        menu = QMenu(self)
+        act_edit = menu.addAction("Edit value…")
+        act_edit.triggered.connect(
+            lambda *_: self._edit_element_value(element_id)
+        )
+        if isinstance(el, (IdealCapacitor, IdealInductor)):
+            name = "Inductor" if isinstance(el, IdealCapacitor) else "Capacitor"
+            act_conv = menu.addAction(f"Convert to {name}")
+            act_conv.triggered.connect(lambda *_: self._convert_arm(element_id))
+        menu.addSeparator()
+        before_menu = menu.addMenu("Insert before")
+        after_menu = menu.addMenu("Insert after")
+        for label, role, kind in _INSERT_CHOICES:
+            act_b = before_menu.addAction(label)
+            act_b.triggered.connect(
+                lambda *_, r=role, k=kind: self._insert_arm(element_id, r, k, True)
+            )
+            act_a = after_menu.addAction(label)
+            act_a.triggered.connect(
+                lambda *_, r=role, k=kind: self._insert_arm(element_id, r, k, False)
+            )
+        menu.addSeparator()
+        act_del = menu.addAction("Delete element")
+        act_del.triggered.connect(lambda *_: self._delete_arm(element_id))
+        menu.exec(global_pos)
+
+    def _edit_element_value(self, element_id: str) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        el = next((e for e in circuit.elements if e.id == element_id), None)
+        if isinstance(el, IdealCapacitor):
+            current, unit = el.value_f, "F"
+        elif isinstance(el, IdealInductor):
+            current, unit = el.value_h, "H"
+        else:
+            QMessageBox.information(
+                self, "Edit element", "Only ideal L/C arms can be edited here."
+            )
+            return
+        text, ok = QInputDialog.getText(
+            self,
+            "Edit element",
+            f"{element_id} value:",
+            text=format_engineering(current, unit, digits=6),
+        )
+        if not ok or not text.strip():
+            return
+        try:
+            value = parse_si(text)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Edit element", _exc_text(exc))
+            return
+        self._on_value_edited(element_id, value)
+
+    def _insert_arm(
+        self, element_id: str, role: ElementRole, kind: str, before: bool
+    ) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        text, ok = QInputDialog.getText(
+            self,
+            "Insert element",
+            f"New {kind} value:",
+            text=self._default_arm_text(kind),
+        )
+        if not ok or not text.strip():
+            return
+        try:
+            value = parse_si(text)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Insert element", _exc_text(exc))
+            return
+        elements = list(circuit.elements)
+        ids = [el.id for el in elements]
+        if element_id not in ids:
+            return
+        idx = ids.index(element_id)
+        if before:
+            before_id: str | None = element_id
+        else:
+            before_id = elements[idx + 1].id if idx + 1 < len(elements) else None
+        try:
+            new_circuit = circuit_edit.insert_simple_arm(
+                circuit, role=role, kind=kind, value_si=value, before_id=before_id
+            )
+        except circuit_edit.CircuitEditError as exc:
+            QMessageBox.warning(self, "Insert element", _exc_text(exc))
+            return
+        self._push_circuit_edit(new_circuit, f"Insert {kind} arm")
+
+    def _convert_arm(self, element_id: str) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        el = next((e for e in circuit.elements if e.id == element_id), None)
+        if not isinstance(el, (IdealCapacitor, IdealInductor)):
+            return
+        target = "L" if isinstance(el, IdealCapacitor) else "C"
+        reference_hz = circuit_edit.reference_frequency_hz(circuit)
+        if reference_hz is None:
+            QMessageBox.warning(
+                self, "Convert element", "No reference frequency available."
+            )
+            return
+        try:
+            new_circuit = circuit_edit.convert_simple_arm(
+                circuit, element_id, target, reference_hz
+            )
+        except circuit_edit.CircuitEditError as exc:
+            QMessageBox.warning(self, "Convert element", _exc_text(exc))
+            return
+        self._push_circuit_edit(new_circuit, f"Convert {element_id}")
+
+    def _delete_arm(self, element_id: str) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            return
+        try:
+            new_circuit = circuit_edit.delete_arm(circuit, element_id)
+        except circuit_edit.CircuitEditError as exc:
+            QMessageBox.warning(self, "Delete element", _exc_text(exc))
+            return
+        self._push_circuit_edit(new_circuit, f"Delete {element_id}")
+
+    def _default_arm_text(self, kind: str) -> str:
+        circuit = self._session.circuit
+        if circuit is None:
+            return "1n" if kind == "L" else "1p"
+        z0 = circuit.port_in.impedance_ohm
+        freq = circuit_edit.reference_frequency_hz(circuit)
+        if freq is None or z0 <= 0.0:
+            return "1n" if kind == "L" else "1p"
+        omega = 2.0 * math.pi * freq
+        if kind == "L":
+            return format_engineering(z0 / omega, "H", digits=4)
+        return format_engineering(1.0 / (omega * z0), "F", digits=4)
 
     def _open_project(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
