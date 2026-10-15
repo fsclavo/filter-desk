@@ -57,6 +57,36 @@ def test_schematic_context_menu_emits_on_right_click() -> None:
     assert app is not None
 
 
+def test_consecutive_shunt_arms_render_separately() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.enums import ElementRole
+    from filterdesk.gui.panels.schematic_view import SchematicPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    # Deleting a middle series arm leaves two shunt arms sharing one node.
+    session.delete_arm("C3")
+    assert session.circuit is not None
+    shunt_ids = [
+        el.id for el in session.circuit.elements if el.role == ElementRole.SHUNT
+    ]
+    assert len(shunt_ids) >= 2
+
+    panel = SchematicPanel()
+    panel.resize(1200, 300)
+    panel.set_circuit(session.circuit)
+    centers = [
+        round(panel._groups[eid].sceneBoundingRect().center().x()) for eid in shunt_ids
+    ]
+    assert len(set(centers)) == len(centers)
+    panel.close()
+    assert app is not None
+
+
 def test_component_menu_reflects_selection() -> None:
     from PySide6.QtWidgets import QApplication
 

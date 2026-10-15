@@ -41,6 +41,7 @@ from filterdesk.domain.units import format_engineering
 
 _PITCH_SIMPLE = 160.0
 _PITCH_RESONATOR = 220.0
+_PITCH_SHUNT = 64.0
 _LINE_Y = 110.0
 _MARGIN_X = 90.0
 _HIGHLIGHT = QColor("#e8a838")
@@ -220,11 +221,21 @@ class SchematicPanel(QWidget):
             stub.setPen(pen)
             self._scene.addItem(stub)
 
-        for el in circuit.elements:
+        elements = circuit.elements
+        for index, el in enumerate(elements):
             if el.role == ElementRole.SERIES:
                 x = self._draw_series_arm(el, x, y, pitch, pen, brush, label_font)
-            else:
-                self._draw_shunt_arm(el, x, y, pen, brush, label_font)
+                continue
+            self._draw_shunt_arm(el, x, y, pen, brush, label_font)
+            # Consecutive shunt arms tap the same node: separate them along the
+            # signal line (with a connecting wire) so the symbols don't overlap.
+            nxt = elements[index + 1] if index + 1 < len(elements) else None
+            if nxt is not None and nxt.role == ElementRole.SHUNT:
+                nx = x + _PITCH_SHUNT
+                link = QGraphicsLineItem(x, y, nx, y)
+                link.setPen(pen)
+                self._scene.addItem(link)
+                x = nx
 
         tail = QGraphicsLineItem(x, y, x + 44, y)
         tail.setPen(pen)
