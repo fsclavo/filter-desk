@@ -74,6 +74,13 @@ class SmithChartWidget(QWidget):
         self._curve_s22 = self._plot.plot(
             pen=pg.mkPen("#1f77b4", width=2), name="S22"
         )
+        dash = Qt.PenStyle.DashLine
+        self._curve_s11_meas = self._plot.plot(
+            pen=pg.mkPen("#d62728", width=1.3, style=dash), name="S11 meas"
+        )
+        self._curve_s22_meas = self._plot.plot(
+            pen=pg.mkPen("#1f77b4", width=1.3, style=dash), name="S22 meas"
+        )
         self._start_pt = pg.ScatterPlotItem(
             size=9,
             brush=pg.mkBrush("#2ca02c"),
@@ -164,6 +171,26 @@ class SmithChartWidget(QWidget):
         self.set_s_params(
             frequency_hz, s11, None, z0_source_ohm=z0_ohm, z0_load_ohm=z0_ohm
         )
+
+    def set_measured_s_params(
+        self,
+        frequency_hz: np.ndarray,
+        s11: np.ndarray,
+        s22: np.ndarray | None = None,
+    ) -> None:
+        """Overlay measured S11/S22 as dashed loci (independent of the sim)."""
+        f = np.asarray(frequency_hz, dtype=float)
+        if f.size == 0:
+            self._curve_s11_meas.setData([], [])
+            self._curve_s22_meas.setData([], [])
+            return
+        g11 = np.asarray(s11, dtype=np.complex128)
+        self._curve_s11_meas.setData(g11.real, g11.imag)
+        if s22 is not None and np.asarray(s22).size == f.size:
+            g22 = np.asarray(s22, dtype=np.complex128)
+            self._curve_s22_meas.setData(g22.real, g22.imag)
+        else:
+            self._curve_s22_meas.setData([], [])
 
     def clear(self) -> None:
         self.set_s_params(

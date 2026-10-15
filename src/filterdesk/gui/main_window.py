@@ -47,6 +47,7 @@ from filterdesk.gui.workers import start_analyze_thread, start_import_thread
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.plotting import export_smith_chart
+from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import DesignSession
 
 
@@ -213,6 +214,12 @@ class MainWindow(QMainWindow):
         view_menu = self.menuBar().addMenu("&View")
         for dock in self._docks:
             view_menu.addAction(dock.toggleViewAction())
+        view_menu.addSeparator()
+        self._act_measured = QAction("Show &measured overlay", self)
+        self._act_measured.setCheckable(True)
+        self._act_measured.setChecked(True)
+        self._act_measured.toggled.connect(self._plots.set_measured_visible)
+        view_menu.addAction(self._act_measured)
 
         design_menu = self.menuBar().addMenu("&Design")
         act_syn = QAction("&Synthesize + Analyze", self)
@@ -233,6 +240,9 @@ class MainWindow(QMainWindow):
         self._table.set_circuit(self._session.circuit)
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
+        self._plots.set_measured(
+            self._session.measured, self._session.measured_name or ""
+        )
         self._markers_panel.set_markers(self._session.markers)
         self._limits_panel.set_limits(self._session.limits)
         self._plots.set_markers(self._session.markers)
@@ -735,12 +745,18 @@ class MainWindow(QMainWindow):
             )
             return
         self._session.set_measured(result, name)
+        self._plots.set_measured(result, name)
+        self._act_measured.setChecked(True)
+        detail = f"Imported measured data from {name}\n{data.summary()}"
+        if self._session.analysis is not None:
+            try:
+                cmp = compare_results(self._session.analysis, result)
+            except CompareError as exc:
+                detail += f"\n\nCompare unavailable: {exc}"
+            else:
+                detail += f"\n\nCompare (overlap band):\n{cmp.summary()}"
         self._status.setText(f"Imported {name}: {data.summary()}")
-        QMessageBox.information(
-            self,
-            "Import Touchstone",
-            f"Imported measured data from {name}\n{data.summary()}",
-        )
+        QMessageBox.information(self, "Import Touchstone", detail)
 
     def _on_touchstone_failed(self, message: str) -> None:
         QMessageBox.critical(self, "Import Touchstone", message)

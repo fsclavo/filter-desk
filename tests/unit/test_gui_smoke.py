@@ -162,6 +162,35 @@ def test_schematic_edit_insert_and_undo(monkeypatch: pytest.MonkeyPatch) -> None
     assert app is not None
 
 
+def test_measured_overlay_toggles() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    result = session.analysis
+    assert result is not None
+    panel = PlotPanel()
+    panel.set_result(result)
+    panel.set_measured(result, "meas.s2p")
+    assert panel.has_measured()
+    n = result.frequency_hz.size
+
+    def plotted(curve: object) -> int:
+        data = curve.getData()[0]  # type: ignore[attr-defined]
+        return 0 if data is None else int(data.size)
+
+    assert plotted(panel._curve_s21_meas) == n
+    panel.set_measured_visible(False)
+    assert plotted(panel._curve_s21_meas) == 0
+    panel.set_measured_visible(True)
+    assert plotted(panel._curve_s21_meas) == n
+    assert app is not None
+
+
 def test_file_menu_has_import_touchstone() -> None:
     from PySide6.QtWidgets import QApplication
 

@@ -67,3 +67,31 @@ def test_cli_analyze_milestone() -> None:
         )
         == 0
     )
+
+
+def test_cli_touchstone_info(tmp_path: Path) -> None:
+    from filterdesk.io.touchstone import write_touchstone_s2p
+    from filterdesk.services.session import DesignSession
+
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    assert session.analysis is not None
+    path = tmp_path / "sim.s2p"
+    write_touchstone_s2p(session.analysis, path)
+    assert main(["touchstone-info", str(path)]) == 0
+    assert main(["touchstone-info", "--json", str(path)]) == 0
+
+
+def test_cli_compare(tmp_path: Path) -> None:
+    from filterdesk.io.touchstone import write_touchstone_s2p
+    from filterdesk.services.session import DesignSession
+
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    assert session.analysis is not None
+    sim = tmp_path / "sim.s2p"
+    mea = tmp_path / "mea.s2p"
+    write_touchstone_s2p(session.analysis, sim)
+    write_touchstone_s2p(session.analysis, mea)
+    assert main(["compare", str(sim), str(mea)]) == 0
+    assert main(["compare", "--json", str(sim), str(mea)]) == 0

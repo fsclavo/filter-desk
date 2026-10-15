@@ -46,6 +46,7 @@ from filterdesk.io.touchstone import (
     write_touchstone_s2p,
 )
 from filterdesk.plotting import export_smith_chart
+from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesize
 from filterdesk.synthesis.api import SynthesisResult
@@ -179,6 +180,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tsinfo.add_argument("path", type=Path, help="Touchstone file path")
     tsinfo.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+
+    cmpp = sub.add_parser(
+        "compare",
+        help="Compare two Touchstone results (simulated vs measured)",
+    )
+    cmpp.add_argument("simulated", type=Path, help="Simulated .s2p")
+    cmpp.add_argument("measured", type=Path, help="Measured .s2p")
+    cmpp.add_argument(
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
@@ -604,6 +617,37 @@ def main(argv: list[str] | None = None) -> int:
             print(data.summary())
             if data.source:
                 print(f"source: {data.source}")
+        return 0
+
+    if args.command == "compare":
+        try:
+            sim = read_touchstone(args.simulated).to_analysis_result()
+            mea = read_touchstone(args.measured).to_analysis_result()
+        except (TouchstoneError, OSError) as exc:
+            print(f"compare failed: {exc}", file=sys.stderr)
+            return 2
+        try:
+            cmp = compare_results(sim, mea)
+        except CompareError as exc:
+            print(f"compare failed: {exc}", file=sys.stderr)
+            return 1
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "n_points": cmp.n_points,
+                        "f_min_hz": cmp.f_min_hz,
+                        "f_max_hz": cmp.f_max_hz,
+                        "s21_db_rms_error": cmp.s21_db_rms_error,
+                        "s21_db_max_error": cmp.s21_db_max_error,
+                        "s11_db_rms_error": cmp.s11_db_rms_error,
+                        "s11_db_max_error": cmp.s11_db_max_error,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(cmp.summary())
         return 0
 
     parser.print_help()

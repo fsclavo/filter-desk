@@ -78,6 +78,9 @@ class PlotPanel(QWidget):
         super().__init__(parent)
         pg.setConfigOptions(antialias=True)
         self._result: AnalysisResult | None = None
+        self._measured: AnalysisResult | None = None
+        self._measured_name = ""
+        self._show_measured = True
         self._freq = np.array([], dtype=float)
         self._s21_db = np.array([], dtype=float)
         self._s11_db = np.array([], dtype=float)
@@ -98,10 +101,20 @@ class PlotPanel(QWidget):
         self._mag.addLegend()
         self._curve_s21 = self._mag.plot(pen=pg.mkPen("#1f77b4", width=2), name="S21")
         self._curve_s11 = self._mag.plot(pen=pg.mkPen("#d62728", width=2), name="S11")
+        dash = Qt.PenStyle.DashLine
+        self._curve_s21_meas = self._mag.plot(
+            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name="S21 meas"
+        )
+        self._curve_s11_meas = self._mag.plot(
+            pen=pg.mkPen("#d62728", width=1.4, style=dash), name="S11 meas"
+        )
 
         self._vswr_plot = _freq_plot("VSWR")
         self._vswr_plot.setLabel("left", "VSWR")
         self._curve_vswr = self._vswr_plot.plot(pen=pg.mkPen("#2ca02c", width=2))
+        self._curve_vswr_meas = self._vswr_plot.plot(
+            pen=pg.mkPen("#2ca02c", width=1.4, style=dash)
+        )
 
         self._gd_plot = _freq_plot("Group delay")
         self._gd_plot.setLabel("left", "Group delay", units="s")
@@ -163,6 +176,33 @@ class PlotPanel(QWidget):
         self._redraw_limits()
         self._smith.set_limits(limits)
 
+    def set_measured(self, result: AnalysisResult | None, name: str = "") -> None:
+        self._measured = result
+        self._measured_name = name or ""
+        self._update_measured()
+
+    def set_measured_visible(self, visible: bool) -> None:
+        self._show_measured = bool(visible)
+        self._update_measured()
+
+    def has_measured(self) -> bool:
+        return self._measured is not None
+
+    def _update_measured(self) -> None:
+        empty = np.array([], dtype=float)
+        measured = self._measured
+        if measured is None or not self._show_measured:
+            self._curve_s21_meas.setData(empty, empty)
+            self._curve_s11_meas.setData(empty, empty)
+            self._curve_vswr_meas.setData(empty, empty)
+            self._smith.set_measured_s_params(empty, empty, None)
+            return
+        fm = np.asarray(measured.frequency_hz, dtype=float)
+        self._curve_s21_meas.setData(fm, np.asarray(mag_db(measured.s21)))
+        self._curve_s11_meas.setData(fm, np.asarray(mag_db(measured.s11)))
+        self._curve_vswr_meas.setData(fm, np.asarray(vswr(measured)))
+        self._smith.set_measured_s_params(fm, measured.s11, measured.s22)
+
     def set_result(self, result: AnalysisResult | None) -> None:
         self._result = result
         if result is None:
@@ -182,6 +222,7 @@ class PlotPanel(QWidget):
             self._readout.setText("No analysis result.")
             self._redraw_markers()
             self._redraw_limits()
+            self._update_measured()
             return
 
         f = np.asarray(result.frequency_hz, dtype=float)
@@ -204,14 +245,19 @@ class PlotPanel(QWidget):
             z0_load_ohm=result.z0_load_ohm,
         )
         self._smith.set_markers(self._markers)
-        self._readout.setText(
+        readout = (
             "Move the mouse over a plot to read frequency and values "
             "(snaps to nearest sweep point). Drag marker lines or Smith "
             "spots to retune. Smith: S11 red, S22 blue; "
             "green/purple = S11 start/stop."
         )
+        if self._measured is not None and self._show_measured:
+            label = self._measured_name or "measured"
+            readout += f"  Dashed = {label} overlay."
+        self._readout.setText(readout)
         self._redraw_markers()
         self._redraw_limits()
+        self._update_measured()
 
     def _x_pos(self, freq_hz: float, plot: pg.PlotWidget) -> float:
         log_x = bool(plot.getPlotItem().getAxis("bottom").logMode)

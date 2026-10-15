@@ -73,7 +73,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | ID | Item | Detail | Status |
 | --- | --- | --- | --- |
 | B4.1 | **Touchstone reader (import)** | `io/touchstone/reader.py` (`TouchstoneData`/`read_touchstone`/`parse_touchstone`); HZ..GHZ, RI/MA/DB, `R z0`, comments, wrapped records, `.s1p`/`.sNp` port inference; GUI **File → Import Touchstone…** (worker + `DesignSession.set_measured`) and CLI `touchstone-info` — blueprint FR-I2, §27 | **DONE (2026-10-15)** |
-| B4.2 | **`services.compare`** | Compare simulated vs measured `AnalysisResult` (overlay) | Pending (→ Phase 10) |
+| B4.2 | **`services.compare`** | `services/compare.py` (`CompareResult`/`compare_results`): overlap-band align + S21/S11 dB RMS & max error; GUI dashed measured overlay on mag/VSWR/Smith with **View → Show measured overlay** toggle; CLI `compare SIM MEAS [--json]` | **DONE (2026-10-15)** |
 | B4.3 | **`plotting/protocol.py` `PlotBackend`** | GUI imports PyQtGraph directly; plotting backend abstraction never materialized | Pending (blueprint §24) |
 
 ---
@@ -122,7 +122,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [ ] Qucs `.sch` exporter
 - [ ] CSV / two-column DAT trace export
 - [x] Touchstone reader import + `.s1p` (B4.1 — `touchstone-info` CLI + GUI import)
-- [ ] Measured-vs-simulated overlay UX (`services.compare`, B4.2)
+- [x] Measured-vs-simulated overlay UX (`services.compare`, B4.2)
 
 ### Phase 11 — Packaging & Windows
 
