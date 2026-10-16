@@ -218,6 +218,7 @@ def test_file_menu_has_import_touchstone() -> None:
     assert any("Touchstone" in t for t in export_labels)
     assert any("SPICE" in t for t in export_labels)
     assert any("LTspice" in t for t in export_labels)
+    assert any("Qucs" in t for t in export_labels)
     window.close()
     assert app is not None
 
@@ -824,6 +825,30 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert session.circuit is not None
     assert any(isinstance(el, IdealResistor) for el in session.circuit.elements)
+    window.close()
+    assert app is not None
+
+
+def test_main_window_export_qucs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    out = tmp_path / "design.sch"
+    monkeypatch.setattr(
+        mw.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "")
+    )
+    window._export_qucs()
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8").startswith("<Qucs Schematic")
+    assert "Wrote" in window._status.text()
     window.close()
     assert app is not None
 

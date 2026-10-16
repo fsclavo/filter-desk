@@ -54,10 +54,24 @@ traces, LTspice `.asc`, Qucs `.sch`.
 - CLI — `analyze … --export-asc PATH`.
 - GUI — **File → Export → LTspice (.asc)…**.
 
+### Qucs `.sch` schematic export (best-effort)
+
+- `io/qucs/`:
+  - `qucs_schematic(circuit, *, title, z0_ohm)` / `write_qucs_schematic(...)`
+    produce a Qucs XML schematic with `<Components>` + `<Wires>` and S-parameter
+    test ports `P1`/`P2`.
+  - Layout: series elements on a horizontal rail (R/C/L ports at ±30 px), shunt
+    elements dropped to `GND`; wire endpoints touch component pins (geometric
+    connectivity). Ideal L/C/R and series/parallel LC arms supported; unsupported
+    arms raise `SpiceExportError`.
+- CLI — `analyze … --export-qucs PATH`.
+- GUI — **File → Export → Qucs (.sch)…**.
+- Best-effort: generated layout is not validated against a running Qucs here.
+
 ## Deferred
 
-- Qucs `.sch` exporter (Qucs schematic is XML + wire geometry; the LTspice/SPICE
-  netlist is the portable interchange path today).
+- None (LTspice `.asc` and Qucs `.sch` delivered; SPICE netlist + Touchstone
+  remain the primary interchange paths).
 
 ## Tests
 

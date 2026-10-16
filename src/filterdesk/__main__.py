@@ -56,6 +56,7 @@ from filterdesk.io.csv_export import (
     analysis_from_touchstone,
     export_csv,
 )
+from filterdesk.io.qucs import write_qucs_schematic
 from filterdesk.io.spice import write_ltspice_asc, write_spice_netlist
 from filterdesk.io.touchstone import (
     TouchstoneError,
@@ -196,6 +197,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Write an LTspice .asc schematic to this path",
+    )
+    ana.add_argument(
+        "--export-qucs",
+        type=Path,
+        default=None,
+        help="Write a Qucs .sch schematic to this path (best-effort)",
     )
     ana.add_argument(
         "--json",
@@ -1054,6 +1061,14 @@ def main(argv: list[str] | None = None) -> int:
                 ac=sweep,
             )
             print(f"Wrote {args.export_asc}", file=sys.stderr)
+
+        if args.export_qucs is not None:
+            write_qucs_schematic(
+                synth.circuit,
+                args.export_qucs,
+                title=f"{spec.family.value} n={spec.order} {spec.response.value}",
+            )
+            print(f"Wrote {args.export_qucs}", file=sys.stderr)
 
         if args.json:
             n = analysis.frequency_hz.shape[0]
