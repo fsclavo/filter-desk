@@ -25,6 +25,7 @@ class BandKind(StrEnum):
     LPF = "lpf"
     HPF = "hpf"
     BPF = "bpf"
+    BSF = "bsf"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,16 +54,39 @@ BANDS: tuple[Band, ...] = (
     Band("6 m", 50.0e6, 54.0e6),
 )
 
+#: Broadcast bands commonly notched out (band-stop presets).
+REJECTION_PRESETS: tuple[Band, ...] = (
+    Band("AM broadcast", 530e3, 1710e3),
+    Band("FM broadcast", 88e6, 108e6),
+)
+
+#: Every preset offered in the GUI/CLI band selector.
+ALL_PRESETS: tuple[Band, ...] = BANDS + REJECTION_PRESETS
+
+_BAND_ALIASES: dict[str, str] = {
+    "am": "AM broadcast",
+    "am broadcast": "AM broadcast",
+    "mw": "AM broadcast",
+    "fm": "FM broadcast",
+    "fm broadcast": "FM broadcast",
+}
+
 
 def find_band(name: str) -> Band:
-    """Look up a band by name; accepts ``40``, ``40m`` or ``40 m``."""
-    key = name.strip().lower().replace(" ", "")
+    """Look up a band; accepts ``40``, ``40m``, ``am``, ``fm``, ``AM broadcast``…"""
+    raw = name.strip()
+    alias = _BAND_ALIASES.get(raw.lower().replace("  ", " "))
+    if alias is not None:
+        for band in REJECTION_PRESETS:
+            if band.name == alias:
+                return band
+    key = raw.lower().replace(" ", "")
     if key.endswith("m"):
         key = key[:-1]
-    for band in BANDS:
+    for band in ALL_PRESETS:
         if band.name.lower().replace(" ", "").rstrip("m") == key:
             return band
-    raise KeyError(f"unknown amateur band: {name!r}")
+    raise KeyError(f"unknown band preset: {name!r}")
 
 
 def band_preset_spec(band: Band, kind: BandKind = BandKind.LPF) -> FilterSpec:
@@ -71,6 +95,7 @@ def band_preset_spec(band: Band, kind: BandKind = BandKind.LPF) -> FilterSpec:
         BandKind.LPF: FilterResponse.LOW_PASS,
         BandKind.HPF: FilterResponse.HIGH_PASS,
         BandKind.BPF: FilterResponse.BAND_PASS,
+        BandKind.BSF: FilterResponse.BAND_STOP,
     }
     response = response_map[kind]
     common: dict[str, object] = {
@@ -89,7 +114,7 @@ def band_preset_spec(band: Band, kind: BandKind = BandKind.LPF) -> FilterSpec:
         common["order"] = 5
         common["cutoff_hz"] = band.low_hz * 0.9
     else:
-        common["order"] = 4
+        common["order"] = 5 if kind == BandKind.BSF else 4
         common["f_center_hz"] = band.center_hz
         common["bandwidth_hz"] = (band.high_hz - band.low_hz) * 1.5
     return FilterSpec(**common)  # type: ignore[arg-type]
@@ -106,7 +131,9 @@ def band_sweep(band: Band) -> SweepConfig:
 
 
 __all__ = [
+    "ALL_PRESETS",
     "BANDS",
+    "REJECTION_PRESETS",
     "Band",
     "BandKind",
     "band_preset_spec",

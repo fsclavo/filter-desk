@@ -840,9 +840,17 @@ def test_band_preset_dialog_selection() -> None:
     band, kind = dialog.selection()
     assert band.name == "40 m"
     assert kind == BandKind.LPF
-    dialog._kind.setCurrentIndex(2)  # High-pass -> Band-pass ordering: LPF,HPF,BPF
+    dialog._kind.setCurrentIndex(2)  # LPF,HPF,BPF -> band-pass
     _, kind = dialog.selection()
     assert kind == BandKind.BPF
+    # Rejection preset: pick the AM broadcast band + band-stop.
+    am_index = dialog._band.findText("AM broadcast")
+    assert am_index >= 0
+    dialog._band.setCurrentIndex(am_index)
+    dialog._kind.setCurrentIndex(3)  # ... -> band-stop
+    band, kind = dialog.selection()
+    assert band.name == "AM broadcast"
+    assert kind == BandKind.BSF
     assert app is not None
 
 

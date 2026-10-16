@@ -154,7 +154,7 @@ intended implementation sequence.
 - [x] **Transmit harmonic readout** (S) — `analysis/harmonics.py` (`compute_harmonics`); GUI **Harmonics** dock (table of |S21|/suppression per harmonic) + dotted harmonic lines on the magnitude plot (**View → Show harmonic markers**); CLI `analyze --harmonics [--harmonics-f0 F]`. Targets the PA output-LPF use case.
 - [x] **Resistive attenuator designer** (S) — `components_std/attenuator.py` (`design_attenuator`); GUI **Design → Attenuator pad…** (live values, inserts a T/Pi pad at the input via `circuit_edit.insert_resistive_pad`); CLI `attenuator --db D [--z0 Z] [--kind t|pi] [--json]`.
 - [x] **Matching networks L / Pi / T** (L) — `components_std/matching.py` (`design_matching`, complex load, low-pass solution; Pi/T via virtual resistance from Q, numeric-verified `Zin=Z0`); GUI **Design → Matching network…** (live values + optional "model the load" building source→network→(series X)→port R); CLI `match --z0 --rl --xl --f [--topology l|pi|t] [--q Q] [--json]`.
-- [ ] **Rejection presets** (S) — band-stop presets: AM broadcast notch (530–1710 kHz) and FM broadcast notch (88–108 MHz); validate against typical data. Extends the band presets.
+- [x] **Rejection presets** (S) — `BandKind.BSF` + `REJECTION_PRESETS` (AM broadcast 530–1710 kHz, FM broadcast 88–108 MHz) in `services/bands.py`; GUI **Design → Band preset…** (now includes band-stop + broadcast bands); CLI `--band am|fm --band-kind bsf`.
 - [ ] **Build sheet / BOM export** (M) — a construction document (values, E-series, per-part notes, schematic) to PDF/CSV; ideally consumes the (future) toroid turn calculator.
 
 Cross-links: toroid turn calculator (not yet listed) would pair with the BOM sheet;

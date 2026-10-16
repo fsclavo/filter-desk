@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from filterdesk.__main__ import main
@@ -69,8 +71,6 @@ def test_cli_band_kind_bpf(capsys: pytest.CaptureFixture[str]) -> None:
         ["synthesize", "--band", "20m", "--band-kind", "bpf", "--json"]
     )
     assert code == 0
-    import json
-
     payload = json.loads(capsys.readouterr().out)
     assert payload["spec"]["response"] == "band_pass"
 
@@ -84,3 +84,28 @@ def test_bands_table_sane() -> None:
     assert len(BANDS) >= 10
     for band in BANDS:
         assert 0.0 < band.low_hz < band.high_hz
+
+
+def test_rejection_presets_bsf() -> None:
+    am = find_band("am")
+    assert am.name == "AM broadcast"
+    assert find_band("fm").name == "FM broadcast"
+    assert find_band("AM broadcast").name == "AM broadcast"
+
+    spec = band_preset_spec(am, BandKind.BSF)
+    assert spec.response == FilterResponse.BAND_STOP
+    assert spec.f_center_hz == pytest.approx(am.center_hz)
+    assert spec.bandwidth_hz == pytest.approx((am.high_hz - am.low_hz) * 1.5)
+
+
+def test_cli_band_bsf(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["synthesize", "--band", "fm", "--band-kind", "bsf", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["spec"]["response"] == "band_stop"
+
+
+def test_cli_bands_lists_rejection(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["bands"]) == 0
+    out = capsys.readouterr().out
+    assert "AM broadcast" in out and "FM broadcast" in out
+

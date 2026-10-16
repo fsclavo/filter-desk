@@ -263,7 +263,7 @@ specification edits require an explicit **Synthesize**.
 | Workflow | How to trigger | Notes |
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
-| **Band preset** | **Design → Band preset…** | one-click 160 m–6 m LP/HP/BP design (Chebyshev-I, sets sweep) |
+| **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, sets sweep) |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
@@ -385,8 +385,8 @@ filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
 
 Global options: `-h/--help`, `--version`.
 
-`--band NAME` (e.g. `40m`) builds a spec from an amateur-band preset and
-`--band-kind {lpf,hpf,bpf}` selects the kind; `filterdesk bands` lists them.
+`--band NAME` (e.g. `40m`, `am`, `fm`) builds a spec from a preset and
+`--band-kind {lpf,hpf,bpf,bsf}` selects the kind; `filterdesk bands` lists them.
 
 ### Shared specification options
 

@@ -94,7 +94,12 @@ from filterdesk.optimization import (
     optimize_circuit,
 )
 from filterdesk.plotting import get_plot_backend
-from filterdesk.services.bands import BANDS, BandKind, band_preset_spec, find_band
+from filterdesk.services.bands import (
+    ALL_PRESETS,
+    BandKind,
+    band_preset_spec,
+    find_band,
+)
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesize
@@ -1308,9 +1313,9 @@ def main(argv: list[str] | None = None) -> int:
         return run_gui()
 
     if args.command == "bands":
-        for preset in BANDS:
+        for preset in ALL_PRESETS:
             print(
-                f"  {preset.name:6s} "
+                f"  {preset.name:14s} "
                 f"{format_engineering(preset.low_hz, 'Hz', digits=4)} – "
                 f"{format_engineering(preset.high_hz, 'Hz', digits=4)}  "
                 f"(center {format_engineering(preset.center_hz, 'Hz', digits=4)})"

@@ -30,7 +30,7 @@ from filterdesk.components_std import (
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
-from filterdesk.services.bands import BANDS, Band, BandKind
+from filterdesk.services.bands import ALL_PRESETS, Band, BandKind
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -386,17 +386,18 @@ class BandPresetDialog(QDialog):
         (BandKind.LPF, "Transmit LPF"),
         (BandKind.HPF, "High-pass"),
         (BandKind.BPF, "Band-pass"),
+        (BandKind.BSF, "Band-stop (notch)"),
     )
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Amateur band preset")
         self._band = QComboBox()
-        for band in BANDS:
+        for band in ALL_PRESETS:
             self._band.addItem(band.name)
         # Default to 40 m.
         self._band.setCurrentIndex(
-            next((i for i, b in enumerate(BANDS) if b.name == "40 m"), 0)
+            next((i for i, b in enumerate(ALL_PRESETS) if b.name == "40 m"), 0)
         )
         self._kind = QComboBox()
         for _kind, label in self._KINDS:
@@ -414,7 +415,7 @@ class BandPresetDialog(QDialog):
 
     def selection(self) -> tuple[Band, BandKind]:
         # Indices (not userData): PySide would coerce the StrEnum to a plain str.
-        band = BANDS[self._band.currentIndex()]
+        band = ALL_PRESETS[self._band.currentIndex()]
         kind = self._KINDS[self._kind.currentIndex()][0]
         return band, kind
 
