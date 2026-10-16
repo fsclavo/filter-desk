@@ -118,6 +118,43 @@ def insert_simple_arm(
     return rebuild_ladder(circuit, elements)
 
 
+def insert_resistive_pad(
+    circuit: Circuit,
+    *,
+    kind: str,
+    r_series_ohm: float,
+    r_shunt_ohm: float,
+    at_input: bool = True,
+) -> Circuit:
+    """Insert a symmetric T/Pi resistive pad (3 arms) at the input or output."""
+    if r_series_ohm <= 0.0 or r_shunt_ohm <= 0.0:
+        raise CircuitEditError("pad resistor values must be > 0")
+    if kind in ("t", "tee"):
+        arms = [
+            (ElementRole.SERIES, r_series_ohm),
+            (ElementRole.SHUNT, r_shunt_ohm),
+            (ElementRole.SERIES, r_series_ohm),
+        ]
+    elif kind in ("pi", "π"):
+        arms = [
+            (ElementRole.SHUNT, r_shunt_ohm),
+            (ElementRole.SERIES, r_series_ohm),
+            (ElementRole.SHUNT, r_shunt_ohm),
+        ]
+    else:
+        raise CircuitEditError(f"unsupported pad kind: {kind!r}")
+    new_elements: list[Element] = [
+        IdealResistor(id="X", value_ohm=value, node_a="", node_b="", role=role)
+        for role, value in arms
+    ]
+    elements = list(circuit.elements)
+    if at_input:
+        elements = new_elements + elements
+    else:
+        elements = elements + new_elements
+    return rebuild_ladder(circuit, elements)
+
+
 def delete_arm(circuit: Circuit, element_id: str) -> Circuit:
     """Remove one arm; raises if it is the last remaining element."""
     elements = list(circuit.elements)

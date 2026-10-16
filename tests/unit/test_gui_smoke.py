@@ -846,6 +846,53 @@ def test_band_preset_dialog_selection() -> None:
     assert app is not None
 
 
+def test_attenuator_dialog_live_values() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import AttenuatorDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = AttenuatorDialog()
+    dialog._recompute()
+    assert "16" in dialog._series.text()  # 6 dB T-pad series ≈ 16.6 Ω
+    assert "66" in dialog._shunt.text()  # ≈ 66.9 Ω
+    assert app is not None
+
+
+def test_main_window_attenuator(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import AttenuatorKind, design_attenuator
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    n = len(session.circuit.elements)
+    window = mw.MainWindow(session, auto_run=False)
+    design = design_attenuator(6.0, 50.0, AttenuatorKind.TEE)
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> object:
+            return design
+
+    monkeypatch.setattr(mw, "AttenuatorDialog", _FakeDialog)
+    monkeypatch.setattr(window, "_after_circuit_change", lambda: None)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_attenuator()
+
+    assert session.circuit is not None
+    assert len(session.circuit.elements) == n + 3
+    assert "Inserted T pad" in window._status.text()
+    window._undo.undo()
+    assert len(session.circuit.elements) == n
+    window.close()
+    assert app is not None
+
+
 def test_main_window_harmonics() -> None:
     from PySide6.QtWidgets import QApplication
 

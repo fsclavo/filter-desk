@@ -7,14 +7,19 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QLabel,
     QLineEdit,
     QSpinBox,
     QWidget,
 )
 
 from filterdesk.components_std import (
+    AttenuatorDesign,
+    AttenuatorError,
+    AttenuatorKind,
     ESeries,
     SnapStrategy,
+    design_attenuator,
     inductor_resistance_ohm_from_q,
 )
 from filterdesk.domain.units import format_engineering, parse_si
@@ -414,3 +419,70 @@ class BandPresetDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.selection()
         return None
+
+
+class AttenuatorDialog(QDialog):
+    """Symmetric T/Pi resistive attenuator designer (live values)."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Attenuator pad")
+        self._db = EngineeringLineEdit()
+        self._db.setText("6")
+        self._z0 = EngineeringLineEdit()
+        self._z0.setText("50")
+        self._kind = QComboBox()
+        for _kind, label in (
+            (AttenuatorKind.TEE, "T pad"),
+            (AttenuatorKind.PI, "Pi pad"),
+        ):
+            self._kind.addItem(label)
+        self._series = QLabel("—")
+        self._shunt = QLabel("—")
+        form = QFormLayout(self)
+        form.addRow("Attenuation (dB)", self._db)
+        form.addRow("System Z0 (Ohm)", self._z0)
+        form.addRow("Topology", self._kind)
+        form.addRow("Series R", self._series)
+        form.addRow("Shunt R", self._shunt)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+        self._db.editingFinished.connect(self._recompute)
+        self._z0.editingFinished.connect(self._recompute)
+        self._kind.currentIndexChanged.connect(self._recompute)
+        self._recompute()
+
+    def _kind_value(self) -> AttenuatorKind:
+        return (AttenuatorKind.TEE, AttenuatorKind.PI)[self._kind.currentIndex()]
+
+    def _design(self) -> AttenuatorDesign:
+        return design_attenuator(
+            float(self._db.text().strip() or "0"),
+            parse_si(self._z0.text().strip() or "50"),
+            self._kind_value(),
+        )
+
+    def _recompute(self) -> None:
+        try:
+            design = self._design()
+        except (AttenuatorError, ValueError):
+            self._series.setText("—")
+            self._shunt.setText("—")
+            return
+        self._series.setText(format_engineering(design.r_series_ohm, "Ohm", digits=4))
+        self._shunt.setText(format_engineering(design.r_shunt_ohm, "Ohm", digits=4))
+
+    @classmethod
+    def ask(cls, parent: QWidget | None = None) -> AttenuatorDesign | None:
+        dialog = cls(parent)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return None
+        try:
+            return dialog._design()
+        except (AttenuatorError, ValueError):
+            return None

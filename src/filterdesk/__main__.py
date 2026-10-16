@@ -25,9 +25,12 @@ from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
+    AttenuatorError,
+    AttenuatorKind,
     ESeries,
     SnapReport,
     SnapStrategy,
+    design_attenuator,
     nonidealize_circuit,
     snap_circuit,
 )
@@ -242,6 +245,20 @@ def build_parser() -> argparse.ArgumentParser:
         "bands",
         help="List amateur band presets (160 m–6 m)",
     )
+
+    atten = sub.add_parser(
+        "attenuator",
+        help="Design a symmetric T or Pi resistive attenuator",
+    )
+    atten.add_argument("--db", required=True, type=float, help="Attenuation (dB)")
+    atten.add_argument("--z0", default="50", help="System impedance (ohm)")
+    atten.add_argument(
+        "--kind",
+        choices=[k.value for k in AttenuatorKind],
+        default=AttenuatorKind.TEE.value,
+        help="Pad topology",
+    )
+    atten.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -1272,6 +1289,42 @@ def main(argv: list[str] | None = None) -> int:
                 f"{format_engineering(preset.low_hz, 'Hz', digits=4)} – "
                 f"{format_engineering(preset.high_hz, 'Hz', digits=4)}  "
                 f"(center {format_engineering(preset.center_hz, 'Hz', digits=4)})"
+            )
+        return 0
+
+    if args.command == "attenuator":
+        try:
+            design = design_attenuator(
+                float(args.db), parse_si(str(args.z0)), AttenuatorKind(args.kind)
+            )
+        except (AttenuatorError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "kind": design.kind.value,
+                        "attenuation_db": design.attenuation_db,
+                        "z0_ohm": design.z0_ohm,
+                        "r_series_ohm": design.r_series_ohm,
+                        "r_shunt_ohm": design.r_shunt_ohm,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"{design.kind.value.upper()} pad {design.attenuation_db:g} dB @ "
+                f"{design.z0_ohm:g} Ohm:"
+            )
+            print(
+                f"  series R = "
+                f"{format_engineering(design.r_series_ohm, 'Ohm', digits=4)}"
+            )
+            print(
+                f"  shunt  R = "
+                f"{format_engineering(design.r_shunt_ohm, 'Ohm', digits=4)}"
             )
         return 0
 

@@ -67,6 +67,7 @@ from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import (
+    AttenuatorDialog,
     BandPresetDialog,
     EngineeringLineEdit,
     MonteCarloDialog,
@@ -364,6 +365,9 @@ class MainWindow(QMainWindow):
         act_band = QAction("&Band preset…", self)
         act_band.triggered.connect(self._run_band_preset)
         design_menu.addAction(act_band)
+        act_atten = QAction("&Attenuator pad…", self)
+        act_atten.triggered.connect(self._run_attenuator)
+        design_menu.addAction(act_atten)
         act_snap = QAction("Sna&p to E-series…", self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -631,6 +635,29 @@ class MainWindow(QMainWindow):
         )
         self._undo.push(cmd)
         self._status.setText(f"Band preset: {band.name} {kind.value.upper()}")
+        self._run_analyze()
+
+    def _run_attenuator(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Attenuator", "Synthesize a circuit first."
+            )
+            return
+        design = AttenuatorDialog.ask(self)
+        if design is None:
+            return
+        new_circuit = circuit_edit.insert_resistive_pad(
+            self._session.circuit,
+            kind=design.kind.value,
+            r_series_ohm=design.r_series_ohm,
+            r_shunt_ohm=design.r_shunt_ohm,
+            at_input=True,
+        )
+        self._push_circuit_edit(new_circuit, "Insert attenuator")
+        self._status.setText(
+            f"Inserted {design.kind.value.upper()} pad "
+            f"{design.attenuation_db:g} dB @ {design.z0_ohm:g} Ohm"
+        )
         self._run_analyze()
 
     def _run_scale_response(self) -> None:
