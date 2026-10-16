@@ -128,7 +128,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 - [ ] LTspice `.asc` exporter (from `Circuit` + schematic layout)
 - [ ] Qucs `.sch` exporter
-- [ ] CSV / two-column DAT trace export
+- [x] CSV / two-column DAT trace export — `io/csv_export` + CLI `analyze --export-csv` / `to-csv` + GUI **File → Export CSV…**
 - [x] Touchstone reader import + `.s1p` (B4.1 — `touchstone-info` CLI + GUI import)
 - [x] Measured-vs-simulated overlay UX (`services.compare`, B4.2)
 

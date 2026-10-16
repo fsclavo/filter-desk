@@ -50,6 +50,12 @@ from filterdesk.domain.specs import (
     filter_spec_to_mapping,
 )
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.io.csv_export import (
+    COLUMNS,
+    CsvExportError,
+    analysis_from_touchstone,
+    export_csv,
+)
 from filterdesk.io.touchstone import (
     TouchstoneError,
     read_touchstone,
@@ -167,6 +173,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Write Smith chart image (.png/.svg/.pdf) to this path",
+    )
+    ana.add_argument(
+        "--export-csv",
+        type=Path,
+        default=None,
+        help="Write trace CSV (frequency, S21/S11 dB, VSWR, …) to this path",
     )
     ana.add_argument(
         "--json",
@@ -287,6 +299,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON (costs + tuned values)",
+    )
+
+    tocsv = sub.add_parser(
+        "to-csv",
+        help="Convert a Touchstone file (.s2p) to trace CSV",
+    )
+    tocsv.add_argument("input", type=Path, help="Input Touchstone file")
+    tocsv.add_argument("output", type=Path, help="Output CSV path")
+    tocsv.add_argument(
+        "--columns",
+        default=",".join(COLUMNS),
+        help="Comma-separated column names (default: standard set)",
     )
 
     est = sub.add_parser(
@@ -927,6 +951,17 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"Wrote {args.export_smith}", file=sys.stderr)
 
+        if args.export_csv is not None:
+            export_csv(
+                analysis,
+                args.export_csv,
+                comment=(
+                    f"family={spec.family.value} order={spec.order} "
+                    f"{spec.response.value} backend={analysis.backend}"
+                ),
+            )
+            print(f"Wrote {args.export_csv}", file=sys.stderr)
+
         if args.json:
             n = analysis.frequency_hz.shape[0]
             idxs = sorted({0, n // 4, n // 2, 3 * n // 4, n - 1})
@@ -1104,6 +1139,30 @@ def main(argv: list[str] | None = None) -> int:
             print(data.summary())
             if data.source:
                 print(f"source: {data.source}")
+        return 0
+
+    if args.command == "to-csv":
+        columns = tuple(
+            name.strip() for name in str(args.columns).split(",") if name.strip()
+        )
+        try:
+            data = read_touchstone(args.input)
+            analysis_result = analysis_from_touchstone(data)
+            export_csv(
+                analysis_result,
+                args.output,
+                columns=columns,
+                comment=f"source={args.input}",
+            )
+        except (
+            TouchstoneError,
+            CsvExportError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(f"Wrote {args.output}", file=sys.stderr)
         return 0
 
     if args.command == "compare":

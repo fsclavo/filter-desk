@@ -67,6 +67,7 @@ from filterdesk.gui.workers import (
     start_monte_carlo_thread,
     start_optimize_thread,
 )
+from filterdesk.io.csv_export import export_csv
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.montecarlo import MonteCarloResult
@@ -229,6 +230,8 @@ class MainWindow(QMainWindow):
         act_import_ts.triggered.connect(self._import_touchstone)
         act_export_smith = QAction("Export &Smith chart…", self)
         act_export_smith.triggered.connect(self._export_smith_chart)
+        act_export_csv = QAction("Export C&SV…", self)
+        act_export_csv.triggered.connect(self._export_csv)
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
@@ -238,6 +241,7 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(act_import_ts)
         file_menu.addAction(act_export_smith)
+        file_menu.addAction(act_export_csv)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
@@ -1207,6 +1211,34 @@ class MainWindow(QMainWindow):
                 path,
                 markers=self._session.markers,
                 title="Smith chart — S11 / S22",
+            )
+            self._status.setText(f"Wrote {path}")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+
+    def _export_csv(self) -> None:
+        result = self._session.analysis
+        if result is None:
+            QMessageBox.information(
+                self,
+                "Export CSV",
+                "Analyze a design first (Design → Synthesize + Analyze).",
+            )
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export CSV", "traces.csv", "CSV (*.csv);;All files (*)"
+        )
+        if not path:
+            return
+        spec = self._session.spec
+        try:
+            export_csv(
+                result,
+                path,
+                comment=(
+                    f"family={spec.family.value} order={spec.order} "
+                    f"{spec.response.value} backend={result.backend}"
+                ),
             )
             self._status.setText(f"Wrote {path}")
         except Exception as exc:  # noqa: BLE001
