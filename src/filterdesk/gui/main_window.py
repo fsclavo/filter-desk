@@ -238,15 +238,21 @@ class MainWindow(QMainWindow):
         self._power.setSuffix(" W")
         self._power.setValue(0.0)
         self._power.setMaximumWidth(110)
-        self._power.setToolTip(
-            "Forward power for the per-component voltage/current stress estimate "
-            "(0 = off). Shown at the passband landmark frequency."
+        power_tip = (
+            "Forward transmit power (W) used to estimate the peak voltage and "
+            "current in each L/C (the Vpk / Ipk columns). 0 disables it.\n"
+            "Evaluated at the passband landmark (cutoff for LP/HP, center for "
+            "BP/BS) assuming a matched Z0 system — use it to pick component "
+            "voltage/current ratings (e.g. capacitor voltage) for TX filters."
         )
+        self._power.setToolTip(power_tip)
         self._power.valueChanged.connect(self._on_power_changed)
         pwrap = QWidget()
         play = QHBoxLayout(pwrap)
         play.setContentsMargins(4, 0, 4, 0)
-        play.addWidget(QLabel("P"))
+        p_label = QLabel("TX Power")
+        p_label.setToolTip(power_tip)
+        play.addWidget(p_label)
         play.addWidget(self._power)
         tb.addWidget(pwrap)
         wrap = QWidget()
