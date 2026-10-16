@@ -40,7 +40,7 @@ from filterdesk.domain.enums import (
     FilterResponse,
     TopologyId,
 )
-from filterdesk.domain.overlays import limits_from_mapping
+from filterdesk.domain.overlays import LimitRegion, limits_from_mapping
 from filterdesk.domain.specs import (
     FilterSpec,
     SpecValidationError,
@@ -71,9 +71,13 @@ from filterdesk.montecarlo import (
     wilson_interval,
 )
 from filterdesk.optimization import (
+    Objective,
     OptimizationConfig,
     OptimizationResult,
     OptimizeMethod,
+    PassbandRipple,
+    ReturnLoss,
+    StopbandAttenuation,
     optimize_circuit,
 )
 from filterdesk.plotting import get_plot_backend
@@ -284,8 +288,18 @@ def build_parser() -> argparse.ArgumentParser:
     opt.add_argument(
         "--limits",
         type=Path,
-        required=True,
+        default=None,
         help="JSON file with a list of limit regions",
+    )
+    opt.add_argument(
+        "--objective",
+        action="append",
+        default=[],
+        metavar="TYPE:LO:HI[:TARGET]",
+        help=(
+            "Composable objective (repeatable): "
+            "passband:LO:HI, stopband:LO:HI:ATT, returnloss:LO:HI:RL"
+        ),
     )
     opt.add_argument(
         "--method",
@@ -301,6 +315,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     opt.add_argument(
         "--max-iter", type=int, default=200, help="Maximum solver iterations"
+    )
+    opt.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="RNG seed for the global methods (DE / dual annealing)",
     )
     opt.add_argument(
         "--json",
@@ -782,6 +802,35 @@ def _optimize_to_json(result: OptimizationResult) -> dict[str, object]:
     }
 
 
+def _objectives_from_cli(entries: list[str]) -> list[Objective]:
+    out: list[Objective] = []
+    for entry in entries:
+        parts = entry.split(":")
+        kind = parts[0].strip().lower()
+        try:
+            if kind == "passband" and len(parts) == 3:
+                out.append(PassbandRipple(parse_si(parts[1]), parse_si(parts[2])))
+            elif kind == "stopband" and len(parts) == 4:
+                out.append(
+                    StopbandAttenuation(
+                        parse_si(parts[1]), parse_si(parts[2]), float(parts[3])
+                    )
+                )
+            elif kind == "returnloss" and len(parts) == 4:
+                out.append(
+                    ReturnLoss(
+                        parse_si(parts[1]), parse_si(parts[2]), float(parts[3])
+                    )
+                )
+            else:
+                raise SpecValidationError(f"invalid --objective {entry!r}")
+        except (ValueError, IndexError) as exc:
+            raise SpecValidationError(
+                f"invalid --objective {entry!r}: {exc}"
+            ) from exc
+    return out
+
+
 def _element_tolerances_from_cli(entries: list[str]) -> dict[str, ElementTolerance]:
     out: dict[str, ElementTolerance] = {}
     for entry in entries:
@@ -889,14 +938,23 @@ def main(argv: list[str] | None = None) -> int:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
             sweep = _default_sweep(spec, args)
-            data = json.loads(args.limits.read_text(encoding="utf-8"))
-            limits = limits_from_mapping(data)
+            opt_limits: list[LimitRegion] = []
+            if args.limits is not None:
+                data = json.loads(args.limits.read_text(encoding="utf-8"))
+                opt_limits = limits_from_mapping(data)
+            objectives = _objectives_from_cli(args.objective)
+            if not opt_limits and not objectives:
+                raise SpecValidationError(
+                    "provide --limits and/or at least one --objective"
+                )
             opt_config = OptimizationConfig(
                 method=OptimizeMethod(args.method),
                 bound_pct=float(args.bound),
                 max_iter=int(args.max_iter),
+                seed=args.seed,
+                objectives=tuple(objectives),
             )
-            opt_result = optimize_circuit(synth.circuit, sweep, limits, opt_config)
+            opt_result = optimize_circuit(synth.circuit, sweep, opt_limits, opt_config)
         except (
             SpecValidationError,
             AnalysisError,

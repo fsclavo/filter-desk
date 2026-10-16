@@ -416,9 +416,19 @@ Most commands accept `--json` for machine-readable output.
 - **`montecarlo`** — tolerance sweep. `--trials` (default 1000), `--tol` (default
   1), `--distribution {uniform,normal}`, `--seed`, `--element-tol REF=PCT`
   (repeatable), `--limits FILE` for yield, plus sweep options.
-- **`optimize`** — tune values to satisfy limits. Requires `--limits FILE`;
-  `--method {least_squares,nelder_mead,differential_evolution,dual_annealing}`,
-  `--bound` (default 0.2), `--max-iter` (default 200), plus sweep options.
+- **`optimize`** — tune values to satisfy limits and/or objectives. Provide
+  `--limits FILE` and/or one or more `--objective`:
+  - `passband:LO:HI` — minimise passband ripple (`|S21|` variation).
+  - `stopband:LO:HI:ATT_DB` — push minimum stopband attenuation up to `ATT_DB`.
+  - `returnloss:LO:HI:RL_DB` — push minimum in-band return loss up to `RL_DB`.
+
+  Options: `--method {least_squares,nelder_mead,differential_evolution,dual_annealing}`,
+  `--bound` (default 0.2), `--max-iter` (default 200), `--seed` (global methods),
+  plus sweep options. Example:
+  ```bash
+  filterdesk optimize --spec spec.json --objective passband:1M:100M \
+      --objective stopband:150M:1G:60 --method nelder_mead --bound 0.3
+  ```
 - **`to-csv`** — convert a Touchstone file to CSV.
   ```bash
   filterdesk to-csv measured.s2p traces.csv

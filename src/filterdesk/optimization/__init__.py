@@ -1,7 +1,16 @@
 """Component-value optimization against limit regions (FR-P4)."""
 
 from filterdesk.optimization.constraints import Bounds, relative_bounds
-from filterdesk.optimization.objectives import limit_residuals, residual_norm
+from filterdesk.optimization.objectives import (
+    Objective,
+    PassbandRipple,
+    ReturnLoss,
+    StopbandAttenuation,
+    combined_residuals,
+    limit_residuals,
+    objective_residuals,
+    residual_norm,
+)
 from filterdesk.optimization.solvers import (
     OptimizationConfig,
     OptimizationError,
@@ -17,13 +26,19 @@ from filterdesk.optimization.variables import (
 
 __all__ = [
     "Bounds",
+    "Objective",
     "OptimizationConfig",
     "OptimizationError",
     "OptimizationResult",
     "OptimizeMethod",
+    "PassbandRipple",
+    "ReturnLoss",
+    "StopbandAttenuation",
     "TunableParam",
     "apply_values",
+    "combined_residuals",
     "limit_residuals",
+    "objective_residuals",
     "optimize_circuit",
     "relative_bounds",
     "residual_norm",

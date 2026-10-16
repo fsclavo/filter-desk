@@ -98,7 +98,8 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] `services/retune.py` — retune cutoff/center/bandwidth/Z + `scale_response` (redesign on tune) — FR-U2 core
 - [x] Per-part continuous tune (relative step per component, `nudge_value`; GUI Tune ±step + Ctrl+]/Ctrl+[) — FR-U2
 - [x] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py`, `variables.py` — FR-P4
-- [x] Solver: limit-residual least squares + bounded Nelder–Mead (SciPy) — FR-P4
+- [x] Solver: limit-residual least squares + Nelder–Mead + global (DE/dual annealing) — FR-P4
+- [x] Composable objectives (passband ripple / stopband attenuation / return loss) + limits — §20
 - [x] Wire optimizer to `LimitRegion[]` (B3.3) — CLI `optimize` + GUI **Design → Optimize to limits…**
 - [x] Background workers + debounce + cancel-stale for tune — NFR-4 (80 ms debounce + analyze-thread cancel)
 - [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
@@ -148,7 +149,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 - [x] **pytest-qt** — adopted for GUI interaction tests (`import-linter` + `pytest-qt` in dev deps)
 - [x] Interactive marker-driven retune — bind a marker to a landmark (`cutoff` / `f_center` / `bandwidth`) in the Markers dock and drag to redesign (single undo step)
-- [x] **Global optimizers** — `differential_evolution` + `dual_annealing` added (never worse than nominal)
+- [x] **Global optimizers + composable objectives** — `differential_evolution` / `dual_annealing` + `PassbandRipple` / `StopbandAttenuation` / `ReturnLoss` (never worse than nominal)
 - [x] **Project extension** — `.filterdesk.json` (plain JSON), no `.fdsk` container
 - [x] Native Rust/C acceleration — not pursued (ABCD path sufficient: 10k MC ≈ 5 s)
 - [x] Product naming — **FilterDesk** (binary `filterdesk`); no trademark registration planned

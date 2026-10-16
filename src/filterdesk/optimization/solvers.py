@@ -19,7 +19,11 @@ from filterdesk.analysis.types import SweepConfig
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion
 from filterdesk.optimization.constraints import relative_bounds
-from filterdesk.optimization.objectives import limit_residuals, residual_norm
+from filterdesk.optimization.objectives import (
+    Objective,
+    combined_residuals,
+    residual_norm,
+)
 from filterdesk.optimization.variables import apply_values, tunable_params
 
 
@@ -41,6 +45,7 @@ class OptimizationConfig:
     max_iter: int = 200
     backend: str = "abcd"
     seed: int | None = None
+    objectives: tuple[Objective, ...] = ()
 
     def __post_init__(self) -> None:
         if self.bound_pct < 0.0:
@@ -83,8 +88,9 @@ def optimize_circuit(
     if not params:
         raise OptimizationError("circuit has no tunable components")
     active = [lim for lim in limits if lim.enabled]
-    if not active:
-        raise OptimizationError("no enabled limit regions to optimize against")
+    objectives = list(cfg.objectives)
+    if not active and not objectives:
+        raise OptimizationError("no enabled limit regions or objectives to optimize")
 
     x0 = np.asarray([p.value for p in params], dtype=float)
     bounds = relative_bounds(x0, cfg.bound_pct)
@@ -95,7 +101,7 @@ def optimize_circuit(
         evaluations += 1
         trial = apply_values(circuit, params, x)
         result = analyze_circuit(trial, sweep, backend=cfg.backend)
-        return limit_residuals(result, active)
+        return combined_residuals(result, active, objectives)
 
     def scalar(x: NDArray[np.float64]) -> float:
         r = residuals(x)
@@ -149,8 +155,10 @@ def optimize_circuit(
 
     final_circuit = apply_values(circuit, params, final_x)
     final_cost = residual_norm(
-        limit_residuals(
-            analyze_circuit(final_circuit, sweep, backend=cfg.backend), active
+        combined_residuals(
+            analyze_circuit(final_circuit, sweep, backend=cfg.backend),
+            active,
+            objectives,
         )
     )
 

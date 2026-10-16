@@ -23,8 +23,13 @@ from filterdesk.optimization import (
     OptimizationConfig,
     OptimizationError,
     OptimizeMethod,
+    PassbandRipple,
+    ReturnLoss,
+    StopbandAttenuation,
     apply_values,
+    combined_residuals,
     limit_residuals,
+    objective_residuals,
     optimize_circuit,
     relative_bounds,
     residual_norm,
@@ -147,6 +152,104 @@ def test_optimize_differential_evolution_improves() -> None:
         synthesize(_spec()).circuit, _sweep(), [_tight_passband(-0.02)], config
     )
     assert result.final_cost < result.initial_cost
+
+
+def test_objective_residuals() -> None:
+    circuit = synthesize(_spec()).circuit
+    result = analyze_circuit(circuit, _sweep())
+
+    ripple = objective_residuals(result, [PassbandRipple(1e6, 100e6)])
+    assert ripple.size == 1 and ripple[0] > 0.0  # non-zero passband ripple
+    # A band with no samples yields a zero penalty.
+    empty = objective_residuals(result, [PassbandRipple(9e9, 9.5e9)])
+    assert empty[0] == pytest.approx(0.0)
+
+    assert objective_residuals(
+        result, [StopbandAttenuation(150e6, 1e9, 1.0)]
+    )[0] == pytest.approx(0.0)  # already far above 1 dB
+    assert objective_residuals(
+        result, [StopbandAttenuation(150e6, 1e9, 500.0)]
+    )[0] > 0.0
+
+    assert objective_residuals(result, [ReturnLoss(1e6, 100e6, -60.0)])[
+        0
+    ] == pytest.approx(0.0)
+    assert objective_residuals(result, [ReturnLoss(1e6, 100e6, 60.0)])[0] > 0.0
+
+
+def test_combined_residuals_concatenates() -> None:
+    circuit = synthesize(_spec()).circuit
+    result = analyze_circuit(circuit, _sweep())
+    limits = [_tight_passband(-3.0)]  # satisfied
+    limits_only = combined_residuals(result, limits, [])
+    both = combined_residuals(result, limits, [PassbandRipple(1e6, 100e6)])
+    assert both.size == limits_only.size + 1
+
+
+def test_optimize_objectives_only_reduces_cost() -> None:
+    circuit = synthesize(_spec()).circuit
+    config = OptimizationConfig(
+        method=OptimizeMethod.NELDER_MEAD,
+        bound_pct=0.3,
+        max_iter=200,
+        objectives=(PassbandRipple(1e6, 100e6),),
+    )
+    result = optimize_circuit(circuit, _sweep(), [], config)
+    assert result.final_cost < result.initial_cost
+
+
+def test_cli_optimize_objective(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "optimize",
+            "--family",
+            "chebyshev_type_i",
+            "--response",
+            "low_pass",
+            "--order",
+            "5",
+            "--cutoff",
+            "100M",
+            "--ripple",
+            "0.1",
+            "--points",
+            "128",
+            "--objective",
+            "passband:1M:100M",
+            "--method",
+            "nelder_mead",
+            "--bound",
+            "0.3",
+            "--max-iter",
+            "100",
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["final_cost"] <= payload["initial_cost"]
+
+
+def test_cli_optimize_rejects_bad_objective(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = main(
+        [
+            "optimize",
+            "--family",
+            "butterworth",
+            "--response",
+            "low_pass",
+            "--order",
+            "3",
+            "--cutoff",
+            "100M",
+            "--objective",
+            "bogus:1M",
+        ]
+    )
+    assert code == 2
+    assert "error:" in capsys.readouterr().err
 
 
 def test_optimize_requires_enabled_limits() -> None:

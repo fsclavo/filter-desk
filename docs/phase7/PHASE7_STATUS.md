@@ -34,13 +34,14 @@ limit regions.
   nominal, including LC/Brune sub-parts and non-ideal L/C) and `apply_values`
   (returns a copy with new values).
 - `optimization/objectives.py` — `limit_residuals` (per-sample, per-bound
-  violations `≥ 0`) and `residual_norm`.
+  violations `≥ 0`), composable objectives `PassbandRipple` / `StopbandAttenuation`
+  / `ReturnLoss` (weighted, band-based), and `combined_residuals` / `residual_norm`.
 - `optimization/constraints.py` — `relative_bounds` (±`bound_pct` box, floored > 0).
 - `optimization/solvers.py` — `OptimizeMethod` (least_squares / nelder_mead /
   differential_evolution / dual_annealing), `OptimizationConfig` (bound_pct,
-  max_iter, backend, seed), `OptimizationResult` (initial/final cost, values,
-  circuit, improvement) and `optimize_circuit` (guaranteed never worse than the
-  nominal start).
+  max_iter, backend, seed, `objectives`), `OptimizationResult` (initial/final
+  cost, values, circuit, improvement) and `optimize_circuit` (guaranteed never
+  worse than the nominal start; limits and/or objectives required).
 - `services/session.py` — `DesignSession.optimize(config)` (no mutation).
 - CLI — `filterdesk optimize … --limits limits.json [--method] [--bound]
   [--max-iter] [--json]`.
@@ -87,7 +88,7 @@ limit regions.
 
 ## Deferred (future polish, not blocking)
 
-- Composable objectives beyond limit residuals (blueprint §20).
+- None currently (composable objectives delivered).
 
 ## Tests
 
