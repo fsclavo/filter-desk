@@ -68,6 +68,9 @@ def _l_solutions(
         if rl <= 0.0:
             raise MatchingError("load resistance must be > 0")
         s = math.sqrt(rl * (rs - rl))
+        if s == 0.0:
+            # rs == rl: cancel the load reactance with a single series element.
+            return [[(ElementRole.SERIES, -xl)]] if xl != 0.0 else []
         out: list[list[tuple[ElementRole, float]]] = []
         for sign in (1.0, -1.0):
             xs = -xl + sign * s

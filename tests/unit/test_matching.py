@@ -63,6 +63,15 @@ def test_matching_element_roles_and_values() -> None:
         assert el.value > 0.0
 
 
+def test_matching_equal_resistance_cancels_reactance() -> None:
+    # rs == rl with a reactive load: a single series element cancels it.
+    design = design_matching(50.0, 50.0, 20.0, 7.1e6, MatchingTopology.L)
+    assert len(design.elements) == 1
+    assert design.elements[0].role == ElementRole.SERIES
+    assert design.input_impedance_ohm.real == pytest.approx(50.0, abs=1e-6)
+    assert design.input_impedance_ohm.imag == pytest.approx(0.0, abs=1e-6)
+
+
 def test_matching_validation() -> None:
     with pytest.raises(MatchingError):
         design_matching(0.0, 25.0, 0.0, 7e6)
