@@ -36,9 +36,11 @@ limit regions.
 - `optimization/objectives.py` — `limit_residuals` (per-sample, per-bound
   violations `≥ 0`) and `residual_norm`.
 - `optimization/constraints.py` — `relative_bounds` (±`bound_pct` box, floored > 0).
-- `optimization/solvers.py` — `OptimizeMethod` (least_squares / nelder_mead),
-  `OptimizationConfig` (bound_pct, max_iter, backend), `OptimizationResult`
-  (initial/final cost, values, circuit, improvement) and `optimize_circuit`.
+- `optimization/solvers.py` — `OptimizeMethod` (least_squares / nelder_mead /
+  differential_evolution / dual_annealing), `OptimizationConfig` (bound_pct,
+  max_iter, backend, seed), `OptimizationResult` (initial/final cost, values,
+  circuit, improvement) and `optimize_circuit` (guaranteed never worse than the
+  nominal start).
 - `services/session.py` — `DesignSession.optimize(config)` (no mutation).
 - CLI — `filterdesk optimize … --limits limits.json [--method] [--bound]
   [--max-iter] [--json]`.
@@ -81,8 +83,6 @@ limit regions.
 
 - Marker-driven retune (bind a marker to a spec landmark and drag to redesign) —
   markers remain frequency annotations; see backlog §D.
-- Global optimizers (differential evolution / dual annealing) and composable
-  objectives beyond limit residuals (blueprint §20).
 
 ## Tests
 

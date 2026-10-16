@@ -144,15 +144,15 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ---
 
-## D. Cross-cutting / open questions (when relevant)
+## D. Cross-cutting / open questions (when relevant) — **closed (2026-10-16, ADR-015)**
 
-- **pytest-qt** investment timing (GUI interaction tests) — blueprint §37.12
-- **Interactive marker-driven retune** (bind a marker to a spec landmark and drag to redesign) — Phase 7 optional polish
-- **Global optimizers** (differential evolution / dual annealing) + composable objectives — blueprint §20
-- **Project extension** `.filterdesk.json` vs compressed `.fdsk` — §37.9
-- Native Rust/C acceleration for MC *only if* ABCD Python insufficient — §37.13
-- Product naming / trademark (avoid ELSIE/Tonne marks) — §37.14
-- Import-linter enforcement of layer rules in CI (blueprint §12, §28)
+- [x] **pytest-qt** — adopted for GUI interaction tests (`import-linter` + `pytest-qt` in dev deps)
+- [ ] Interactive marker-driven retune (bind a marker to a spec landmark and drag to redesign) — optional UX polish
+- [x] **Global optimizers** — `differential_evolution` + `dual_annealing` added (never worse than nominal)
+- [x] **Project extension** — `.filterdesk.json` (plain JSON), no `.fdsk` container
+- [x] Native Rust/C acceleration — not pursued (ABCD path sufficient: 10k MC ≈ 5 s)
+- [x] Product naming / trademark — **FilterDesk**, no ELSIE/Tonne marks, not affiliated
+- [x] Import-linter enforcement of layer rules in CI — 5 contracts in `pyproject.toml` + CI step
 
 ---
 

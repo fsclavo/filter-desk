@@ -123,6 +123,32 @@ def test_optimize_reduces_cost(method: OptimizeMethod) -> None:
     assert len(result.circuit.elements) == len(circuit.elements)
 
 
+@pytest.mark.parametrize(
+    "method",
+    [OptimizeMethod.DIFFERENTIAL_EVOLUTION, OptimizeMethod.DUAL_ANNEALING],
+)
+def test_optimize_global_never_worse(method: OptimizeMethod) -> None:
+    circuit = synthesize(_spec()).circuit
+    sweep = _sweep()
+    limits = [_tight_passband(-0.02)]
+    config = OptimizationConfig(method=method, bound_pct=0.5, max_iter=60, seed=1)
+    result = optimize_circuit(circuit, sweep, limits, config)
+    assert result.final_cost <= result.initial_cost + 1e-12
+
+
+def test_optimize_differential_evolution_improves() -> None:
+    config = OptimizationConfig(
+        method=OptimizeMethod.DIFFERENTIAL_EVOLUTION,
+        bound_pct=0.5,
+        max_iter=80,
+        seed=1,
+    )
+    result = optimize_circuit(
+        synthesize(_spec()).circuit, _sweep(), [_tight_passband(-0.02)], config
+    )
+    assert result.final_cost < result.initial_cost
+
+
 def test_optimize_requires_enabled_limits() -> None:
     circuit = synthesize(_spec()).circuit
     with pytest.raises(OptimizationError):

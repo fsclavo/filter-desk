@@ -53,6 +53,75 @@ ignore_missing_imports = true
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pytest-qt>=4.4",
     "ruff>=0.9",
     "mypy>=1.14",
+    "import-linter>=2.0",
 ]
+
+# Layer/architecture rules enforced in CI (blueprint §12, §28). Run: lint-imports
+[tool.importlinter]
+root_package = "filterdesk"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "domain is independent (core has no outbound deps)"
+type = "forbidden"
+source_modules = ["filterdesk.domain"]
+forbidden_modules = [
+    "filterdesk.analysis",
+    "filterdesk.synthesis",
+    "filterdesk.services",
+    "filterdesk.gui",
+    "filterdesk.io",
+    "filterdesk.montecarlo",
+    "filterdesk.optimization",
+    "filterdesk.components_std",
+    "filterdesk.plotting",
+]
+# Shared analysis DTOs (SweepConfig/SweepSpacing) are used by project persistence;
+# moving them into the domain is a future cleanup (blueprint §12).
+ignore_imports = ["filterdesk.domain.project -> filterdesk.analysis.types"]
+
+[[tool.importlinter.contracts]]
+name = "analysis core does not depend on app/GUI/engines/IO"
+type = "forbidden"
+source_modules = ["filterdesk.analysis"]
+forbidden_modules = [
+    "filterdesk.gui",
+    "filterdesk.services",
+    "filterdesk.synthesis",
+    "filterdesk.io",
+    "filterdesk.montecarlo",
+    "filterdesk.optimization",
+]
+
+[[tool.importlinter.contracts]]
+name = "synthesis does not depend on app/GUI/IO/MC/optimizer"
+type = "forbidden"
+source_modules = ["filterdesk.synthesis"]
+forbidden_modules = [
+    "filterdesk.gui",
+    "filterdesk.services",
+    "filterdesk.io",
+    "filterdesk.montecarlo",
+    "filterdesk.optimization",
+    "filterdesk.plotting",
+]
+
+[[tool.importlinter.contracts]]
+name = "montecarlo/optimization are independent engine services"
+type = "forbidden"
+source_modules = ["filterdesk.montecarlo", "filterdesk.optimization"]
+forbidden_modules = [
+    "filterdesk.gui",
+    "filterdesk.services",
+    "filterdesk.synthesis",
+]
+
+[[tool.importlinter.contracts]]
+name = "only the scikit-rf adapter imports scikit-rf (ADR-001)"
+type = "forbidden"
+source_modules = ["filterdesk"]
+forbidden_modules = ["skrf"]
+ignore_imports = ["filterdesk.analysis.adapters.skrf_analyzer -> skrf"]

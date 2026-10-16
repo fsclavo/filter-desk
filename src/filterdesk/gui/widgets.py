@@ -305,6 +305,8 @@ class OptimizeDialog(QDialog):
     _METHOD_LABELS: dict[OptimizeMethod, str] = {
         OptimizeMethod.LEAST_SQUARES: "Least squares (limit residuals)",
         OptimizeMethod.NELDER_MEAD: "Nelder–Mead (bounded)",
+        OptimizeMethod.DIFFERENTIAL_EVOLUTION: "Differential evolution (global)",
+        OptimizeMethod.DUAL_ANNEALING: "Dual annealing (global)",
     }
 
     def __init__(
@@ -326,10 +328,15 @@ class OptimizeDialog(QDialog):
         self._max_iter = QSpinBox()
         self._max_iter.setRange(1, 100_000)
         self._max_iter.setValue(base.max_iter)
+        self._seed = QLineEdit()
+        self._seed.setPlaceholderText("optional integer (global methods)")
+        if base.seed is not None:
+            self._seed.setText(str(base.seed))
         form = QFormLayout(self)
         form.addRow("Method", self._method)
         form.addRow("Bound (± fraction)", self._bound)
         form.addRow("Max iterations", self._max_iter)
+        form.addRow("Seed", self._seed)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -339,10 +346,12 @@ class OptimizeDialog(QDialog):
         form.addRow(buttons)
 
     def to_config(self) -> OptimizationConfig:
+        seed_text = self._seed.text().strip()
         return OptimizationConfig(
             method=OptimizeMethod(self._method.currentData()),
             bound_pct=float(self._bound.text().strip() or "0.2"),
             max_iter=int(self._max_iter.value()),
+            seed=int(seed_text) if seed_text else None,
         )
 
     @classmethod

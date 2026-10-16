@@ -7,7 +7,12 @@ from enum import StrEnum
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.optimize import least_squares, minimize
+from scipy.optimize import (
+    differential_evolution,
+    dual_annealing,
+    least_squares,
+    minimize,
+)
 
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import SweepConfig
@@ -21,6 +26,8 @@ from filterdesk.optimization.variables import apply_values, tunable_params
 class OptimizeMethod(StrEnum):
     LEAST_SQUARES = "least_squares"
     NELDER_MEAD = "nelder_mead"
+    DIFFERENTIAL_EVOLUTION = "differential_evolution"
+    DUAL_ANNEALING = "dual_annealing"
 
 
 class OptimizationError(ValueError):
@@ -33,6 +40,7 @@ class OptimizationConfig:
     bound_pct: float = 0.2
     max_iter: int = 200
     backend: str = "abcd"
+    seed: int | None = None
 
     def __post_init__(self) -> None:
         if self.bound_pct < 0.0:
@@ -105,6 +113,28 @@ def optimize_circuit(
         final_x = np.asarray(solution.x, dtype=float)
         success = bool(solution.success)
         message = str(solution.message)
+    elif cfg.method == OptimizeMethod.DIFFERENTIAL_EVOLUTION:
+        de = differential_evolution(
+            scalar,
+            bounds=list(zip(bounds.lower.tolist(), bounds.upper.tolist(), strict=True)),
+            maxiter=cfg.max_iter,
+            seed=cfg.seed,
+            polish=True,
+            tol=1e-8,
+        )
+        final_x = np.asarray(de.x, dtype=float)
+        success = bool(de.success)
+        message = str(de.message)
+    elif cfg.method == OptimizeMethod.DUAL_ANNEALING:
+        da = dual_annealing(
+            scalar,
+            bounds=list(zip(bounds.lower.tolist(), bounds.upper.tolist(), strict=True)),
+            maxiter=cfg.max_iter,
+            seed=cfg.seed,
+        )
+        final_x = np.asarray(da.x, dtype=float)
+        success = bool(da.success)
+        message = str(da.message)
     else:
         nm = minimize(
             scalar,
@@ -123,6 +153,13 @@ def optimize_circuit(
             analyze_circuit(final_circuit, sweep, backend=cfg.backend), active
         )
     )
+
+    # Never return a result worse than the nominal starting point (global methods
+    # such as dual annealing can otherwise finish below the initial quality).
+    if final_cost > initial_cost:
+        final_x = x0.copy()
+        final_circuit = circuit
+        final_cost = initial_cost
 
     return OptimizationResult(
         method=cfg.method,
