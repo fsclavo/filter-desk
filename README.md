@@ -1,45 +1,57 @@
 # FilterDesk
 
+[![test](https://github.com/fsclavo/filter-desk/actions/workflows/test.yml/badge.svg)](https://github.com/fsclavo/filter-desk/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/release/fsclavo/filter-desk)](https://github.com/fsclavo/filter-desk/releases)
+
 Open-source desktop application for **passive lumped-element RF/electronic filter
-synthesis and analysis**.
+synthesis and analysis**. FilterDesk designs low-pass, high-pass, band-pass, and
+band-stop LC filters, shows you how they actually behave, accounts for real-world
+tolerances and parasitics, and exports the result to Touchstone, CSV, SPICE, or an
+image.
 
-> Working name: **FilterDesk**. Independent implementation inspired by the
-> *capabilities* of ELSIE and modern LC filter tools — not a clone of any
-> proprietary source.
-
-## Status
-
-**Phases 0–7 complete** — synthesis, analysis, desktop GUI, E-series snapping,
-Monte-Carlo tolerance analysis, optimization, and redesign-on-change. See:
-
-- [`docs/BACKLOG.md`](docs/BACKLOG.md)
-- [`docs/DEVELOPMENT_BLUEPRINT.md`](docs/DEVELOPMENT_BLUEPRINT.md)
-- [`docs/phase7/PHASE7_STATUS.md`](docs/phase7/PHASE7_STATUS.md)
-- [`docs/adr/`](docs/adr/)
+> Independent implementation inspired by the *capabilities* of ELSIE and modern
+> LC filter tools — not a clone of any proprietary source.
 
 ## Features
 
-- Low-pass, high-pass, band-pass, and band-stop LC ladder synthesis.
-- Approximation families: Butterworth, Chebyshev Type I/II, elliptic, Bessel,
-  Gaussian, Legendre, and constant-*k* / m-derived sections.
-- Two analysis backends (`abcd` ladder and `scikit-rf`), S-parameters, VSWR,
-  group delay, insertion/return loss.
-- Non-ideal components (finite Q, DCR, ESL, ESR, parasitic capacitance).
-- E-series component snapping (IEC 60063), Monte-Carlo tolerance/yield, and
-  constrained optimization against limit regions.
-- Touchstone (`.s1p`/`.s2p`) import/export and Smith-chart export.
-- PySide6 desktop GUI and a scriptable command-line interface.
+- **Synthesis** of low-pass, high-pass, band-pass, and band-stop LC ladders.
+- **Approximation families**: Butterworth, Chebyshev Type I/II, elliptic (Cauer),
+  Bessel, Gaussian, Legendre, and constant-*k* / m-derived sections.
+- **Analysis** with magnitude, VSWR, group delay, and Smith-chart views, using a
+  fast ladder backend (`abcd`) or a `scikit-rf` cross-check.
+- **Real-world effects**: finite inductor Q, DCR, capacitor ESL/ESR, and parasitic
+  capacitance.
+- **E-series snapping** (IEC 60063 E6–E96) to turn ideal values into real parts.
+- **Tolerance analysis**: per-component tolerances and a Monte-Carlo envelope
+  with yield estimates.
+- **Optimization** against limit regions (passband/stopband masks).
+- **Interactive tuning**: tune components, retune by dragging markers, and scale
+  the whole response.
+- **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`), export CSV,
+  LTspice-compatible SPICE netlists, and Smith-chart images.
+- Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.
 
-## Requirements
+## Download and install
 
-- Python **3.11+**
-- [`uv`](https://docs.astral.sh/uv/) (recommended) or `pip`
-- A desktop session for the GUI (Qt/PySide6)
+### Prebuilt bundles
 
-## Installation
+Prebuilt packages for Windows and Linux are published on the
+[Releases](https://github.com/fsclavo/filter-desk/releases) page:
 
-Clone and install into a project-local virtual environment with `uv` (uses the
-committed `uv.lock` for reproducible builds):
+| Platform | File | Notes |
+| --- | --- | --- |
+| Windows | `FilterDesk-<ver>-windows-x86_64-setup.exe` | installer with Start Menu/Desktop shortcuts |
+| Windows | `FilterDesk-windows-x86_64.zip` | portable bundle |
+| Linux | `FilterDesk-x86_64.AppImage` | single-file app (needs **glibc ≥ 2.35**, i.e. Ubuntu 22.04+) |
+| Linux | `FilterDesk-linux-x86_64.tar.gz` | portable bundle |
+
+The launcher is GUI-first: double-click it to open the desktop app. Passing CLI
+arguments (for example `FilterDesk --version`) uses the command-line interface.
+
+### From source
+
+Requires Python **3.11+** and either [`uv`](https://docs.astral.sh/uv/)
+(recommended) or `pip`.
 
 ```bash
 git clone https://github.com/fsclavo/filter-desk.git
@@ -47,11 +59,11 @@ cd filter-desk
 uv sync
 ```
 
-If you prefer `pip`:
+With `pip` instead:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install .
 ```
 
@@ -59,116 +71,41 @@ Verify the install:
 
 ```bash
 uv run filterdesk --version
-uv run filterdesk --help
 ```
 
-## Usage
+## Quick start
 
-### GUI
+Launch the desktop application:
 
 ```bash
 uv run filterdesk gui
 ```
 
-The GUI lets you edit a specification, synthesize, inspect the schematic and
-plots (S-parameters, VSWR, group delay, Smith chart), snap values to E-series,
-run Monte-Carlo tolerance sweeps, and optimize against limit regions.
+The app opens with a ready-made example (a 7th-order Chebyshev Type I high-pass,
+140 MHz cutoff). Edit the fields in the **Specification** panel and press
+**Synthesize + Analyze** (`Ctrl+Return`) to see the schematic, component table,
+and response plots update.
 
-### CLI
-
-Run `uv run filterdesk <command> --help` for the full option list. Every
-subcommand accepts either a `--spec` JSON file or inline parameters
-(`--family`, `--response`, `--order`, `--cutoff`, ...).
-
-**Synthesize** a filter and print components:
+Prefer the command line? Synthesize and analyze the same filter:
 
 ```bash
 uv run filterdesk synthesize \
   --spec tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm/spec.json
-```
 
-**Analyze** the frequency response and export results:
-
-```bash
 uv run filterdesk analyze \
   --spec tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm/spec.json \
-  --backend abcd --export-s2p /tmp/milestone.s2p
+  --export-s2p milestone.s2p --export-csv traces.csv
 ```
 
-Snap component values to a preferred number series:
+## Documentation
 
-```bash
-uv run filterdesk snap --series E24 --strategy independent \
-  --family chebyshev_type_i --response high_pass --order 7 \
-  --cutoff 140M --ripple 0.01
-```
-
-Estimate the minimum order from ripple/attenuation targets:
-
-```bash
-uv run filterdesk estimate-order --family chebyshev_type_i --response low_pass \
-  --f-pass 1M --f-stop 2M --ap 0.1 --as 40
-```
-
-Tolerance Monte-Carlo sweep (optionally with `--limits` for yield):
-
-```bash
-uv run filterdesk montecarlo \
-  --spec tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm/spec.json \
-  --trials 2000 --tol 2 --distribution uniform --seed 42
-```
-
-Optimize component values to satisfy limit regions:
-
-```bash
-uv run filterdesk optimize \
-  --spec tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm/spec.json \
-  --limits limits.json --bound 0.2
-```
-
-Import/compare measured data:
-
-```bash
-uv run filterdesk touchstone-info measured.s2p
-uv run filterdesk compare /tmp/milestone.s2p measured.s2p
-```
-
-Add `--json` to any command for machine-readable output.
-
-### Specification format
-
-A spec is a small JSON object (also written as `.filterdesk.json` project files):
-
-```json
-{
-  "family": "chebyshev_type_i",
-  "response": "high_pass",
-  "order": 7,
-  "passband_ripple_db": 0.01,
-  "cutoff_hz": 140000000.0,
-  "cutoff_definition": "ripple_edge",
-  "z_source_ohm": 50.0,
-  "z_load_ohm": 50.0,
-  "topology_id": "ladder_hp_series_c_input"
-}
-```
-
-## Milestone
-
-```text
-7th-order Chebyshev Type I · 0.01 dB ripple · high-pass
-140 MHz (ripple-edge cutoff) · 50 Ω / 50 Ω
-```
-
-At cutoff, S21 ≈ **−0.01 dB**. Native projects use `.filterdesk.json`.
-
-## Development
-
-```bash
-uv run pytest -q            # tests
-uv run ruff check src tests # lint
-uv run mypy                 # type check
-```
+- **[User Manual](docs/user-manual.md)** — installing, concepts, the GUI,
+  workflows, the full CLI reference, and file formats. Start here.
+- [Development blueprint](docs/DEVELOPMENT_BLUEPRINT.md) and
+  [backlog](docs/BACKLOG.md) — architecture and roadmap (for contributors).
+- [packaging.md](docs/packaging.md) — how the release bundles are built.
+- [`docs/adr/`](docs/adr/) — architecture decision records and
+  [`docs/math/`](docs/math/) — the synthesis math.
 
 ## License
 
