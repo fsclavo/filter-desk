@@ -383,14 +383,14 @@ class BandPresetDialog(QDialog):
         self.setWindowTitle("Amateur band preset")
         self._band = QComboBox()
         for band in BANDS:
-            self._band.addItem(band.name, band)
+            self._band.addItem(band.name)
         # Default to 40 m.
         self._band.setCurrentIndex(
             next((i for i, b in enumerate(BANDS) if b.name == "40 m"), 0)
         )
         self._kind = QComboBox()
-        for kind, label in self._KINDS:
-            self._kind.addItem(label, kind)
+        for _kind, label in self._KINDS:
+            self._kind.addItem(label)
         form = QFormLayout(self)
         form.addRow("Band", self._band)
         form.addRow("Filter", self._kind)
@@ -403,9 +403,9 @@ class BandPresetDialog(QDialog):
         form.addRow(buttons)
 
     def selection(self) -> tuple[Band, BandKind]:
-        band = self._band.currentData()
-        kind = self._kind.currentData()
-        assert isinstance(band, Band) and isinstance(kind, BandKind)
+        # Indices (not userData): PySide would coerce the StrEnum to a plain str.
+        band = BANDS[self._band.currentIndex()]
+        kind = self._KINDS[self._kind.currentIndex()][0]
         return band, kind
 
     @classmethod

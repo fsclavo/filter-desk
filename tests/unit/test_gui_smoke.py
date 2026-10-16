@@ -829,6 +829,23 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
     assert app is not None
 
 
+def test_band_preset_dialog_selection() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import BandPresetDialog
+    from filterdesk.services.bands import BandKind
+
+    app = QApplication.instance() or QApplication([])
+    dialog = BandPresetDialog()
+    band, kind = dialog.selection()
+    assert band.name == "40 m"
+    assert kind == BandKind.LPF
+    dialog._kind.setCurrentIndex(2)  # High-pass -> Band-pass ordering: LPF,HPF,BPF
+    _, kind = dialog.selection()
+    assert kind == BandKind.BPF
+    assert app is not None
+
+
 def test_main_window_band_preset(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication
 
