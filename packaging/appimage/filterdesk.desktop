@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=FilterDesk
+Comment=Passive lumped-element RF filter synthesis and analysis
+Exec=FilterDesk
+Icon=filterdesk
+Categories=Science;Engineering;Electronics;
+Terminal=false

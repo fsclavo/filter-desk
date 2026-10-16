@@ -135,11 +135,12 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### Phase 11 — Packaging & Windows
 
-- [ ] PyInstaller onedir build + smoke test (`filterdesk --version`, headless synth)
-- [ ] Linux AppImage + portable `tar.gz` (appimagetool); resolve Qt platform plugin path (blueprint §31 **Open**)
-- [ ] glibc baseline documented (Ubuntu 22.04 / manylinux)
-- [ ] `release.yml` CI; Windows onedir ZIP (`windows-latest`) — blueprint §32
-- [ ] Qt LGPL-3 compliance artifacts (notices + source offer) — ADR-002
+- [x] PyInstaller onedir build (`packaging/filterdesk.spec`) + smoke test (`FilterDesk --version`, CLI synth/analyze/MC) — validated locally
+- [x] Linux portable `tar.gz` + Windows onedir ZIP (`.github/workflows/release.yml`)
+- [x] Linux AppImage — best-effort job (`continue-on-error`) + `packaging/appimage/build_appimage.sh`
+- [x] glibc baseline documented — Ubuntu 22.04 / glibc 2.35 (`docs/packaging.md`)
+- [x] `release.yml` CI on tags `v*` + GitHub Release with artifacts
+- [x] Qt LGPL-3 compliance artifacts — `packaging/NOTICE-third-party.md` + `collect_qt_licenses.py` (LGPL/GPL texts into `licenses/`)
 
 ---
 
