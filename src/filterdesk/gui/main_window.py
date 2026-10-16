@@ -69,6 +69,7 @@ from filterdesk.gui.workers import (
 )
 from filterdesk.io.csv_export import export_csv
 from filterdesk.io.native import load_project, save_project
+from filterdesk.io.spice import write_spice_netlist
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
@@ -232,6 +233,8 @@ class MainWindow(QMainWindow):
         act_export_smith.triggered.connect(self._export_smith_chart)
         act_export_csv = QAction("Export C&SV…", self)
         act_export_csv.triggered.connect(self._export_csv)
+        act_export_spice = QAction("Export SPICE &netlist…", self)
+        act_export_spice.triggered.connect(self._export_spice)
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
@@ -242,6 +245,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_import_ts)
         file_menu.addAction(act_export_smith)
         file_menu.addAction(act_export_csv)
+        file_menu.addAction(act_export_spice)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
@@ -1239,6 +1243,32 @@ class MainWindow(QMainWindow):
                     f"family={spec.family.value} order={spec.order} "
                     f"{spec.response.value} backend={result.backend}"
                 ),
+            )
+            self._status.setText(f"Wrote {path}")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+
+    def _export_spice(self) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            QMessageBox.information(
+                self, "Export SPICE", "Synthesize a circuit first."
+            )
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export SPICE netlist",
+            "filter.net",
+            "SPICE netlist (*.net *.cir);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            write_spice_netlist(
+                circuit,
+                path,
+                title=self._session.title,
+                ac=self._session.sweep,
             )
             self._status.setText(f"Wrote {path}")
         except Exception as exc:  # noqa: BLE001

@@ -126,7 +126,8 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ### Phase 10 — Broader export + measured S2P compare
 
-- [ ] LTspice `.asc` exporter (from `Circuit` + schematic layout)
+- [x] **LTspice/SPICE netlist export** — `io/spice` (`spice_netlist`/`write_spice_netlist`) + CLI `analyze --export-spice` + GUI **File → Export SPICE netlist…**
+- [ ] LTspice `.asc` *schematic* (needs a geometry/layout model; netlist is the portable path)
 - [ ] Qucs `.sch` exporter
 - [x] CSV / two-column DAT trace export — `io/csv_export` + CLI `analyze --export-csv` / `to-csv` + GUI **File → Export CSV…**
 - [x] Touchstone reader import + `.s1p` (B4.1 — `touchstone-info` CLI + GUI import)

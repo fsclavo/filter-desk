@@ -748,6 +748,29 @@ def test_main_window_export_csv(
     assert app is not None
 
 
+def test_main_window_export_spice(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    out = tmp_path / "filter.net"
+    monkeypatch.setattr(
+        mw.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "")
+    )
+    window._export_spice()
+    assert out.is_file()
+    assert "Wrote" in window._status.text()
+    window.close()
+    assert app is not None
+
+
 def test_component_table_shows_tolerance_column() -> None:
     from PySide6.QtWidgets import QApplication
 
