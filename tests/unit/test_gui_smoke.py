@@ -851,25 +851,41 @@ def test_main_window_set_tolerance(monkeypatch: pytest.MonkeyPatch) -> None:
     assert app is not None
 
 
-def test_design_menu_has_tune_shortcuts() -> None:
+def test_tune_actions_toolbar_and_component_menu() -> None:
     from PySide6.QtWidgets import QApplication, QToolBar
 
     from filterdesk.gui import main_window as mw
     from filterdesk.services.session import DesignSession
 
     app = QApplication.instance() or QApplication([])
-    window = mw.MainWindow(DesignSession(), auto_run=False)
-    menu_actions = window.menuBar().actions()
-    design_menu = next(a.menu() for a in menu_actions if "&Design" in a.text())
-    labels = [a.text() for a in design_menu.actions()]
-    assert any("Tune +" in t for t in labels)
-    assert any("Tune −" in t for t in labels)
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
 
+    # Toolbar keeps the generic Tune actions (with the shortcuts).
     toolbar = window.findChild(QToolBar, "MainToolBar")
     assert toolbar is not None
     tb_labels = [a.text() for a in toolbar.actions()]
     assert "Tune +" in tb_labels and "Tune −" in tb_labels
     assert window._act_tune_up.shortcut().toString() == "Ctrl+]"
     assert window._act_tune_dn.shortcut().toString() == "Ctrl+["
+
+    # The Design menu no longer duplicates them.
+    design_menu = next(
+        a.menu() for a in window.menuBar().actions() if "&Design" in a.text()
+    )
+    design_labels = [a.text() for a in design_menu.actions()]
+    assert not any(
+        t.startswith("Tune +") or t.startswith("Tune −") for t in design_labels
+    )
+
+    # The Component submenu shows the step and the shortcut hint.
+    assert session.circuit is not None
+    window._selected_element = session.circuit.elements[0].id
+    window._populate_component_menu()
+    comp_labels = [a.text() for a in window._component_menu.actions()]
+    assert any("Tune +" in t and "Ctrl+]" in t for t in comp_labels)
+    assert any("Tune −" in t and "Ctrl+[" in t for t in comp_labels)
+
     window.close()
     assert app is not None

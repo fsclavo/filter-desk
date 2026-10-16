@@ -211,14 +211,16 @@ class MainWindow(QMainWindow):
         wrap = QWidget()
         lay = QHBoxLayout(wrap)
         lay.setContentsMargins(4, 0, 4, 0)
-        lay.addWidget(QLabel("fstart"))
+        lay.addWidget(QLabel("Start Frequency"))
         lay.addWidget(self._f_start)
-        lay.addWidget(QLabel("fstop"))
+        lay.addWidget(QLabel("Stop Frequency"))
         lay.addWidget(self._f_stop)
         lay.addWidget(QLabel("N"))
         lay.addWidget(self._points)
         self._f_start.setMaximumWidth(90)
         self._f_stop.setMaximumWidth(90)
+        self._f_start.setToolTip("Sweep start frequency, e.g. 10M or 1G")
+        self._f_stop.setToolTip("Sweep stop frequency, e.g. 1G")
         tb.addWidget(wrap)
 
     def _build_menus(self) -> None:
@@ -301,8 +303,6 @@ class MainWindow(QMainWindow):
         act_opt = QAction("&Optimize to limits…", self)
         act_opt.triggered.connect(self._run_optimize)
         design_menu.addAction(act_opt)
-        design_menu.addAction(self._act_tune_up)
-        design_menu.addAction(self._act_tune_dn)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -784,11 +784,11 @@ class MainWindow(QMainWindow):
         if not self._is_tunable(el):
             return
         pct = self._session.step_fraction(element_id) * 100.0
-        act_up = menu.addAction(f"Tune +{pct:g}%")
+        act_up = menu.addAction(f"Tune +{pct:g}%  (Ctrl+])")
         act_up.triggered.connect(
             lambda *_: self._nudge_element(element_id, 1)
         )
-        act_dn = menu.addAction(f"Tune −{pct:g}%")
+        act_dn = menu.addAction(f"Tune −{pct:g}%  (Ctrl+[)")
         act_dn.triggered.connect(
             lambda *_: self._nudge_element(element_id, -1)
         )

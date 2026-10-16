@@ -60,10 +60,11 @@ limit regions.
 - `services/session.py` — `element_steps` map (per-part relative step, default
   2%), `step_fraction` / `set_element_step`, and `nudged_value` (pure) /
   `nudge_element` (in-place).
-- GUI — **Design → Component → Tune ±step / Set tune step…** (Design menu and
-  schematic context menu), **Tune +** / **Tune −** toolbar buttons, and window
-  shortcuts **Ctrl+]** / **Ctrl+[** on the selected component; each nudge goes
-  through `SetElementValueCommand` (undo/redo) and the existing 80 ms debounce
+- GUI — **Design → Component → Tune ±step / Set tune step…** (Component submenu
+  and schematic context menu, each showing the step `%` and the `Ctrl+]` /
+  `Ctrl+[` hint) and the **Tune +** / **Tune −** toolbar buttons (which carry the
+  shortcuts) on the selected component; each nudge goes through
+  `SetElementValueCommand` (undo/redo) and the existing 80 ms debounce
   re-analyzes (NFR-4: debounced, and a running analyze thread is cancelled before
   a new one starts).
 - Marker-driven retune — a marker can be bound to a spec landmark
