@@ -9,8 +9,8 @@ band-stop LC filters, shows you how they actually behave, accounts for real-worl
 tolerances and parasitics, and exports the result to Touchstone, CSV, SPICE, or an
 image.
 
-> Independent implementation inspired by the *capabilities* of ELSIE and modern
-> LC filter tools — not a clone of any proprietary source.
+> An independent implementation of classical network-synthesis theory and
+> practical LC filter design.
 
 ## Features
 

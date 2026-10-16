@@ -50,12 +50,11 @@ genuine input-event behaviour.
 (bounded, with `OptimizationConfig.seed`). A safeguard ensures the optimiser
 never returns a result worse than the nominal starting point.
 
-### Product naming / trademark — **decision**
+### Product naming — **decision**
 
-The product name is **FilterDesk** (binary `filterdesk`). It does not use the
-ELSIE/Tonne names or marks and is not affiliated with them; ELSIE is referenced
-only as a functional comparison. No trademark registration is planned at this
-time; if the project is distributed commercially this should be revisited.
+The product name is **FilterDesk** (binary `filterdesk`). No trademark
+registration is planned at this time; revisit if the project is distributed
+commercially.
 
 ### Native acceleration — **not pursued**
 

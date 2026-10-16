@@ -6,7 +6,7 @@
 
 ## Context
 
-ELSIE supports transmission lines, stubs, transformers, coupled inductors, and distributed equivalents. Implementing them early would distort the lumped-filter product.
+Transmission lines, stubs, transformers, coupled inductors, and distributed equivalents are common in general RF design tools. Implementing them early would distort the lumped-filter product.
 
 ## Decision
 

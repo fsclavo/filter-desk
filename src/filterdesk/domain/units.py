@@ -18,7 +18,7 @@ _PREFIX: dict[str, float] = {
     "T": 1e12,
 }
 
-# ELSIE-like: only M is case-sensitive (mega vs milli).
+# Engineering-unit entry: only M is case-sensitive (mega vs milli).
 _SUFFIX_RE = re.compile(
     r"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*"
     r"([fpnuµmkKMGT])?"

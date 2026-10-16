@@ -1185,7 +1185,6 @@ class MainWindow(QMainWindow):
             "Passive lumped-element RF filter synthesis and analysis.<br>"
             "Licensed under the Apache License 2.0.<br>"
             "Uses Qt via PySide6 (LGPL-3.0).<br><br>"
-            "Not affiliated with ELSIE / Tonne Software.<br>"
             f'<a href="{_REPO_URL}">{_REPO_URL}</a>',
         )
 

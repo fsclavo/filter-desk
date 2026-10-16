@@ -115,7 +115,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] Performance: float32 trial buffer + `progress(done,total)`; 10k×512 ≈ 5 s (NFR-5) — GUI worker emits progress
 - [x] GUI: MC run dialog (`MonteCarloDialog`) + envelope overlay (View toggle)
 
-### Phase 9 — ELSIE `.lct` I/O (best-effort)
+### Phase 9 — `.lct` file I/O (best-effort)
 
 - [ ] Collect ≥10 user-owned `.lct` samples (`tests/lct_roundtrip/corpus/`, private) — `LCT_INVESTIGATION_PLAN.md`
 - [ ] Binary vs text classification + differential analysis
@@ -151,7 +151,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] **Global optimizers** — `differential_evolution` + `dual_annealing` added (never worse than nominal)
 - [x] **Project extension** — `.filterdesk.json` (plain JSON), no `.fdsk` container
 - [x] Native Rust/C acceleration — not pursued (ABCD path sufficient: 10k MC ≈ 5 s)
-- [x] Product naming / trademark — **FilterDesk**, no ELSIE/Tonne marks, not affiliated
+- [x] Product naming — **FilterDesk** (binary `filterdesk`); no trademark registration planned
 - [x] Import-linter enforcement of layer rules in CI — 5 contracts in `pyproject.toml` + CI step
 
 ---

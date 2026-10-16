@@ -4,10 +4,8 @@
 **Package name (proposed):** `filterdesk`  
 **Document status:** Living blueprint. Phases 0–5b complete — see `docs/phase0/` … `docs/phase5b/`.  
 **Date:** 2026-03-29  
-**Inspiration (functional only):** ELSIE (Jim Tonne / W4ENE), Marki Microwave LC Filter Design Tool  
-**Operational reference (patterns only):** NanoVNASaver  
 
-> **Legal posture.** This project is an independent implementation. ELSIE is proprietary commercial software; its source and proprietary techniques must not be copied. Marki’s web tool is a UX/capability reference. NanoVNASaver is GPL-3.0; its code must not be copied into this codebase. Interoperability with `.lct` and Touchstone is a format-compatibility goal, not a license to reverse-engineer beyond what is lawful for interoperability.
+> **Legal posture.** This project is an independent implementation built from classical filter theory. Proprietary third-party software must not be copied or reverse-engineered beyond what is lawful for interoperability with public, documented file formats.
 
 ---
 

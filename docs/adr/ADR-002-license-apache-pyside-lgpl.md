@@ -13,8 +13,7 @@ The project must remain open-source and dependency-friendly. NanoVNASaver is GPL
 1. **FilterDesk original source:** Apache-2.0.
 2. **GUI binding:** PySide6 (LGPL-3.0), not PyQt6 (GPL/commercial).
 3. Ship `LICENSE`, `NOTICE`, and third-party license texts with distributions.
-4. **Never copy** NanoVNASaver or any GPL application code into this tree.
-5. ELSIE remains proprietary inspiration/oracle only.
+4. **Never copy** proprietary or GPL third-party application code into this tree.
 
 ## Consequences
 
