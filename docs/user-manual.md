@@ -180,6 +180,7 @@ hide any dock from the **View** menu; drag docks to rearrange them.
 | **Components** | right | component values, parasitics, tolerances |
 | **Markers** | right | measurement cursors |
 | **Limits** | right | pass/fail mask regions |
+| **Harmonics** | right | `|S21|`/suppression at 2f, 3f, … of a fundamental |
 
 The central area is a tabbed **plot panel**: **Magnitude**, **VSWR**, **Group
 delay**, and **Smith**.
@@ -263,6 +264,7 @@ specification edits require an explicit **Synthesize**.
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
 | **Band preset** | **Design → Band preset…** | one-click 160 m–6 m LP/HP/BP design (Chebyshev-I, sets sweep) |
+| **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -417,7 +419,8 @@ Most commands accept `--json` for machine-readable output.
   results. Options include `--f-start`, `--f-stop`, `--points`, `--spacing`,
   `--backend {abcd,skrf}`, non-ideal flags (`--inductor-q`, `--q-frequency`,
   `--inductor-dcr`, `--inductor-cpar`, `--capacitor-esr`, `--capacitor-esl`),
-  power stress (`--power W`), and exporters `--export-s2p`, `--export-smith`,
+  power stress (`--power W`), the harmonic readout (`--harmonics`,
+  `--harmonics-f0 F`), and exporters `--export-s2p`, `--export-smith`,
   `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`.
   ```bash
   filterdesk analyze --spec my.spec.json --backend skrf \

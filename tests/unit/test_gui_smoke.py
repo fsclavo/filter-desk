@@ -846,6 +846,31 @@ def test_band_preset_dialog_selection() -> None:
     assert app is not None
 
 
+def test_main_window_harmonics() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    window = mw.MainWindow(session, auto_run=False)
+
+    window._refresh_harmonics()
+    table = window._harmonics_panel._table
+    assert table.rowCount() >= 2  # f0 row + at least one harmonic
+    assert len(window._plots._harmonic_lines) >= 1
+
+    window._on_harmonics_f0(50e6)
+    assert session.harmonics_f0_hz == pytest.approx(50e6)
+
+    window._act_harmonics.setChecked(False)
+    assert window._plots._harmonic_lines == []
+    window.close()
+    assert app is not None
+
+
 def test_main_window_band_preset(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication
 

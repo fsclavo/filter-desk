@@ -60,6 +60,7 @@ from filterdesk.gui.commands import (
     SynthesizeCommand,
 )
 from filterdesk.gui.panels.component_table import ComponentTablePanel
+from filterdesk.gui.panels.harmonics_panel import HarmonicsPanel
 from filterdesk.gui.panels.limits_panel import LimitsPanel
 from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
@@ -147,6 +148,7 @@ class MainWindow(QMainWindow):
         self._plots = PlotPanel()
         self._markers_panel = MarkersPanel()
         self._limits_panel = LimitsPanel()
+        self._harmonics_panel = HarmonicsPanel()
         self._docks: list[QDockWidget] = []
         self.setCentralWidget(self._plots)
 
@@ -165,6 +167,12 @@ class MainWindow(QMainWindow):
         self._add_dock(
             "Limits", self._limits_panel, Qt.DockWidgetArea.RightDockWidgetArea
         )
+        self._add_dock(
+            "Harmonics",
+            self._harmonics_panel,
+            Qt.DockWidgetArea.RightDockWidgetArea,
+        )
+        self._harmonics_panel.f0_changed.connect(self._on_harmonics_f0)
 
         self._f_start = EngineeringLineEdit()
         self._f_stop = EngineeringLineEdit()
@@ -342,6 +350,11 @@ class MainWindow(QMainWindow):
         self._act_mc.setChecked(True)
         self._act_mc.toggled.connect(self._plots.set_monte_carlo_visible)
         view_menu.addAction(self._act_mc)
+        self._act_harmonics = QAction("Show &harmonic markers", self)
+        self._act_harmonics.setCheckable(True)
+        self._act_harmonics.setChecked(True)
+        self._act_harmonics.toggled.connect(self._plots.set_harmonics_visible)
+        view_menu.addAction(self._act_harmonics)
 
         design_menu = self.menuBar().addMenu("&Design")
         act_syn = QAction("&Synthesize + Analyze", self)
@@ -458,6 +471,20 @@ class MainWindow(QMainWindow):
     def _on_power_changed(self, value: float) -> None:
         self._session.power_w = float(value)
         self._refresh_table()
+
+    def _on_harmonics_f0(self, value: float) -> None:
+        self._session.harmonics_f0_hz = value if value > 0.0 else None
+        self._refresh_harmonics()
+
+    def _refresh_harmonics(self) -> None:
+        report = self._session.compute_harmonics()
+        self._harmonics_panel.set_report(report)
+        freqs = (
+            [h.frequency_hz for h in report.harmonics]
+            if report is not None
+            else []
+        )
+        self._plots.set_harmonics(freqs)
 
     def _after_circuit_change(self) -> None:
         self._refresh_table()
@@ -717,6 +744,7 @@ class MainWindow(QMainWindow):
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
+        self._refresh_harmonics()
         metrics = self._session.summary_metrics()
         self._status.setText(
             f"Done ({result.backend}, {result.frequency_hz.shape[0]} pts)  "

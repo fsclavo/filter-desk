@@ -88,6 +88,9 @@ class PlotPanel(QWidget):
         self._show_measured = True
         self._mc_result: MonteCarloResult | None = None
         self._show_mc = True
+        self._harmonic_freqs: list[float] = []
+        self._harmonic_lines: list[pg.InfiniteLine] = []
+        self._show_harmonics = True
         self._freq = np.array([], dtype=float)
         self._s21_db = np.array([], dtype=float)
         self._s11_db = np.array([], dtype=float)
@@ -218,6 +221,29 @@ class PlotPanel(QWidget):
 
     def has_monte_carlo(self) -> bool:
         return self._mc_result is not None
+
+    def set_harmonics(self, frequencies_hz: list[float]) -> None:
+        self._harmonic_freqs = list(frequencies_hz)
+        self._redraw_harmonics()
+
+    def set_harmonics_visible(self, visible: bool) -> None:
+        self._show_harmonics = bool(visible)
+        self._redraw_harmonics()
+
+    def _redraw_harmonics(self) -> None:
+        for line in self._harmonic_lines:
+            self._mag.removeItem(line)
+        self._harmonic_lines.clear()
+        if not self._show_harmonics:
+            return
+        pen = pg.mkPen("#ff9f1c", width=1, style=Qt.PenStyle.DotLine)
+        for freq in self._harmonic_freqs:
+            if not np.isfinite(freq) or freq <= 0.0:
+                continue
+            line = pg.InfiniteLine(angle=90, movable=False, pen=pen)
+            line.setPos(float(np.log10(freq)))  # magnitude plot uses a log x-axis
+            self._mag.addItem(line)
+            self._harmonic_lines.append(line)
 
     def _update_monte_carlo(self) -> None:
         empty = np.array([], dtype=float)

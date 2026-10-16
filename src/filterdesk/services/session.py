@@ -6,6 +6,11 @@ from dataclasses import dataclass, field, replace
 
 from filterdesk import __version__
 from filterdesk.analysis.derived import mag_db
+from filterdesk.analysis.harmonics import (
+    HarmonicError,
+    HarmonicReport,
+    compute_harmonics,
+)
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
@@ -168,6 +173,7 @@ class DesignSession:
     element_steps: dict[str, float] = field(default_factory=dict)
     element_tolerances: dict[str, ElementTolerance] = field(default_factory=dict)
     power_w: float = 0.0
+    harmonics_f0_hz: float | None = None
 
     DEFAULT_TUNE_STEP = 0.02
 
@@ -491,6 +497,24 @@ class DesignSession:
                 self.circuit, power_w=self.power_w, frequency_hz=frequency
             )
         except StressError:
+            return None
+
+    def harmonics_reference_hz(self) -> float | None:
+        """Fundamental for the harmonic readout (explicit, else band landmark)."""
+        if self.harmonics_f0_hz is not None and self.harmonics_f0_hz > 0.0:
+            return self.harmonics_f0_hz
+        return self.stress_frequency_hz()
+
+    def compute_harmonics(self) -> HarmonicReport | None:
+        """Harmonic |S21|/suppression from the current analysis, or ``None``."""
+        if self.analysis is None:
+            return None
+        fundamental = self.harmonics_reference_hz()
+        if fundamental is None or fundamental <= 0.0:
+            return None
+        try:
+            return compute_harmonics(self.analysis, fundamental)
+        except HarmonicError:
             return None
 
     def insert_arm(

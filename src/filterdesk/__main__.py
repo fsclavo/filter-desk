@@ -16,6 +16,11 @@ from filterdesk.analysis.derived import (
     return_loss_db,
     vswr,
 )
+from filterdesk.analysis.harmonics import (
+    HarmonicError,
+    HarmonicReport,
+    compute_harmonics,
+)
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
@@ -211,6 +216,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.0,
         help="Forward power (W) for the per-element voltage/current stress estimate",
+    )
+    ana.add_argument(
+        "--harmonics",
+        action="store_true",
+        help="Print |S21| and suppression at harmonics of the band landmark",
+    )
+    ana.add_argument(
+        "--harmonics-f0",
+        default=None,
+        help="Fundamental frequency (Hz) for the harmonic readout, e.g. 7.1M",
     )
     ana.add_argument(
         "--json",
@@ -811,6 +826,36 @@ def _stress_to_json(report: StressReport) -> dict[str, object]:
     }
 
 
+def _print_harmonics(report: HarmonicReport) -> None:
+    print(
+        f"Harmonics (f0 = "
+        f"{format_engineering(report.fundamental_hz, 'Hz', digits=6)}, "
+        f"|S21|(f0)={report.fundamental_s21_db:.3f} dB):"
+    )
+    for h in report.harmonics:
+        print(
+            f"  {h.order}f = {format_engineering(h.frequency_hz, 'Hz', digits=6)}  "
+            f"|S21|={h.s21_db:.2f} dB  suppression={h.suppression_db:.2f} dB"
+        )
+
+
+def _harmonics_to_json(report: HarmonicReport) -> dict[str, object]:
+    return {
+        "fundamental_hz": report.fundamental_hz,
+        "fundamental_s21_db": report.fundamental_s21_db,
+        "min_suppression_db": report.min_suppression_db,
+        "harmonics": [
+            {
+                "order": h.order,
+                "frequency_hz": h.frequency_hz,
+                "s21_db": h.s21_db,
+                "suppression_db": h.suppression_db,
+            }
+            for h in report.harmonics
+        ],
+    }
+
+
 def _print_mc_human(spec: FilterSpec, result: MonteCarloResult) -> None:
     cfg = result.config
     print(
@@ -1098,6 +1143,19 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 except StressError:
                     stress = None
+
+        harmonics: HarmonicReport | None = None
+        if args.harmonics or args.harmonics_f0 is not None:
+            f0 = (
+                parse_si(str(args.harmonics_f0))
+                if args.harmonics_f0
+                else _stress_frequency(spec)
+            )
+            if f0 is not None and f0 > 0.0:
+                try:
+                    harmonics = compute_harmonics(analysis, f0)
+                except HarmonicError:
+                    harmonics = None
         if args.export_s2p is not None:
             write_touchstone_s2p(
                 analysis,
@@ -1182,6 +1240,8 @@ def main(argv: list[str] | None = None) -> int:
                 payload["nonideal"] = nonideal
             if stress is not None:
                 payload["stress"] = _stress_to_json(stress)
+            if harmonics is not None:
+                payload["harmonics"] = _harmonics_to_json(harmonics)
             print(json.dumps(payload, indent=2))
         else:
             _print_analysis_human(
@@ -1196,6 +1256,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             if stress is not None:
                 _print_stress(stress)
+            if harmonics is not None:
+                _print_harmonics(harmonics)
         return 0
 
     if args.command == "gui":
