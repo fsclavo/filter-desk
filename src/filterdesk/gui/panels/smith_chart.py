@@ -332,7 +332,10 @@ class SmithChartWidget(QWidget):
             self._marker_syncing = False
         old = self._markers[index]
         self._markers[index] = Marker(
-            id=old.id, frequency_hz=freq, label=old.label
+            id=old.id,
+            frequency_hz=freq,
+            label=old.label,
+            landmark=old.landmark,
         )
         self._cursor_freq_hz = freq
         self.cursor_frequency_changed.emit(freq)

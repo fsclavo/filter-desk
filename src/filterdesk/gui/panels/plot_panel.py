@@ -376,7 +376,10 @@ class PlotPanel(QWidget):
     def _apply_marker_frequency(self, index: int, freq_hz: float) -> None:
         old = self._markers[index]
         self._markers[index] = Marker(
-            id=old.id, frequency_hz=freq_hz, label=old.label
+            id=old.id,
+            frequency_hz=freq_hz,
+            label=old.label,
+            landmark=old.landmark,
         )
         self._marker_syncing = True
         try:

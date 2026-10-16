@@ -36,6 +36,18 @@ def test_marker_landmark_serialization_roundtrip() -> None:
     assert [m.frequency_hz for m in restored] == [100e6, 50e6]
 
 
+def test_plot_marker_drag_preserves_landmark() -> None:
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+
+    app = QApplication.instance() or QApplication([])
+    panel = PlotPanel()
+    panel.set_markers([Marker(id="M1", frequency_hz=100e6, landmark="cutoff")])
+    panel._apply_marker_frequency(0, 150e6)
+    assert panel._markers[0].landmark == "cutoff"
+    assert panel._markers[0].frequency_hz == pytest.approx(150e6)
+    assert app is not None
+
+
 def test_markers_panel_sets_landmark() -> None:
     app = QApplication.instance() or QApplication([])
     panel = MarkersPanel()
