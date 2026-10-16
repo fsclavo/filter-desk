@@ -223,12 +223,20 @@ def test_phase_and_impedance_plots_populate() -> None:
     ):
         assert plotted(curve) == n
 
+    def legend_names(plot: object) -> list[str]:
+        legend = plot.plotItem.legend  # type: ignore[attr-defined]
+        return [label.text for _, label in legend.items]
+
+    assert legend_names(panel._mag) == ["S21", "S11"]
+
     panel.set_measured(result, "meas.s2p")
     assert plotted(panel._curve_phase21_meas) == n
     assert plotted(panel._curve_zin_abs_meas) == n
+    assert legend_names(panel._mag) == ["S21", "S11", "S21 meas", "S11 meas"]
     panel.set_measured_visible(False)
     assert plotted(panel._curve_phase21_meas) == 0
     assert plotted(panel._curve_zin_abs_meas) == 0
+    assert legend_names(panel._mag) == ["S21", "S11"]
     panel.set_result(None)
     assert plotted(panel._curve_phase21) == 0
     assert plotted(panel._curve_zin_abs) == 0

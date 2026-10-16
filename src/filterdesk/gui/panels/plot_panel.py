@@ -86,6 +86,7 @@ class PlotPanel(QWidget):
         self._measured: AnalysisResult | None = None
         self._measured_name = ""
         self._show_measured = True
+        self._measured_legend_visible = True
         self._mc_result: MonteCarloResult | None = None
         self._show_mc = True
         self._harmonic_freqs: list[float] = []
@@ -325,9 +326,45 @@ class PlotPanel(QWidget):
             f"{float(mc.s21_db_p95[j]):.3f})"
         )
 
+    def _apply_measured_legend(self, visible: bool) -> None:
+        """Show the "meas" legend entries only when measured data is displayed."""
+        if visible == self._measured_legend_visible:
+            return
+        self._measured_legend_visible = visible
+        entries = (
+            (
+                self._mag,
+                (
+                    (self._curve_s21_meas, "S21 meas"),
+                    (self._curve_s11_meas, "S11 meas"),
+                ),
+            ),
+            (
+                self._phase_plot,
+                (
+                    (self._curve_phase21_meas, "∠S21 meas"),
+                    (self._curve_phase11_meas, "∠S11 meas"),
+                ),
+            ),
+            (
+                self._z_plot,
+                ((self._curve_zin_abs_meas, "|Zin| meas"),),
+            ),
+        )
+        for plot, items in entries:
+            legend = plot.plotItem.legend
+            if legend is None:
+                continue
+            for curve, name in items:
+                if visible:
+                    legend.addItem(curve, name)
+                else:
+                    legend.removeItem(curve)
+
     def _update_measured(self) -> None:
         empty = np.array([], dtype=float)
         measured = self._measured
+        self._apply_measured_legend(measured is not None and self._show_measured)
         if measured is None or not self._show_measured:
             self._curve_s21_meas.setData(empty, empty)
             self._curve_s11_meas.setData(empty, empty)
