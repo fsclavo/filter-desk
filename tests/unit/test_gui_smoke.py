@@ -829,6 +829,38 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
     assert app is not None
 
 
+def test_main_window_power_stress() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    assert window._stress_label.text() == ""
+    window._power.setValue(100.0)  # triggers _on_power_changed -> _refresh_table
+
+    table = window._table._table
+    refs = {
+        table.item(r, 0).text(): (table.item(r, 6).text(), table.item(r, 7).text())
+        for r in range(table.rowCount())
+    }
+    assert any(v and i for v, i in refs.values())  # Vpk/Ipk populated for L/C
+    assert "Peak" in window._stress_label.text()
+
+    window._power.setValue(0.0)
+    assert window._stress_label.text() == ""
+    table2 = window._table._table
+    assert all(
+        table2.item(r, 6).text() == "" for r in range(table2.rowCount())
+    )
+    window.close()
+    assert app is not None
+
+
 def test_main_window_export_qucs(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

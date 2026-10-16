@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from filterdesk.analysis.stress import StressReport
 from filterdesk.domain.circuit import (
     Circuit,
     IdealBruneLC,
@@ -55,9 +56,9 @@ class ComponentTablePanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._table = QTableWidget(0, 6)
+        self._table = QTableWidget(0, 8)
         self._table.setHorizontalHeaderLabels(
-            ["Ref", "Role", "Type", "Value", "Parasitic", "Tol"]
+            ["Ref", "Role", "Type", "Value", "Parasitic", "Tol", "Vpk", "Ipk"]
         )
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -80,6 +81,7 @@ class ComponentTablePanel(QWidget):
         self,
         circuit: Circuit | None,
         tolerances: dict[str, float] | None = None,
+        stress: StressReport | None = None,
     ) -> None:
         self._updating = True
         self._block_sel = True
@@ -93,7 +95,16 @@ class ComponentTablePanel(QWidget):
         def tol_text(key: str) -> str:
             return f"{tol[key]:g}%" if key in tol else ""
 
+        by_ref = {e.ref: e for e in stress.entries} if stress is not None else {}
+
+        def stress_cells(key: str) -> tuple[str, str]:
+            entry = by_ref.get(key)
+            if entry is None:
+                return "", ""
+            return f"{entry.v_peak_v:.3g}", f"{entry.i_peak_a:.3g}"
+
         for el in circuit.elements:
+            vpk, ipk = stress_cells(el.id)
             if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
                 self._add_row(
                     f"{el.id}.L",
@@ -102,6 +113,8 @@ class ComponentTablePanel(QWidget):
                     format_engineering(el.value_h, "H", digits=6),
                     "",
                     tol_text(f"{el.id}.L"),
+                    vpk,
+                    ipk,
                 )
                 self._add_row(
                     f"{el.id}.C",
@@ -110,6 +123,8 @@ class ComponentTablePanel(QWidget):
                     format_engineering(el.value_f, "F", digits=6),
                     "",
                     tol_text(f"{el.id}.C"),
+                    vpk,
+                    ipk,
                 )
                 continue
             if isinstance(el, (IdealBruneLC, IdealDualBruneLC)):
@@ -126,6 +141,8 @@ class ComponentTablePanel(QWidget):
                         format_engineering(val, unit, digits=6),
                         "",
                         tol_text(ref),
+                        vpk,
+                        ipk,
                     )
                 continue
             if isinstance(el, IdealCapacitor):
@@ -145,6 +162,8 @@ class ComponentTablePanel(QWidget):
                 value_text,
                 _parasitic_text(el),
                 tol_text(el.id),
+                vpk,
+                ipk,
             )
         self._updating = False
         self._block_sel = False
@@ -182,6 +201,8 @@ class ComponentTablePanel(QWidget):
         value: str,
         parasitic: str = "",
         tolerance: str = "",
+        v_peak: str = "",
+        i_peak: str = "",
     ) -> None:
         row = self._table.rowCount()
         self._table.insertRow(row)
@@ -196,12 +217,18 @@ class ComponentTablePanel(QWidget):
         par_item.setFlags(par_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         tol_item = QTableWidgetItem(tolerance)
         tol_item.setFlags(tol_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        v_item = QTableWidgetItem(v_peak)
+        v_item.setFlags(v_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        i_item = QTableWidgetItem(i_peak)
+        i_item.setFlags(i_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         self._table.setItem(row, 0, ref_item)
         self._table.setItem(row, 1, role_item)
         self._table.setItem(row, 2, type_item)
         self._table.setItem(row, 3, val_item)
         self._table.setItem(row, 4, par_item)
         self._table.setItem(row, 5, tol_item)
+        self._table.setItem(row, 6, v_item)
+        self._table.setItem(row, 7, i_item)
 
     def _on_cell_changed(self, row: int, column: int) -> None:
         if self._updating or column != 3:

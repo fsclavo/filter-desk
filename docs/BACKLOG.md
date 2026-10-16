@@ -149,7 +149,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 Ham-oriented helpers on top of the existing synthesis/analysis core. Order is the
 intended implementation sequence.
 
-- [ ] **Power stress calculator** (S) — given forward power P (W) and `Z0`, estimate peak voltage/current in each L and C for component rating; surface per-element columns in the table/CLI + a status summary. *Assumes a matched (real `Z0`) source/load.*
+- [x] **Power stress calculator** (S) — `analysis/stress.py` (`compute_stress`); GUI **P (W)** toolbar field + **Vpk/Ipk** columns in the component table + status-bar peak summary; CLI `analyze --power W`. *Assumes a matched (real `Z0`) source/load.*
 - [ ] **Amateur band presets** (S) — 160–6 m + WARC (30/17/12 m): one-click LP/HP/BP/BS specs (frequencies + sensible ripple/order + E-series snap + typical sweep). GUI presets + CLI `--band`.
 - [ ] **Transmit harmonic readout** (S) — auto-mark `2f`/`3f` (and `n·f0`) and a table of `|S21|` attenuation at harmonics relative to the band; targets the PA output-LPF use case.
 - [ ] **Resistive attenuator designer** (S) — T and Pi pads: `dB` + `Z0` → R values; optional insertion of the attenuator into the circuit (as a small resistive sub-network). Standalone, high demand.

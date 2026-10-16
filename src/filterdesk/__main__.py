@@ -17,6 +17,7 @@ from filterdesk.analysis.derived import (
     vswr,
 )
 from filterdesk.analysis.service import analyze_circuit
+from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     ESeries,
@@ -203,6 +204,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Write a Qucs .sch schematic to this path (best-effort)",
+    )
+    ana.add_argument(
+        "--power",
+        type=float,
+        default=0.0,
+        help="Forward power (W) for the per-element voltage/current stress estimate",
     )
     ana.add_argument(
         "--json",
@@ -736,6 +743,49 @@ def _print_analysis_human(
     )
 
 
+def _stress_frequency(spec: FilterSpec) -> float | None:
+    if spec.response in (FilterResponse.BAND_PASS, FilterResponse.BAND_STOP):
+        return spec.f_center_hz
+    return spec.cutoff_hz if spec.cutoff_hz > 0.0 else None
+
+
+def _print_stress(report: StressReport) -> None:
+    print(
+        f"Power stress @ {format_engineering(report.frequency_hz, 'Hz', digits=6)} "
+        f"(P={report.power_w:g} W, Z0={report.z0_ohm:g} Ohm):"
+    )
+    for entry in report.entries:
+        print(
+            f"  {entry.ref:6s} {entry.role.value:6s} "
+            f"Z={abs(entry.impedance_ohm):.4g} Ohm  "
+            f"Vpk={entry.v_peak_v:.4g} V  Ipk={entry.i_peak_a:.4g} A"
+        )
+    print(
+        f"  worst: V={report.worst_voltage_ref} ({report.max_v_peak_v:.4g} V), "
+        f"I={report.worst_current_ref} ({report.max_i_peak_a:.4g} A)"
+    )
+
+
+def _stress_to_json(report: StressReport) -> dict[str, object]:
+    return {
+        "power_w": report.power_w,
+        "z0_ohm": report.z0_ohm,
+        "frequency_hz": report.frequency_hz,
+        "max_v_peak_v": report.max_v_peak_v,
+        "max_i_peak_a": report.max_i_peak_a,
+        "elements": [
+            {
+                "ref": e.ref,
+                "role": e.role.value,
+                "impedance_ohm": abs(e.impedance_ohm),
+                "v_peak_v": e.v_peak_v,
+                "i_peak_a": e.i_peak_a,
+            }
+            for e in report.entries
+        ],
+    }
+
+
 def _print_mc_human(spec: FilterSpec, result: MonteCarloResult) -> None:
     cfg = result.config
     print(
@@ -1012,6 +1062,17 @@ def main(argv: list[str] | None = None) -> int:
         s11 = mag_db(analysis.s11)
         gd = group_delay_s(analysis.frequency_hz, analysis.s21)
         vs = vswr(analysis)
+
+        stress: StressReport | None = None
+        if args.power > 0.0:
+            stress_freq = _stress_frequency(spec)
+            if stress_freq is not None:
+                try:
+                    stress = compute_stress(
+                        synth.circuit, power_w=args.power, frequency_hz=stress_freq
+                    )
+                except StressError:
+                    stress = None
         if args.export_s2p is not None:
             write_touchstone_s2p(
                 analysis,
@@ -1094,6 +1155,8 @@ def main(argv: list[str] | None = None) -> int:
             }
             if nonideal:
                 payload["nonideal"] = nonideal
+            if stress is not None:
+                payload["stress"] = _stress_to_json(stress)
             print(json.dumps(payload, indent=2))
         else:
             _print_analysis_human(
@@ -1106,6 +1169,8 @@ def main(argv: list[str] | None = None) -> int:
                 [float(x) * 1e9 for x in gd],
                 [float(x) for x in vs],
             )
+            if stress is not None:
+                _print_stress(stress)
         return 0
 
     if args.command == "gui":

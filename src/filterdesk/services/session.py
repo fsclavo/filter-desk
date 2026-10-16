@@ -7,6 +7,7 @@ from dataclasses import dataclass, field, replace
 from filterdesk import __version__
 from filterdesk.analysis.derived import mag_db
 from filterdesk.analysis.service import analyze_circuit
+from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     ESeries,
@@ -166,6 +167,7 @@ class DesignSession:
     measured_name: str | None = None
     element_steps: dict[str, float] = field(default_factory=dict)
     element_tolerances: dict[str, ElementTolerance] = field(default_factory=dict)
+    power_w: float = 0.0
 
     DEFAULT_TUNE_STEP = 0.02
 
@@ -466,6 +468,30 @@ class DesignSession:
         if ref in self.element_tolerances:
             del self.element_tolerances[ref]
             self.dirty = True
+
+    def stress_frequency_hz(self) -> float | None:
+        """Reference frequency for the power-stress estimate (band landmark)."""
+        if self.spec.response in (
+            FilterResponse.BAND_PASS,
+            FilterResponse.BAND_STOP,
+        ):
+            return self.spec.f_center_hz
+        cutoff = self.spec.cutoff_hz
+        return cutoff if cutoff > 0.0 else None
+
+    def compute_stress(self) -> StressReport | None:
+        """Per-element peak V/I at the reference frequency, or ``None`` (power off)."""
+        if self.power_w <= 0.0 or self.circuit is None:
+            return None
+        frequency = self.stress_frequency_hz()
+        if frequency is None or frequency <= 0.0:
+            return None
+        try:
+            return compute_stress(
+                self.circuit, power_w=self.power_w, frequency_hz=frequency
+            )
+        except StressError:
+            return None
 
     def insert_arm(
         self,

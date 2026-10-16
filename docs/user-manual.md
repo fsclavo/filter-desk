@@ -219,10 +219,16 @@ writes it into the Order field.
 ### Components panel
 
 A table with columns **Ref**, **Role**, **Type**, **Value**, **Parasitic**,
-**Tol**. Only the **Value** column is editable (double-click). Composite elements
-(series/parallel resonators, Brune arms) are expanded into sub-rows such as
-`X1.L`, `X1.C`. Selecting rows highlights the matching element in the schematic,
-and vice versa.
+**Tol**, **Vpk**, **Ipk**. Only the **Value** column is editable (double-click).
+Composite elements (series/parallel resonators, Brune arms) are expanded into
+sub-rows such as `X1.L`, `X1.C`. Selecting rows highlights the matching element in
+the schematic, and vice versa.
+
+**Vpk/Ipk** show the peak voltage/current per part from the **power-stress
+estimate**: set the **P (W)** field in the toolbar (0 = off). Stress is evaluated
+at the passband landmark (cutoff for LP/HP, center for BP/BS) assuming a matched
+`Z0` system, and the worst case is summarised in the status bar. Use it to pick
+voltage/current ratings (e.g. capacitor voltage) for transmit filters.
 
 ### Schematic panel
 
@@ -406,8 +412,9 @@ Most commands accept `--json` for machine-readable output.
 - **`analyze`** — synthesize (unless already specified) and analyze; export
   results. Options include `--f-start`, `--f-stop`, `--points`, `--spacing`,
   `--backend {abcd,skrf}`, non-ideal flags (`--inductor-q`, `--q-frequency`,
-  `--inductor-dcr`, `--inductor-cpar`, `--capacitor-esr`, `--capacitor-esl`), and
-  exporters `--export-s2p`, `--export-smith`, `--export-csv`, `--export-spice`.
+  `--inductor-dcr`, `--inductor-cpar`, `--capacitor-esr`, `--capacitor-esl`),
+  power stress (`--power W`), and exporters `--export-s2p`, `--export-smith`,
+  `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`.
   ```bash
   filterdesk analyze --spec my.spec.json --backend skrf \
     --export-s2p out.s2p --export-csv out.csv

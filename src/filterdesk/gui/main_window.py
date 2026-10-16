@@ -16,6 +16,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QDockWidget,
+    QDoubleSpinBox,
     QFileDialog,
     QHBoxLayout,
     QInputDialog,
@@ -172,6 +173,11 @@ class MainWindow(QMainWindow):
         self._build_toolbar()
         self.setStatusBar(QStatusBar())
         self.statusBar().addPermanentWidget(self._status)
+        self._stress_label = QLabel("")
+        self._stress_label.setToolTip(
+            "Worst-case peak voltage/current from the power-stress estimate"
+        )
+        self.statusBar().addPermanentWidget(self._stress_label)
 
         self._spec.spec_changed.connect(self._mark_dirty)
         self._table.value_edited.connect(self._on_value_edited)
@@ -225,6 +231,24 @@ class MainWindow(QMainWindow):
         self._act_tune_dn.triggered.connect(self._tune_selected_decrease)
         tb.addAction(self._act_tune_dn)
         tb.addSeparator()
+        self._power = QDoubleSpinBox()
+        self._power.setRange(0.0, 1_000_000.0)
+        self._power.setDecimals(1)
+        self._power.setSingleStep(10.0)
+        self._power.setSuffix(" W")
+        self._power.setValue(0.0)
+        self._power.setMaximumWidth(110)
+        self._power.setToolTip(
+            "Forward power for the per-component voltage/current stress estimate "
+            "(0 = off). Shown at the passband landmark frequency."
+        )
+        self._power.valueChanged.connect(self._on_power_changed)
+        pwrap = QWidget()
+        play = QHBoxLayout(pwrap)
+        play.setContentsMargins(4, 0, 4, 0)
+        play.addWidget(QLabel("P"))
+        play.addWidget(self._power)
+        tb.addWidget(pwrap)
         wrap = QWidget()
         lay = QHBoxLayout(wrap)
         lay.setContentsMargins(4, 0, 4, 0)
@@ -357,7 +381,7 @@ class MainWindow(QMainWindow):
         self._f_start.setText(self._eng_freq(self._session.sweep.f_start_hz))
         self._f_stop.setText(self._eng_freq(self._session.sweep.f_stop_hz))
         self._points.setValue(self._session.sweep.n_points)
-        self._table.set_circuit(self._session.circuit, self._tolerance_map())
+        self._refresh_table()
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
         self._plots.set_monte_carlo(None)
@@ -406,8 +430,26 @@ class MainWindow(QMainWindow):
             for ref, tol in self._session.element_tolerances.items()
         }
 
+    def _refresh_table(self) -> None:
+        """Rebuild the component table (tolerances + power-stress columns)."""
+        report = self._session.compute_stress()
+        self._table.set_circuit(
+            self._session.circuit, self._tolerance_map(), report
+        )
+        if report is None:
+            self._stress_label.setText("")
+            return
+        self._stress_label.setText(
+            f"Peak {report.max_v_peak_v:.0f} V / {report.max_i_peak_a:.2f} A"
+            f" @ {self._eng_freq(report.frequency_hz)}"
+        )
+
+    def _on_power_changed(self, value: float) -> None:
+        self._session.power_w = float(value)
+        self._refresh_table()
+
     def _after_circuit_change(self) -> None:
-        self._table.set_circuit(self._session.circuit, self._tolerance_map())
+        self._refresh_table()
         self._schematic.set_circuit(self._session.circuit)
         self._spec.set_spec(self._session.spec)
         if self._selected_element_obj() is None:
@@ -677,7 +719,7 @@ class MainWindow(QMainWindow):
             old = self._session.lookup_element_value(element_id)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Invalid value", _exc_text(exc))
-            self._table.set_circuit(self._session.circuit, self._tolerance_map())
+            self._refresh_table()
             return
         if abs(old - value) < 1e-30 * max(1.0, abs(old)):
             return
@@ -877,7 +919,7 @@ class MainWindow(QMainWindow):
         if not text.strip():
             self._session.clear_element_tolerance(element_id)
             self._status.setText(f"Cleared tolerance for {element_id}")
-            self._table.set_circuit(self._session.circuit, self._tolerance_map())
+            self._refresh_table()
             return
         try:
             pct = float(text)
@@ -886,7 +928,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Component tolerance", _exc_text(exc))
             return
         self._status.setText(f"Tolerance for {element_id}: ±{pct:g}%")
-        self._table.set_circuit(self._session.circuit, self._tolerance_map())
+        self._refresh_table()
 
     def _set_element_step(self, element_id: str) -> None:
         current = self._session.step_fraction(element_id)

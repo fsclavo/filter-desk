@@ -138,6 +138,19 @@ def _element_abcd(
     raise AnalysisError(f"unsupported element type: {type(el)!r}")
 
 
+def element_impedance_ohm(el: Element, frequency_hz: float) -> complex:
+    """Return the arm impedance ``Z`` of ``el`` at ``frequency_hz`` (scalar).
+
+    For series arms this is the series impedance; for shunt arms it is the shunt
+    impedance (``1/Y``). Used by the power-stress estimate.
+    """
+    omega = np.array([2.0 * np.pi * frequency_hz], dtype=float)
+    abcd = _element_abcd(el, omega)[0]
+    if el.role == ElementRole.SERIES:
+        return complex(abcd[0, 1])  # B = Z
+    return complex(1.0 / abcd[1, 0])  # C = Y -> Z = 1/Y
+
+
 def cascade_abcd(
     mats: list[NDArray[np.complexfloating]],
 ) -> NDArray[np.complexfloating]:
