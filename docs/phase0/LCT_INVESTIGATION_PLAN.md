@@ -2,6 +2,15 @@
 
 - **Status:** Phase 0 plan (execution in Phase 9; sample collection may start anytime)
 - **Decision type:** Open investigation — no public authoritative schema found (2026-03-29 research)
+- **Update 2026-10-16:** **ON HOLD.** 22 samples collected and analyzed (see Findings). No authoritative element-type/family legend available and the reference tool cannot export an independent oracle (`.s2p`/response), so codes 5–8 and family/topology cannot be validated. Resume if a legend or oracle becomes available.
+
+## Findings (2026-10-16, 22 samples)
+
+- **Format:** plain **ASCII text, CRLF**, stable across 2012→2025. Header `Elsie circuit file [ver]` (ver opaque: `70`, `712073300`, or absent).
+- **Sections:** all introduced by `* <label>:` — Family/order/stages/topology/Cauer; Width/center/Fstop; Apass/Astop; Rsource/Rload/Rratio/Rstandard; Qind/Qcap; **Gj/Hj** (prototype g-values; `Hj≠0` = finite transmission zero); **Element type, L, Ltol, C, Ctol**; sweep (lin/log, fstart, fstop, N); graph scales; Limits Y/N (+ per-plot definitions); Markers Y/N; M-derived zeros Y/N.
+- **Frequency:** LP/HP → `width=cutoff`; BP/BS → `width=bandwidth, center=f0`.
+- **Element type codes (partial, inferred):** `1`=series L, `2`=shunt L, `3`=series C, `4`=shunt C; `5`–`8`=LC combinations (e.g. `8`=shunt parallel-LC seen in BP like `8,3,8`; `7`=series parallel-LC with `Hj≠0` in a LP notch). Exact legend for `5`–`8` unconfirmed.
+- **Family/topology codes** (e.g. `11`, `2`, `3`, `4`; `A/B/C/E/H`) not confirmed.
 
 ## Goal
 

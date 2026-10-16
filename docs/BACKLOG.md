@@ -116,13 +116,14 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] Performance: float32 trial buffer + `progress(done,total)`; 10k×512 ≈ 5 s (NFR-5) — GUI worker emits progress
 - [x] GUI: MC run dialog (`MonteCarloDialog`) + envelope overlay (View toggle)
 
-### Phase 9 — `.lct` file I/O (best-effort)
+### Phase 9 — `.lct` file I/O (best-effort) — **ON HOLD (2026-10-16)**
 
-- [ ] Collect ≥10 user-owned `.lct` samples (`tests/lct_roundtrip/corpus/`, private) — `LCT_INVESTIGATION_PLAN.md`
-- [ ] Binary vs text classification + differential analysis
+- [x] Collect ≥10 user-owned `.lct` samples (`tests/lct_roundtrip/corpus/private/`, gitignored) — **22 samples collected**
+- [x] Classification + differential analysis (see `LCT_INVESTIGATION_PLAN.md` "Findings")
 - [ ] `io/lct/{parser,exporter,model_mapper}.py` with `LctDocument` DTO ≠ domain
 - [ ] `CompatibilityReport` (mapped / dropped / approximated); `docs/lct_compatibility.md`
 - [ ] Semantic round-trip tests on redistributable corpus only
+- **On hold because:** no authoritative element-type/family legend and the reference tool cannot export an independent oracle (`.s2p`/response), so codes 5–8 and family/topology can't be validated. Format is known-good text (see findings); resume if a legend/oracle appears.
 - [ ] Go/no-go decision per plan table
 
 ### Phase 10 — Broader export + measured S2P compare
