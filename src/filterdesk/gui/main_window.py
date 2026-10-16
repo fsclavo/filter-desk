@@ -5,8 +5,15 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, Qt, QThread, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoCommand, QUndoStack
+from PySide6.QtCore import QPoint, Qt, QThread, QTimer, QUrl
+from PySide6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QDesktopServices,
+    QKeySequence,
+    QUndoCommand,
+    QUndoStack,
+)
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -22,6 +29,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from filterdesk import __version__
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import set_element_parasitics
@@ -89,6 +97,9 @@ def _exc_text(exc: BaseException) -> str:
         return f"{type(exc).__name__}: {text}"
     return f"{type(exc).__name__} (no message)"
 
+
+_REPO_URL = "https://github.com/fsclavo/filter-desk"
+_DOCS_URL = f"{_REPO_URL}/blob/main/docs/user-manual.md"
 
 _INSERT_CHOICES: tuple[tuple[str, ElementRole, str], ...] = (
     ("Series inductor", ElementRole.SERIES, "L"),
@@ -249,10 +260,12 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_save)
         file_menu.addAction(act_save_as)
         file_menu.addSeparator()
-        file_menu.addAction(act_import_ts)
-        file_menu.addAction(act_export_smith)
-        file_menu.addAction(act_export_csv)
-        file_menu.addAction(act_export_spice)
+        import_menu = file_menu.addMenu("&Import")
+        import_menu.addAction(act_import_ts)
+        export_menu = file_menu.addMenu("&Export")
+        export_menu.addAction(act_export_smith)
+        export_menu.addAction(act_export_csv)
+        export_menu.addAction(act_export_spice)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
@@ -307,6 +320,21 @@ class MainWindow(QMainWindow):
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
+
+        help_menu = self.menuBar().addMenu("&Help")
+        act_about = QAction("&About FilterDesk", self)
+        act_about.triggered.connect(self._show_about)
+        help_menu.addAction(act_about)
+        act_about_qt = QAction("About &Qt", self)
+        act_about_qt.triggered.connect(self._show_about_qt)
+        help_menu.addAction(act_about_qt)
+        help_menu.addSeparator()
+        act_github = QAction("&GitHub repository", self)
+        act_github.triggered.connect(self._open_github)
+        help_menu.addAction(act_github)
+        act_docs = QAction("&User manual", self)
+        act_docs.triggered.connect(self._open_docs)
+        help_menu.addAction(act_docs)
 
     def _load_session_into_ui(self) -> None:
         self._selected_element = None
@@ -1148,6 +1176,27 @@ class MainWindow(QMainWindow):
             self._run_analyze()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Open failed", _exc_text(exc))
+
+    def _show_about(self) -> None:
+        QMessageBox.about(
+            self,
+            "About FilterDesk",
+            f"<b>FilterDesk</b> {__version__}<br><br>"
+            "Passive lumped-element RF filter synthesis and analysis.<br>"
+            "Licensed under the Apache License 2.0.<br>"
+            "Uses Qt via PySide6 (LGPL-3.0).<br><br>"
+            "Not affiliated with ELSIE / Tonne Software.<br>"
+            f'<a href="{_REPO_URL}">{_REPO_URL}</a>',
+        )
+
+    def _show_about_qt(self) -> None:
+        QMessageBox.aboutQt(self, "About Qt")
+
+    def _open_github(self) -> None:
+        QDesktopServices.openUrl(QUrl(_REPO_URL))
+
+    def _open_docs(self) -> None:
+        QDesktopServices.openUrl(QUrl(_DOCS_URL))
 
     def _save_project(self) -> None:
         if self._session.path:

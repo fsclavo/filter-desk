@@ -158,7 +158,7 @@ preferred number series (E6…E96).
 6. Study tolerance spread: **Design → Monte-Carlo tolerances…**, run 1000 trials
    at ±2 %.
 7. **Save** your project (**File → Save**, `Ctrl+S`) as a `.filterdesk.json`
-   file, and **export** with **File → Export CSV…** or the Touchstone CLI.
+   file, and **export** with **File → Export → CSV…** or the Touchstone CLI.
 
 Need a starting order? Press **Estimate N** in the Specification panel (works for
 supported low/high-pass families) to compute the minimum order from your
@@ -330,7 +330,7 @@ The **Limits** dock defines pass/fail mask regions (up to **10**): columns
 
 ## 8. Measured data and comparison
 
-**File → Import Touchstone…** loads a measured `.s1p`/`.s2p`/`.sNp` file and
+**File → Import → Touchstone…** loads a measured `.s1p`/`.s2p`/`.sNp` file and
 overlays the measured traces (dashed) on the plots; for 2-port files it also
 reports a simulation-vs-measurement comparison over the overlapping band. Toggle
 the overlay with **View → Show measured overlay**.
@@ -343,13 +343,19 @@ the overlay with **View → Show measured overlay**.
 | --- | --- | --- | --- |
 | Open project | File → Open… | `Ctrl+O` | `.filterdesk.json` |
 | Save / Save As | File → Save / Save As… | `Ctrl+S` | `.filterdesk.json` |
-| Import measured | File → Import Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
-| Export Smith chart | File → Export Smith chart… | — | `.png`/`.svg`/`.pdf` |
-| Export CSV | File → Export CSV… | — | `.csv` |
-| Export SPICE netlist | File → Export SPICE netlist… | — | `.net`/`.cir` (LTspice) |
+| Import measured | File → Import → Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
+| Export Smith chart | File → Export → Smith chart… | — | `.png`/`.svg`/`.pdf` |
+| Export CSV | File → Export → CSV… | — | `.csv` |
+| Export SPICE netlist | File → Export → SPICE netlist… | — | `.net`/`.cir` (LTspice) |
 
 The native project file stores the specification, circuit, sweep settings,
 markers, limits, and metadata, and is reloadable and editable.
+
+The first **Save** suggests a name derived from the design
+(`<family>_<type>_n<order>_<freq>.filterdesk.json`, e.g.
+`cheby1_LPF_n7_140MHz.filterdesk.json`); you can change it. The **Help** menu
+offers **About FilterDesk** (version/license), **About Qt**, and links to the
+GitHub repository and this manual.
 
 ---
 

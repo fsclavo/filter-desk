@@ -205,7 +205,61 @@ def test_file_menu_has_import_touchstone() -> None:
     }
     file_menu = menus.get("&File")
     assert file_menu is not None
-    assert any("Import Touchstone" in a.text() for a in file_menu.actions())
+    submenus = {a.text(): a.menu() for a in file_menu.actions() if a.menu()}
+    import_menu = submenus.get("&Import")
+    assert import_menu is not None
+    assert any("Touchstone" in a.text() for a in import_menu.actions())
+
+    export_menu = submenus.get("&Export")
+    assert export_menu is not None
+    export_labels = [a.text().replace("&", "") for a in export_menu.actions()]
+    assert any("Smith" in t for t in export_labels)
+    assert any("CSV" in t for t in export_labels)
+    assert any("SPICE" in t for t in export_labels)
+    window.close()
+    assert app is not None
+
+
+def test_help_menu(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = mw.MainWindow(DesignSession(), auto_run=False)
+    menus = {a.text(): a.menu() for a in window.menuBar().actions() if a.menu()}
+    help_menu = menus.get("&Help")
+    assert help_menu is not None
+    labels = [a.text() for a in help_menu.actions()]
+    assert any("About FilterDesk" in t for t in labels)
+    assert any("GitHub" in t for t in labels)
+
+    calls: dict[str, object] = {}
+    opened: list[str] = []
+
+    class _FakeMessageBox:
+        @staticmethod
+        def about(*args: object, **kwargs: object) -> None:
+            calls["about"] = True
+
+        @staticmethod
+        def aboutQt(*args: object, **kwargs: object) -> None:
+            calls["aboutQt"] = True
+
+    class _FakeDesktop:
+        @staticmethod
+        def openUrl(url: object) -> None:
+            opened.append(url.toString())  # type: ignore[attr-defined]
+
+    monkeypatch.setattr(mw, "QMessageBox", _FakeMessageBox)
+    monkeypatch.setattr(mw, "QDesktopServices", _FakeDesktop)
+    window._show_about()
+    window._show_about_qt()
+    window._open_github()
+    window._open_docs()
+    assert calls.get("about") and calls.get("aboutQt")
+    assert any("github.com/fsclavo/filter-desk" in u for u in opened)
     window.close()
     assert app is not None
 
