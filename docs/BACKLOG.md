@@ -149,7 +149,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 Ham-oriented helpers on top of the existing synthesis/analysis core. Order is the
 intended implementation sequence.
 
-- [x] **Power stress calculator** (S) — `analysis/stress.py` (`compute_stress`); GUI **P (W)** toolbar field + **Vpk/Ipk** columns in the component table + status-bar peak summary; CLI `analyze --power W`. *Assumes a matched (real `Z0`) source/load.*
+- [x] **Power stress calculator** (S) — `analysis/stress.py` (`compute_stress`); GUI **TX Power** toolbar field + **Vpk/Ipk** columns in the component table + status-bar peak summary; CLI `analyze --power W`. *Assumes a matched (real `Z0`) source/load.*
 - [x] **Amateur band presets** (S) — `services/bands.py` (160 m–6 m + WARC); GUI **Design → Band preset…**; CLI `--band NAME [--band-kind lpf|hpf|bpf]` + `bands` listing. Chebyshev-I 0.1 dB, LP/HP order 5, BP order 4.
 - [ ] **Transmit harmonic readout** (S) — auto-mark `2f`/`3f` (and `n·f0`) and a table of `|S21|` attenuation at harmonics relative to the band; targets the PA output-LPF use case.
 - [ ] **Resistive attenuator designer** (S) — T and Pi pads: `dB` + `Z0` → R values; optional insertion of the attenuator into the circuit (as a small resistive sub-network). Standalone, high demand.

@@ -225,7 +225,7 @@ sub-rows such as `X1.L`, `X1.C`. Selecting rows highlights the matching element 
 the schematic, and vice versa.
 
 **Vpk/Ipk** show the peak voltage/current per part from the **power-stress
-estimate**: set the **P (W)** field in the toolbar (0 = off). Stress is evaluated
+estimate**: set the **TX Power** field in the toolbar (0 = off). Stress is evaluated
 at the passband landmark (cutoff for LP/HP, center for BP/BS) assuming a matched
 `Z0` system, and the worst case is summarised in the status bar. Use it to pick
 voltage/current ratings (e.g. capacitor voltage) for transmit filters.
