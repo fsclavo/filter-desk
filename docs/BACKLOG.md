@@ -40,25 +40,25 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ---
 
-## B. Deferred from completed phases 0–5b (P1)
+## B. Deferred from completed phases 0–5b (P1) — **closed (2026-10-15, ADR-014)**
 
 ### B1. Synthesis / math
 
 | ID | Item | Detail / limitation | Refs | Status |
 | --- | --- | --- | --- | --- |
 | B1.1 | **Even-order Chebyshev Type I** | Modified even-order prototype for equal terminations (reflection zero relocated to DC): exact continued-fraction Darlington synthesis, symmetric positive arms, least-squares fallback at high order. `docs/math/chebyshev_type_i.md` §5 | — | **DONE (2026-10-15)** |
-| B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, `docs/math/transforms.md` §3 | Pending |
+| B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, ADR-014 | **Decided (accepted)** |
 | B1.3 | **M-derived BP/BS** | Shipped in v0.5.5 via generic LP→BP/BS finite-zero transform (`test_m_derived_bp_smoke`); ADR-013 | `docs/phase5b/BPBS_FINITE_ZERO_STATUS.md` | **DONE (2026-10-15)** |
 | B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |
-| B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre/Constant-K/M-derived unsupported (no classical formula) | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | Pending |
-| B1.6 | **Even-order elliptic** | Equal-R is an |S21| fit approximation, not exact classic theory (transformer-free) | ADR-013, `EVEN_ORDER_CAUER_STATUS.md` | Pending |
-| B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; decide closed-form/root extension | `domain/specs.py:141-150` | Pending |
+| B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre via numeric prototype search (LP/HP); Constant-K/M-derived still unsupported | ADR-014 | **DONE (2026-10-15)** |
+| B1.6 | **Even-order elliptic** | Equal-R is an |S21| fit approximation, not exact classic theory (transformer-free) | ADR-013, ADR-014 | **Decided (accepted)** |
+| B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; caps kept intentional (tables verified) — extension needs prototype-generation research | ADR-014 | **Decided (keep caps)** |
 
 ### B2. Analysis
 
 | ID | Item | Detail | Refs |
 | --- | --- | --- | --- |
-| B2.1 | **skrf analyzer unequal-Z** | `ScikitRFAnalyzer` assumes equal port \(Z_0\); unequal-Z only works via ABCD | ADR-011, `PHASE2_STATUS`/`PHASE4_STATUS` |
+| B2.1 | **skrf analyzer unequal-Z** | `ScikitRFAnalyzer` cascades at \(z_0=\sqrt{Z_S Z_L}\) then renormalizes to \([Z_S, Z_L]\); matches ABCD <1e-9 | ADR-014 · **DONE (2026-10-15)** |
 
 ### B3. GUI / UX
 
@@ -74,7 +74,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | --- | --- | --- | --- |
 | B4.1 | **Touchstone reader (import)** | `io/touchstone/reader.py` (`TouchstoneData`/`read_touchstone`/`parse_touchstone`); HZ..GHZ, RI/MA/DB, `R z0`, comments, wrapped records, `.s1p`/`.sNp` port inference; GUI **File → Import Touchstone…** (worker + `DesignSession.set_measured`) and CLI `touchstone-info` — blueprint FR-I2, §27 | **DONE (2026-10-15)** |
 | B4.2 | **`services.compare`** | `services/compare.py` (`CompareResult`/`compare_results`): overlap-band align + S21/S11 dB RMS & max error; GUI dashed measured overlay on mag/VSWR/Smith with **View → Show measured overlay** toggle; CLI `compare SIM MEAS [--json]` | **DONE (2026-10-15)** |
-| B4.3 | **`plotting/protocol.py` `PlotBackend`** | GUI imports PyQtGraph directly; plotting backend abstraction never materialized | Pending (blueprint §24) |
+| B4.3 | **`plotting/protocol.py` `PlotBackend`** | Static-export abstraction materialized: `PlotBackend` protocol + `MatplotlibBackend` (via `get_plot_backend()`); CLI/GUI export route through it. Interactive GUI keeps PyQtGraph directly | **DONE (2026-10-15)** — ADR-014 |
 
 ---
 

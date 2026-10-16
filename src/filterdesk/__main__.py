@@ -68,7 +68,7 @@ from filterdesk.optimization import (
     OptimizeMethod,
     optimize_circuit,
 )
-from filterdesk.plotting import export_smith_chart
+from filterdesk.plotting import get_plot_backend
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesize
@@ -293,6 +293,9 @@ def build_parser() -> argparse.ArgumentParser:
             ApproximationFamily.CHEBYSHEV_TYPE_I.value,
             ApproximationFamily.CHEBYSHEV_TYPE_II.value,
             ApproximationFamily.ELLIPTIC.value,
+            ApproximationFamily.BESSEL.value,
+            ApproximationFamily.GAUSSIAN.value,
+            ApproximationFamily.LEGENDRE.value,
         ],
         help="Approximation family",
     )
@@ -891,7 +894,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {args.export_s2p}", file=sys.stderr)
 
         if args.export_smith is not None:
-            export_smith_chart(
+            get_plot_backend().save_smith_chart(
                 analysis,
                 args.export_smith,
                 title=(

@@ -65,6 +65,29 @@ def test_abcd_matches_skrf_milestone() -> None:
     assert np.max(np.abs(a.s11 - b.s11)) < 1e-12
 
 
+def test_skrf_supports_unequal_ports() -> None:
+    spec = filter_spec_from_mapping(
+        {
+            "family": "butterworth",
+            "response": "low_pass",
+            "order": 5,
+            "cutoff_hz": 100e6,
+            "cutoff_definition": "half_power_3db",
+            "z_source_ohm": 50.0,
+            "z_load_ohm": 75.0,
+            "topology_id": "ladder_lp_series_l_input",
+        }
+    )
+    circuit = synthesize(spec).circuit
+    sweep = SweepConfig(1e6, 1e9, 257, SweepSpacing.LOGARITHMIC)
+    a = LadderABCDAnalyzer().analyze(circuit, sweep)
+    b = ScikitRFAnalyzer().analyze(circuit, sweep)
+    assert np.max(np.abs(a.s21 - b.s21)) < 1e-9
+    assert np.max(np.abs(a.s11 - b.s11)) < 1e-9
+    assert np.max(np.abs(a.s22 - b.s22)) < 1e-9
+    assert np.max(np.abs(a.zin_ohm - b.zin_ohm)) < 1e-6
+
+
 @pytest.mark.parametrize(
     "case",
     [

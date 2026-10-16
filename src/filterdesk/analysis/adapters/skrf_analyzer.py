@@ -15,7 +15,12 @@ from filterdesk.domain.circuit import Circuit
 
 
 class ScikitRFAnalyzer:
-    """Build a cascade of scikit-rf Networks (equal port Z0 only)."""
+    """Build a cascade of scikit-rf Networks at a common z0, then renormalize.
+
+    Elements are cascaded at a single reference impedance (geometric mean of the
+    two port impedances); the resulting two-port is renormalized to
+    ``[z_source_ohm, z_load_ohm]`` so unequal terminations are supported.
+    """
 
     name = "scikit_rf"
 
@@ -25,28 +30,29 @@ class ScikitRFAnalyzer:
         freq_hz = sweep.frequencies_hz()
         zs = circuit.port_in.impedance_ohm
         zl = circuit.port_out.impedance_ohm
-        if abs(zs - zl) > 1e-12 * max(zs, zl):
-            raise AnalysisError(
-                "ScikitRFAnalyzer currently requires equal port impedances"
-            )
-        z0 = zs
+        z0_ref = float(np.sqrt(zs * zl))
         frequency = rf.Frequency.from_f(np.asarray(freq_hz, dtype=float), unit="Hz")
         omega = 2.0 * np.pi * np.asarray(freq_hz, dtype=float)
 
         networks: list[rf.Network] = []
         for el in circuit.elements:
             abcd = _element_abcd(el, omega)
-            s11, s21, s12, s22 = abcd_to_s(abcd, z0, z0)
+            s11, s21, s12, s22 = abcd_to_s(abcd, z0_ref, z0_ref)
             s = np.zeros((len(freq_hz), 2, 2), dtype=np.complex128)
             s[:, 0, 0] = s11
             s[:, 1, 0] = s21
             s[:, 0, 1] = s12
             s[:, 1, 1] = s22
-            networks.append(rf.Network(frequency=frequency, s=s, z0=z0, name=el.id))
+            networks.append(
+                rf.Network(frequency=frequency, s=s, z0=z0_ref, name=el.id)
+            )
 
         ntw = networks[0]
         for n in networks[1:]:
             ntw = ntw ** n
+
+        if abs(zs - zl) > 1e-12 * max(zs, zl):
+            ntw.renormalize([zs, zl])
 
         s = ntw.s
         s11 = s[:, 0, 0]
@@ -55,9 +61,9 @@ class ScikitRFAnalyzer:
         s22 = s[:, 1, 1]
 
         gamma_in = s11
-        zin = z0 * (1.0 + gamma_in) / (1.0 - gamma_in)
+        zin = zs * (1.0 + gamma_in) / (1.0 - gamma_in)
         gamma_out = s22
-        zout = z0 * (1.0 + gamma_out) / (1.0 - gamma_out)
+        zout = zl * (1.0 + gamma_out) / (1.0 - gamma_out)
 
         return AnalysisResult(
             frequency_hz=np.asarray(freq_hz, dtype=float),

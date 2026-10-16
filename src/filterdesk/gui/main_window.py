@@ -71,7 +71,7 @@ from filterdesk.io.native import load_project, save_project
 from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
-from filterdesk.plotting import export_smith_chart
+from filterdesk.plotting import get_plot_backend
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.retune import scale_response
 from filterdesk.services.session import DesignSession
@@ -1163,7 +1163,7 @@ class MainWindow(QMainWindow):
         }:
             path += ".png"
         try:
-            export_smith_chart(
+            get_plot_backend().save_smith_chart(
                 result,
                 path,
                 markers=self._session.markers,

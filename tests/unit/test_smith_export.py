@@ -9,6 +9,7 @@ import pytest
 
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.domain.overlays import Marker
+from filterdesk.plotting import PlotBackend, get_plot_backend
 from filterdesk.plotting.smith_export import export_smith_chart, render_smith_figure
 
 
@@ -54,6 +55,18 @@ def test_export_smith_writes_file(tmp_path: Path, suffix: str) -> None:
     assert path == out
     assert out.is_file()
     assert out.stat().st_size > 200
+
+
+def test_plot_backend_protocol_and_save(tmp_path: Path) -> None:
+    backend = get_plot_backend()
+    assert isinstance(backend, PlotBackend)
+    assert backend.name == "matplotlib"
+    out = tmp_path / "backend.png"
+    path = backend.save_smith_chart(_tiny_result(), out)
+    assert path == out
+    assert out.is_file()
+    with pytest.raises(ValueError):
+        get_plot_backend("nope")
 
 
 def test_export_smith_rejects_bad_suffix(tmp_path: Path) -> None:

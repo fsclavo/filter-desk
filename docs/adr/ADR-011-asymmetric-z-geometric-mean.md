@@ -24,7 +24,7 @@ Z_0 = \sqrt{Z_S\, Z_L}
 
 - Not a full Norton / minimum-inductance redesign; large \(Z_L/Z_S\) ratios will show return-loss asymmetry and may not meet classic equal-ripple Chebyshev passband shape at both ports.
 - Even-order Chebyshev still ignores prototype \(g_{n+1}\neq 1\) (same as Phase 1 equal-Z); a dedicated transformer or ratio table is deferred.
-- `ScikitRFAnalyzer` remains equal-\(Z_0\) only; unequal-Z analysis uses ABCD.
+- `ScikitRFAnalyzer` cascades elements at a common reference \(z_0=\sqrt{Z_S Z_L}\) and renormalizes the result to \([Z_S, Z_L]\), so unequal-Z analysis is now supported by both backends (see ADR-014).
 
 ## Consequences
 

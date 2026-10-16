@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
 from scipy import signal
 
 from filterdesk.domain.enums import ApproximationFamily, FilterResponse
+from filterdesk.synthesis.families.bessel import bessel_g_values
+from filterdesk.synthesis.families.gaussian import gaussian_g_values
+from filterdesk.synthesis.families.legendre import legendre_g_values
 
 
 class OrderEstimateError(ValueError):
@@ -23,6 +27,75 @@ _SUPPORTED = frozenset(
         ApproximationFamily.ELLIPTIC,
     }
 )
+
+# Monotonic all-pole families without a classical order formula: estimated
+# numerically from their prototype tables (LP/HP only).
+_MONOTONIC_PROVIDERS: dict[
+    ApproximationFamily,
+    tuple[Callable[[int], tuple[float, ...]], int, int],
+] = {
+    ApproximationFamily.BESSEL: (bessel_g_values, 1, 10),
+    ApproximationFamily.GAUSSIAN: (gaussian_g_values, 1, 10),
+    ApproximationFamily.LEGENDRE: (legendre_g_values, 2, 9),
+}
+
+
+def _monotonic_attenuation_db(g_values: tuple[float, ...], w: float) -> float:
+    """Positive attenuation (dB) of the series-first LP prototype at ω=w.
+
+    ``g_values`` are the interior ``g1..gn`` (endpoints excluded).
+    """
+    s = 1j * w
+    a, b, c, d = 1.0 + 0j, 0j, 0j, 1.0 + 0j
+    for index, g in enumerate(g_values, start=1):
+        if index % 2 == 1:  # series inductor: [[1, jw·g], [0, 1]]
+            z = s * g
+            a, b, c, d = a, a * z + b, c, c * z + d
+        else:  # shunt capacitor: [[1, 0], [jw·g, 1]]
+            y = s * g
+            a, b, c, d = a + b * y, b, c + d * y, d
+    s21 = 2.0 / (a + b + c + d)
+    return -20.0 * math.log10(abs(s21) + 1e-30)
+
+
+def _solve_prototype_edge(g_values: tuple[float, ...], target_db: float) -> float:
+    """Prototype ω where the (monotonic) attenuation reaches ``target_db``."""
+    lo, hi = 0.0, 1.0
+    for _ in range(64):
+        if _monotonic_attenuation_db(g_values, hi) >= target_db:
+            break
+        hi *= 2.0
+    else:
+        return math.inf
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if _monotonic_attenuation_db(g_values, mid) < target_db:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def _estimate_monotonic_order(
+    family: ApproximationFamily,
+    omega_ratio: float,
+    passband_attenuation_db: float,
+    stopband_attenuation_db: float,
+) -> tuple[int, float]:
+    """Smallest order meeting the spec; returns ``(order, prototype_pass_edge)``."""
+    provider, min_order, max_order = _MONOTONIC_PROVIDERS[family]
+    for order in range(min_order, max_order + 1):
+        g_values = provider(order)[1:-1]
+        omega_pass = _solve_prototype_edge(g_values, passband_attenuation_db)
+        if not math.isfinite(omega_pass):
+            continue
+        if _monotonic_attenuation_db(g_values, omega_ratio * omega_pass) >= (
+            stopband_attenuation_db
+        ):
+            return order, omega_pass
+    raise OrderEstimateError(
+        f"no order up to {max_order} meets the specification for {family.value}"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +129,7 @@ class OrderEstimateResult:
 
 
 def supports_order_estimation(family: ApproximationFamily) -> bool:
-    return family in _SUPPORTED
+    return family in _SUPPORTED or family in _MONOTONIC_PROVIDERS
 
 
 def _validate_ap_as(
@@ -89,10 +162,11 @@ def estimate_minimum_order(
     band-edge arguments ``f_pass_low_hz``, ``f_pass_high_hz``,
     ``f_stop_low_hz``, ``f_stop_high_hz``.
     """
-    if family not in _SUPPORTED:
+    if family not in _SUPPORTED and family not in _MONOTONIC_PROVIDERS:
         raise OrderEstimateError(
             f"order estimation not supported for {family.value}; "
-            "use Butterworth, Chebyshev I/II, or Elliptic"
+            "use Butterworth, Chebyshev I/II, Elliptic, Bessel, Gaussian, "
+            "or Legendre"
         )
     _validate_ap_as(passband_attenuation_db, stopband_attenuation_db)
     gpass = float(passband_attenuation_db)
@@ -166,9 +240,26 @@ def estimate_minimum_order(
             "Chebyshev II: Ap = max passband loss, As at stopband edge; "
             "FilterDesk cutoff is the stopband edge"
         )
-    else:
+    elif family == ApproximationFamily.ELLIPTIC:
         n, wn = signal.ellipord(wp, ws, gpass, gstop, analog=True)
         notes = "Elliptic: Ap = passband ripple, As at stopband edge"
+    else:
+        if is_band:
+            raise OrderEstimateError(
+                f"numeric order estimation for {family.value} supports LP/HP only"
+            )
+        n, omega_pass = _estimate_monotonic_order(
+            family, float(omega_ratio), gpass, gstop
+        )
+        if response == FilterResponse.LOW_PASS:
+            f_3db = f_pass_hz / omega_pass
+        else:
+            f_3db = f_pass_hz * omega_pass
+        wn = 2.0 * math.pi * f_3db
+        notes = (
+            f"{family.value}: numeric prototype search, -3 dB normalization "
+            "(ADR-012)"
+        )
 
     order = int(n)
     if order < 1:
