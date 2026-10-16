@@ -106,13 +106,13 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] GUI **Design → Component → Tune ±step / Set tune step…**, toolbar buttons + shortcuts — FR-U2
 - [ ] (optional polish) interactive marker-driven retune — see §D
 
-### Phase 8 — Monte Carlo
+### Phase 8 — Monte Carlo — **DONE (2026-10-15)**
 
 - [x] `montecarlo/` package: `engine.py` (`run_monte_carlo`), `stats.py` (`wilson_interval`) — FR-P3 core
 - [x] Uniform ±tol (then Normal) — FR-P3 core
 - [x] Envelopes, yield vs limits, percentiles — FR-P3 core
-- [ ] Per-element tolerance/distribution on instances (uniform global tolerance now)
-- [ ] Performance: reuse freq grid; 1k usable, 10k with progress — NFR-5
+- [x] Per-element tolerance/distribution (`ElementTolerance`, `MonteCarloConfig.overrides`; session + CLI `--element-tol` + GUI Set tolerance… / table Tol column)
+- [x] Performance: float32 trial buffer + `progress(done,total)`; 10k×512 ≈ 5 s (NFR-5) — GUI worker emits progress
 - [x] GUI: MC run dialog (`MonteCarloDialog`) + envelope overlay (View toggle)
 
 ### Phase 9 — ELSIE `.lct` I/O (best-effort)

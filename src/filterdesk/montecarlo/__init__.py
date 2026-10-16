@@ -1,6 +1,7 @@
 """Monte-Carlo tolerance analysis (FR-P3)."""
 
 from filterdesk.montecarlo.engine import (
+    ElementTolerance,
     MonteCarloConfig,
     MonteCarloResult,
     ToleranceDistribution,
@@ -10,6 +11,7 @@ from filterdesk.montecarlo.engine import (
 from filterdesk.montecarlo.stats import wilson_interval, yield_fraction
 
 __all__ = [
+    "ElementTolerance",
     "MonteCarloConfig",
     "MonteCarloResult",
     "ToleranceDistribution",

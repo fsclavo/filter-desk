@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from collections.abc import Callable
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 
 import numpy as np
@@ -34,11 +35,25 @@ class ToleranceDistribution(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ElementTolerance:
+    """Per-component tolerance override (relative percent + optional distribution)."""
+
+    tolerance_pct: float
+    distribution: ToleranceDistribution | None = None
+
+    def __post_init__(self) -> None:
+        if self.tolerance_pct < 0.0:
+            raise ValueError("tolerance_pct must be >= 0")
+
+
+@dataclass(frozen=True, slots=True)
 class MonteCarloConfig:
     """Tolerance sweep configuration.
 
     ``tolerance_pct`` is the relative tolerance in percent: uniform is ±tol;
-    normal uses it as one standard deviation (sigma = tol/100).
+    normal uses it as one standard deviation (sigma = tol/100). ``overrides``
+    keys are component refs (``L2``, ``C3``, ``X1.Ls``, …); unlisted components
+    use the global tolerance.
     """
 
     n_trials: int = 1000
@@ -46,6 +61,7 @@ class MonteCarloConfig:
     distribution: ToleranceDistribution = ToleranceDistribution.UNIFORM
     seed: int | None = None
     backend: str = "abcd"
+    overrides: dict[str, ElementTolerance] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.n_trials < 1:
@@ -97,39 +113,49 @@ def perturb_circuit(
     rng: np.random.Generator,
     config: MonteCarloConfig,
 ) -> Circuit:
-    """Return a copy with each reactive/R nominal value scaled independently."""
-    tol = config.tolerance_pct
-    dist = config.distribution
+    """Return a copy with each reactive/R nominal value scaled independently.
 
-    def f() -> float:
-        return _draw_factor(rng, tol, dist)
+    Each component (and LC/Brune sub-part) draws its own factor, using its
+    per-element override when present, else the global tolerance.
+    """
+
+    def draw(key: str) -> float:
+        override = config.overrides.get(key)
+        if override is None:
+            return _draw_factor(rng, config.tolerance_pct, config.distribution)
+        dist = override.distribution or config.distribution
+        return _draw_factor(rng, override.tolerance_pct, dist)
 
     elements: list[Element] = []
     for el in circuit.elements:
         if isinstance(el, IdealInductor):
-            elements.append(replace(el, value_h=el.value_h * f()))
+            elements.append(replace(el, value_h=el.value_h * draw(el.id)))
         elif isinstance(el, IdealCapacitor):
-            elements.append(replace(el, value_f=el.value_f * f()))
+            elements.append(replace(el, value_f=el.value_f * draw(el.id)))
         elif isinstance(el, IdealResistor):
-            elements.append(replace(el, value_ohm=el.value_ohm * f()))
+            elements.append(replace(el, value_ohm=el.value_ohm * draw(el.id)))
         elif isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             elements.append(
-                replace(el, value_h=el.value_h * f(), value_f=el.value_f * f())
+                replace(
+                    el,
+                    value_h=el.value_h * draw(f"{el.id}.L"),
+                    value_f=el.value_f * draw(f"{el.id}.C"),
+                )
             )
         elif isinstance(el, (IdealBruneLC, IdealDualBruneLC)):
             elements.append(
                 replace(
                     el,
-                    series_l_h=el.series_l_h * f(),
-                    series_c_f=el.series_c_f * f(),
-                    parallel_l_h=el.parallel_l_h * f(),
-                    parallel_c_f=el.parallel_c_f * f(),
+                    series_l_h=el.series_l_h * draw(f"{el.id}.Ls"),
+                    series_c_f=el.series_c_f * draw(f"{el.id}.Cs"),
+                    parallel_l_h=el.parallel_l_h * draw(f"{el.id}.Lp"),
+                    parallel_c_f=el.parallel_c_f * draw(f"{el.id}.Cp"),
                 )
             )
         elif isinstance(el, NonIdealInductor):
-            elements.append(replace(el, value_h=el.value_h * f()))
+            elements.append(replace(el, value_h=el.value_h * draw(el.id)))
         elif isinstance(el, NonIdealCapacitor):
-            elements.append(replace(el, value_f=el.value_f * f()))
+            elements.append(replace(el, value_f=el.value_f * draw(el.id)))
         else:
             elements.append(el)
     return replace(circuit, elements=elements)
@@ -140,11 +166,13 @@ def _run_trials(
     sweep: SweepConfig,
     config: MonteCarloConfig,
     active_limits: list[LimitRegion],
+    progress: Callable[[int, int], None] | None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], int]:
     rng = np.random.default_rng(config.seed)
     n = sweep.n_points
-    s21 = np.empty((config.n_trials, n), dtype=np.float64)
-    s11 = np.empty((config.n_trials, n), dtype=np.float64)
+    s21 = np.empty((config.n_trials, n), dtype=np.float32)
+    s11 = np.empty((config.n_trials, n), dtype=np.float32)
+    step = max(1, config.n_trials // 100)
     passes = 0
     for i in range(config.n_trials):
         trial = perturb_circuit(circuit, rng, config)
@@ -155,7 +183,11 @@ def _run_trials(
             verdicts = evaluate_limits(result, active_limits)
             if all(v is not False for v in verdicts.values()):
                 passes += 1
-    return s21, s11, passes
+        if progress is not None and (i + 1) % step == 0:
+            progress(i + 1, config.n_trials)
+    if progress is not None:
+        progress(config.n_trials, config.n_trials)
+    return s21.astype(np.float64), s11.astype(np.float64), passes
 
 
 def run_monte_carlo(
@@ -164,10 +196,14 @@ def run_monte_carlo(
     config: MonteCarloConfig,
     *,
     limits: list[LimitRegion] | None = None,
+    progress: Callable[[int, int], None] | None = None,
 ) -> MonteCarloResult:
-    """Run ``config.n_trials`` perturbed analyses and summarise the response."""
+    """Run ``config.n_trials`` perturbed analyses and summarise the response.
+
+    ``progress(done, total)`` is called periodically (and once at the end).
+    """
     active = [lim for lim in (limits or []) if lim.enabled]
-    s21, s11, passes = _run_trials(circuit, sweep, config, active)
+    s21, s11, passes = _run_trials(circuit, sweep, config, active, progress)
     perc = np.percentile(s21, [5, 50, 95], axis=0)
     yield_fraction = passes / config.n_trials if active else None
 

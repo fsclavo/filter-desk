@@ -56,6 +56,7 @@ from filterdesk.io.touchstone import (
     write_touchstone_s2p,
 )
 from filterdesk.montecarlo import (
+    ElementTolerance,
     MonteCarloConfig,
     MonteCarloResult,
     ToleranceDistribution,
@@ -228,6 +229,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Tolerance distribution",
     )
     mc.add_argument("--seed", type=int, default=None, help="RNG seed")
+    mc.add_argument(
+        "--element-tol",
+        action="append",
+        default=[],
+        metavar="REF=PCT",
+        help="Per-component tolerance override (repeatable), e.g. L1=2 C2=5",
+    )
     mc.add_argument(
         "--limits",
         type=Path,
@@ -700,6 +708,10 @@ def _mc_to_json(spec: FilterSpec, result: MonteCarloResult) -> dict[str, object]
         "seed": cfg.seed,
         "max_spread_db": result.max_spread_db,
     }
+    if cfg.overrides:
+        payload["element_tolerances"] = {
+            ref: tol.tolerance_pct for ref, tol in cfg.overrides.items()
+        }
     if result.yield_fraction is not None:
         lo, hi = wilson_interval(result.passes, result.n_trials)
         payload["yield"] = {
@@ -737,6 +749,16 @@ def _optimize_to_json(result: OptimizationResult) -> dict[str, object]:
             )
         ],
     }
+
+
+def _element_tolerances_from_cli(entries: list[str]) -> dict[str, ElementTolerance]:
+    out: dict[str, ElementTolerance] = {}
+    for entry in entries:
+        ref, sep, pct = entry.partition("=")
+        if not sep or not ref.strip() or not pct.strip():
+            raise SpecValidationError(f"invalid --element-tol {entry!r} (use REF=PCT)")
+        out[ref.strip()] = ElementTolerance(float(pct))
+    return out
 
 
 def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
@@ -811,6 +833,7 @@ def main(argv: list[str] | None = None) -> int:
                 tolerance_pct=float(args.tol),
                 distribution=ToleranceDistribution(args.distribution),
                 seed=args.seed,
+                overrides=_element_tolerances_from_cli(args.element_tol),
             )
             mc_result = run_monte_carlo(synth.circuit, sweep, config, limits=limits)
         except (

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from filterdesk import __version__
 from filterdesk.analysis.derived import mag_db
@@ -49,7 +49,13 @@ from filterdesk.domain.overlays import (
 from filterdesk.domain.project import Project, ProjectMetadata
 from filterdesk.domain.prototype import Prototype
 from filterdesk.domain.specs import FilterSpec, validate_spec
-from filterdesk.montecarlo import MonteCarloConfig, MonteCarloResult, run_monte_carlo
+from filterdesk.montecarlo import (
+    ElementTolerance,
+    MonteCarloConfig,
+    MonteCarloResult,
+    ToleranceDistribution,
+    run_monte_carlo,
+)
 from filterdesk.optimization import (
     OptimizationConfig,
     OptimizationResult,
@@ -159,6 +165,7 @@ class DesignSession:
     measured: AnalysisResult | None = None
     measured_name: str | None = None
     element_steps: dict[str, float] = field(default_factory=dict)
+    element_tolerances: dict[str, ElementTolerance] = field(default_factory=dict)
 
     DEFAULT_TUNE_STEP = 0.02
 
@@ -434,12 +441,31 @@ class DesignSession:
         """Tolerance-sweep the current circuit/sweep (defaults to session limits)."""
         if self.circuit is None or self.sweep is None:
             raise ValueError("no circuit/sweep")
+        merged = {**self.element_tolerances, **config.overrides}
         return run_monte_carlo(
             self.circuit,
             self.sweep,
-            config,
+            replace(config, overrides=merged),
             limits=self.limits if limits is None else limits,
         )
+
+    def element_tolerance(self, ref: str) -> ElementTolerance | None:
+        """Per-component tolerance override, if any."""
+        return self.element_tolerances.get(ref)
+
+    def set_element_tolerance(
+        self,
+        ref: str,
+        tolerance_pct: float,
+        distribution: ToleranceDistribution | None = None,
+    ) -> None:
+        self.element_tolerances[ref] = ElementTolerance(tolerance_pct, distribution)
+        self.dirty = True
+
+    def clear_element_tolerance(self, ref: str) -> None:
+        if ref in self.element_tolerances:
+            del self.element_tolerances[ref]
+            self.dirty = True
 
     def insert_arm(
         self,

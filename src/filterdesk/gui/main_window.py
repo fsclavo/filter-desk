@@ -302,7 +302,7 @@ class MainWindow(QMainWindow):
         self._f_start.setText(self._eng_freq(self._session.sweep.f_start_hz))
         self._f_stop.setText(self._eng_freq(self._session.sweep.f_stop_hz))
         self._points.setValue(self._session.sweep.n_points)
-        self._table.set_circuit(self._session.circuit)
+        self._table.set_circuit(self._session.circuit, self._tolerance_map())
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
         self._plots.set_monte_carlo(None)
@@ -345,8 +345,14 @@ class MainWindow(QMainWindow):
             spacing=SweepSpacing.LOGARITHMIC,
         )
 
+    def _tolerance_map(self) -> dict[str, float]:
+        return {
+            ref: tol.tolerance_pct
+            for ref, tol in self._session.element_tolerances.items()
+        }
+
     def _after_circuit_change(self) -> None:
-        self._table.set_circuit(self._session.circuit)
+        self._table.set_circuit(self._session.circuit, self._tolerance_map())
         self._schematic.set_circuit(self._session.circuit)
         self._spec.set_spec(self._session.spec)
         if self._selected_element_obj() is None:
@@ -440,7 +446,7 @@ class MainWindow(QMainWindow):
         if self._mc_thread is not None and self._mc_thread.isRunning():
             self._mc_thread.quit()
             self._mc_thread.wait(100)
-        thread, _worker = start_monte_carlo_thread(
+        thread, worker = start_monte_carlo_thread(
             self._session.circuit,
             self._session.sweep,
             config,
@@ -448,8 +454,12 @@ class MainWindow(QMainWindow):
             self._on_mc_finished,
             self._on_mc_failed,
         )
+        worker.progress.connect(self._on_mc_progress)
         self._mc_thread = thread
         thread.start()
+
+    def _on_mc_progress(self, done: int, total: int) -> None:
+        self._status.setText(f"Monte-Carlo: {done}/{total} trials…")
 
     def _on_mc_finished(self, result: object) -> None:
         assert isinstance(result, MonteCarloResult)
@@ -612,7 +622,7 @@ class MainWindow(QMainWindow):
             old = self._session.lookup_element_value(element_id)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Invalid value", _exc_text(exc))
-            self._table.set_circuit(self._session.circuit)
+            self._table.set_circuit(self._session.circuit, self._tolerance_map())
             return
         if abs(old - value) < 1e-30 * max(1.0, abs(old)):
             return
@@ -735,6 +745,10 @@ class MainWindow(QMainWindow):
         act_step.triggered.connect(
             lambda *_: self._set_element_step(element_id)
         )
+        act_tol = menu.addAction("Set &tolerance…")
+        act_tol.triggered.connect(
+            lambda *_: self._set_element_tolerance(element_id)
+        )
 
     def _tune_selected_increase(self) -> None:
         if self._selected_element is not None:
@@ -754,6 +768,31 @@ class MainWindow(QMainWindow):
             return
         self._on_value_edited(element_id, new_value)
         self._status.setText(f"Tuned {element_id} → {new_value:.6g}")
+
+    def _set_element_tolerance(self, element_id: str) -> None:
+        current = self._session.element_tolerance(element_id)
+        text = f"{current.tolerance_pct:g}" if current is not None else ""
+        text, ok = QInputDialog.getText(
+            self,
+            "Component tolerance",
+            f"Tolerance ±% for {element_id} (blank to clear):",
+            text=text,
+        )
+        if not ok:
+            return
+        if not text.strip():
+            self._session.clear_element_tolerance(element_id)
+            self._status.setText(f"Cleared tolerance for {element_id}")
+            self._table.set_circuit(self._session.circuit, self._tolerance_map())
+            return
+        try:
+            pct = float(text)
+            self._session.set_element_tolerance(element_id, pct)
+        except ValueError as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Component tolerance", _exc_text(exc))
+            return
+        self._status.setText(f"Tolerance for {element_id}: ±{pct:g}%")
+        self._table.set_circuit(self._session.circuit, self._tolerance_map())
 
     def _set_element_step(self, element_id: str) -> None:
         current = self._session.step_fraction(element_id)

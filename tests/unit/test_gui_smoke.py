@@ -519,6 +519,13 @@ def test_main_window_monte_carlo_action(monkeypatch: pytest.MonkeyPatch) -> None
         def wait(self, *_args: object) -> bool:
             return True
 
+    class _FakeSignal:
+        def connect(self, *_args: object) -> None:
+            pass
+
+    class _FakeWorker:
+        progress = _FakeSignal()
+
     def _fake_start(
         circuit: object,
         sweep: object,
@@ -530,7 +537,7 @@ def test_main_window_monte_carlo_action(monkeypatch: pytest.MonkeyPatch) -> None
         on_finished(  # type: ignore[operator]
             run_monte_carlo(circuit, sweep, config, limits=limits)  # type: ignore[arg-type]
         )
-        return _FakeThread(), None
+        return _FakeThread(), _FakeWorker()
 
     class _FakeDialog:
         @staticmethod
@@ -713,6 +720,62 @@ def test_main_window_tune_nudge(monkeypatch: pytest.MonkeyPatch) -> None:
     assert session.lookup_element_value(l_id) == pytest.approx(
         base * (1.0 + step) * (1.0 - step)
     )
+    window.close()
+    assert app is not None
+
+
+def test_component_table_shows_tolerance_column() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import Circuit, IdealInductor, Port
+    from filterdesk.domain.enums import ElementRole
+    from filterdesk.gui.panels.component_table import ComponentTablePanel
+
+    app = QApplication.instance() or QApplication([])
+    circuit = Circuit(
+        elements=[
+            IdealInductor(
+                id="L1",
+                value_h=1e-7,
+                node_a="in",
+                node_b="out",
+                role=ElementRole.SERIES,
+            )
+        ],
+        port_in=Port(name="in", node="in", impedance_ohm=50.0),
+        port_out=Port(name="out", node="out", impedance_ohm=50.0),
+    )
+    panel = ComponentTablePanel()
+    panel.set_circuit(circuit, {"L1": 2.0})
+    assert panel._table.item(0, 5).text() == "2%"
+    panel.set_circuit(circuit)
+    assert panel._table.item(0, 5).text() == ""
+    assert app is not None
+
+
+def test_main_window_set_tolerance(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    l_id = next(el.id for el in session.circuit.elements if el.id.startswith("L"))
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.QInputDialog, "getText", lambda *a, **k: ("5", True))
+    window._set_element_tolerance(l_id)
+
+    tol = session.element_tolerance(l_id)
+    assert tol is not None and tol.tolerance_pct == pytest.approx(5.0)
+    table = window._table._table
+    refs = {
+        table.item(r, 0).text(): table.item(r, 5).text()
+        for r in range(table.rowCount())
+    }
+    assert refs[l_id] == "5%"
     window.close()
     assert app is not None
 

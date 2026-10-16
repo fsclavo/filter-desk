@@ -55,9 +55,9 @@ class ComponentTablePanel(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._table = QTableWidget(0, 5)
+        self._table = QTableWidget(0, 6)
         self._table.setHorizontalHeaderLabels(
-            ["Ref", "Role", "Type", "Value", "Parasitic"]
+            ["Ref", "Role", "Type", "Value", "Parasitic", "Tol"]
         )
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -76,7 +76,11 @@ class ComponentTablePanel(QWidget):
         self._updating = False
         self._block_sel = False
 
-    def set_circuit(self, circuit: Circuit | None) -> None:
+    def set_circuit(
+        self,
+        circuit: Circuit | None,
+        tolerances: dict[str, float] | None = None,
+    ) -> None:
         self._updating = True
         self._block_sel = True
         self._table.setRowCount(0)
@@ -84,6 +88,11 @@ class ComponentTablePanel(QWidget):
             self._updating = False
             self._block_sel = False
             return
+        tol = tolerances or {}
+
+        def tol_text(key: str) -> str:
+            return f"{tol[key]:g}%" if key in tol else ""
+
         for el in circuit.elements:
             if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
                 self._add_row(
@@ -91,12 +100,16 @@ class ComponentTablePanel(QWidget):
                     el.role.value,
                     "inductor",
                     format_engineering(el.value_h, "H", digits=6),
+                    "",
+                    tol_text(f"{el.id}.L"),
                 )
                 self._add_row(
                     f"{el.id}.C",
                     el.role.value,
                     "capacitor",
                     format_engineering(el.value_f, "F", digits=6),
+                    "",
+                    tol_text(f"{el.id}.C"),
                 )
                 continue
             if isinstance(el, (IdealBruneLC, IdealDualBruneLC)):
@@ -111,6 +124,8 @@ class ComponentTablePanel(QWidget):
                         el.role.value,
                         etype,
                         format_engineering(val, unit, digits=6),
+                        "",
+                        tol_text(ref),
                     )
                 continue
             if isinstance(el, IdealCapacitor):
@@ -129,6 +144,7 @@ class ComponentTablePanel(QWidget):
                 el.element_type.value,
                 value_text,
                 _parasitic_text(el),
+                tol_text(el.id),
             )
         self._updating = False
         self._block_sel = False
@@ -159,7 +175,13 @@ class ComponentTablePanel(QWidget):
         self._block_sel = False
 
     def _add_row(
-        self, ref: str, role: str, etype: str, value: str, parasitic: str = ""
+        self,
+        ref: str,
+        role: str,
+        etype: str,
+        value: str,
+        parasitic: str = "",
+        tolerance: str = "",
     ) -> None:
         row = self._table.rowCount()
         self._table.insertRow(row)
@@ -172,11 +194,14 @@ class ComponentTablePanel(QWidget):
         val_item = QTableWidgetItem(value)
         par_item = QTableWidgetItem(parasitic)
         par_item.setFlags(par_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        tol_item = QTableWidgetItem(tolerance)
+        tol_item.setFlags(tol_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         self._table.setItem(row, 0, ref_item)
         self._table.setItem(row, 1, role_item)
         self._table.setItem(row, 2, type_item)
         self._table.setItem(row, 3, val_item)
         self._table.setItem(row, 4, par_item)
+        self._table.setItem(row, 5, tol_item)
 
     def _on_cell_changed(self, row: int, column: int) -> None:
         if self._updating or column != 3:

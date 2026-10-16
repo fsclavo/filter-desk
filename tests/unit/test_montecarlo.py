@@ -22,6 +22,7 @@ from filterdesk.domain.enums import (
 from filterdesk.domain.overlays import LimitMetric, LimitRegion
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.montecarlo import (
+    ElementTolerance,
     MonteCarloConfig,
     ToleranceDistribution,
     perturb_circuit,
@@ -174,6 +175,84 @@ def test_session_monte_carlo_uses_limits() -> None:
         MonteCarloConfig(n_trials=20, tolerance_pct=0.5, seed=5)
     )
     assert result.yield_fraction == pytest.approx(1.0)
+
+
+def test_element_tolerance_override() -> None:
+    circuit = _circuit()
+    config = MonteCarloConfig(
+        n_trials=1, tolerance_pct=5.0, seed=11, overrides={"L1": ElementTolerance(0.0)}
+    )
+    rng = np.random.default_rng(11)
+    perturbed = perturb_circuit(circuit, rng, config)
+    orig = next(el for el in circuit.elements if el.id == "L1")
+    new = next(el for el in perturbed.elements if el.id == "L1")
+    assert new.value_h == pytest.approx(orig.value_h)  # type: ignore[union-attr]
+    other = next(el for el in perturbed.elements if el.id == "C2")
+    orig_c = next(el for el in circuit.elements if el.id == "C2")
+    assert other.value_f != orig_c.value_f  # type: ignore[union-attr]
+
+
+def test_element_tolerance_validation() -> None:
+    with pytest.raises(ValueError):
+        ElementTolerance(-1.0)
+
+
+def test_progress_callback_called() -> None:
+    calls: list[tuple[int, int]] = []
+    run_monte_carlo(
+        _circuit(),
+        _sweep(),
+        MonteCarloConfig(n_trials=25, tolerance_pct=2.0, seed=1),
+        progress=lambda done, total: calls.append((done, total)),
+    )
+    assert calls[-1] == (25, 25)
+    assert all(0 < d <= 25 for d, _ in calls)
+
+
+def test_session_element_tolerance() -> None:
+    from filterdesk.services.session import DesignSession
+
+    session = DesignSession()
+    session.set_spec(_spec())
+    session.synthesize()
+    assert session.element_tolerance("L1") is None
+    session.set_element_tolerance("L1", 5.0)
+    tol = session.element_tolerance("L1")
+    assert tol is not None and tol.tolerance_pct == pytest.approx(5.0)
+    session.clear_element_tolerance("L1")
+    assert session.element_tolerance("L1") is None
+
+
+def test_cli_montecarlo_element_tol(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "montecarlo",
+            "--family",
+            "chebyshev_type_i",
+            "--response",
+            "low_pass",
+            "--order",
+            "5",
+            "--cutoff",
+            "100M",
+            "--ripple",
+            "0.1",
+            "--points",
+            "64",
+            "--trials",
+            "20",
+            "--tol",
+            "1",
+            "--element-tol",
+            "L3=10",
+            "--seed",
+            "1",
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["element_tolerances"]["L3"] == pytest.approx(10.0)
 
 
 def test_wilson_interval_bounds() -> None:

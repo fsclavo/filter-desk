@@ -66,6 +66,7 @@ def start_analyze_thread(
 class MonteCarloWorker(QObject):
     finished = Signal(object)  # MonteCarloResult
     failed = Signal(str)
+    progress = Signal(int, int)
 
     def __init__(
         self,
@@ -84,7 +85,11 @@ class MonteCarloWorker(QObject):
     def run(self) -> None:
         try:
             result = run_monte_carlo(
-                self._circuit, self._sweep, self._config, limits=self._limits
+                self._circuit,
+                self._sweep,
+                self._config,
+                limits=self._limits,
+                progress=self.progress.emit,
             )
             self.finished.emit(result)
         except Exception as exc:  # noqa: BLE001 — surface to UI

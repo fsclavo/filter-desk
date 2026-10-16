@@ -63,21 +63,26 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 ### Monte-Carlo tolerances (FR-P3 core)
 
 - `montecarlo/engine.py` — `MonteCarloConfig` (`n_trials`, `tolerance_pct`,
-  `ToleranceDistribution` uniform/normal, `seed`, `backend`), `perturb_circuit`
-  (independent per-component scaling of every L/C/R nominal, non-mutating) and
-  `run_monte_carlo` → `MonteCarloResult` (S21/S11 min–max envelope, p05/p50/p95,
-  `max_spread_db`, yield vs `LimitRegion[]`).
+  `ToleranceDistribution` uniform/normal, `seed`, `backend`, `overrides`),
+  `ElementTolerance` (per-component percent + optional distribution),
+  `perturb_circuit` (independent per-component scaling of every L/C/R nominal,
+  non-mutating) and `run_monte_carlo` → `MonteCarloResult` (S21/S11 min–max
+  envelope, p05/p50/p95, `max_spread_db`, yield vs `LimitRegion[]`).
 - `montecarlo/stats.py` — `wilson_interval` (95% yield CI), `yield_fraction`.
-- `services/session.py` — `DesignSession.monte_carlo(config)` (uses session limits).
+- `services/session.py` — `DesignSession.monte_carlo(config)` (uses session limits
+  + per-element tolerances), `element_tolerance` / `set_element_tolerance` /
+  `clear_element_tolerance`.
 - CLI — `filterdesk montecarlo … --trials --tol --distribution --seed
-  [--limits limits.json] [--json]`.
+  [--element-tol REF=PCT] [--limits limits.json] [--json]`.
 - GUI — **Design → Monte-Carlo tolerances…** opens `MonteCarloDialog`
-  (trials/tol/distribution/seed) and runs off-thread; the S21 |S11| plot shows a
-  shaded **envelope** (min–max, with p05/p50/p95 stored on the result) toggled by
-  **View → Show Monte-Carlo envelope**; the status bar reports worst-case spread
-  and yield when limits are set. The cursor readout adds the envelope
-  `min … max` dB, its spread, and the p05…p95 band at the hovered frequency.
-  The envelope clears when the circuit changes.
+  (trials/tol/distribution/seed) and runs off-thread with a progress readout; the
+  S21 |S11| plot shows a shaded **envelope** (min–max, with p05/p50/p95 stored on
+  the result) toggled by **View → Show Monte-Carlo envelope**; the status bar
+  reports worst-case spread and yield when limits are set. The envelope clears
+  when the circuit changes. Per-component tolerance is set via
+  **Design → Component → Set tolerance…** and shown in the table **Tol** column.
+- Performance — trials buffered as float32; `run_monte_carlo(progress=…)` reports
+  `(done, total)`; 10k trials × 512 points ≈ 5 s (NFR-5).
 
 ## Design notes
 
@@ -101,8 +106,6 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 
 - Golden tests for finite-Q and E24-snapped cases.
 - Manual library R / L / C / jX in the schematic library.
-- Monte-Carlo per-element tolerance fields and the 10k-trial performance path
-  (Phase 8).
 
 ## Tests
 
@@ -121,7 +124,8 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 - `tests/unit/test_montecarlo.py` — perturbation bounds + seed reproducibility,
   zero-tolerance ≡ nominal, envelope/percentile ordering, deterministic seeds,
   loose-limit yield, no-limit yield is `None`, normal mean ≈ 1, config validation,
-  Wilson interval, and CLI (human + JSON with `--limits`).
+  Wilson interval, per-element override + validation, progress callback, session
+  tolerances, and CLI (human + JSON with `--limits` / `--element-tol`).
 - `tests/unit/test_gui_smoke.py` — Monte-Carlo envelope overlay toggling,
   the cursor envelope readout (`min…max`/spread/p05–p95), `MonteCarloDialog`
   config building, and the Design → Monte-Carlo action (dialog + worker stubbed).
