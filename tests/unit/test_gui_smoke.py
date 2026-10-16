@@ -192,7 +192,7 @@ def test_measured_overlay_toggles() -> None:
     assert app is not None
 
 
-def test_phase_and_impedance_plots_populate() -> None:
+def test_extra_response_plots_populate() -> None:
     from PySide6.QtWidgets import QApplication
 
     from filterdesk.gui.panels.plot_panel import PlotPanel
@@ -212,10 +212,12 @@ def test_phase_and_impedance_plots_populate() -> None:
         return 0 if data is None else int(data.size)
 
     labels = [panel._tabs.tabText(i) for i in range(panel._tabs.count())]
-    assert "Phase" in labels and "Impedance" in labels
+    assert "Phase" in labels and "Impedance" in labels and "S12 / S22" in labels
     for curve in (
         panel._curve_phase21,
         panel._curve_phase11,
+        panel._curve_s22,
+        panel._curve_s12,
         panel._curve_zin_abs,
         panel._curve_zin_re,
         panel._curve_zin_im,
@@ -228,18 +230,24 @@ def test_phase_and_impedance_plots_populate() -> None:
         return [label.text for _, label in legend.items]
 
     assert legend_names(panel._mag) == ["S21", "S11"]
+    assert legend_names(panel._rev_plot) == ["S22", "S12"]
 
     panel.set_measured(result, "meas.s2p")
     assert plotted(panel._curve_phase21_meas) == n
     assert plotted(panel._curve_zin_abs_meas) == n
+    assert plotted(panel._curve_s22_meas) == n
     assert legend_names(panel._mag) == ["S21", "S11", "S21 meas", "S11 meas"]
+    assert legend_names(panel._rev_plot) == ["S22", "S12", "S22 meas", "S12 meas"]
     panel.set_measured_visible(False)
     assert plotted(panel._curve_phase21_meas) == 0
     assert plotted(panel._curve_zin_abs_meas) == 0
+    assert plotted(panel._curve_s22_meas) == 0
     assert legend_names(panel._mag) == ["S21", "S11"]
+    assert legend_names(panel._rev_plot) == ["S22", "S12"]
     panel.set_result(None)
     assert plotted(panel._curve_phase21) == 0
     assert plotted(panel._curve_zin_abs) == 0
+    assert plotted(panel._curve_s22) == 0
     assert app is not None
 
 

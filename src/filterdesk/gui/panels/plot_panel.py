@@ -99,6 +99,8 @@ class PlotPanel(QWidget):
         self._gd = np.array([], dtype=float)
         self._phase21 = np.array([], dtype=float)
         self._phase11 = np.array([], dtype=float)
+        self._s22_db = np.array([], dtype=float)
+        self._s12_db = np.array([], dtype=float)
         self._zin_abs = np.array([], dtype=float)
         self._zin_re = np.array([], dtype=float)
         self._zin_im = np.array([], dtype=float)
@@ -165,6 +167,22 @@ class PlotPanel(QWidget):
             pen=pg.mkPen("#d62728", width=1.4, style=dash), name="∠S11 meas"
         )
 
+        self._rev_plot = _freq_plot("|S22| / |S12| (dB)")
+        self._rev_plot.setLabel("left", "Magnitude", units="dB")
+        self._rev_plot.addLegend()
+        self._curve_s22 = self._rev_plot.plot(
+            pen=pg.mkPen("#ff7f0e", width=2), name="S22"
+        )
+        self._curve_s12 = self._rev_plot.plot(
+            pen=pg.mkPen("#17becf", width=2), name="S12"
+        )
+        self._curve_s22_meas = self._rev_plot.plot(
+            pen=pg.mkPen("#ff7f0e", width=1.4, style=dash), name="S22 meas"
+        )
+        self._curve_s12_meas = self._rev_plot.plot(
+            pen=pg.mkPen("#17becf", width=1.4, style=dash), name="S12 meas"
+        )
+
         self._z_plot = _freq_plot("Impedance")
         self._z_plot.setLabel("left", "Impedance", units="Ω")
         self._z_plot.addLegend()
@@ -191,6 +209,7 @@ class PlotPanel(QWidget):
 
         self._plots = (
             self._mag,
+            self._rev_plot,
             self._phase_plot,
             self._vswr_plot,
             self._gd_plot,
@@ -215,6 +234,7 @@ class PlotPanel(QWidget):
             plot._filterdesk_proxy = proxy
 
         self._tabs.addTab(self._mag, "Magnitude")
+        self._tabs.addTab(self._rev_plot, "S12 / S22")
         self._tabs.addTab(self._phase_plot, "Phase")
         self._tabs.addTab(self._vswr_plot, "VSWR")
         self._tabs.addTab(self._gd_plot, "Group delay")
@@ -347,6 +367,13 @@ class PlotPanel(QWidget):
                 ),
             ),
             (
+                self._rev_plot,
+                (
+                    (self._curve_s22_meas, "S22 meas"),
+                    (self._curve_s12_meas, "S12 meas"),
+                ),
+            ),
+            (
                 self._z_plot,
                 ((self._curve_zin_abs_meas, "|Zin| meas"),),
             ),
@@ -371,6 +398,8 @@ class PlotPanel(QWidget):
             self._curve_vswr_meas.setData(empty, empty)
             self._curve_phase21_meas.setData(empty, empty)
             self._curve_phase11_meas.setData(empty, empty)
+            self._curve_s22_meas.setData(empty, empty)
+            self._curve_s12_meas.setData(empty, empty)
             self._curve_zin_abs_meas.setData(empty, empty)
             self._smith.set_measured_s_params(empty, empty, None)
             return
@@ -380,6 +409,8 @@ class PlotPanel(QWidget):
         self._curve_vswr_meas.setData(fm, np.asarray(vswr(measured)))
         self._curve_phase21_meas.setData(fm, np.asarray(phase_deg(measured.s21)))
         self._curve_phase11_meas.setData(fm, np.asarray(phase_deg(measured.s11)))
+        self._curve_s22_meas.setData(fm, np.asarray(mag_db(measured.s22)))
+        self._curve_s12_meas.setData(fm, np.asarray(mag_db(measured.s12)))
         self._curve_zin_abs_meas.setData(fm, np.asarray(np.abs(measured.zin_ohm)))
         self._smith.set_measured_s_params(fm, measured.s11, measured.s22)
 
@@ -394,6 +425,8 @@ class PlotPanel(QWidget):
             self._gd = empty
             self._phase21 = empty
             self._phase11 = empty
+            self._s22_db = empty
+            self._s12_db = empty
             self._zin_abs = empty
             self._zin_re = empty
             self._zin_im = empty
@@ -404,6 +437,8 @@ class PlotPanel(QWidget):
             self._curve_gd.setData(empty, empty)
             self._curve_phase21.setData(empty, empty)
             self._curve_phase11.setData(empty, empty)
+            self._curve_s22.setData(empty, empty)
+            self._curve_s12.setData(empty, empty)
             self._curve_zin_abs.setData(empty, empty)
             self._curve_zin_re.setData(empty, empty)
             self._curve_zin_im.setData(empty, empty)
@@ -427,6 +462,8 @@ class PlotPanel(QWidget):
         )
         self._phase21 = np.asarray(phase_deg(result.s21), dtype=float)
         self._phase11 = np.asarray(phase_deg(result.s11), dtype=float)
+        self._s22_db = np.asarray(mag_db(result.s22), dtype=float)
+        self._s12_db = np.asarray(mag_db(result.s12), dtype=float)
         zin = np.asarray(result.zin_ohm, dtype=complex)
         zout = np.asarray(result.zout_ohm, dtype=complex)
         self._zin_abs = np.asarray(np.abs(zin), dtype=float)
@@ -439,6 +476,8 @@ class PlotPanel(QWidget):
         self._curve_gd.setData(f, self._gd)
         self._curve_phase21.setData(f, self._phase21)
         self._curve_phase11.setData(f, self._phase11)
+        self._curve_s22.setData(f, self._s22_db)
+        self._curve_s12.setData(f, self._s12_db)
         self._curve_zin_abs.setData(f, self._zin_abs)
         self._curve_zin_re.setData(f, self._zin_re)
         self._curve_zin_im.setData(f, self._zin_im)
@@ -690,6 +729,8 @@ class PlotPanel(QWidget):
 
         s21 = float(self._s21_db[idx])
         s11 = float(self._s11_db[idx])
+        s22 = float(self._s22_db[idx])
+        s12 = float(self._s12_db[idx])
         vs = float(self._vswr[idx])
         gd = float(self._gd[idx])
         ph21 = float(self._phase21[idx])
@@ -706,6 +747,8 @@ class PlotPanel(QWidget):
             f"f = {format_engineering(f_hz, 'Hz', digits=6)}   "
             f"S21 = {s21:.3f} dB   "
             f"S11 = {s11:.3f} dB   "
+            f"S22 = {s22:.3f} dB   "
+            f"S12 = {s12:.3f} dB   "
             f"VSWR = {vs:.3f}   "
             f"GD = {format_engineering(gd, 's', digits=4)}   "
             f"∠S21 = {ph21:.1f}°   "

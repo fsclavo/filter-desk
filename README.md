@@ -17,7 +17,7 @@ image.
 - **Synthesis** of low-pass, high-pass, band-pass, and band-stop LC ladders.
 - **Approximation families**: Butterworth, Chebyshev Type I/II, elliptic (Cauer),
   Bessel, Gaussian, Legendre, and constant-*k* / m-derived sections.
-- **Analysis** with magnitude, phase, VSWR, group delay, impedance, and
+- **Analysis** with magnitude, S12/S22, phase, VSWR, group delay, impedance, and
   Smith-chart views, using a fast ladder backend (`abcd`) or a `scikit-rf`
   cross-check.
 - **Real-world effects**: finite inductor Q, DCR, capacitor ESL/ESR, and parasitic
