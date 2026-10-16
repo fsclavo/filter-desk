@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -18,8 +19,12 @@ from filterdesk.components_std import (
     AttenuatorError,
     AttenuatorKind,
     ESeries,
+    MatchingDesign,
+    MatchingError,
+    MatchingTopology,
     SnapStrategy,
     design_attenuator,
+    design_matching,
     inductor_resistance_ohm_from_q,
 )
 from filterdesk.domain.units import format_engineering, parse_si
@@ -485,4 +490,110 @@ class AttenuatorDialog(QDialog):
         try:
             return dialog._design()
         except (AttenuatorError, ValueError):
+            return None
+
+
+class MatchingDialog(QDialog):
+    """Design an L/Pi/T matching network to a complex load (live values)."""
+
+    _TOPOS: tuple[tuple[MatchingTopology, str], ...] = (
+        (MatchingTopology.L, "L (2 elements)"),
+        (MatchingTopology.PI, "Pi (3 elements)"),
+        (MatchingTopology.T, "T (3 elements)"),
+    )
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Matching network")
+        self._z0 = EngineeringLineEdit()
+        self._z0.setText("50")
+        self._rl = EngineeringLineEdit()
+        self._rl.setText("25")
+        self._xl = EngineeringLineEdit()
+        self._xl.setText("0")
+        self._f = EngineeringLineEdit()
+        self._f.setText("7.1M")
+        self._topo = QComboBox()
+        for _t, label in self._TOPOS:
+            self._topo.addItem(label)
+        self._q = EngineeringLineEdit()
+        self._q.setPlaceholderText("auto (Pi/T only)")
+        self._model = QCheckBox("Model the load (series X) at the output")
+        self._where = QComboBox()
+        self._where.addItem("Input")
+        self._where.addItem("Output")
+        self._summary = QLabel("—")
+        self._summary.setWordWrap(True)
+
+        form = QFormLayout(self)
+        form.addRow("Source Z0 (Ohm)", self._z0)
+        form.addRow("Load R (Ohm)", self._rl)
+        form.addRow("Load X (Ohm, +ind/-cap)", self._xl)
+        form.addRow("Frequency", self._f)
+        form.addRow("Topology", self._topo)
+        form.addRow("Loaded Q", self._q)
+        form.addRow("Insert at", self._where)
+        form.addRow(self._model)
+        form.addRow("Elements", self._summary)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+        for field in (self._z0, self._rl, self._xl, self._f, self._q):
+            field.editingFinished.connect(self._recompute)
+        self._topo.currentIndexChanged.connect(self._recompute)
+        self._recompute()
+
+    def _topology(self) -> MatchingTopology:
+        return self._TOPOS[self._topo.currentIndex()][0]
+
+    def _design(self) -> MatchingDesign:
+        q_text = self._q.text().strip()
+        return design_matching(
+            parse_si(self._z0.text().strip() or "50"),
+            parse_si(self._rl.text().strip() or "1"),
+            parse_si(self._xl.text().strip() or "0"),
+            parse_si(self._f.text().strip() or "1M"),
+            self._topology(),
+            float(q_text) if q_text else None,
+        )
+
+    def _recompute(self) -> None:
+        try:
+            design = self._design()
+        except (MatchingError, ValueError) as exc:
+            self._summary.setText(f"— ({exc})")
+            return
+        parts = []
+        for el in design.elements:
+            unit = "H" if el.kind == "L" else "F"
+            value_text = format_engineering(el.value, unit, digits=4)
+            parts.append(f"{el.role.value} {el.kind}={value_text}")
+        self._summary.setText(
+            "  ".join(parts)
+            + f"   (Zin={design.input_impedance_ohm.real:.4g}"
+            f"{design.input_impedance_ohm.imag:+g}j)"
+        )
+
+    def result_tuple(self) -> tuple[MatchingDesign, bool, bool]:
+        return (
+            self._design(),
+            self._model.isChecked(),
+            self._where.currentIndex() == 0,
+        )
+
+    @classmethod
+    def ask(
+        cls, parent: QWidget | None = None
+    ) -> tuple[MatchingDesign, bool, bool] | None:
+        dialog = cls(parent)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return None
+        try:
+            return dialog.result_tuple()
+        except (MatchingError, ValueError):
             return None

@@ -12,6 +12,13 @@ from filterdesk.components_std.e_series import (
     e_series_values,
     nearest_e_series,
 )
+from filterdesk.components_std.matching import (
+    MatchingDesign,
+    MatchingElement,
+    MatchingError,
+    MatchingTopology,
+    design_matching,
+)
 from filterdesk.components_std.nonideal import (
     inductor_resistance_ohm_from_q,
     make_nonideal_capacitor,
@@ -31,11 +38,16 @@ __all__ = [
     "AttenuatorError",
     "AttenuatorKind",
     "ESeries",
+    "MatchingDesign",
+    "MatchingElement",
+    "MatchingError",
+    "MatchingTopology",
     "SnapEntry",
     "SnapReport",
     "SnapStrategy",
     "base_values",
     "design_attenuator",
+    "design_matching",
     "e_series_values",
     "inductor_resistance_ohm_from_q",
     "make_nonideal_capacitor",

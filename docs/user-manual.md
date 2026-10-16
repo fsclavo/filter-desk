@@ -266,6 +266,7 @@ specification edits require an explicit **Synthesize**.
 | **Band preset** | **Design → Band preset…** | one-click 160 m–6 m LP/HP/BP design (Chebyshev-I, sets sweep) |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
+| **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -378,8 +379,8 @@ Run `filterdesk` with no command for help, or `filterdesk <command> --help` for 
 command's options.
 
 ```
-filterdesk {synthesize,analyze,gui,bands,attenuator,snap,montecarlo,optimize,
-            to-csv,estimate-order,touchstone-info,compare} ...
+filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
+            optimize,to-csv,estimate-order,touchstone-info,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.

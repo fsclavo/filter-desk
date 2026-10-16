@@ -28,9 +28,12 @@ from filterdesk.components_std import (
     AttenuatorError,
     AttenuatorKind,
     ESeries,
+    MatchingError,
+    MatchingTopology,
     SnapReport,
     SnapStrategy,
     design_attenuator,
+    design_matching,
     nonidealize_circuit,
     snap_circuit,
 )
@@ -259,6 +262,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pad topology",
     )
     atten.add_argument("--json", action="store_true", help="Emit JSON")
+
+    match = sub.add_parser(
+        "match",
+        help="Design an L/Pi/T matching network to a complex load",
+    )
+    match.add_argument("--z0", default="50", help="Source impedance (ohm)")
+    match.add_argument("--rl", required=True, help="Load resistance (ohm)")
+    match.add_argument("--xl", default="0", help="Load reactance (ohm, +ind/-cap)")
+    match.add_argument("--f", required=True, help="Design frequency, e.g. 7.1M")
+    match.add_argument(
+        "--topology",
+        choices=[t.value for t in MatchingTopology],
+        default=MatchingTopology.L.value,
+        help="Network topology",
+    )
+    match.add_argument(
+        "--q",
+        type=float,
+        default=None,
+        help="Loaded Q (Pi/T only; defaults above the minimum)",
+    )
+    match.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -1325,6 +1350,60 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"  shunt  R = "
                 f"{format_engineering(design.r_shunt_ohm, 'Ohm', digits=4)}"
+            )
+        return 0
+
+    if args.command == "match":
+        try:
+            match_design = design_matching(
+                parse_si(str(args.z0)),
+                parse_si(str(args.rl)),
+                parse_si(str(args.xl)),
+                parse_si(str(args.f)),
+                MatchingTopology(args.topology),
+                args.q,
+            )
+        except (MatchingError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "topology": match_design.topology.value,
+                        "frequency_hz": match_design.frequency_hz,
+                        "source_ohm": match_design.source_ohm,
+                        "load_r_ohm": match_design.load_r_ohm,
+                        "load_x_ohm": match_design.load_x_ohm,
+                        "q": match_design.q,
+                        "input_impedance_ohm": [
+                            match_design.input_impedance_ohm.real,
+                            match_design.input_impedance_ohm.imag,
+                        ],
+                        "elements": [
+                            {"role": e.role.value, "kind": e.kind, "value": e.value}
+                            for e in match_design.elements
+                        ],
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"{match_design.topology.value.upper()} match "
+                f"{match_design.source_ohm:g} -> {match_design.load_r_ohm:g}"
+                f"{match_design.load_x_ohm:+g}j @ "
+                f"{format_engineering(match_design.frequency_hz, 'Hz', digits=4)}:"
+            )
+            for e in match_design.elements:
+                unit = "H" if e.kind == "L" else "F"
+                print(
+                    f"  {e.role.value:6s} {e.kind} = "
+                    f"{format_engineering(e.value, unit, digits=4)}"
+                )
+            print(
+                f"  Zin = {match_design.input_impedance_ohm.real:.4g}"
+                f"{match_design.input_impedance_ohm.imag:+g}j Ohm"
             )
         return 0
 

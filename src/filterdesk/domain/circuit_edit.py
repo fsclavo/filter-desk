@@ -155,6 +155,20 @@ def insert_resistive_pad(
     return rebuild_ladder(circuit, elements)
 
 
+def insert_elements(
+    circuit: Circuit, new_elements: list[Element], *, at_input: bool = True
+) -> Circuit:
+    """Insert pre-built arm elements at the input or output of the ladder."""
+    if not new_elements:
+        return circuit
+    elements = list(circuit.elements)
+    if at_input:
+        elements = list(new_elements) + elements
+    else:
+        elements = elements + list(new_elements)
+    return rebuild_ladder(circuit, elements)
+
+
 def delete_arm(circuit: Circuit, element_id: str) -> Circuit:
     """Remove one arm; raises if it is the last remaining element."""
     elements = list(circuit.elements)

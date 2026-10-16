@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import QPoint, Qt, QThread, QTimer, QUrl
@@ -70,6 +71,7 @@ from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandPresetDialog,
     EngineeringLineEdit,
+    MatchingDialog,
     MonteCarloDialog,
     NonIdealDialog,
     OptimizeDialog,
@@ -368,6 +370,9 @@ class MainWindow(QMainWindow):
         act_atten = QAction("&Attenuator pad…", self)
         act_atten.triggered.connect(self._run_attenuator)
         design_menu.addAction(act_atten)
+        act_match = QAction("Matching &network…", self)
+        act_match.triggered.connect(self._run_matching)
+        design_menu.addAction(act_match)
         act_snap = QAction("Sna&p to E-series…", self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -657,6 +662,68 @@ class MainWindow(QMainWindow):
         self._status.setText(
             f"Inserted {design.kind.value.upper()} pad "
             f"{design.attenuation_db:g} dB @ {design.z0_ohm:g} Ohm"
+        )
+        self._run_analyze()
+
+    def _matching_element(self, role: ElementRole, kind: str, value: float) -> Element:
+        if kind == "L":
+            return IdealInductor(
+                id="X", value_h=value, node_a="", node_b="", role=role
+            )
+        return IdealCapacitor(id="X", value_f=value, node_a="", node_b="", role=role)
+
+    def _run_matching(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Matching network", "Synthesize a circuit first."
+            )
+            return
+        result = MatchingDialog.ask(self)
+        if result is None:
+            return
+        design, model_load, at_input = result
+        elements = [
+            self._matching_element(e.role, e.kind, e.value) for e in design.elements
+        ]
+        if model_load:
+            omega = 2.0 * math.pi * design.frequency_hz
+            xl = design.load_x_ohm
+            if abs(xl) > 1e-12:
+                if xl > 0.0:
+                    load_el: Element = IdealInductor(
+                        id="X",
+                        value_h=xl / omega,
+                        node_a="",
+                        node_b="",
+                        role=ElementRole.SERIES,
+                    )
+                else:
+                    load_el = IdealCapacitor(
+                        id="X",
+                        value_f=-1.0 / (omega * xl),
+                        node_a="",
+                        node_b="",
+                        role=ElementRole.SERIES,
+                    )
+                elements.append(load_el)
+            new_circuit = circuit_edit.insert_elements(
+                self._session.circuit, elements, at_input=False
+            )
+            new_circuit = replace(
+                new_circuit,
+                port_out=replace(
+                    new_circuit.port_out, impedance_ohm=design.load_r_ohm
+                ),
+            )
+        else:
+            new_circuit = circuit_edit.insert_elements(
+                self._session.circuit, elements, at_input=at_input
+            )
+        self._push_circuit_edit(new_circuit, "Insert matching network")
+        self._status.setText(
+            f"Inserted {design.topology.value.upper()} match "
+            f"({design.source_ohm:g} -> {design.load_r_ohm:g}"
+            f"{design.load_x_ohm:+g}j Ohm)"
         )
         self._run_analyze()
 

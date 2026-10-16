@@ -846,6 +846,52 @@ def test_band_preset_dialog_selection() -> None:
     assert app is not None
 
 
+def test_matching_dialog_live_summary() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import MatchingDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = MatchingDialog()
+    dialog._recompute()
+    assert "Zin=50" in dialog._summary.text()
+    assert app is not None
+
+
+def test_main_window_matching(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import MatchingTopology, design_matching
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    n = len(session.circuit.elements)
+    window = mw.MainWindow(session, auto_run=False)
+    design = design_matching(50.0, 25.0, -10.0, 140e6, MatchingTopology.L)
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> object:
+            return design, False, True
+
+    monkeypatch.setattr(mw, "MatchingDialog", _FakeDialog)
+    monkeypatch.setattr(window, "_after_circuit_change", lambda: None)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    window._run_matching()
+
+    assert session.circuit is not None
+    assert len(session.circuit.elements) == n + len(design.elements)
+    assert "match" in window._status.text()
+    window._undo.undo()
+    assert len(session.circuit.elements) == n
+    window.close()
+    assert app is not None
+
+
 def test_attenuator_dialog_live_values() -> None:
     from PySide6.QtWidgets import QApplication
 
