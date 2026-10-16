@@ -10,13 +10,21 @@ Unicode true
 !ifndef VERSION
   !define VERSION "0.0.0"
 !endif
+; Absolute paths are injected by the build (NSIS resolves `File` relative to the
+; script directory); sensible defaults are provided for a manual run.
+!ifndef SRCDIR
+  !define SRCDIR "..\..\dist\FilterDesk"
+!endif
+!ifndef OUTFILE
+  !define OUTFILE "..\..\FilterDesk-${VERSION}-windows-x86_64-setup.exe"
+!endif
 
 !define APPNAME "FilterDesk"
 !define PUBLISHER "FilterDesk contributors"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 
 Name "${APPNAME} ${VERSION}"
-OutFile "FilterDesk-${VERSION}-windows-x86_64-setup.exe"
+OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES64\${APPNAME}"
 InstallDirRegKey HKLM "Software\${APPNAME}" "InstallDir"
 RequestExecutionLevel admin
@@ -34,7 +42,7 @@ SetCompressor /SOLID lzma
 Section "${APPNAME} (required)"
   SectionIn RO
   SetOutPath "$INSTDIR"
-  File /r "dist\FilterDesk\*.*"
+  File /r "${SRCDIR}\*.*"
   WriteRegStr HKLM "Software\${APPNAME}" "InstallDir" "$INSTDIR"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 

@@ -74,7 +74,12 @@ jobs:
         run: |
           $ver = "${{ github.ref_name }}".TrimStart('v')
           if (-not $ver) { $ver = "0.0.0" }
-          & "C:\Program Files (x86)\NSIS\makensis.exe" "/DVERSION=$ver" packaging\windows\filterdesk.nsi
+          $root = (Get-Location).Path
+          & "C:\Program Files (x86)\NSIS\makensis.exe" `
+            "/DVERSION=$ver" `
+            "/DSRCDIR=$root\dist\FilterDesk" `
+            "/DOUTFILE=$root\FilterDesk-$ver-windows-x86_64-setup.exe" `
+            packaging\windows\filterdesk.nsi
       - uses: actions/upload-artifact@v4
         with:
           name: windows-setup
