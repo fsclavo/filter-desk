@@ -144,6 +144,22 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] `release.yml` CI on tags `v*` + GitHub Release with artifacts
 - [x] Qt LGPL-3 compliance artifacts — `packaging/NOTICE-third-party.md` + `collect_qt_licenses.py` (LGPL/GPL texts into `licenses/`)
 
+### Phase 12 — Ham-radio tools (proposed)
+
+Ham-oriented helpers on top of the existing synthesis/analysis core. Order is the
+intended implementation sequence.
+
+- [ ] **Power stress calculator** (S) — given forward power P (W) and `Z0`, estimate peak voltage/current in each L and C for component rating; surface per-element columns in the table/CLI + a status summary. *Assumes a matched (real `Z0`) source/load.*
+- [ ] **Amateur band presets** (S) — 160–6 m + WARC (30/17/12 m): one-click LP/HP/BP/BS specs (frequencies + sensible ripple/order + E-series snap + typical sweep). GUI presets + CLI `--band`.
+- [ ] **Transmit harmonic readout** (S) — auto-mark `2f`/`3f` (and `n·f0`) and a table of `|S21|` attenuation at harmonics relative to the band; targets the PA output-LPF use case.
+- [ ] **Resistive attenuator designer** (S) — T and Pi pads: `dB` + `Z0` → R values; optional insertion of the attenuator into the circuit (as a small resistive sub-network). Standalone, high demand.
+- [ ] **Matching networks L / Pi / T** (L) — match `Z0` to a **complex** load (R+jX): choose L/Pi/T, compute element values for a target SWR/bandwidth, show response. Own module (not ladder-filter synthesis); reuses analysis/optimizer. Larger effort.
+- [ ] **Rejection presets** (S) — band-stop presets: AM broadcast notch (530–1710 kHz) and FM broadcast notch (88–108 MHz); validate against typical data. Extends the band presets.
+- [ ] **Build sheet / BOM export** (M) — a construction document (values, E-series, per-part notes, schematic) to PDF/CSV; ideally consumes the (future) toroid turn calculator.
+
+Cross-links: toroid turn calculator (not yet listed) would pair with the BOM sheet;
+distributed elements (coax stubs, λ/4 lines, transformers) remain deferred (ADR-007).
+
 ---
 
 ## D. Cross-cutting / open questions (when relevant) — **closed (2026-10-16, ADR-015)**
