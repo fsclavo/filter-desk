@@ -5,7 +5,7 @@ resumed without re-reading the whole blueprint per phase.
 **Scope:** (A) deferred items from completed phases 0–5b, (B) quality / CI debt,
 (C) roadmap phases 6–11.  
 **Status:** living document — check boxes as work lands.  
-**Date:** 2026-10-15 · **App version:** 0.6.2
+**Date:** 2026-10-15 · **App version:** 0.6.3
 
 Legend: **P0** blocks correctness/CI · **P1** completes the value of finished
 phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.

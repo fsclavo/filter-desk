@@ -14,7 +14,7 @@ GOLDEN = ROOT / "tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm"
 
 
 def test_version() -> None:
-    assert __version__ == "0.6.2"
+    assert __version__ == "0.6.3"
 
 
 def test_cli_no_args_prints_help() -> None:
