@@ -193,6 +193,44 @@ class SetMarkersCommand(QUndoCommand):
             self._on_applied()
 
 
+class RetuneMarkerCommand(QUndoCommand):
+    """Move a landmark-bound marker and retune spec/circuit in one undo step."""
+
+    def __init__(
+        self,
+        session: DesignSession,
+        new_markers: list[Marker],
+        new_spec: FilterSpec,
+        *,
+        on_applied: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__("Tune marker")
+        self._session = session
+        self._new_markers = list(new_markers)
+        self._new_spec = new_spec
+        self._old_markers = list(session.markers)
+        self._old_spec = deepcopy(session.spec)
+        self._old_circuit = deepcopy(session.circuit)
+        self._old_prototype = deepcopy(session.prototype)
+        self._on_applied = on_applied
+
+    def redo(self) -> None:
+        self._session.set_spec(self._new_spec)
+        self._session.synthesize()
+        self._session.markers = list(self._new_markers)
+        if self._on_applied is not None:
+            self._on_applied()
+
+    def undo(self) -> None:
+        self._session.spec = self._old_spec
+        self._session.prototype = deepcopy(self._old_prototype)
+        self._session.circuit = deepcopy(self._old_circuit)
+        self._session.markers = list(self._old_markers)
+        self._session.analysis = None
+        if self._on_applied is not None:
+            self._on_applied()
+
+
 class SetLimitsCommand(QUndoCommand):
     def __init__(
         self,

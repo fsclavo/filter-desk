@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal, cast
 
 
 class LimitMetric(StrEnum):
@@ -16,17 +16,30 @@ class LimitMetric(StrEnum):
     S22_MAG = "s22_mag"
 
 
+#: Spec landmarks a marker can drive by dragging (retune-on-tune).
+MarkerLandmark = Literal["cutoff", "f_center", "bandwidth"]
+LANDMARKS: tuple[MarkerLandmark, ...] = ("cutoff", "f_center", "bandwidth")
+
+
 @dataclass(frozen=True, slots=True)
 class Marker:
-    """Pinned frequency marker on response plots."""
+    """Pinned frequency marker on response plots.
+
+    ``landmark`` (optional) binds the marker to a filter specification landmark:
+    dragging it retunes the design (``cutoff`` for LP/HP; ``f_center`` /
+    ``bandwidth`` for BP/BS).
+    """
 
     id: str
     frequency_hz: float
     label: str = ""
+    landmark: MarkerLandmark | None = None
 
     def __post_init__(self) -> None:
         if self.frequency_hz <= 0.0:
             raise ValueError("marker frequency must be > 0")
+        if self.landmark is not None and self.landmark not in LANDMARKS:
+            raise ValueError(f"unknown marker landmark: {self.landmark!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,14 +75,17 @@ MAX_LIMITS = 10
 
 
 def markers_to_mapping(markers: list[Marker]) -> list[dict[str, Any]]:
-    return [
-        {
+    rows: list[dict[str, Any]] = []
+    for m in markers:
+        row: dict[str, Any] = {
             "id": m.id,
             "frequency_hz": m.frequency_hz,
             "label": m.label,
         }
-        for m in markers
-    ]
+        if m.landmark is not None:
+            row["landmark"] = m.landmark
+        rows.append(row)
+    return rows
 
 
 def markers_from_mapping(rows: list[Any]) -> list[Marker]:
@@ -77,11 +93,17 @@ def markers_from_mapping(rows: list[Any]) -> list[Marker]:
     for row in rows:
         if not isinstance(row, dict):
             continue
+        landmark_raw = row.get("landmark")
         out.append(
             Marker(
                 id=str(row["id"]),
                 frequency_hz=float(row["frequency_hz"]),
                 label=str(row.get("label", "")),
+                landmark=(
+                    None
+                    if landmark_raw is None
+                    else cast("MarkerLandmark", str(landmark_raw))
+                ),
             )
         )
     return out

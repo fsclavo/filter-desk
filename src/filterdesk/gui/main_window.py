@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 
 from PySide6.QtCore import QPoint, Qt, QThread, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoCommand, QUndoStack
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -37,10 +37,12 @@ from filterdesk.domain.circuit import (
 )
 from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.overlays import Marker
+from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.commands import (
     EditCircuitCommand,
     NonIdealCommand,
+    RetuneMarkerCommand,
     SetElementValueCommand,
     SetLimitsCommand,
     SetMarkersCommand,
@@ -75,7 +77,7 @@ from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import get_plot_backend
 from filterdesk.services.compare import CompareError, compare_results
-from filterdesk.services.retune import scale_response
+from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import DesignSession
 
 
@@ -657,13 +659,52 @@ class MainWindow(QMainWindow):
 
     def _on_markers_dragged(self, markers: object) -> None:
         assert isinstance(markers, list)
-        cmd = SetMarkersCommand(
-            self._session,
-            markers,
-            on_applied=self._after_overlays_change,
-            text="Move marker",
-        )
+        new_spec = self._retune_from_markers(markers)
+        cmd: QUndoCommand
+        if new_spec is not None:
+            cmd = RetuneMarkerCommand(
+                self._session,
+                markers,
+                new_spec,
+                on_applied=self._after_retune,
+            )
+        else:
+            cmd = SetMarkersCommand(
+                self._session,
+                markers,
+                on_applied=self._after_overlays_change,
+                text="Move marker",
+            )
         self._undo.push(cmd)
+
+    def _retune_from_markers(self, markers: list[Marker]) -> FilterSpec | None:
+        """Return a retuned spec if a dragged marker is bound to a landmark."""
+        old = {m.id: m for m in self._session.markers}
+        request: RetuneRequest | None = None
+        for marker in markers:
+            previous = old.get(marker.id)
+            if previous is None or marker.frequency_hz == previous.frequency_hz:
+                continue
+            landmark = marker.landmark
+            freq = marker.frequency_hz
+            if landmark == "cutoff":
+                request = RetuneRequest(cutoff_hz=freq)
+            elif landmark == "f_center":
+                request = RetuneRequest(f_center_hz=freq)
+            elif landmark == "bandwidth":
+                center = self._session.spec.f_center_hz
+                if center:
+                    request = RetuneRequest(bandwidth_hz=2.0 * abs(freq - center))
+        if request is None:
+            return None
+        try:
+            return retune_spec(self._session.spec, request)
+        except ValueError:
+            return None
+
+    def _after_retune(self) -> None:
+        self._after_circuit_change()
+        self._after_overlays_change()
 
     def _on_limits_edited(self, limits: object) -> None:
         assert isinstance(limits, list)

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QPushButton,
     QTableWidget,
@@ -12,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from filterdesk.domain.overlays import MAX_MARKERS, Marker
+from filterdesk.domain.overlays import LANDMARKS, MAX_MARKERS, Marker, MarkerLandmark
 from filterdesk.domain.units import format_engineering, parse_si
 
 
@@ -23,8 +26,8 @@ class MarkersPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._markers: list[Marker] = []
-        self._table = QTableWidget(0, 3)
-        self._table.setHorizontalHeaderLabels(["Id", "Frequency", "Label"])
+        self._table = QTableWidget(0, 4)
+        self._table.setHorizontalHeaderLabels(["Id", "Frequency", "Label", "Binds"])
         self._table.cellChanged.connect(self._on_cell_changed)
         self._updating = False
 
@@ -57,13 +60,44 @@ class MarkersPanel(QWidget):
                 r, 1, QTableWidgetItem(format_engineering(m.frequency_hz, "Hz"))
             )
             self._table.setItem(r, 2, QTableWidgetItem(m.label))
+            self._table.setCellWidget(r, 3, self._landmark_combo(m))
         self._updating = False
+
+    def _landmark_combo(self, marker: Marker) -> QComboBox:
+        combo = QComboBox()
+        combo.addItem("—", "")
+        for landmark in LANDMARKS:
+            combo.addItem(landmark, landmark)
+        index = combo.findData(marker.landmark or "")
+        combo.setCurrentIndex(index if index >= 0 else 0)
+        combo.currentIndexChanged.connect(
+            lambda _i, mid=marker.id: self._on_landmark_changed(mid)
+        )
+        return combo
 
     def markers(self) -> list[Marker]:
         return list(self._markers)
 
     def _emit(self) -> None:
         self.markers_changed.emit(list(self._markers))
+
+    def _on_landmark_changed(self, marker_id: str) -> None:
+        if self._updating:
+            return
+        for r, m in enumerate(self._markers):
+            if m.id != marker_id:
+                continue
+            combo = self._table.cellWidget(r, 3)
+            data = combo.currentData() if isinstance(combo, QComboBox) else ""
+            landmark = cast("MarkerLandmark", data) if data else None
+            self._markers[r] = Marker(
+                id=m.id,
+                frequency_hz=m.frequency_hz,
+                label=m.label,
+                landmark=landmark,
+            )
+            break
+        self._emit()
 
     def _on_cell_changed(self, row: int, col: int) -> None:
         if self._updating or row < 0 or row >= len(self._markers):
@@ -74,12 +108,17 @@ class MarkersPanel(QWidget):
                 item = self._table.item(row, 1)
                 assert item is not None
                 freq = parse_si(item.text())
-                self._markers[row] = Marker(id=m.id, frequency_hz=freq, label=m.label)
+                self._markers[row] = Marker(
+                    id=m.id, frequency_hz=freq, label=m.label, landmark=m.landmark
+                )
             elif col == 2:
                 item = self._table.item(row, 2)
                 label = "" if item is None else item.text()
                 self._markers[row] = Marker(
-                    id=m.id, frequency_hz=m.frequency_hz, label=label
+                    id=m.id,
+                    frequency_hz=m.frequency_hz,
+                    label=label,
+                    landmark=m.landmark,
                 )
             else:
                 return

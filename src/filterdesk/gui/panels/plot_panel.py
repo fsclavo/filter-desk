@@ -171,7 +171,8 @@ class PlotPanel(QWidget):
         self._readout = QLabel(
             "Move the mouse over a plot to read frequency and values "
             "(snaps to nearest sweep point). Drag marker lines (or Smith "
-            "spots) to retune; use Markers / Limits docks to pin."
+            "spots) to move; bind a marker to a landmark to retune by dragging. "
+            "Use Markers / Limits docks to pin."
         )
         self._readout.setWordWrap(True)
         self._readout.setTextInteractionFlags(
@@ -309,8 +310,9 @@ class PlotPanel(QWidget):
         readout = (
             "Move the mouse over a plot to read frequency and values "
             "(snaps to nearest sweep point). Drag marker lines or Smith "
-            "spots to retune. Smith: S11 red, S22 blue; "
-            "green/purple = S11 start/stop."
+            "spots to move them; bind a marker to a landmark (cutoff / f_center "
+            "/ bandwidth) in the Markers dock to retune the design by dragging. "
+            "Smith: S11 red, S22 blue; green/purple = S11 start/stop."
         )
         if self._measured is not None and self._show_measured:
             label = self._measured_name or "measured"

@@ -147,7 +147,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 ## D. Cross-cutting / open questions (when relevant) — **closed (2026-10-16, ADR-015)**
 
 - [x] **pytest-qt** — adopted for GUI interaction tests (`import-linter` + `pytest-qt` in dev deps)
-- [ ] Interactive marker-driven retune (bind a marker to a spec landmark and drag to redesign) — optional UX polish
+- [x] Interactive marker-driven retune — bind a marker to a landmark (`cutoff` / `f_center` / `bandwidth`) in the Markers dock and drag to redesign (single undo step)
 - [x] **Global optimizers** — `differential_evolution` + `dual_annealing` added (never worse than nominal)
 - [x] **Project extension** — `.filterdesk.json` (plain JSON), no `.fdsk` container
 - [x] Native Rust/C acceleration — not pursued (ABCD path sufficient: 10k MC ≈ 5 s)

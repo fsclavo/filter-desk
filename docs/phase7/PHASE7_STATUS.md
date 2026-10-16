@@ -66,6 +66,11 @@ limit regions.
   through `SetElementValueCommand` (undo/redo) and the existing 80 ms debounce
   re-analyzes (NFR-4: debounced, and a running analyze thread is cancelled before
   a new one starts).
+- Marker-driven retune — a marker can be bound to a spec landmark
+  (`cutoff` / `f_center` / `bandwidth`) via the Markers dock **Binds** column;
+  dragging that marker retunes the spec and re-synthesizes through
+  `RetuneMarkerCommand` (spec + circuit + markers in one undo step). Plain
+  marker drags only move the marker.
 
 ## Design notes
 
@@ -81,8 +86,7 @@ limit regions.
 
 ## Deferred (future polish, not blocking)
 
-- Marker-driven retune (bind a marker to a spec landmark and drag to redesign) —
-  markers remain frequency annotations; see backlog §D.
+- Composable objectives beyond limit residuals (blueprint §20).
 
 ## Tests
 
@@ -98,3 +102,6 @@ limit regions.
   `OptimizeDialog` and the limits-panel preset menu, per-part tune nudging
   (toolbar/menu actions + shortcuts present; value steps up/down via
   `SetElementValueCommand`).
+- `tests/unit/test_marker_retune.py` — marker landmark validation/serialization,
+  the Markers-panel Binds combo, and cutoff-bound marker drag retuning the spec
+  (with undo) plus plain drags leaving the spec unchanged.
