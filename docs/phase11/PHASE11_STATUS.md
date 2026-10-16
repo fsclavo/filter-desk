@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-15  
 **Status:** Complete (Linux + Windows onedir; AppImage; Windows installer)  
-**Version:** 0.6.1
+**Version:** 0.6.2
 
 ## Goal
 
