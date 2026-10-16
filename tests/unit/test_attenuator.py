@@ -13,7 +13,7 @@ from filterdesk.components_std import (
     design_attenuator,
 )
 from filterdesk.domain.circuit import IdealResistor
-from filterdesk.domain.circuit_edit import insert_resistive_pad
+from filterdesk.domain.circuit_edit import CircuitEditError, insert_resistive_pad
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
@@ -95,6 +95,54 @@ def test_insert_pi_pad_at_output() -> None:
         ElementRole.SERIES,
         ElementRole.SHUNT,
     ]
+
+
+def test_insert_tee_pad_at_output() -> None:
+    circuit = synthesize(_spec()).circuit
+    n = len(circuit.elements)
+    design = design_attenuator(6.0, 50.0, AttenuatorKind.TEE)
+    padded = insert_resistive_pad(
+        circuit,
+        kind="t",
+        r_series_ohm=design.r_series_ohm,
+        r_shunt_ohm=design.r_shunt_ohm,
+        at_input=False,
+    )
+    assert len(padded.elements) == n + 3
+    assert [el.role for el in padded.elements[-3:]] == [
+        ElementRole.SERIES,
+        ElementRole.SHUNT,
+        ElementRole.SERIES,
+    ]
+
+
+def test_insert_pi_pad_at_input() -> None:
+    circuit = synthesize(_spec()).circuit
+    design = design_attenuator(10.0, 50.0, AttenuatorKind.PI)
+    padded = insert_resistive_pad(
+        circuit,
+        kind="pi",
+        r_series_ohm=design.r_series_ohm,
+        r_shunt_ohm=design.r_shunt_ohm,
+        at_input=True,
+    )
+    assert [el.role for el in padded.elements[:3]] == [
+        ElementRole.SHUNT,
+        ElementRole.SERIES,
+        ElementRole.SHUNT,
+    ]
+
+
+def test_insert_pad_validation() -> None:
+    circuit = synthesize(_spec()).circuit
+    with pytest.raises(CircuitEditError):
+        insert_resistive_pad(
+            circuit, kind="xyz", r_series_ohm=1.0, r_shunt_ohm=1.0
+        )
+    with pytest.raises(CircuitEditError):
+        insert_resistive_pad(
+            circuit, kind="t", r_series_ohm=0.0, r_shunt_ohm=1.0
+        )
 
 
 def test_cli_attenuator(capsys: pytest.CaptureFixture[str]) -> None:

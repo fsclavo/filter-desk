@@ -132,6 +132,45 @@ def test_cli_match_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert len(payload["elements"]) == 2
 
 
+@pytest.mark.parametrize("topology", ["pi", "t"])
+def test_cli_match_pi_tee_json(
+    capsys: pytest.CaptureFixture[str], topology: str
+) -> None:
+    code = main(
+        [
+            "match",
+            "--rl",
+            "25",
+            "--xl",
+            "-10",
+            "--f",
+            "7.1M",
+            "--topology",
+            topology,
+            "--q",
+            "2",
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["topology"] == topology
+    assert payload["input_impedance_ohm"][0] == pytest.approx(50.0, abs=1e-6)
+    assert payload["input_impedance_ohm"][1] == pytest.approx(0.0, abs=1e-6)
+    assert len(payload["elements"]) == 3
+
+
+def test_cli_match_invalid_q(capsys: pytest.CaptureFixture[str]) -> None:
+    # Q below the minimum for a 50 -> 25 ohm ratio (qmin = 1) must fail cleanly.
+    assert (
+        main(
+            ["match", "--rl", "25", "--f", "7.1M", "--topology", "pi", "--q", "0.5"]
+        )
+        == 2
+    )
+    assert "error:" in capsys.readouterr().err
+
+
 def test_matching_inserts_into_circuit() -> None:
     from filterdesk.domain import circuit_edit
     from filterdesk.domain.circuit import IdealCapacitor, IdealInductor
