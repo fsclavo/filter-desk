@@ -105,7 +105,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
 - [x] GUI **Design → Optimize to limits…** action (undo/redo) — FR-P4
 - [x] GUI **Design → Component → Tune ±step / Set tune step…**, toolbar buttons + shortcuts — FR-U2
-- [ ] (optional polish) interactive marker-driven retune — see §D
+- [x] Interactive marker-driven retune (bind to landmark, drag to redesign) — see §D
 
 ### Phase 8 — Monte Carlo — **DONE (2026-10-15)**
 
