@@ -56,7 +56,7 @@ from filterdesk.io.csv_export import (
     analysis_from_touchstone,
     export_csv,
 )
-from filterdesk.io.spice import write_spice_netlist
+from filterdesk.io.spice import write_ltspice_asc, write_spice_netlist
 from filterdesk.io.touchstone import (
     TouchstoneError,
     read_touchstone,
@@ -190,6 +190,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Write an LTspice-compatible SPICE netlist to this path",
+    )
+    ana.add_argument(
+        "--export-asc",
+        type=Path,
+        default=None,
+        help="Write an LTspice .asc schematic to this path",
     )
     ana.add_argument(
         "--json",
@@ -1039,6 +1045,15 @@ def main(argv: list[str] | None = None) -> int:
                 ac=sweep,
             )
             print(f"Wrote {args.export_spice}", file=sys.stderr)
+
+        if args.export_asc is not None:
+            write_ltspice_asc(
+                synth.circuit,
+                args.export_asc,
+                title=f"{spec.family.value} n={spec.order} {spec.response.value}",
+                ac=sweep,
+            )
+            print(f"Wrote {args.export_asc}", file=sys.stderr)
 
         if args.json:
             n = analysis.frequency_hz.shape[0]

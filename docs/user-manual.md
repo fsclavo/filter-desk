@@ -348,6 +348,7 @@ the overlay with **View → Show measured overlay**.
 | Export CSV | File → Export → CSV… | — | `.csv` |
 | Export Touchstone | File → Export → Touchstone (.s2p)… | — | `.s2p` |
 | Export SPICE netlist | File → Export → SPICE netlist… | — | `.net`/`.cir` (LTspice) |
+| Export LTspice schematic | File → Export → LTspice (.asc)… | — | `.asc` |
 
 The native project file stores the specification, circuit, sweep settings,
 markers, limits, and metadata, and is reloadable and editable.

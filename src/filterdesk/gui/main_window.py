@@ -80,7 +80,7 @@ from filterdesk.gui.workers import (
 )
 from filterdesk.io.csv_export import export_csv
 from filterdesk.io.native import load_project, save_project
-from filterdesk.io.spice import write_spice_netlist
+from filterdesk.io.spice import write_ltspice_asc, write_spice_netlist
 from filterdesk.io.touchstone import (
     TouchstoneData,
     TouchstoneError,
@@ -259,6 +259,8 @@ class MainWindow(QMainWindow):
         act_export_spice.triggered.connect(self._export_spice)
         act_export_s2p = QAction("Export &Touchstone (.s2p)…", self)
         act_export_s2p.triggered.connect(self._export_touchstone)
+        act_export_asc = QAction("Export LTspice (.&asc)…", self)
+        act_export_asc.triggered.connect(self._export_asc)
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
@@ -273,6 +275,7 @@ class MainWindow(QMainWindow):
         export_menu.addAction(act_export_csv)
         export_menu.addAction(act_export_s2p)
         export_menu.addAction(act_export_spice)
+        export_menu.addAction(act_export_asc)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
@@ -1403,6 +1406,34 @@ class MainWindow(QMainWindow):
             return
         try:
             write_spice_netlist(
+                circuit,
+                path,
+                title=self._session.title,
+                ac=self._session.sweep,
+            )
+            self._status.setText(f"Wrote {path}")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+
+    def _export_asc(self) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            QMessageBox.information(
+                self, "Export LTspice", "Synthesize a circuit first."
+            )
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export LTspice schematic",
+            default_filename(self._session.spec, suffix=".asc"),
+            "LTspice schematic (*.asc);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".asc"):
+            path += ".asc"
+        try:
+            write_ltspice_asc(
                 circuit,
                 path,
                 title=self._session.title,

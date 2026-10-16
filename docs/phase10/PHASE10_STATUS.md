@@ -38,11 +38,26 @@ traces, LTspice `.asc`, Qucs `.sch`.
 - CLI — `analyze … --export-spice PATH`.
 - GUI — **File → Export SPICE netlist…**.
 
+### LTspice `.asc` schematic export
+
+- `io/spice/ltspice_asc.py`:
+  - `ltspice_asc(circuit, *, title, ac)` / `write_ltspice_asc(...)` produce a
+    graphical LTspice schematic (`.asc`) that opens directly.
+  - Connectivity uses **net-label `FLAG` items placed exactly on component pins**
+    (same-named flags are one net), so no fragile wire routing is needed; ground
+    is `FLAG 0`.
+  - Standard symbol pin offsets (`ind`/`res` = (16,16)/(16,96), `cap` =
+    (16,0)/(16,64), `voltage` = (0,16)/(0,96)) drive placement; ideal L/C/R and
+    series/parallel LC arms are supported, plus auto V1 (AC 1) + `Rsource` +
+    `Rload`. Unsupported arms (Brune) raise `SpiceExportError`.
+  - The netlist `.cir` writer remains the portable simulator-ready path.
+- CLI — `analyze … --export-asc PATH`.
+- GUI — **File → Export → LTspice (.asc)…**.
+
 ## Deferred
 
-- LTspice `.asc` *schematic* (needs a geometry/layout model; the SPICE netlist is
-  the portable, simulator-ready path).
-- Qucs `.sch` exporter.
+- Qucs `.sch` exporter (Qucs schematic is XML + wire geometry; the LTspice/SPICE
+  netlist is the portable interchange path today).
 
 ## Tests
 
@@ -52,6 +67,7 @@ traces, LTspice `.asc`, Qucs `.sch`.
   input).
 - `tests/unit/test_spice_export.py` — netlist directives/terminations, ground→0,
   series-LC and non-ideal L/C expansion, zero-DCR ideal, empty-circuit error, and
-  CLI `analyze --export-spice`.
-- `tests/unit/test_gui_smoke.py` — **File → Export CSV…** and **File → Export
-  SPICE netlist…** actions write files.
+  CLI `analyze --export-spice`; plus `.asc` structure, pin↔FLAG alignment,
+  series-LC internal node, unsupported-arm error, and CLI `analyze --export-asc`.
+- `tests/unit/test_gui_smoke.py` — **File → Export** submenu (Smith/CSV/Touchstone/
+  SPICE/LTspice) and each export action writes a file.

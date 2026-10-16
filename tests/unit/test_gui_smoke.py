@@ -217,6 +217,7 @@ def test_file_menu_has_import_touchstone() -> None:
     assert any("CSV" in t for t in export_labels)
     assert any("Touchstone" in t for t in export_labels)
     assert any("SPICE" in t for t in export_labels)
+    assert any("LTspice" in t for t in export_labels)
     window.close()
     assert app is not None
 
@@ -823,6 +824,30 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert session.circuit is not None
     assert any(isinstance(el, IdealResistor) for el in session.circuit.elements)
+    window.close()
+    assert app is not None
+
+
+def test_main_window_export_asc(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    out = tmp_path / "design.asc"
+    monkeypatch.setattr(
+        mw.QFileDialog, "getSaveFileName", lambda *a, **k: (str(out), "")
+    )
+    window._export_asc()
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8").startswith("Version 4")
+    assert "Wrote" in window._status.text()
     window.close()
     assert app is not None
 

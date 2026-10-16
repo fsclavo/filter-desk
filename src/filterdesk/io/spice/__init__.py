@@ -157,8 +157,17 @@ def write_spice_netlist(
     return out
 
 
+# Imported after the functions above to avoid a circular import (ltspice_asc
+# imports SpiceExportError from this module).
+from filterdesk.io.spice.ltspice_asc import (  # noqa: E402
+    ltspice_asc,
+    write_ltspice_asc,
+)
+
 __all__ = [
     "SpiceExportError",
+    "ltspice_asc",
     "spice_netlist",
+    "write_ltspice_asc",
     "write_spice_netlist",
 ]
