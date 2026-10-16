@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-15  
 **Status:** Complete (Linux + Windows onedir; AppImage best-effort)  
-**Version:** 0.5.11
+**Version:** 0.6.0
 
 ## Goal
 
