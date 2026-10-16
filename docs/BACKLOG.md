@@ -150,7 +150,7 @@ Ham-oriented helpers on top of the existing synthesis/analysis core. Order is th
 intended implementation sequence.
 
 - [x] **Power stress calculator** (S) — `analysis/stress.py` (`compute_stress`); GUI **P (W)** toolbar field + **Vpk/Ipk** columns in the component table + status-bar peak summary; CLI `analyze --power W`. *Assumes a matched (real `Z0`) source/load.*
-- [ ] **Amateur band presets** (S) — 160–6 m + WARC (30/17/12 m): one-click LP/HP/BP/BS specs (frequencies + sensible ripple/order + E-series snap + typical sweep). GUI presets + CLI `--band`.
+- [x] **Amateur band presets** (S) — `services/bands.py` (160 m–6 m + WARC); GUI **Design → Band preset…**; CLI `--band NAME [--band-kind lpf|hpf|bpf]` + `bands` listing. Chebyshev-I 0.1 dB, LP/HP order 5, BP order 4.
 - [ ] **Transmit harmonic readout** (S) — auto-mark `2f`/`3f` (and `n·f0`) and a table of `|S21|` attenuation at harmonics relative to the band; targets the PA output-LPF use case.
 - [ ] **Resistive attenuator designer** (S) — T and Pi pads: `dB` + `Z0` → R values; optional insertion of the attenuator into the circuit (as a small resistive sub-network). Standalone, high demand.
 - [ ] **Matching networks L / Pi / T** (L) — match `Z0` to a **complex** load (R+jX): choose L/Pi/T, compute element values for a target SWR/bandwidth, show response. Own module (not ladder-filter synthesis); reuses analysis/optimizer. Larger effort.

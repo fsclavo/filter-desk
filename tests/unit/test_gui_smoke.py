@@ -829,6 +829,39 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
     assert app is not None
 
 
+def test_main_window_band_preset(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.enums import FilterResponse
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.bands import BandKind, find_band
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+
+    class _FakeDialog:
+        @staticmethod
+        def ask(*args: object, **kwargs: object) -> tuple[object, BandKind]:
+            return find_band("40m"), BandKind.LPF
+
+    monkeypatch.setattr(mw, "BandPresetDialog", _FakeDialog)
+    window._run_band_preset()
+
+    band = find_band("40m")
+    assert session.spec.response == FilterResponse.LOW_PASS
+    assert session.spec.cutoff_hz == pytest.approx(band.high_hz * 1.1)
+    assert "Band preset" in window._status.text()
+
+    window._undo.undo()
+    assert session.spec.response == FilterResponse.HIGH_PASS
+    window.close()
+    assert app is not None
+
+
 def test_main_window_power_stress() -> None:
     from PySide6.QtWidgets import QApplication
 

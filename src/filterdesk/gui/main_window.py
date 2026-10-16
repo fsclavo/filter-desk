@@ -66,6 +66,7 @@ from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import (
+    BandPresetDialog,
     EngineeringLineEdit,
     MonteCarloDialog,
     NonIdealDialog,
@@ -91,6 +92,7 @@ from filterdesk.io.touchstone import (
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import get_plot_backend
+from filterdesk.services.bands import band_preset_spec, band_sweep
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import DesignSession
@@ -346,6 +348,9 @@ class MainWindow(QMainWindow):
         act_syn.setShortcut("Ctrl+Return")
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         design_menu.addAction(act_syn)
+        act_band = QAction("&Band preset…", self)
+        act_band.triggered.connect(self._run_band_preset)
+        design_menu.addAction(act_band)
         act_snap = QAction("Sna&p to E-series…", self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -580,6 +585,26 @@ class MainWindow(QMainWindow):
     def _on_mc_failed(self, message: str) -> None:
         QMessageBox.warning(self, "Monte-Carlo failed", message)
         self._status.setText("Monte-Carlo failed")
+
+    def _run_band_preset(self) -> None:
+        choice = BandPresetDialog.ask(self)
+        if choice is None:
+            return
+        band, kind = choice
+        spec = band_preset_spec(band, kind)
+        sweep = band_sweep(band)
+        self._f_start.setText(self._eng_freq(sweep.f_start_hz))
+        self._f_stop.setText(self._eng_freq(sweep.f_stop_hz))
+        self._points.setValue(sweep.n_points)
+        cmd = SynthesizeCommand(
+            self._session,
+            spec,
+            new_sweep=sweep,
+            on_applied=self._after_circuit_change,
+        )
+        self._undo.push(cmd)
+        self._status.setText(f"Band preset: {band.name} {kind.value.upper()}")
+        self._run_analyze()
 
     def _run_scale_response(self) -> None:
         if self._session.circuit is None:

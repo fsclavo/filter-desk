@@ -20,6 +20,7 @@ from filterdesk.components_std import (
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
+from filterdesk.services.bands import BANDS, Band, BandKind
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -366,3 +367,50 @@ class OptimizeDialog(QDialog):
             return dialog.to_config()
         return None
 
+
+
+class BandPresetDialog(QDialog):
+    """Choose an amateur band and filter kind for a quick preset design."""
+
+    _KINDS: tuple[tuple[BandKind, str], ...] = (
+        (BandKind.LPF, "Transmit LPF"),
+        (BandKind.HPF, "High-pass"),
+        (BandKind.BPF, "Band-pass"),
+    )
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Amateur band preset")
+        self._band = QComboBox()
+        for band in BANDS:
+            self._band.addItem(band.name, band)
+        # Default to 40 m.
+        self._band.setCurrentIndex(
+            next((i for i, b in enumerate(BANDS) if b.name == "40 m"), 0)
+        )
+        self._kind = QComboBox()
+        for kind, label in self._KINDS:
+            self._kind.addItem(label, kind)
+        form = QFormLayout(self)
+        form.addRow("Band", self._band)
+        form.addRow("Filter", self._kind)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def selection(self) -> tuple[Band, BandKind]:
+        band = self._band.currentData()
+        kind = self._kind.currentData()
+        assert isinstance(band, Band) and isinstance(kind, BandKind)
+        return band, kind
+
+    @classmethod
+    def ask(cls, parent: QWidget | None = None) -> tuple[Band, BandKind] | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.selection()
+        return None

@@ -83,6 +83,7 @@ from filterdesk.optimization import (
     optimize_circuit,
 )
 from filterdesk.plotting import get_plot_backend
+from filterdesk.services.bands import BANDS, BandKind, band_preset_spec, find_band
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesize
@@ -220,6 +221,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser(
         "gui",
         help="Launch the FilterDesk desktop GUI",
+    )
+
+    sub.add_parser(
+        "bands",
+        help="List amateur band presets (160 m–6 m)",
     )
 
     snap = sub.add_parser(
@@ -459,6 +465,16 @@ def _add_spec_args(p: argparse.ArgumentParser) -> None:
         help="Path to specification JSON (golden format)",
     )
     p.add_argument(
+        "--band",
+        help="Amateur band preset, e.g. 40m (overrides family/response/order)",
+    )
+    p.add_argument(
+        "--band-kind",
+        choices=[k.value for k in BandKind],
+        default=BandKind.LPF.value,
+        help="Band preset filter kind (with --band)",
+    )
+    p.add_argument(
         "--family",
         choices=[f.value for f in ApproximationFamily],
         help="Approximation family",
@@ -509,6 +525,15 @@ def _spec_from_cli(args: argparse.Namespace) -> FilterSpec:
     if args.spec is not None:
         data = json.loads(args.spec.read_text(encoding="utf-8"))
         return filter_spec_from_mapping(data)
+
+    band = getattr(args, "band", None)
+    if band:
+        try:
+            return band_preset_spec(
+                find_band(band), BandKind(getattr(args, "band_kind", "lpf"))
+            )
+        except KeyError as exc:
+            raise SpecValidationError(str(exc)) from exc
 
     missing = [
         name
@@ -1177,6 +1202,16 @@ def main(argv: list[str] | None = None) -> int:
         from filterdesk.gui import run_gui
 
         return run_gui()
+
+    if args.command == "bands":
+        for preset in BANDS:
+            print(
+                f"  {preset.name:6s} "
+                f"{format_engineering(preset.low_hz, 'Hz', digits=4)} – "
+                f"{format_engineering(preset.high_hz, 'Hz', digits=4)}  "
+                f"(center {format_engineering(preset.center_hz, 'Hz', digits=4)})"
+            )
+        return 0
 
     if args.command == "estimate-order":
         response = FilterResponse(args.response)

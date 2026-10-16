@@ -262,6 +262,7 @@ specification edits require an explicit **Synthesize**.
 | Workflow | How to trigger | Notes |
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
+| **Band preset** | **Design → Band preset…** | one-click 160 m–6 m LP/HP/BP design (Chebyshev-I, sets sweep) |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -374,11 +375,14 @@ Run `filterdesk` with no command for help, or `filterdesk <command> --help` for 
 command's options.
 
 ```
-filterdesk {synthesize,analyze,gui,snap,montecarlo,optimize,to-csv,
+filterdesk {synthesize,analyze,gui,bands,snap,montecarlo,optimize,to-csv,
             estimate-order,touchstone-info,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
+
+`--band NAME` (e.g. `40m`) builds a spec from an amateur-band preset and
+`--band-kind {lpf,hpf,bpf}` selects the kind; `filterdesk bands` lists them.
 
 ### Shared specification options
 

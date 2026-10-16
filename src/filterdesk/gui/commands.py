@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QUndoCommand
 
+from filterdesk.analysis.types import SweepConfig
 from filterdesk.components_std import ESeries, SnapReport, SnapStrategy
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion, Marker
@@ -75,25 +76,30 @@ class SetElementValueCommand(QUndoCommand):
 
 
 class SynthesizeCommand(QUndoCommand):
-    """Snapshot circuit/spec/prototype around a synthesize call."""
+    """Snapshot circuit/spec/prototype/sweep around a synthesize call."""
 
     def __init__(
         self,
         session: DesignSession,
         new_spec: FilterSpec,
         *,
+        new_sweep: SweepConfig | None = None,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
         super().__init__("Synthesize")
         self._session = session
         self._new_spec = new_spec
+        self._new_sweep = new_sweep
         self._on_applied = on_applied
         self._old_spec = deepcopy(session.spec)
         self._old_circuit = deepcopy(session.circuit)
         self._old_prototype = deepcopy(session.prototype)
+        self._old_sweep = deepcopy(session.sweep)
 
     def redo(self) -> None:
         self._session.set_spec(self._new_spec)
+        if self._new_sweep is not None:
+            self._session.sweep = self._new_sweep
         self._session.synthesize()
         if self._on_applied is not None:
             self._on_applied()
@@ -102,6 +108,7 @@ class SynthesizeCommand(QUndoCommand):
         self._session.spec = self._old_spec
         self._session.circuit = self._old_circuit
         self._session.prototype = self._old_prototype
+        self._session.sweep = self._old_sweep
         self._session.analysis = None
         self._session.dirty = True
         if self._on_applied is not None:
