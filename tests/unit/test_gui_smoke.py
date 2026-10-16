@@ -748,6 +748,30 @@ def test_main_window_export_csv(
     assert app is not None
 
 
+def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import IdealResistor
+    from filterdesk.domain.enums import ElementRole
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    first_id = session.circuit.elements[0].id
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.QInputDialog, "getText", lambda *a, **k: ("10", True))
+    monkeypatch.setattr(window, "_after_circuit_change", lambda: None)
+    window._insert_arm(first_id, ElementRole.SERIES, "R", True)
+
+    assert session.circuit is not None
+    assert any(isinstance(el, IdealResistor) for el in session.circuit.elements)
+    window.close()
+    assert app is not None
+
+
 def test_main_window_export_spice(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

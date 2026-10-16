@@ -34,7 +34,10 @@ from filterdesk.domain.circuit import (
     IdealDualBruneLC,
     IdealInductor,
     IdealParallelLC,
+    IdealResistor,
     IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
 )
 from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.units import format_engineering
@@ -347,10 +350,12 @@ class SchematicPanel(QWidget):
         self._scene.addItem(text)
 
     def _label_for(self, el: object) -> str:
-        if isinstance(el, IdealCapacitor):
+        if isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
             return f"{el.id}  {format_engineering(el.value_f, 'F', digits=4)}"
-        if isinstance(el, IdealInductor):
+        if isinstance(el, (IdealInductor, NonIdealInductor)):
             return f"{el.id}  {format_engineering(el.value_h, 'H', digits=4)}"
+        if isinstance(el, IdealResistor):
+            return f"{el.id}  {format_engineering(el.value_ohm, 'Ohm', digits=4)}"
         if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             join = "+" if isinstance(el, IdealSeriesLC) else "||"
             return (
@@ -373,7 +378,7 @@ class SchematicPanel(QWidget):
         right_start: float,
         pen: QPen,
     ) -> None:
-        if isinstance(el, IdealCapacitor):
+        if isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
             for dx in (-5.0, 5.0):
                 plate = QGraphicsLineItem(mid + dx, y - 16, mid + dx, y + 16)
                 plate.setPen(pen)
@@ -383,8 +388,18 @@ class SchematicPanel(QWidget):
                 lead = QGraphicsLineItem(x_end, y, mid + dx, y)
                 lead.setPen(pen)
                 group.track(lead)
-        elif isinstance(el, IdealInductor):
+        elif isinstance(el, (IdealInductor, NonIdealInductor)):
             self._draw_coil(group, mid - 16, y, pen)
+            lead_l = QGraphicsLineItem(left_end, y, mid - 16, y)
+            lead_r = QGraphicsLineItem(mid + 16, y, right_start, y)
+            lead_l.setPen(pen)
+            lead_r.setPen(pen)
+            group.track(lead_l)
+            group.track(lead_r)
+        elif isinstance(el, IdealResistor):
+            box = QGraphicsRectItem(mid - 16, y - 10, 32, 20)
+            box.setPen(pen)
+            group.addToGroup(box)
             lead_l = QGraphicsLineItem(left_end, y, mid - 16, y)
             lead_r = QGraphicsLineItem(mid + 16, y, right_start, y)
             lead_l.setPen(pen)
@@ -455,7 +470,7 @@ class SchematicPanel(QWidget):
     def _draw_shunt_symbol(
         self, group: ElementGroup, el: object, x: float, y: float, pen: QPen
     ) -> None:
-        if isinstance(el, IdealCapacitor):
+        if isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
             for dy in (28.0, 36.0):
                 plate = QGraphicsLineItem(x - 14, y + dy, x + 14, y + dy)
                 plate.setPen(pen)
@@ -466,10 +481,20 @@ class SchematicPanel(QWidget):
             tail.setPen(pen)
             group.track(lead)
             group.track(tail)
-        elif isinstance(el, IdealInductor):
+        elif isinstance(el, (IdealInductor, NonIdealInductor)):
             self._draw_coil_vertical(group, x, y + 18, pen)
             lead = QGraphicsLineItem(x, y + 14, x, y + 18)
             tail = QGraphicsLineItem(x, y + 46, x, y + 78)
+            lead.setPen(pen)
+            tail.setPen(pen)
+            group.track(lead)
+            group.track(tail)
+        elif isinstance(el, IdealResistor):
+            box = QGraphicsRectItem(x - 12, y + 26, 24, 28)
+            box.setPen(pen)
+            group.addToGroup(box)
+            lead = QGraphicsLineItem(x, y + 14, x, y + 26)
+            tail = QGraphicsLineItem(x, y + 54, x, y + 78)
             lead.setPen(pen)
             tail.setPen(pen)
             group.track(lead)

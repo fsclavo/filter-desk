@@ -90,8 +90,10 @@ def _exc_text(exc: BaseException) -> str:
 _INSERT_CHOICES: tuple[tuple[str, ElementRole, str], ...] = (
     ("Series inductor", ElementRole.SERIES, "L"),
     ("Series capacitor", ElementRole.SERIES, "C"),
+    ("Series resistor", ElementRole.SERIES, "R"),
     ("Shunt inductor", ElementRole.SHUNT, "L"),
     ("Shunt capacitor", ElementRole.SHUNT, "C"),
+    ("Shunt resistor", ElementRole.SHUNT, "R"),
 )
 
 
@@ -929,9 +931,11 @@ class MainWindow(QMainWindow):
             current, unit = el.value_f, "F"
         elif isinstance(el, (IdealInductor, NonIdealInductor)):
             current, unit = el.value_h, "H"
+        elif isinstance(el, IdealResistor):
+            current, unit = el.value_ohm, "Ohm"
         else:
             QMessageBox.information(
-                self, "Edit element", "Only ideal L/C arms can be edited here."
+                self, "Edit element", "Only ideal L/C/R arms can be edited here."
             )
             return
         text, ok = QInputDialog.getText(
@@ -1070,6 +1074,10 @@ class MainWindow(QMainWindow):
 
     def _default_arm_text(self, kind: str) -> str:
         circuit = self._session.circuit
+        if kind == "R":
+            if circuit is None:
+                return "50"
+            return format_engineering(circuit.port_in.impedance_ohm, "Ohm", digits=4)
         if circuit is None:
             return "1n" if kind == "L" else "1p"
         z0 = circuit.port_in.impedance_ohm

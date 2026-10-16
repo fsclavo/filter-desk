@@ -1,7 +1,7 @@
 # Phase 6 — Practical components (status)
 
 **Date:** 2026-10-15  
-**Status:** In progress  
+**Status:** Complete  
 **Version:** 0.5.11
 
 ## Goal
@@ -84,6 +84,17 @@ downstream analysis/GUI support (FR-P1, FR-P2).
 - Performance — trials buffered as float32; `run_monte_carlo(progress=…)` reports
   `(done, total)`; 10k trials × 512 points ≈ 5 s (NFR-5).
 
+### Manual R/L/C library + golden tests
+
+- Manual parts — **Design → Component → Insert** (before/after) now offers
+  series/shunt **R, L, C** (`circuit_edit.insert_simple_arm` kind `"R"`); the
+  schematic draws resistors (box symbol) and non-ideal L/C as their ideal
+  symbols, and R edits/tunes/optimizes/Monte-Carlos/SPICE-exports like L/C.
+- Golden regressions — `tests/golden/cheby1_lp_n5_e24_snapped` (E24 snapped
+  component values on-grid) and `tests/golden/butterworth_lp_n5_q100`
+  (finite-Q passband/DC insertion loss), checked by
+  `tests/unit/test_phase6_golden.py`.
+
 ## Design notes
 
 - Snapping never mutates the input circuit (frozen dataclasses + `replace`);
@@ -102,10 +113,11 @@ downstream analysis/GUI support (FR-P1, FR-P2).
   response exactly. Yield counts a trial as passing unless a limit actively fails
   (bands with no samples are ignored).
 
-## Deferred (rest of Phase 6)
+## Deferred (future, not blocking)
 
-- Golden tests for finite-Q and E24-snapped cases.
-- Manual library R / L / C / jX in the schematic library.
+- Distributed/manual exotic elements (transmission lines, stubs, transformers,
+  coupled inductors) and a frequency-independent **jX** reactance (no direct
+  SPICE mapping). Core R/L/C manual parts are delivered.
 
 ## Tests
 

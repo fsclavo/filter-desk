@@ -1,0 +1,15 @@
+{
+  "sweep": {
+    "f_start_hz": 1000000.0,
+    "f_stop_hz": 1000000000.0,
+    "n_points": 4001,
+    "spacing": "logarithmic"
+  },
+  "tolerance_db": 0.02,
+  "metrics": {
+    "s21_db_at_cutoff": -3.2167887971870512,
+    "passband_il_db_max": 3.1795819385344344,
+    "passband_s21_db_min": -3.1795819385344344,
+    "dc_s21_db": -0.13942149682192914
+  }
+}

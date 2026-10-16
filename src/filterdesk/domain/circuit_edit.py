@@ -92,7 +92,7 @@ def insert_simple_arm(
     value_si: float,
     before_id: str | None = None,
 ) -> Circuit:
-    """Insert a new ideal L/C arm before ``before_id`` (append if ``None``)."""
+    """Insert a new ideal L/C/R arm before ``before_id`` (append if ``None``)."""
     if value_si <= 0.0:
         raise CircuitEditError("component value must be > 0")
     new_el: Element
@@ -103,6 +103,10 @@ def insert_simple_arm(
     elif kind == "C":
         new_el = IdealCapacitor(
             id="X", value_f=value_si, node_a="", node_b="", role=role
+        )
+    elif kind == "R":
+        new_el = IdealResistor(
+            id="X", value_ohm=value_si, node_a="", node_b="", role=role
         )
     else:
         raise CircuitEditError(f"unsupported element kind: {kind!r}")

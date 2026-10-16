@@ -1,0 +1,10 @@
+{
+  "family": "butterworth",
+  "response": "low_pass",
+  "order": 5,
+  "cutoff_definition": "half_power_3db",
+  "z_source_ohm": 50.0,
+  "z_load_ohm": 50.0,
+  "topology_id": "ladder_lp_series_l_input",
+  "cutoff_hz": 100000000.0
+}

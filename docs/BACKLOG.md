@@ -80,7 +80,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 ## C. Roadmap — remaining phases (P2)
 
-### Phase 6 — Practical components (Q, ESR, parasitics, tolerances, E-series)
+### Phase 6 — Practical components (Q, ESR, parasitics, tolerances, E-series) — **DONE
 
 - [x] **E-series module** `components_std/e_series.py` (E6/E12/E24/E48/E96) + `snap.py` — FR-P1 (engine + CLI `snap`)
 - [x] Snap strategies: independent / L-only / C-only / preserve LC resonances — FR-P1
@@ -90,8 +90,8 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 - [x] GUI: **Design → Snap to E-series…** dialog (series + strategy) with undo/redo — FR-P1
 - [x] GUI: non-ideal fields in component table (Parasitic column + per-part Edit parasitics / Q) — FR-P2
 - [x] Tolerances: Monte-Carlo / worst-case passband analysis — `montecarlo/` engine + stats + CLI `montecarlo` (FR-P3 core)
-- [ ] Golden tests for finite-Q and E24-snapped cases (blueprint §29 items 9–10)
-- [ ] Manual library R / L / C / jX (core RLC) in schematic library (blueprint §7)
+- [x] Golden tests for finite-Q and E24-snapped cases — `tests/unit/test_phase6_golden.py` + `tests/golden/{cheby1_lp_n5_e24_snapped,butterworth_lp_n5_q100}`
+- [x] Manual library R / L / C (core RLC) in the schematic — **Design → Component → Insert** series/shunt R/L/C; R edits/tunes/optimizes/MC/SPICE. (jX deferred — no SPICE mapping.)
 
 ### Phase 7 — Interactive tuning + optimization + limits — **DONE (2026-10-15)**
 

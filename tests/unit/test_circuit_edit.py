@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from filterdesk.domain.circuit import IdealCapacitor, IdealInductor
+from filterdesk.domain.circuit import IdealCapacitor, IdealInductor, IdealResistor
 from filterdesk.domain.circuit_edit import (
     CircuitEditError,
     rebuild_ladder,
@@ -34,6 +34,25 @@ def test_session_insert_and_delete_arm() -> None:
     inserted_id = session.circuit.elements[0].id
     session.delete_arm(inserted_id)
     assert len(session.circuit.elements) == n
+
+
+def test_insert_manual_resistor() -> None:
+    session = DesignSession()
+    session.synthesize()
+    assert session.circuit is not None
+    n = len(session.circuit.elements)
+    first_id = session.circuit.elements[0].id
+    session.insert_arm(
+        role=ElementRole.SERIES, kind="R", value_si=10.0, before_id=first_id
+    )
+    assert session.circuit is not None
+    assert len(session.circuit.elements) == n + 1
+    resistor = next(
+        el for el in session.circuit.elements if isinstance(el, IdealResistor)
+    )
+    assert resistor.value_ohm == pytest.approx(10.0)
+    assert resistor.id.startswith("R")
+    session.analyze()  # still analyzable
 
 
 def test_convert_simple_arm_preserves_reactance() -> None:
