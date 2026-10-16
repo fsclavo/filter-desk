@@ -812,8 +812,10 @@ def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    explicit = argv is not None
+    arg_list = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(arg_list)
 
     if args.command == "synthesize":
         try:
@@ -1213,6 +1215,12 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(cmp.summary())
         return 0
+
+    if not explicit and not arg_list:
+        # Launched with no arguments (e.g. double-clicked): open the GUI.
+        from filterdesk.gui import run_gui
+
+        return run_gui()
 
     parser.print_help()
     return 0

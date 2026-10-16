@@ -67,10 +67,21 @@ jobs:
         with:
           name: windows-zip
           path: FilterDesk-windows-x86_64.zip
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart('v')
+          if (-not $ver) { $ver = "0.0.0" }
+          & "C:\Program Files (x86)\NSIS\makensis.exe" "/DVERSION=$ver" packaging\windows\filterdesk.nsi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-setup
+          path: FilterDesk-*-windows-x86_64-setup.exe
 
   appimage:
     runs-on: ubuntu-22.04
-    continue-on-error: true # best-effort; tar.gz is the primary Linux artifact
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -95,7 +106,7 @@ jobs:
           path: FilterDesk-x86_64.AppImage
 
   release:
-    needs: [linux, windows]
+    needs: [linux, windows, appimage]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -107,7 +118,10 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          fail_on_unmatched_files: false
           files: |
             artifacts/linux-targz/FilterDesk-linux-x86_64.tar.gz
+            artifacts/linux-appimage/FilterDesk-x86_64.AppImage
+            artifacts/windows-setup/FilterDesk-*-windows-x86_64-setup.exe
             artifacts/windows-zip/FilterDesk-windows-x86_64.zip
           generate_release_notes: true

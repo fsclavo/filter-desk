@@ -2,8 +2,9 @@
 
 FilterDesk ships as a self-contained **PyInstaller onedir** bundle: a launcher
 (`FilterDesk` / `FilterDesk.exe`) plus an `_internal/` folder with Python, Qt, and
-the scientific stack. The same binary serves both the GUI (`filterdesk gui`) and
-the CLI subcommands (`synthesize`, `analyze`, `optimize`, `montecarlo`, …).
+the scientific stack. The launcher is **GUI-first** (double-clicking opens the
+desktop app) and also serves the CLI subcommands (`synthesize`, `analyze`,
+`optimize`, `montecarlo`, …) when given arguments.
 
 ## Build locally
 
@@ -23,17 +24,29 @@ Notes:
 
 - The spec (`packaging/filterdesk.spec`) explicitly collects `*.libs` shared
   objects (scipy OpenBLAS, Pillow image codecs) and the PySide6 `Qt/lib` +
-  `Qt/plugins`, and drops any **system** Qt/Shiboken binaries that PyInstaller
-  might resolve from the host (they clash with the bundled PySide6 Qt).
-- `console=True` keeps the CLI usable; the GUI opens from the same launcher.
+  `Qt/plugins`, ships `pyqtgraph` as source (for the in-app SVG export patch),
+  and drops any **system** Qt/Shiboken binaries that PyInstaller might resolve
+  from the host (they clash with the bundled PySide6 Qt).
+- `console=True` keeps the CLI usable from a terminal; on Windows a
+  double-clicked launch hides the console window it was given (a terminal shared
+  with `cmd.exe` is left untouched).
+- **No arguments → GUI.** `filterdesk --help` prints CLI help.
 
 ## Artifacts
 
 | Platform | Artifact | Notes |
 | --- | --- | --- |
-| Linux x86_64 | `FilterDesk-linux-x86_64.tar.gz` | onedir bundle; **glibc ≥ 2.35** (built on Ubuntu 22.04) |
-| Windows x86_64 | `FilterDesk-windows-x86_64.zip` | onedir bundle |
-| Linux x86_64 | `FilterDesk-x86_64.AppImage` | best-effort (`packaging/appimage/build_appimage.sh`) |
+| Windows x86_64 | `FilterDesk-<ver>-windows-x86_64-setup.exe` | **installer** (NSIS): Start Menu + Desktop shortcuts to the GUI, uninstaller |
+| Windows x86_64 | `FilterDesk-windows-x86_64.zip` | portable onedir bundle |
+| Linux x86_64 | `FilterDesk-x86_64.AppImage` | **single-file app**; **glibc ≥ 2.35** (built on Ubuntu 22.04) |
+| Linux x86_64 | `FilterDesk-linux-x86_64.tar.gz` | portable onedir bundle |
+
+### Windows installer
+
+`packaging/windows/filterdesk.nsi` (NSIS) packages `dist\FilterDesk\` into a
+per-machine installer, creating Start Menu / Desktop shortcuts that launch the
+GUI and registering an uninstaller in Add/Remove Programs. Built in CI with
+`choco install nsis`.
 
 ### glibc baseline
 
@@ -57,22 +70,24 @@ LGPL-3.0 is compliant.
 
 1. `linux` job (ubuntu-22.04): sync → PyInstaller → licenses → smoke →
    `tar.gz` → upload artifact.
-2. `windows` job: sync → PyInstaller → licenses → smoke → `zip` → upload.
-3. `appimage` job (ubuntu-22.04, `continue-on-error`): builds the AppImage.
-4. `release` job: downloads the artifacts and publishes a **GitHub Release** for
-   the tag with the `tar.gz` and `zip` attached and generated release notes.
+2. `windows` job: sync → PyInstaller → licenses → smoke → `zip` → NSIS
+   **installer** → upload artifacts.
+3. `appimage` job (ubuntu-22.04): builds the AppImage → upload artifact.
+4. `release` job (`needs: [linux, windows, appimage]`): downloads the artifacts
+   and publishes a **GitHub Release** for the tag attaching the Windows installer
+   + zip, the Linux AppImage, and the tar.gz, with generated release notes.
 
-To cut a release:
+To cut a release (bump `pyproject.toml` + `src/filterdesk/__init__.py` first):
 
 ```bash
-git tag v0.6.0
-git push origin v0.6.0
+git tag v0.6.1
+git push origin v0.6.1
 ```
 
-Bump the version in `pyproject.toml` and `src/filterdesk/__init__.py` first.
-
-## AppImage (best-effort)
+## AppImage
 
 `packaging/appimage/build_appimage.sh` wraps the onedir bundle into an AppDir and
-runs `appimagetool`. It needs `dist/FilterDesk/` to exist first. The desktop entry
-and icon live in `packaging/appimage/`.
+runs `appimagetool` (`--appimage-extract-and-run`, no FUSE needed to build). It
+needs `dist/FilterDesk/` to exist first. The desktop entry and icon live in
+`packaging/appimage/`. Verified locally: the produced AppImage runs `--version`
+and launches the GUI.
