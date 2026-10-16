@@ -192,6 +192,49 @@ def test_measured_overlay_toggles() -> None:
     assert app is not None
 
 
+def test_phase_and_impedance_plots_populate() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    result = session.analysis
+    assert result is not None
+    panel = PlotPanel()
+    panel.set_result(result)
+    n = result.frequency_hz.size
+
+    def plotted(curve: object) -> int:
+        data = curve.getData()[0]  # type: ignore[attr-defined]
+        return 0 if data is None else int(data.size)
+
+    labels = [panel._tabs.tabText(i) for i in range(panel._tabs.count())]
+    assert "Phase" in labels and "Impedance" in labels
+    for curve in (
+        panel._curve_phase21,
+        panel._curve_phase11,
+        panel._curve_zin_abs,
+        panel._curve_zin_re,
+        panel._curve_zin_im,
+        panel._curve_zout_abs,
+    ):
+        assert plotted(curve) == n
+
+    panel.set_measured(result, "meas.s2p")
+    assert plotted(panel._curve_phase21_meas) == n
+    assert plotted(panel._curve_zin_abs_meas) == n
+    panel.set_measured_visible(False)
+    assert plotted(panel._curve_phase21_meas) == 0
+    assert plotted(panel._curve_zin_abs_meas) == 0
+    panel.set_result(None)
+    assert plotted(panel._curve_phase21) == 0
+    assert plotted(panel._curve_zin_abs) == 0
+    assert app is not None
+
+
 def test_file_menu_has_import_touchstone() -> None:
     from PySide6.QtWidgets import QApplication
 

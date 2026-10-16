@@ -9,7 +9,7 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 
-from filterdesk.analysis.derived import group_delay_s, mag_db, vswr
+from filterdesk.analysis.derived import group_delay_s, mag_db, phase_deg, vswr
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
@@ -96,6 +96,12 @@ class PlotPanel(QWidget):
         self._s11_db = np.array([], dtype=float)
         self._vswr = np.array([], dtype=float)
         self._gd = np.array([], dtype=float)
+        self._phase21 = np.array([], dtype=float)
+        self._phase11 = np.array([], dtype=float)
+        self._zin_abs = np.array([], dtype=float)
+        self._zin_re = np.array([], dtype=float)
+        self._zin_im = np.array([], dtype=float)
+        self._zout_abs = np.array([], dtype=float)
         self._cursor_freq_hz: float | None = None
         self._markers: list[Marker] = []
         self._limits: list[LimitRegion] = []
@@ -142,12 +148,53 @@ class PlotPanel(QWidget):
         self._gd_plot.setLabel("left", "Group delay", units="s")
         self._curve_gd = self._gd_plot.plot(pen=pg.mkPen("#9467bd", width=2))
 
+        self._phase_plot = _freq_plot("Phase")
+        self._phase_plot.setLabel("left", "Phase", units="deg")
+        self._phase_plot.addLegend()
+        self._curve_phase21 = self._phase_plot.plot(
+            pen=pg.mkPen("#1f77b4", width=2), name="∠S21"
+        )
+        self._curve_phase11 = self._phase_plot.plot(
+            pen=pg.mkPen("#d62728", width=2), name="∠S11"
+        )
+        self._curve_phase21_meas = self._phase_plot.plot(
+            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name="∠S21 meas"
+        )
+        self._curve_phase11_meas = self._phase_plot.plot(
+            pen=pg.mkPen("#d62728", width=1.4, style=dash), name="∠S11 meas"
+        )
+
+        self._z_plot = _freq_plot("Impedance")
+        self._z_plot.setLabel("left", "Impedance", units="Ω")
+        self._z_plot.addLegend()
+        self._curve_zin_abs = self._z_plot.plot(
+            pen=pg.mkPen("#1f77b4", width=2), name="|Zin|"
+        )
+        self._curve_zin_re = self._z_plot.plot(
+            pen=pg.mkPen("#d62728", width=1.6), name="Re(Zin)"
+        )
+        self._curve_zin_im = self._z_plot.plot(
+            pen=pg.mkPen("#2ca02c", width=1.6), name="Im(Zin)"
+        )
+        self._curve_zout_abs = self._z_plot.plot(
+            pen=pg.mkPen("#9467bd", width=1.6, style=dash), name="|Zout|"
+        )
+        self._curve_zin_abs_meas = self._z_plot.plot(
+            pen=pg.mkPen("#1f77b4", width=1.2, style=dash), name="|Zin| meas"
+        )
+
         self._smith = SmithChartWidget()
         self._smith.cursor_frequency_changed.connect(self._on_smith_cursor)
         self._smith.markers_moving.connect(self._on_smith_markers_moving)
         self._smith.markers_changed.connect(self._on_smith_markers_changed)
 
-        self._plots = (self._mag, self._vswr_plot, self._gd_plot)
+        self._plots = (
+            self._mag,
+            self._phase_plot,
+            self._vswr_plot,
+            self._gd_plot,
+            self._z_plot,
+        )
         self._cursors: list[pg.InfiniteLine] = []
         for plot in self._plots:
             plot.setLogMode(x=True, y=False)
@@ -167,8 +214,10 @@ class PlotPanel(QWidget):
             plot._filterdesk_proxy = proxy
 
         self._tabs.addTab(self._mag, "Magnitude")
+        self._tabs.addTab(self._phase_plot, "Phase")
         self._tabs.addTab(self._vswr_plot, "VSWR")
         self._tabs.addTab(self._gd_plot, "Group delay")
+        self._tabs.addTab(self._z_plot, "Impedance")
         self._tabs.addTab(self._smith, "Smith")
 
         self._readout = QLabel(
@@ -283,12 +332,18 @@ class PlotPanel(QWidget):
             self._curve_s21_meas.setData(empty, empty)
             self._curve_s11_meas.setData(empty, empty)
             self._curve_vswr_meas.setData(empty, empty)
+            self._curve_phase21_meas.setData(empty, empty)
+            self._curve_phase11_meas.setData(empty, empty)
+            self._curve_zin_abs_meas.setData(empty, empty)
             self._smith.set_measured_s_params(empty, empty, None)
             return
         fm = np.asarray(measured.frequency_hz, dtype=float)
         self._curve_s21_meas.setData(fm, np.asarray(mag_db(measured.s21)))
         self._curve_s11_meas.setData(fm, np.asarray(mag_db(measured.s11)))
         self._curve_vswr_meas.setData(fm, np.asarray(vswr(measured)))
+        self._curve_phase21_meas.setData(fm, np.asarray(phase_deg(measured.s21)))
+        self._curve_phase11_meas.setData(fm, np.asarray(phase_deg(measured.s11)))
+        self._curve_zin_abs_meas.setData(fm, np.asarray(np.abs(measured.zin_ohm)))
         self._smith.set_measured_s_params(fm, measured.s11, measured.s22)
 
     def set_result(self, result: AnalysisResult | None) -> None:
@@ -300,10 +355,22 @@ class PlotPanel(QWidget):
             self._s11_db = empty
             self._vswr = empty
             self._gd = empty
+            self._phase21 = empty
+            self._phase11 = empty
+            self._zin_abs = empty
+            self._zin_re = empty
+            self._zin_im = empty
+            self._zout_abs = empty
             self._curve_s21.setData(empty, empty)
             self._curve_s11.setData(empty, empty)
             self._curve_vswr.setData(empty, empty)
             self._curve_gd.setData(empty, empty)
+            self._curve_phase21.setData(empty, empty)
+            self._curve_phase11.setData(empty, empty)
+            self._curve_zin_abs.setData(empty, empty)
+            self._curve_zin_re.setData(empty, empty)
+            self._curve_zin_im.setData(empty, empty)
+            self._curve_zout_abs.setData(empty, empty)
             self._smith.clear()
             for cursor in self._cursors:
                 cursor.setVisible(False)
@@ -321,10 +388,24 @@ class PlotPanel(QWidget):
         self._gd = np.asarray(
             group_delay_s(result.frequency_hz, result.s21), dtype=float
         )
+        self._phase21 = np.asarray(phase_deg(result.s21), dtype=float)
+        self._phase11 = np.asarray(phase_deg(result.s11), dtype=float)
+        zin = np.asarray(result.zin_ohm, dtype=complex)
+        zout = np.asarray(result.zout_ohm, dtype=complex)
+        self._zin_abs = np.asarray(np.abs(zin), dtype=float)
+        self._zin_re = np.asarray(zin.real, dtype=float)
+        self._zin_im = np.asarray(zin.imag, dtype=float)
+        self._zout_abs = np.asarray(np.abs(zout), dtype=float)
         self._curve_s21.setData(f, self._s21_db)
         self._curve_s11.setData(f, self._s11_db)
         self._curve_vswr.setData(f, self._vswr)
         self._curve_gd.setData(f, self._gd)
+        self._curve_phase21.setData(f, self._phase21)
+        self._curve_phase11.setData(f, self._phase11)
+        self._curve_zin_abs.setData(f, self._zin_abs)
+        self._curve_zin_re.setData(f, self._zin_re)
+        self._curve_zin_im.setData(f, self._zin_im)
+        self._curve_zout_abs.setData(f, self._zout_abs)
         self._smith.set_s_params(
             f,
             result.s11,
@@ -574,6 +655,8 @@ class PlotPanel(QWidget):
         s11 = float(self._s11_db[idx])
         vs = float(self._vswr[idx])
         gd = float(self._gd[idx])
+        ph21 = float(self._phase21[idx])
+        zin_abs = float(self._zin_abs[idx])
         mc_bits = self._mc_readout_bits(f_hz)
         marker_bits = ""
         if self._markers:
@@ -587,7 +670,9 @@ class PlotPanel(QWidget):
             f"S21 = {s21:.3f} dB   "
             f"S11 = {s11:.3f} dB   "
             f"VSWR = {vs:.3f}   "
-            f"GD = {format_engineering(gd, 's', digits=4)}"
+            f"GD = {format_engineering(gd, 's', digits=4)}   "
+            f"∠S21 = {ph21:.1f}°   "
+            f"|Zin| = {zin_abs:.2f} Ω"
             f"{mc_bits}"
             f"{marker_bits}"
         )

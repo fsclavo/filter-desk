@@ -244,13 +244,15 @@ Four tabs, all with a logarithmic frequency axis:
 
 - **Magnitude** — |S21| and |S11| in dB (solid = simulated; dashed = measured;
   grey band = Monte-Carlo envelope).
+- **Phase** — ∠S21 and ∠S11 in degrees.
 - **VSWR** — input VSWR.
 - **Group delay** — in seconds.
+- **Impedance** — input impedance (|Zin|, Re(Zin), Im(Zin)) and |Zout| in ohms.
 - **Smith** — S11 (red) and S22 (blue) loci.
 
-A **cursor readout** below the tabs reports `f`, `S21`, `S11`, `VSWR`, and group
-delay at the nearest sweep point, plus Monte-Carlo and marker details when
-present.
+A **cursor readout** below the tabs reports `f`, `S21`, `S11`, `VSWR`, group
+delay, ∠S21, and |Zin| at the nearest sweep point, plus Monte-Carlo and marker
+details when present.
 
 ---
 
