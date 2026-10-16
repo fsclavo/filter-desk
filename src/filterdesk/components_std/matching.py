@@ -110,6 +110,129 @@ def _pick_lowpass(
     return solutions[0]
 
 
+def _series_x(arms: list[tuple[ElementRole, float]]) -> float | None:
+    return next((x for r, x in arms if r == ElementRole.SERIES), None)
+
+
+def _shunt_x(arms: list[tuple[ElementRole, float]]) -> float | None:
+    return next((x for r, x in arms if r == ElementRole.SHUNT), None)
+
+
+def _is_lowpass(arms: list[tuple[ElementRole, float]]) -> bool:
+    """Series arms inductive (X>0), shunt arms capacitive (X<0)."""
+    for role, x in arms:
+        if role == ElementRole.SERIES:
+            if x <= 0.0:
+                return False
+        elif x >= 0.0:
+            return False
+    return True
+
+
+def _matches(
+    arms: list[tuple[ElementRole, float]], rs: float, rl: float, xl: float
+) -> bool:
+    z_in = _zin(arms, complex(rl, xl))
+    return abs(z_in - rs) <= 1e-6 * rs + 1e-6
+
+
+def _order_lowpass_first(
+    solutions: list[list[tuple[ElementRole, float]]],
+) -> list[list[tuple[ElementRole, float]]]:
+    ordered = list(solutions)
+    for index, arms in enumerate(ordered):
+        if _is_lowpass(arms):
+            return [arms, *ordered[:index], *ordered[index + 1 :]]
+    return ordered
+
+
+def _select_arms(
+    genuine: list[list[tuple[ElementRole, float]]],
+    degenerate: list[list[tuple[ElementRole, float]]],
+    rs: float,
+    rl: float,
+    xl: float,
+    label: str,
+) -> list[tuple[ElementRole, float]]:
+    """Pick a candidate that actually matches the source (prefer low-pass).
+
+    ``genuine`` are 3-element networks; ``degenerate`` are the cancellations
+    where the middle element collapses (kept as a fallback).
+    """
+    matching = [arms for arms in genuine if _matches(arms, rs, rl, xl)]
+    for arms in matching:
+        if _is_lowpass(arms):
+            return arms
+    if matching:
+        return matching[0]
+    for arms in degenerate:
+        if _matches(arms, rs, rl, xl):
+            return arms
+    raise MatchingError(f"no {label} matching solution for these impedances")
+
+
+def _pi_arms(
+    rs: float, rl: float, xl: float, rv: float
+) -> list[tuple[ElementRole, float]]:
+    genuine: list[list[tuple[ElementRole, float]]] = []
+    degenerate: list[list[tuple[ElementRole, float]]] = []
+    for a in _order_lowpass_first(_l_solutions(rs, rv, 0.0)):
+        xp1 = _shunt_x(a)
+        xs1 = _series_x(a)
+        if xp1 is None or xs1 is None:
+            continue
+        for b in _order_lowpass_first(_l_solutions(rv, rl, xl)):
+            xs2 = _series_x(b)
+            xp2 = _shunt_x(b)
+            if xs2 is None or xp2 is None:
+                continue
+            xs = xs1 + xs2
+            if xs == 0.0:
+                degenerate.append(
+                    [(ElementRole.SHUNT, xp1), (ElementRole.SHUNT, xp2)]
+                )
+            else:
+                genuine.append(
+                    [
+                        (ElementRole.SHUNT, xp1),
+                        (ElementRole.SERIES, xs),
+                        (ElementRole.SHUNT, xp2),
+                    ]
+                )
+    return _select_arms(genuine, degenerate, rs, rl, xl, "Pi")
+
+
+def _tee_arms(
+    rs: float, rl: float, xl: float, rv: float
+) -> list[tuple[ElementRole, float]]:
+    genuine: list[list[tuple[ElementRole, float]]] = []
+    degenerate: list[list[tuple[ElementRole, float]]] = []
+    for a in _order_lowpass_first(_l_solutions(rs, rv, 0.0)):
+        xs1 = _series_x(a)
+        xp1 = _shunt_x(a)
+        if xs1 is None or xp1 is None:
+            continue
+        for b in _order_lowpass_first(_l_solutions(rv, rl, xl)):
+            xp2 = _shunt_x(b)
+            xs2 = _series_x(b)
+            if xp2 is None or xs2 is None:
+                continue
+            inv = 1.0 / xp1 + 1.0 / xp2
+            if inv == 0.0:
+                degenerate.append(
+                    [(ElementRole.SERIES, xs1), (ElementRole.SERIES, xs2)]
+                )
+            else:
+                genuine.append(
+                    [
+                        (ElementRole.SERIES, xs1),
+                        (ElementRole.SHUNT, 1.0 / inv),
+                        (ElementRole.SERIES, xs2),
+                    ]
+                )
+    return _select_arms(genuine, degenerate, rs, rl, xl, "T")
+
+
 def _q_min(rs: float, rl: float) -> float:
     lo, hi = min(rs, rl), max(rs, rl)
     if lo <= 0.0:
@@ -131,32 +254,11 @@ def _arms_for(
 
     if topology == MatchingTopology.PI:
         rv = max(rs, rl) / (1.0 + q * q)  # virtual series resistance
-        a = _pick_lowpass(_l_solutions(rs, rv, 0.0))  # [shunt, series]
-        b = _pick_lowpass(_l_solutions(rv, rl, xl))  # [series, shunt]
-        xp1 = next(x for r, x in a if r == ElementRole.SHUNT)
-        xs1 = next(x for r, x in a if r == ElementRole.SERIES)
-        xs2 = next(x for r, x in b if r == ElementRole.SERIES)
-        xp2 = next(x for r, x in b if r == ElementRole.SHUNT)
-        return [
-            (ElementRole.SHUNT, xp1),
-            (ElementRole.SERIES, xs1 + xs2),
-            (ElementRole.SHUNT, xp2),
-        ], q
+        return _pi_arms(rs, rl, xl, rv), q
 
     # TEE: virtual parallel resistance (middle shunt).
     rv = min(rs, rl) * (1.0 + q * q)
-    a = _pick_lowpass(_l_solutions(rs, rv, 0.0))  # [series, shunt]
-    b = _pick_lowpass(_l_solutions(rv, rl, xl))  # [shunt, series]
-    xs1 = next(x for r, x in a if r == ElementRole.SERIES)
-    xp1 = next(x for r, x in a if r == ElementRole.SHUNT)
-    xp2 = next(x for r, x in b if r == ElementRole.SHUNT)
-    xs2 = next(x for r, x in b if r == ElementRole.SERIES)
-    xp = 1.0 / (1.0 / xp1 + 1.0 / xp2)
-    return [
-        (ElementRole.SERIES, xs1),
-        (ElementRole.SHUNT, xp),
-        (ElementRole.SERIES, xs2),
-    ], q
+    return _tee_arms(rs, rl, xl, rv), q
 
 
 def _to_elements(
@@ -165,6 +267,8 @@ def _to_elements(
     omega = 2.0 * math.pi * frequency_hz
     elements: list[MatchingElement] = []
     for role, x in arms:
+        if x == 0.0:
+            continue  # collapsed element (short): nothing to place
         if x > 0.0:
             elements.append(MatchingElement(role, x, "L", x / omega))
         else:

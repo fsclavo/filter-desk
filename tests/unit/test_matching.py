@@ -72,6 +72,21 @@ def test_matching_equal_resistance_cancels_reactance() -> None:
     assert design.input_impedance_ohm.imag == pytest.approx(0.0, abs=1e-6)
 
 
+@pytest.mark.parametrize(
+    "topology",
+    [MatchingTopology.L, MatchingTopology.PI, MatchingTopology.T],
+)
+def test_matching_equal_resistance_reactive_load(
+    topology: MatchingTopology,
+) -> None:
+    # rs == rl with a reactive load: for the T network the two shunt arms of the
+    # back-to-back L-sections cancel, which used to divide by zero.
+    design = design_matching(1.0, 1.0, 0.5, 1000.0, topology)
+    z = design.input_impedance_ohm
+    assert z.real == pytest.approx(1.0, abs=1e-6)
+    assert z.imag == pytest.approx(0.0, abs=1e-6)
+
+
 def test_matching_validation() -> None:
     with pytest.raises(MatchingError):
         design_matching(0.0, 25.0, 0.0, 7e6)
