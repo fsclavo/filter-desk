@@ -73,6 +73,17 @@ def test_session_stress_none_when_power_off() -> None:
     assert report.frequency_hz == pytest.approx(100e6)
 
 
+def test_stress_with_finite_q() -> None:
+    from filterdesk.components_std import nonidealize_circuit
+
+    circuit = nonidealize_circuit(
+        synthesize(_spec()).circuit, inductor_q=100.0, q_frequency_hz=100e6
+    )
+    report = compute_stress(circuit, power_w=100.0, frequency_hz=100e6)
+    assert len(report.entries) == 5
+    assert all(e.v_peak_v > 0.0 and e.i_peak_a > 0.0 for e in report.entries)
+
+
 def test_cli_analyze_power(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(
         [

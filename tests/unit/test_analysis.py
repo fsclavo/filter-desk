@@ -91,8 +91,58 @@ def test_skrf_supports_unequal_ports() -> None:
 @pytest.mark.parametrize(
     "case",
     [
+        "cheby1_bp_n4_100m_bw20m",
+        "cheby1_bs_n5_100m_bw20m",
+    ],
+)
+def test_abcd_matches_skrf_band(case: str) -> None:
+    folder = GOLDEN / case
+    spec = filter_spec_from_mapping(json.loads((folder / "spec.json").read_text()))
+    circuit = synthesize(spec).circuit
+    sweep = SweepConfig(1e6, 2e9, 257, SweepSpacing.LOGARITHMIC)
+    a = LadderABCDAnalyzer().analyze(circuit, sweep)
+    b = ScikitRFAnalyzer().analyze(circuit, sweep)
+    for sp in ("s11", "s21", "s12", "s22"):
+        assert np.max(np.abs(getattr(a, sp) - getattr(b, sp))) < 1e-6
+
+
+def test_abcd_matches_skrf_nonideal() -> None:
+    from filterdesk.components_std import nonidealize_circuit
+
+    spec = filter_spec_from_mapping(
+        {
+            "family": "butterworth",
+            "response": "low_pass",
+            "order": 5,
+            "cutoff_hz": 100e6,
+            "cutoff_definition": "half_power_3db",
+            "z_source_ohm": 50.0,
+            "z_load_ohm": 50.0,
+            "topology_id": "ladder_lp_series_l_input",
+        }
+    )
+    circuit = nonidealize_circuit(
+        synthesize(spec).circuit,
+        inductor_q=100.0,
+        q_frequency_hz=100e6,
+        inductor_parallel_capacitance_f=0.2e-12,
+        capacitor_esr_ohm=0.1,
+        capacitor_esl_h=0.5e-9,
+    )
+    sweep = SweepConfig(1e6, 1e9, 257, SweepSpacing.LOGARITHMIC)
+    a = LadderABCDAnalyzer().analyze(circuit, sweep)
+    b = ScikitRFAnalyzer().analyze(circuit, sweep)
+    for sp in ("s11", "s21", "s12", "s22"):
+        assert np.max(np.abs(getattr(a, sp) - getattr(b, sp))) < 1e-6
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
         "cheby1_hp_n7_0p01db_140mhz_50ohm",
         "butterworth_lp_n5_1mhz_50ohm",
+        "cheby1_bp_n4_100m_bw20m",
+        "cheby1_bs_n5_100m_bw20m",
     ],
 )
 def test_golden_metric_checkpoints(case: str) -> None:

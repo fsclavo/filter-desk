@@ -578,6 +578,22 @@ class DesignSession:
             extensions["markers"] = markers_to_mapping(self.markers)
         if self.limits:
             extensions["limits"] = limits_to_mapping(self.limits)
+        if self.element_steps:
+            extensions["element_steps"] = dict(self.element_steps)
+        if self.element_tolerances:
+            extensions["element_tolerances"] = {
+                ref: {
+                    "tolerance_pct": tol.tolerance_pct,
+                    "distribution": (
+                        tol.distribution.value if tol.distribution is not None else None
+                    ),
+                }
+                for ref, tol in self.element_tolerances.items()
+            }
+        if self.power_w > 0.0:
+            extensions["power_w"] = float(self.power_w)
+        if self.harmonics_f0_hz is not None:
+            extensions["harmonics_f0_hz"] = float(self.harmonics_f0_hz)
         return Project(
             specification=self.spec,
             circuit=self.circuit,
@@ -609,8 +625,48 @@ class DesignSession:
         self.limits = (
             limits_from_mapping(list(raw_l)) if isinstance(raw_l, list) else []
         )
+        self.element_steps = self._steps_from_ext(ext.get("element_steps"))
+        self.element_tolerances = self._tolerances_from_ext(
+            ext.get("element_tolerances")
+        )
+        raw_power = ext.get("power_w")
+        self.power_w = (
+            float(raw_power) if isinstance(raw_power, (int, float)) else 0.0
+        )
+        raw_f0 = ext.get("harmonics_f0_hz")
+        self.harmonics_f0_hz = (
+            float(raw_f0) if isinstance(raw_f0, (int, float)) else None
+        )
         if self.circuit is None:
             self.synthesize()
+
+    @staticmethod
+    def _steps_from_ext(raw: object) -> dict[str, float]:
+        if not isinstance(raw, dict):
+            return {}
+        out: dict[str, float] = {}
+        for ref, value in raw.items():
+            if isinstance(value, (int, float)):
+                out[str(ref)] = float(value)
+        return out
+
+    @staticmethod
+    def _tolerances_from_ext(raw: object) -> dict[str, ElementTolerance]:
+        if not isinstance(raw, dict):
+            return {}
+        out: dict[str, ElementTolerance] = {}
+        for ref, value in raw.items():
+            if not isinstance(value, dict):
+                continue
+            dist_raw = value.get("distribution")
+            try:
+                out[str(ref)] = ElementTolerance(
+                    float(value.get("tolerance_pct", 0.0)),
+                    ToleranceDistribution(str(dist_raw)) if dist_raw else None,
+                )
+            except (ValueError, TypeError):
+                continue
+        return out
 
     def summary_metrics(self) -> dict[str, float]:
         if self.analysis is None:

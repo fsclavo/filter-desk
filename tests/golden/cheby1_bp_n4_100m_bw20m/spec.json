@@ -1,0 +1,12 @@
+{
+  "family": "chebyshev_type_i",
+  "response": "band_pass",
+  "order": 4,
+  "cutoff_definition": "ripple_edge",
+  "z_source_ohm": 50.0,
+  "z_load_ohm": 50.0,
+  "topology_id": "ladder_bp_series_resonator_input",
+  "f_center_hz": 100000000.0,
+  "bandwidth_hz": 20000000.0,
+  "passband_ripple_db": 0.1
+}

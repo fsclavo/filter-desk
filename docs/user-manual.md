@@ -367,7 +367,8 @@ the overlay with **View → Show measured overlay**.
 | Export Qucs schematic | File → Export → Qucs (.sch)… | — | `.sch` (best-effort) |
 
 The native project file stores the specification, circuit, sweep settings,
-markers, limits, and metadata, and is reloadable and editable.
+markers, limits, per-component tolerances and tune steps, the TX Power setting,
+the harmonic-readout fundamental, and metadata; it is reloadable and editable.
 
 The first **Save** suggests a name derived from the design
 (`<family>_<type>_n<order>_<freq>.filterdesk.json`, e.g.
