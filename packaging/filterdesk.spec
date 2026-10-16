@@ -9,16 +9,21 @@ Produces ``dist/FilterDesk/`` with the ``FilterDesk`` launcher (console=True so
 ``--version`` and the CLI subcommands work; the GUI opens from the same binary).
 """
 
+import os
 from pathlib import Path
 
 import numpy
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_data_files
+
+# Keep Qt from trying to initialise a real platform while PyInstaller imports
+# submodules in isolated subprocesses (headless CI has no display).
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 ROOT = Path(SPECPATH).resolve().parent  # noqa: F821 - SPECPATH injected by PyInstaller
 
 datas = []
 binaries = []
-hiddenimports = ["filterdesk"]
+hiddenimports = ["filterdesk", "skrf", "pyqtgraph"]
 # PySide6 modules imported dynamically by pyqtgraph / matplotlib backends.
 hiddenimports += [
     "PySide6.QtOpenGL",
@@ -28,11 +33,10 @@ hiddenimports += [
     "PySide6.QtPrintSupport",
     "PySide6.QtXml",
 ]
-for package in ("skrf", "pyqtgraph"):
-    pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
-    datas += pkg_datas
-    binaries += pkg_binaries
-    hiddenimports += pkg_hidden
+# Data files only — do NOT collect_all()/collect_submodules(), which would import
+# pyqtgraph.examples (initialises Qt and aborts the isolated collector).
+datas += collect_data_files("skrf")
+datas += collect_data_files("pyqtgraph")
 
 # Several wheels ship their native shared objects in sibling ``*.libs``
 # directories (scipy.libs/libscipy_openblas*.so, PIL.libs/libtiff*.so, …);
@@ -74,6 +78,9 @@ a = Analysis(  # noqa: F821
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
+    # Ship pyqtgraph as source so FilterDesk's ``inspect.getsource`` SVG patch
+    # (pyqtgraph_patches) works inside the frozen bundle.
+    module_collection_mode={"pyqtgraph": "py"},
     excludes=[
         "tkinter",
         "PySide6.QtWebEngineCore",

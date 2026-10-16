@@ -22,7 +22,12 @@ def apply_pyqtgraph_svg_exporter_qt6_patch() -> None:
     if getattr(svg_mod, "_filterdesk_svg_qt6_patch", False):
         return
 
-    src = textwrap.dedent(inspect.getsource(svg_mod.correctCoordinates))
+    try:
+        src = textwrap.dedent(inspect.getsource(svg_mod.correctCoordinates))
+    except (OSError, TypeError):
+        # Frozen bundle without pyqtgraph sources — cannot patch; leave upstream.
+        svg_mod.__dict__["_filterdesk_svg_qt6_patch"] = True
+        return
     old = """                for c in oldCoords.split(' '):
                     x,y = c.split(',')
                     if x[0].isalpha():
