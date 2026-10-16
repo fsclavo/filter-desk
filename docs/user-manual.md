@@ -346,6 +346,7 @@ the overlay with **View → Show measured overlay**.
 | Import measured | File → Import → Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
 | Export Smith chart | File → Export → Smith chart… | — | `.png`/`.svg`/`.pdf` |
 | Export CSV | File → Export → CSV… | — | `.csv` |
+| Export Touchstone | File → Export → Touchstone (.s2p)… | — | `.s2p` |
 | Export SPICE netlist | File → Export → SPICE netlist… | — | `.net`/`.cir` (LTspice) |
 
 The native project file stores the specification, circuit, sweep settings,

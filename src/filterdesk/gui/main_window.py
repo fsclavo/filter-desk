@@ -81,7 +81,11 @@ from filterdesk.gui.workers import (
 from filterdesk.io.csv_export import export_csv
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.spice import write_spice_netlist
-from filterdesk.io.touchstone import TouchstoneData, TouchstoneError
+from filterdesk.io.touchstone import (
+    TouchstoneData,
+    TouchstoneError,
+    write_touchstone_s2p,
+)
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import get_plot_backend
@@ -253,6 +257,8 @@ class MainWindow(QMainWindow):
         act_export_csv.triggered.connect(self._export_csv)
         act_export_spice = QAction("Export SPICE &netlist…", self)
         act_export_spice.triggered.connect(self._export_spice)
+        act_export_s2p = QAction("Export &Touchstone (.s2p)…", self)
+        act_export_s2p.triggered.connect(self._export_touchstone)
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
@@ -265,6 +271,7 @@ class MainWindow(QMainWindow):
         export_menu = file_menu.addMenu("&Export")
         export_menu.addAction(act_export_smith)
         export_menu.addAction(act_export_csv)
+        export_menu.addAction(act_export_s2p)
         export_menu.addAction(act_export_spice)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
@@ -1344,6 +1351,36 @@ class MainWindow(QMainWindow):
                     f"family={spec.family.value} order={spec.order} "
                     f"{spec.response.value} backend={result.backend}"
                 ),
+            )
+            self._status.setText(f"Wrote {path}")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+
+    def _export_touchstone(self) -> None:
+        result = self._session.analysis
+        if result is None:
+            QMessageBox.information(
+                self,
+                "Export Touchstone",
+                "Analyze a design first (Design → Synthesize + Analyze).",
+            )
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Touchstone (.s2p)",
+            default_filename(self._session.spec, suffix=".s2p"),
+            "Touchstone (*.s2p);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".s2p"):
+            path += ".s2p"
+        spec = self._session.spec
+        try:
+            write_touchstone_s2p(
+                result,
+                path,
+                comment=f"family={spec.family.value} order={spec.order}",
             )
             self._status.setText(f"Wrote {path}")
         except Exception as exc:  # noqa: BLE001
