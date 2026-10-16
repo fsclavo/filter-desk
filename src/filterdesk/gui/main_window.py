@@ -36,6 +36,7 @@ from filterdesk.domain.circuit import (
     NonIdealInductor,
 )
 from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.naming import default_filename
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
@@ -1158,7 +1159,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Save FilterDesk project",
-            "design.filterdesk.json",
+            default_filename(self._session.spec),
             "FilterDesk (*.filterdesk.json)",
         )
         if not path:
@@ -1243,7 +1244,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export Smith chart",
-            "smith.png",
+            default_filename(self._session.spec, suffix=".png"),
             "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)",
         )
         if not path:
@@ -1279,7 +1280,10 @@ class MainWindow(QMainWindow):
             )
             return
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export CSV", "traces.csv", "CSV (*.csv);;All files (*)"
+            self,
+            "Export CSV",
+            default_filename(self._session.spec, suffix=".csv"),
+            "CSV (*.csv);;All files (*)",
         )
         if not path:
             return
@@ -1307,7 +1311,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export SPICE netlist",
-            "filter.net",
+            default_filename(self._session.spec, suffix=".net"),
             "SPICE netlist (*.net *.cir);;All files (*)",
         )
         if not path:

@@ -851,6 +851,30 @@ def test_main_window_set_tolerance(monkeypatch: pytest.MonkeyPatch) -> None:
     assert app is not None
 
 
+def test_save_as_suggests_spec_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.naming import default_filename
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    captured: dict[str, str] = {}
+
+    def _fake_save(*args: object) -> tuple[str, str]:
+        captured["default"] = str(args[2])
+        return "", ""
+
+    monkeypatch.setattr(mw.QFileDialog, "getSaveFileName", _fake_save)
+    window._save_project_as()
+    assert captured["default"] == default_filename(session.spec)
+    window.close()
+    assert app is not None
+
+
 def test_tune_actions_toolbar_and_component_menu() -> None:
     from PySide6.QtWidgets import QApplication, QToolBar
 
