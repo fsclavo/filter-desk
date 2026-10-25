@@ -1605,3 +1605,21 @@ def test_coil_calculator_air_core_live_values() -> None:
     assert design is not None and design.turns == 5
     dialog.close()
     assert app is not None
+
+
+def test_sensitivity_dialog_rows() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import SensitivityDialog
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    assert session.circuit is not None and session.sweep is not None
+    report = session.sensitivity()
+    dialog = SensitivityDialog(report)
+    assert dialog._table.rowCount() == len(report.rows)
+    assert dialog.take_action() is None
+    dialog.close()
+    assert app is not None

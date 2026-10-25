@@ -77,6 +77,7 @@ from filterdesk.gui.widgets import (
     NonIdealDialog,
     OptimizeDialog,
     ParasiticDialog,
+    SensitivityDialog,
     SnapDialog,
 )
 from filterdesk.gui.workers import (
@@ -439,6 +440,9 @@ class MainWindow(QMainWindow):
         act_opt = QAction("&Optimize to limits…", self)
         act_opt.triggered.connect(self._run_optimize)
         design_menu.addAction(act_opt)
+        act_sens = QAction("Component &sensitivity…", self)
+        act_sens.triggered.connect(self._run_sensitivity)
+        design_menu.addAction(act_sens)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -860,6 +864,27 @@ class MainWindow(QMainWindow):
         )
         self._optimize_thread = thread
         thread.start()
+
+    def _run_sensitivity(self) -> None:
+        if self._session.circuit is None or self._session.sweep is None:
+            QMessageBox.information(
+                self, "Component sensitivity", "Synthesize a circuit first."
+            )
+            return
+        try:
+            report = self._session.sensitivity()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Component sensitivity", _exc_text(exc))
+            return
+        self._status.setText(
+            f"Sensitivity: {len(report.rows)} components analyzed"
+        )
+        dialog = SensitivityDialog(report, self)
+        dialog.exec()
+        action = dialog.take_action()
+        if action is not None:
+            ref, direction = action
+            self._nudge_element(ref, direction)
 
     def _on_optimize_finished(self, result: object) -> None:
         assert isinstance(result, OptimizationResult)

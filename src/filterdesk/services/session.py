@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 
 from filterdesk import __version__
@@ -11,6 +12,7 @@ from filterdesk.analysis.harmonics import (
     HarmonicReport,
     compute_harmonics,
 )
+from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
@@ -63,6 +65,7 @@ from filterdesk.montecarlo import (
     run_monte_carlo,
 )
 from filterdesk.optimization import (
+    Objective,
     OptimizationConfig,
     OptimizationResult,
     optimize_circuit,
@@ -230,6 +233,28 @@ class DesignSession:
         if self.circuit is None or self.sweep is None:
             raise ValueError("no circuit/sweep")
         return optimize_circuit(self.circuit, self.sweep, self.limits, config)
+
+    def sensitivity(
+        self,
+        *,
+        limits: Sequence[LimitRegion] | None = None,
+        objectives: Sequence[Objective] = (),
+        relative_step_pct: float = 1.0,
+        backend: str | None = None,
+        band: tuple[float, float] | None = None,
+    ) -> SensitivityReport:
+        """Per-component sensitivity of the response / limit margins (no mutation)."""
+        if self.circuit is None or self.sweep is None:
+            raise ValueError("no circuit/sweep")
+        return sensitivity(
+            self.circuit,
+            self.sweep,
+            limits=self.limits if limits is None else limits,
+            objectives=objectives,
+            relative_step_pct=relative_step_pct,
+            backend=self.backend if backend is None else backend,
+            band=band,
+        )
 
     def step_fraction(self, element_id: str) -> float:
         """Per-part relative tune step (falls back to ``DEFAULT_TUNE_STEP``)."""

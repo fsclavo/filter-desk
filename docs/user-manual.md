@@ -279,6 +279,7 @@ specification edits require an explicit **Synthesize**.
 | **Apply parasitics / finite Q** | **Design → Apply parasitics / Q…** | whole-circuit non-ideal conversion |
 | **Monte-Carlo tolerances** | **Design → Monte-Carlo tolerances…** | runs in the background; overlays the S21 envelope |
 | **Optimize to limits** | **Design → Optimize to limits…** | requires at least one enabled limit |
+| **Component sensitivity** | **Design → Component sensitivity…** | ranks parts by their effect on the response; suggests a tune direction when limits are set |
 | **Scale response** | **Design → Scale response…** | scales cutoff (LP/HP) or center+bandwidth (BP/BS) |
 | **Tune a part** | **Tune +/−** (`Ctrl+]` / `Ctrl+[`), or the element menu | nudges by the part's relative step (default 2 %) |
 | **Set tolerance** | element menu → **Set tolerance…** | per-part ±% for Monte-Carlo |
@@ -457,6 +458,14 @@ Most commands accept `--json` for machine-readable output.
   ```bash
   filterdesk optimize --spec spec.json --objective passband:1M:100M \
       --objective stopband:150M:1G:60 --method nelder_mead --bound 0.3
+  ```
+- **`sensitivity`** — rank tunable components by their effect on the response.
+  `--relative-step` (default 1 %), optional `--band-range LOW HIGH`, and
+  `--limits FILE` / `--objective …` to obtain a tuning direction. Sweep and
+  `--backend` options mirror `analyze`. Example:
+  ```bash
+  filterdesk sensitivity --spec spec.json --limits limits.json \
+      --band-range 130M 150M
   ```
 - **`to-csv`** — convert a Touchstone file to CSV.
   ```bash

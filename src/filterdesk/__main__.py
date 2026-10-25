@@ -21,6 +21,7 @@ from filterdesk.analysis.harmonics import (
     HarmonicReport,
     compute_harmonics,
 )
+from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
@@ -487,6 +488,61 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON (costs + tuned values)",
+    )
+
+    sens = sub.add_parser(
+        "sensitivity",
+        help="Rank component values by their effect on |S21| / limit margins",
+    )
+    _add_spec_args(sens)
+    sens.add_argument("--f-start", default=None, help="Sweep start (Hz), e.g. 10M")
+    sens.add_argument("--f-stop", default=None, help="Sweep stop (Hz), e.g. 1G")
+    sens.add_argument("--points", type=int, default=512, help="Number of points")
+    sens.add_argument(
+        "--spacing",
+        choices=[s.value for s in SweepSpacing],
+        default=SweepSpacing.LOGARITHMIC.value,
+        help="Frequency spacing",
+    )
+    sens.add_argument(
+        "--backend",
+        choices=["abcd", "skrf"],
+        default="abcd",
+        help="Analysis backend",
+    )
+    sens.add_argument(
+        "--limits",
+        type=Path,
+        default=None,
+        help="JSON file with a list of limit regions (enables tuning guidance)",
+    )
+    sens.add_argument(
+        "--objective",
+        action="append",
+        default=[],
+        metavar="TYPE:LO:HI[:TARGET]",
+        help=(
+            "Composable objective (repeatable): "
+            "passband:LO:HI, stopband:LO:HI:ATT, returnloss:LO:HI:RL"
+        ),
+    )
+    sens.add_argument(
+        "--relative-step",
+        type=float,
+        default=1.0,
+        help="Finite-difference step in percent (default 1)",
+    )
+    sens.add_argument(
+        "--band-range",
+        nargs=2,
+        metavar=("LOW", "HIGH"),
+        default=None,
+        help="Restrict statistics to a frequency interval, e.g. --band-range 130M 150M",
+    )
+    sens.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
     )
 
     tocsv = sub.add_parser(
@@ -1055,6 +1111,53 @@ def _optimize_to_json(result: OptimizationResult) -> dict[str, object]:
     }
 
 
+def _print_sensitivity_human(report: SensitivityReport) -> None:
+    print(
+        f"Component sensitivity (+1% step, backend {report.backend}):"
+    )
+    print(
+        f"  {'Ref':8s} {'Value':>12s} {'d|S21|dB/%':>12s} {'RMS':>9s} "
+        f"{'Worst f':>11s}  Dir"
+    )
+    for row in report.rows:
+        value = (
+            format_engineering(row.value, row.unit, digits=6)
+            if row.unit
+            else f"{row.value:.6g}"
+        )
+        worst = format_engineering(row.worst_frequency_hz, "Hz", digits=6)
+        direction = "+" if row.direction > 0 else "-" if row.direction < 0 else "—"
+        print(
+            f"  {row.ref:8s} {value:>12s} {row.max_abs_db_per_pct:12.4f} "
+            f"{row.rms_db_per_pct:9.4f} {worst:>11s}  {direction}"
+        )
+    if report.rows and report.rows[0].limit_margin_delta is None:
+        print("  (no limits/objectives supplied: tuning direction not estimated)")
+
+
+def _sensitivity_to_json(report: SensitivityReport) -> dict[str, object]:
+    return {
+        "backend": report.backend,
+        "relative_step_pct": report.relative_step_pct,
+        "band_hz": list(report.band) if report.band is not None else None,
+        "components": [
+            {
+                "ref": row.ref,
+                "element_id": row.element_id,
+                "field": row.field,
+                "value": row.value,
+                "unit": row.unit,
+                "max_abs_db_per_pct": row.max_abs_db_per_pct,
+                "rms_db_per_pct": row.rms_db_per_pct,
+                "worst_frequency_hz": row.worst_frequency_hz,
+                "limit_margin_delta": row.limit_margin_delta,
+                "direction": row.direction,
+            }
+            for row in report.rows
+        ],
+    }
+
+
 def _objectives_from_cli(entries: list[str]) -> list[Objective]:
     out: list[Objective] = []
     for entry in entries:
@@ -1221,6 +1324,46 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(_optimize_to_json(opt_result), indent=2))
         else:
             _print_optimize_human(opt_result)
+        return 0
+
+    if args.command == "sensitivity":
+        try:
+            spec = _spec_from_cli(args)
+            synth = synthesize(spec)
+            sweep = _default_sweep(spec, args)
+            sens_limits: list[LimitRegion] = []
+            if args.limits is not None:
+                data = json.loads(args.limits.read_text(encoding="utf-8"))
+                sens_limits = limits_from_mapping(data)
+            sens_objectives = _objectives_from_cli(args.objective)
+            sens_band: tuple[float, float] | None = None
+            if args.band_range is not None:
+                sens_band = (
+                    parse_si(str(args.band_range[0])),
+                    parse_si(str(args.band_range[1])),
+                )
+            sens_report = sensitivity(
+                synth.circuit,
+                sweep,
+                limits=sens_limits,
+                objectives=sens_objectives,
+                relative_step_pct=float(args.relative_step),
+                backend=str(args.backend),
+                band=sens_band,
+            )
+        except (
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(_sensitivity_to_json(sens_report), indent=2))
+        else:
+            _print_sensitivity_human(sens_report)
         return 0
 
     if args.command == "analyze":

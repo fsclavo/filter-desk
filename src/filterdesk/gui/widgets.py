@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QSpinBox,
     QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
     QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.components_std import (
     AirCoilError,
     AttenuatorDesign,
@@ -903,3 +908,89 @@ class CoilCalculatorDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(tabs)
         layout.addWidget(buttons)
+
+
+class SensitivityDialog(QDialog):
+    """Show ranked component sensitivities and optionally tune the selection."""
+
+    def __init__(
+        self, report: SensitivityReport, parent: QWidget | None = None
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Component sensitivity")
+        self._rows = report.rows
+        self._action: tuple[str, int] | None = None
+
+        self._table = QTableWidget(len(self._rows), 6, self)
+        self._table.setHorizontalHeaderLabels(
+            ["Ref", "Value", "d|S21| dB/%", "RMS dB/%", "Worst f", "Suggestion"]
+        )
+        self._table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self._table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        for index, row in enumerate(self._rows):
+            value = (
+                format_engineering(row.value, row.unit, digits=6)
+                if row.unit
+                else f"{row.value:.6g}"
+            )
+            worst = format_engineering(row.worst_frequency_hz, "Hz", digits=6)
+            suggestion = (
+                "increase"
+                if row.direction > 0
+                else "decrease"
+                if row.direction < 0
+                else "—"
+            )
+            cells = [
+                row.ref,
+                value,
+                f"{row.max_abs_db_per_pct:.4f}",
+                f"{row.rms_db_per_pct:.4f}",
+                worst,
+                suggestion,
+            ]
+            for column, text in enumerate(cells):
+                self._table.setItem(index, column, QTableWidgetItem(text))
+        if self._rows:
+            self._table.selectRow(0)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        tune = buttons.addButton(
+            "Tune selected", QDialogButtonBox.ButtonRole.ActionRole
+        )
+        tune.clicked.connect(self._on_tune)
+        buttons.rejected.connect(self.reject)
+
+        note = QLabel(
+            f"{len(self._rows)} components · step "
+            f"{report.relative_step_pct:g}% · backend {report.backend}. "
+            "A tuning suggestion requires limits/objectives."
+        )
+        note.setWordWrap(True)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self._table)
+        layout.addWidget(note)
+        layout.addWidget(buttons)
+
+    def _on_tune(self) -> None:
+        index = self._table.currentRow()
+        if 0 <= index < len(self._rows):
+            row = self._rows[index]
+            self._action = (row.ref, row.direction if row.direction else 1)
+            self.accept()
+
+    def take_action(self) -> tuple[str, int] | None:
+        """Element ref + direction to nudge, when the user chose to tune."""
+        return self._action

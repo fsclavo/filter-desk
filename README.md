@@ -26,6 +26,8 @@ image.
 - **Tolerance analysis**: per-component tolerances and a Monte-Carlo envelope
   with yield estimates.
 - **Optimization** against limit regions (passband/stopband masks).
+- **Component sensitivity** analysis that ranks parts by their effect and
+  suggests a tuning direction.
 - **Interactive tuning**: tune components, retune by dragging markers, and scale
   the whole response.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`), export CSV,
