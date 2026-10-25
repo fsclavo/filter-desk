@@ -111,6 +111,6 @@ Dependency upkeep:
 - `.github/workflows/security.yml` — weekly `pip-audit` (plus manual dispatch)
   against the locked environment.
 
-CI uses the current Node 24-based action majors (`checkout@v7`,
-`setup-uv@v10`, `upload-artifact@v7`, `download-artifact@v8`,
-`action-gh-release@v3`).
+CI pins the current Node 24-based action releases (`checkout@v7.0.1`,
+`setup-uv@v10.3.2`, `upload-artifact@v7.0.2`, `download-artifact@v8.0.2`,
+`action-gh-release@v3.0.3`); Dependabot keeps them current.

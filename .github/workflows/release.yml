@@ -14,8 +14,8 @@ jobs:
     runs-on: ubuntu-22.04 # glibc 2.35 baseline
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
@@ -37,7 +37,7 @@ jobs:
         run: ./dist/FilterDesk/FilterDesk --version
       - name: Package tar.gz
         run: tar -C dist -czf FilterDesk-linux-x86_64.tar.gz FilterDesk
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: linux-targz
           path: FilterDesk-linux-x86_64.tar.gz
@@ -46,8 +46,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
@@ -65,7 +65,7 @@ jobs:
         run: .\dist\FilterDesk\FilterDesk.exe --version
       - name: Package ZIP
         run: Compress-Archive -Path dist/FilterDesk -DestinationPath FilterDesk-windows-x86_64.zip
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: windows-zip
           path: FilterDesk-windows-x86_64.zip
@@ -82,7 +82,7 @@ jobs:
             "/DSRCDIR=$root\dist\FilterDesk" `
             "/DOUTFILE=$root\FilterDesk-$ver-windows-x86_64-setup.exe" `
             packaging\windows\filterdesk.nsi
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: windows-setup
           path: FilterDesk-*-windows-x86_64-setup.exe
@@ -91,8 +91,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.12"
           enable-cache: true
@@ -108,7 +108,7 @@ jobs:
         run: .venv/bin/python -m PyInstaller packaging/filterdesk.spec --noconfirm --distpath dist --workpath build
       - name: Build AppImage
         run: bash packaging/appimage/build_appimage.sh
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: linux-appimage
           path: FilterDesk-x86_64.AppImage
@@ -119,13 +119,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
       - name: Show artifacts
         run: find artifacts -type f
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v3.0.3
         with:
           fail_on_unmatched_files: false
           files: |
