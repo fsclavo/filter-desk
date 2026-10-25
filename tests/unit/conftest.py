@@ -1,9 +1,11 @@
 """Shared pytest configuration.
 
-Keeps the offscreen Qt environment deterministic and tears down top-level widgets
-after every test so async QThreads (analyze/optimize/Monte-Carlo workers) are
-stopped before interpreter shutdown — otherwise PySide6 can abort/segfault at
-exit with the mangled exit code 139/134.
+The GUI tests build real PySide6 widgets offscreen. Repeatedly closing/iterating
+every top-level widget after each test corrupts Qt's internal widget registry
+(segfault inside ``QApplication.topLevelWidgets``) on some Python/PySide6
+combinations, so cleanup is left to the tests themselves (``window.close()`` /
+``qtbot``). ``pytest_unconfigure`` hard-exits after the summary to skip the
+nondeterministic PySide6/pyqtgraph shutdown crash (exit 139/134/1).
 """
 
 from __future__ import annotations
@@ -12,8 +14,6 @@ import os
 import sys
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
-import pytest  # noqa: E402
 
 _EXIT_STATUS = {"code": 0}
 
@@ -24,57 +24,17 @@ def pytest_sessionfinish(session: object, exitstatus: int) -> None:
 
 
 def pytest_unconfigure(config: object) -> None:
-    """Hard-exit after pytest's summary to avoid a nondeterministic PySide6 /
-    pyqtgraph shutdown crash (SIGSEGV/abort at interpreter exit) that would fail an
-    otherwise-green CI run with code 139/134.
+    """Hard-exit after pytest's summary to avoid the Qt shutdown crash.
 
-    Only on Linux: on Windows this hard-exit itself triggers an access violation.
+    Uses the original ``sys.__stdout__``/``__stderr__`` (not pytest's capture
+    wrappers, which may already be torn down) and works on every platform;
+    coverage data and the terminal summary are written before this hook runs.
     """
     del config
-    if not sys.platform.startswith("linux"):
-        return
-    try:
-        sys.stdout.flush()
-        sys.stderr.flush()
-    finally:
-        os._exit(_EXIT_STATUS["code"])
-
-
-@pytest.fixture(autouse=True)
-def _qt_teardown() -> object:
-    yield
-    try:
-        import shiboken6
-        from PySide6.QtWidgets import QApplication
-    except Exception:  # pragma: no cover - PySide6 always present in this suite
-        return
-    app = QApplication.instance()
-    if app is None:
-        return
-    for widget in list(app.topLevelWidgets()):
-        if not shiboken6.isValid(widget):
-            continue
-        debounce = getattr(widget, "_debounce", None)
-        if debounce is not None:
-            try:
-                debounce.stop()
-            except Exception:  # noqa: BLE001
-                pass
-        for attr in (
-            "_analyze_thread",
-            "_mc_thread",
-            "_optimize_thread",
-            "_import_thread",
-        ):
-            thread = getattr(widget, attr, None)
-            if thread is not None and getattr(thread, "isRunning", lambda: False)():
-                try:
-                    thread.quit()
-                    thread.wait(2000)
-                except Exception:  # noqa: BLE001
-                    pass
+    for stream in (sys.__stdout__, sys.__stderr__):
         try:
-            widget.close()
-        except Exception:  # noqa: BLE001 - best-effort cleanup
+            if stream is not None:
+                stream.flush()
+        except Exception:  # noqa: BLE001 - best-effort flush
             pass
-    app.processEvents()
+    os._exit(_EXIT_STATUS["code"])
