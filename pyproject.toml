@@ -105,6 +105,13 @@ forbidden_modules = [
     "filterdesk.montecarlo",
     "filterdesk.optimization",
 ]
+# Read-only sensitivity/tuning guidance reuses the optimizer's parameter and
+# residual helpers. Accepted exception; a future cleanup should move those
+# helpers to a neutral module instead.
+ignore_imports = [
+    "filterdesk.analysis.sensitivity -> filterdesk.optimization.objectives",
+    "filterdesk.analysis.sensitivity -> filterdesk.optimization.variables",
+]
 
 [[tool.importlinter.contracts]]
 name = "synthesis does not depend on app/GUI/IO/MC/optimizer"
