@@ -91,3 +91,14 @@ runs `appimagetool` (`--appimage-extract-and-run`, no FUSE needed to build). It
 needs `dist/FilterDesk/` to exist first. The desktop entry and icon live in
 `packaging/appimage/`. Verified locally: the produced AppImage runs `--version`
 and launches the GUI.
+
+## CI quality gates
+
+`.github/workflows/test.yml` runs on every push / pull request:
+
+- **Matrix**: `ubuntu-latest` and `windows-latest` × Python `3.11` / `3.12`
+  (Ruff, Mypy, Import-linter, Pytest).
+- **Coverage**: `pytest-cov` (`--cov=filterdesk`, branch coverage) — report-only.
+- **`package-smoke`**: builds the PyInstaller onedir on `ubuntu-latest` and runs
+  `FilterDesk --version` plus a headless `synthesize`, so bundling breakage is
+  caught before a release tag.
