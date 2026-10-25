@@ -602,7 +602,8 @@ reports:
 
 - the thickest **AWG** that fits a single layer through the inner diameter
   (85 % fill), with the estimated wire length;
-- peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores.
+- peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores
+  (Bsat is the room-temperature typical value; derate it with temperature).
 
 AL spread is typically ±20–25 %, `A_e` is derived geometrically from the catalog
 dimensions (coating ignored), and iron-powder cores do not show a Bsat check.

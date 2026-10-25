@@ -87,13 +87,16 @@ def _core(
     )
 
 
-#: Common Amidon cores (typical AL values).
+#: Common Amidon cores. AL from the Amidon datasheets (nH/N²); powder mixes
+#: 2/6/10 and ferrite 43. AL is specified with roughly ±20–25 % tolerance.
+#: Ferrite Bsat (0.295 T) is a room-temperature typical value; derate with
+#: temperature and DC bias.
 CORES: tuple[ToroidCore, ...] = (
     _core("T37-2", "2", "iron_powder", "red", 4.0, 9.53, 5.21, 3.25),
-    _core("T50-2", "2", "iron_powder", "red", 4.9, 12.70, 7.62, 4.83),
+    _core("T50-2", "2", "iron_powder", "red", 4.9, 12.70, 7.70, 4.83),
     _core("T68-2", "2", "iron_powder", "red", 5.7, 17.53, 9.40, 4.83),
     _core("T80-2", "2", "iron_powder", "red", 5.5, 20.19, 12.57, 6.35),
-    _core("T106-2", "2", "iron_powder", "red", 13.7, 26.92, 14.48, 11.10),
+    _core("T106-2", "2", "iron_powder", "red", 13.5, 26.92, 14.48, 11.10),
     _core("T37-6", "6", "iron_powder", "yellow", 3.0, 9.53, 5.21, 3.25),
     _core("T50-6", "6", "iron_powder", "yellow", 4.0, 12.70, 7.62, 4.83),
     _core("T68-6", "6", "iron_powder", "yellow", 4.7, 17.53, 9.40, 4.83),

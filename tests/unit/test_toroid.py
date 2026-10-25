@@ -30,6 +30,29 @@ def test_core_table_and_lookup() -> None:
         find_core("nope")
 
 
+def test_known_amidon_al_values() -> None:
+    expected = {
+        "T37-2": 4.0,
+        "T50-2": 4.9,
+        "T68-2": 5.7,
+        "T80-2": 5.5,
+        "T106-2": 13.5,
+        "T37-6": 3.0,
+        "T50-6": 4.0,
+        "T68-6": 4.7,
+        "T80-6": 4.5,
+        "T37-10": 2.5,
+        "T50-10": 3.1,
+        "T68-10": 3.2,
+        "T80-10": 3.2,
+        "FT37-43": 350.0,
+        "FT50-43": 440.0,
+        "FT82-43": 470.0,
+    }
+    for name, al_nh in expected.items():
+        assert find_core(name).al_nh == pytest.approx(al_nh)
+
+
 def test_turns_and_inductance_roundtrip() -> None:
     al = 4.9
     turns = turns_for_inductance(1e-6, al)
@@ -54,6 +77,16 @@ def test_design_from_target_rounds_up() -> None:
     assert 0.0 < design.wire.fill_ratio < 1.0
     assert design.wire_length_m > 0.0
     assert design.saturation_ratio is None  # iron powder
+
+
+@pytest.mark.parametrize("target", [0.5e-6, 1e-6, 2.2e-6, 10e-6])
+def test_turns_are_minimal(target: float) -> None:
+    core = find_core("T50-2")
+    design = design_toroid(core, inductance_h=target)
+    assert design.inductance_h >= target
+    if design.turns > 1:
+        previous = inductance_for_turns(design.turns - 1, core.al_nh)
+        assert previous < target
 
 
 def test_design_from_turns_and_saturation() -> None:

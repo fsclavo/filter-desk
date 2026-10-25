@@ -756,8 +756,9 @@ class _AirCoilPage(QWidget):
         self._resistance = QLabel("-")
 
         note = QLabel(
-            "Close-wound, single layer. Self-capacitance / SRF and Q are not "
-            "modelled; verify the winding at the operating frequency."
+            "Bare wire, perfect close winding, single layer. Insulation/pitch "
+            "lengthen the coil and lower L slightly. Self-capacitance / SRF "
+            "and Q are not modelled; verify at the operating frequency."
         )
         note.setWordWrap(True)
 

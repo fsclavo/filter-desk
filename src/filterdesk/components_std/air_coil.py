@@ -6,8 +6,9 @@ inches)::
     L[uH] = a^2 * N^2 / (9a + 10b)
 
 with ``b = N * d`` (bare wire diameter). The model assumes a single close-wound
-layer and uniform winding; it does **not** model self-capacitance / SRF, AC
-resistance or Q, so treat the result as a starting point for HF work.
+layer of bare wire; enamel thickness and winding pitch lengthen the coil and
+lower L slightly. It does **not** model self-capacitance / SRF, AC resistance or
+Q, so treat the result as a starting point for HF work.
 """
 
 from __future__ import annotations

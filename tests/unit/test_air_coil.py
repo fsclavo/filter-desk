@@ -55,6 +55,37 @@ def test_wire_and_resistance() -> None:
     assert design.resistance_ohm > 0.0
 
 
+def test_awg_diameter_reference() -> None:
+    assert awg_diameter_mm(10) == pytest.approx(2.588, abs=1e-3)
+    assert awg_diameter_mm(24) == pytest.approx(0.511, abs=1e-3)
+    assert awg_diameter_mm(40) == pytest.approx(0.0799, abs=1e-4)
+
+
+def test_wheeler_reference_formula() -> None:
+    turns = 10
+    diameter = 10.0
+    wire = awg_diameter_mm(24)
+    d_in = diameter / 25.4
+    length_in = turns * wire / 25.4
+    expected_u_h = d_in**2 * turns**2 / (18 * d_in + 40 * length_in)
+    got = air_coil_inductance_h(
+        turns, diameter, wire_diameter_mm=wire
+    )
+    assert got == pytest.approx(expected_u_h * 1e-6, rel=1e-12)
+
+
+@pytest.mark.parametrize("target", [0.2e-6, 1e-6, 3.3e-6, 10e-6])
+def test_turns_are_minimal(target: float) -> None:
+    wire = awg_diameter_mm(24)
+    design = design_air_coil(diameter_mm=10.0, awg=24, inductance_h=target)
+    assert design.inductance_h >= target
+    if design.turns > 1:
+        previous = air_coil_inductance_h(
+            design.turns - 1, 10.0, wire_diameter_mm=wire
+        )
+        assert previous < target
+
+
 def test_custom_mm_wire_matches_awg() -> None:
     diameter = awg_diameter_mm(24)
     by_awg = design_air_coil(diameter_mm=10.0, awg=24, turns=10)
