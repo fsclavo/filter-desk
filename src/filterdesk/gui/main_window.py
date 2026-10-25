@@ -46,7 +46,7 @@ from filterdesk.domain.circuit import (
     NonIdealInductor,
 )
 from filterdesk.domain.enums import ElementRole
-from filterdesk.domain.naming import default_filename
+from filterdesk.domain.naming import default_filename, default_stem
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
@@ -99,7 +99,7 @@ from filterdesk.plotting import get_plot_backend
 from filterdesk.services.bands import band_preset_spec, band_sweep
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
-from filterdesk.services.session import DesignSession
+from filterdesk.services.session import DEFAULT_TITLE, DesignSession
 
 
 def _exc_text(exc: BaseException) -> str:
@@ -112,6 +112,16 @@ def _exc_text(exc: BaseException) -> str:
 
 _REPO_URL = "https://github.com/fsclavo/filter-desk"
 _DOCS_URL = f"{_REPO_URL}/blob/main/docs/user-manual.md"
+
+
+def _project_stem(path: str) -> str:
+    """Human-readable project name from a project file path."""
+    name = Path(path).name
+    for suffix in (".filterdesk.json", ".fdsk.json", ".json"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
 
 _INSERT_CHOICES: tuple[tuple[str, ElementRole, str], ...] = (
     ("Series inductor", ElementRole.SERIES, "L"),
@@ -285,6 +295,9 @@ class MainWindow(QMainWindow):
 
     def _build_menus(self) -> None:
         file_menu = self.menuBar().addMenu("&File")
+        act_new = QAction("&New", self)
+        act_new.setShortcut(QKeySequence.StandardKey.New)
+        act_new.triggered.connect(self._new_project)
         act_open = QAction("&Open…", self)
         act_open.setShortcut(QKeySequence.StandardKey.Open)
         act_open.triggered.connect(self._open_project)
@@ -293,6 +306,8 @@ class MainWindow(QMainWindow):
         act_save.triggered.connect(self._save_project)
         act_save_as = QAction("Save &As…", self)
         act_save_as.triggered.connect(self._save_project_as)
+        act_rename = QAction("&Rename project…", self)
+        act_rename.triggered.connect(self._rename_project)
         act_import_ts = QAction("&Import Touchstone…", self)
         act_import_ts.triggered.connect(self._import_touchstone)
         act_export_smith = QAction("Export &Smith chart…", self)
@@ -310,9 +325,11 @@ class MainWindow(QMainWindow):
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
+        file_menu.addAction(act_new)
         file_menu.addAction(act_open)
         file_menu.addAction(act_save)
         file_menu.addAction(act_save_as)
+        file_menu.addAction(act_rename)
         file_menu.addSeparator()
         import_menu = file_menu.addMenu("&Import")
         import_menu.addAction(act_import_ts)
@@ -408,6 +425,9 @@ class MainWindow(QMainWindow):
         help_menu.addAction(act_docs)
 
     def _load_session_into_ui(self) -> None:
+        # Populating the widgets emits ``spec_changed``; keep the session's
+        # unsaved flag as-is (e.g. a freshly opened project is not dirty).
+        was_dirty = self._session.dirty
         self._selected_element = None
         self._spec.set_spec(self._session.spec)
         assert self._session.sweep is not None
@@ -426,6 +446,7 @@ class MainWindow(QMainWindow):
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
+        self._session.dirty = was_dirty
         self._update_title()
 
     @staticmethod
@@ -442,10 +463,25 @@ class MainWindow(QMainWindow):
         self._session.dirty = True
         self._update_title()
 
+    def _display_name(self) -> str:
+        """Project name shown in the window title (title, else file name)."""
+        title = self._session.title.strip()
+        if title and title != DEFAULT_TITLE:
+            return title
+        if self._session.path:
+            return _project_stem(self._session.path)
+        return DEFAULT_TITLE
+
     def _update_title(self) -> None:
         dirty = "*" if self._session.dirty else ""
-        path = self._session.path or "unsaved"
-        self.setWindowTitle(f"FilterDesk — {self._session.title}{dirty} — {path}")
+        self.setWindowTitle(f"FilterDesk — {self._display_name()}{dirty}")
+
+    def _export_title(self) -> str:
+        """Title for exported files: project name, else a spec-derived fallback."""
+        title = self._session.title.strip()
+        if title and title != DEFAULT_TITLE:
+            return title
+        return default_stem(self._session.spec)
 
     def _apply_spec_and_sweep_from_ui(self) -> None:
         spec = self._spec.build_spec()
@@ -1386,6 +1422,39 @@ class MainWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Open failed", _exc_text(exc))
 
+    def _new_project(self) -> None:
+        if self._session.dirty:
+            answer = QMessageBox.question(
+                self,
+                "New project",
+                "Discard the current unsaved changes?",
+                QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            )
+            if answer != QMessageBox.StandardButton.Discard:
+                return
+        self._session = DesignSession()
+        self._undo.clear()
+        self._session.synthesize_and_analyze()
+        self._load_session_into_ui()
+
+    def _rename_project(self) -> None:
+        current = self._session.title.strip()
+        if not current or current == DEFAULT_TITLE:
+            current = default_stem(self._session.spec)
+        text, ok = QInputDialog.getText(
+            self, "Rename project", "Project name:", text=current
+        )
+        if not ok:
+            return
+        text = text.strip()
+        if not text:
+            return
+        self._session.title = text
+        self._session.dirty = True
+        self._update_title()
+
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
@@ -1432,6 +1501,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
             return
         try:
+            if self._session.title.strip() in ("", DEFAULT_TITLE):
+                self._session.title = _project_stem(str(path))
             save_project(self._session.to_project(), path)
             self._session.path = str(path)
             self._session.dirty = False
@@ -1607,7 +1678,7 @@ class MainWindow(QMainWindow):
             write_spice_netlist(
                 circuit,
                 path,
-                title=self._session.title,
+                title=self._export_title(),
                 ac=self._session.sweep,
             )
             self._status.setText(f"Wrote {path}")
@@ -1635,7 +1706,7 @@ class MainWindow(QMainWindow):
             write_ltspice_asc(
                 circuit,
                 path,
-                title=self._session.title,
+                title=self._export_title(),
                 ac=self._session.sweep,
             )
             self._status.setText(f"Wrote {path}")
@@ -1661,7 +1732,7 @@ class MainWindow(QMainWindow):
             path += ".sch"
         try:
             write_qucs_schematic(
-                circuit, path, title=self._session.title
+                circuit, path, title=self._export_title()
             )
             self._status.setText(f"Wrote {path}")
         except Exception as exc:  # noqa: BLE001

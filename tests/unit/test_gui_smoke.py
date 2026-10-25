@@ -27,6 +27,124 @@ def test_main_window_constructs() -> None:
     assert app is not None
 
 
+def test_window_title_uses_neutral_default() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    window = MainWindow(session, auto_run=False)
+    assert "Milestone" not in window.windowTitle()
+    assert "Untitled" in window.windowTitle()
+    assert "unsaved" not in window.windowTitle()
+    window.close()
+    assert app is not None
+
+
+def test_write_project_names_from_filename(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    window = MainWindow(session, auto_run=False)
+    path = tmp_path / "myfilter.filterdesk.json"
+    window._write_project(path)
+    assert session.title == "myfilter"
+    assert "myfilter" in window.windowTitle()
+    assert path.exists()
+    window.close()
+    assert app is not None
+
+
+def test_open_project_is_not_dirty(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.io.native import load_project, save_project
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    source = DesignSession()
+    source.synthesize_and_analyze()
+    path = tmp_path / "saved.filterdesk.json"
+    save_project(source.to_project(), path)
+
+    window = MainWindow(DesignSession(), auto_run=False)
+    window._session.load_project(load_project(path), path=str(path))
+    window._load_session_into_ui()
+    assert window._session.dirty is False
+    assert "*" not in window.windowTitle()
+    window.close()
+    assert app is not None
+
+
+def test_rename_project_updates_title(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(
+        mw.QInputDialog, "getText", lambda *a, **k: ("My Filter", True)
+    )
+    window._rename_project()
+    assert session.title == "My Filter"
+    assert "My Filter" in window.windowTitle()
+    window.close()
+    assert app is not None
+
+
+def test_export_title_falls_back_to_spec() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    assert session.title == "Untitled"
+    window = MainWindow(session, auto_run=False)
+    assert window._export_title().startswith("cheby1")
+    session.title = "Custom"
+    assert window._export_title() == "Custom"
+    window.close()
+    assert app is not None
+
+
+def test_new_project_resets_title_and_path() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    session.title = "Old"
+    session.path = "/tmp/old.filterdesk.json"
+    session.dirty = False  # skip the discard confirmation
+    window = MainWindow(session, auto_run=False)
+    window._new_project()
+    assert window._session is not session
+    assert window._session.title == "Untitled"
+    assert window._session.path is None
+    assert "Untitled" in window.windowTitle()
+    window.close()
+    assert app is not None
+
+
 def test_schematic_context_menu_emits_on_right_click() -> None:
     from PySide6.QtCore import Qt
     from PySide6.QtTest import QTest

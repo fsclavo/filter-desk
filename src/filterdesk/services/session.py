@@ -77,6 +77,12 @@ from filterdesk.services.retune import (
 )
 from filterdesk.synthesis import synthesize
 
+#: Neutral project title used until the user names/saves the document.
+DEFAULT_TITLE = "Untitled"
+
+#: Old hard-coded default; normalised to :data:`DEFAULT_TITLE` on load.
+_LEGACY_TITLES = frozenset({"Milestone Chebyshev HP"})
+
 
 def _base_element_id(ref: str) -> str:
     for suffix in (".Ls", ".Cs", ".Lp", ".Cp", ".L", ".C"):
@@ -165,7 +171,7 @@ class DesignSession:
     backend: str = "abcd"
     dirty: bool = False
     path: str | None = None
-    title: str = "Milestone Chebyshev HP"
+    title: str = DEFAULT_TITLE
     markers: list[Marker] = field(default_factory=list)
     limits: list[LimitRegion] = field(default_factory=list)
     measured: AnalysisResult | None = None
@@ -613,7 +619,9 @@ class DesignSession:
         self.prototype = None
         self.analysis = None
         self.sweep = project.sweep or default_sweep_for_spec(self.spec)
-        self.title = project.metadata.title or "Untitled"
+        self.title = project.metadata.title or DEFAULT_TITLE
+        if self.title in _LEGACY_TITLES:
+            self.title = DEFAULT_TITLE
         self.path = path
         self.dirty = False
         ext = project.extensions or {}

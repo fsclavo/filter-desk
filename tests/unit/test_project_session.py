@@ -6,9 +6,24 @@ from pathlib import Path
 
 import pytest
 
+from filterdesk.domain.project import ProjectMetadata
 from filterdesk.io.native import load_project, save_project
 from filterdesk.montecarlo import ToleranceDistribution
 from filterdesk.services.session import DesignSession
+
+
+def test_default_title_is_neutral() -> None:
+    assert DesignSession().title == "Untitled"
+
+
+def test_legacy_milestone_title_is_normalised() -> None:
+    session = DesignSession()
+    session.synthesize()
+    project = session.to_project()
+    project.metadata = ProjectMetadata(title="Milestone Chebyshev HP")
+    restored = DesignSession()
+    restored.load_project(project)
+    assert restored.title == "Untitled"
 
 
 def test_session_synthesize_analyze() -> None:

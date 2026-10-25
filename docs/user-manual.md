@@ -191,8 +191,9 @@ The **toolbar** holds **Synthesize**, **Analyze**, **Tune +** (`Ctrl+]`),
 Frequency**, **N**). The **status bar** at the bottom reports progress, results,
 and errors.
 
-The window title shows `FilterDesk — <title>* — <path>`, where `*` marks unsaved
-changes.
+The window title shows `FilterDesk — <name>`, where `*` marks unsaved changes.
+The name is the project title (see **File → Rename project…**) or, until you
+name it, the saved file name or `Untitled`.
 
 ### Specification panel
 
@@ -356,8 +357,10 @@ the overlay with **View → Show measured overlay**.
 
 | Action | Menu | Shortcut | Format |
 | --- | --- | --- | --- |
+| New project | File → New | `Ctrl+N` | — |
 | Open project | File → Open… | `Ctrl+O` | `.filterdesk.json` |
 | Save / Save As | File → Save / Save As… | `Ctrl+S` | `.filterdesk.json` |
+| Rename project | File → Rename project… | — | — |
 | Import measured | File → Import → Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
 | Export Smith chart | File → Export → Smith chart… | — | `.png`/`.svg`/`.pdf` |
 | Export CSV | File → Export → CSV… | — | `.csv` |
