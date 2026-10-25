@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QSpinBox,
     QStackedWidget,
     QTableWidget,
@@ -46,12 +47,18 @@ from filterdesk.components_std.toroid import (
     ToroidError,
     awg_diameter_mm,
 )
+from filterdesk.domain.circuit import IdealInductor, NonIdealInductor
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import ALL_PRESETS, Band, BandKind
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
+from filterdesk.services.inductor_realization import (
+    InductorRealizationError,
+    realize_from_air_design,
+    realize_from_toroid_design,
+)
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -676,6 +683,16 @@ class _ToroidPage(QWidget):
     def current_design(self) -> ToroidDesign | None:
         return self._design_value
 
+    def set_target_inductance(self, value_h: float) -> None:
+        self._l.setText(format_engineering(value_h, "H", digits=6))
+        self._recompute()
+
+    def current_a(self) -> float:
+        try:
+            return float(self._current.text().strip() or "0")
+        except ValueError:
+            return 0.0
+
     def _recompute(self) -> None:
         core = self.selected_core()
         turns = int(self._turns.value())
@@ -803,6 +820,10 @@ class _AirCoilPage(QWidget):
     def current_design(self) -> AirCoilDesign | None:
         return self._design_value
 
+    def set_target_inductance(self, value_h: float) -> None:
+        self._l.setText(format_engineering(value_h, "H", digits=6))
+        self._recompute()
+
     def _on_wire_mode(self, index: int) -> None:
         self._wire_stack.setCurrentIndex(index)
         if index == 1:
@@ -896,20 +917,71 @@ class _AirCoilPage(QWidget):
 class CoilCalculatorDialog(QDialog):
     """Coil calculators: toroid (AL) and single-layer air-core (Wheeler)."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        element: IdealInductor | NonIdealInductor | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Coil calculator")
         self.toroid = _ToroidPage(self)
         self.air_core = _AirCoilPage(self)
-        tabs = QTabWidget(self)
-        tabs.addTab(self.toroid, "Toroid")
-        tabs.addTab(self.air_core, "Air-core")
+        self._element = element
+        self._realized: NonIdealInductor | None = None
+        if element is not None:
+            self.toroid.set_target_inductance(element.value_h)
+            self.air_core.set_target_inductance(element.value_h)
+        self._tabs = QTabWidget(self)
+        self._tabs.addTab(self.toroid, "Toroid")
+        self._tabs.addTab(self.air_core, "Air-core")
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        if element is not None:
+            apply = buttons.addButton(
+                "Apply to selected inductor",
+                QDialogButtonBox.ButtonRole.ActionRole,
+            )
+            apply.clicked.connect(self._on_apply)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         layout = QVBoxLayout(self)
-        layout.addWidget(tabs)
+        layout.addWidget(self._tabs)
         layout.addWidget(buttons)
+
+    def _on_apply(self) -> None:
+        element = self._element
+        if element is None:
+            return
+        if self._tabs.currentIndex() == 0:
+            toroid = self.toroid.current_design()
+            if toroid is None:
+                return
+            try:
+                realization = realize_from_toroid_design(
+                    element, toroid, current_a=self.toroid.current_a()
+                )
+            except (InductorRealizationError, ValueError) as exc:
+                QMessageBox.warning(self, "Realize inductor", str(exc))
+                return
+        else:
+            air = self.air_core.current_design()
+            if air is None:
+                return
+            try:
+                realization = realize_from_air_design(element, air)
+            except (InductorRealizationError, ValueError) as exc:
+                QMessageBox.warning(self, "Realize inductor", str(exc))
+                return
+        self._realized = realization.element
+        if realization.notes:
+            QMessageBox.information(
+                self, "Winding notes", "\n".join(realization.notes)
+            )
+        self.accept()
+
+    def realized_element(self) -> NonIdealInductor | None:
+        """The realized inductor, when the user applied a winding."""
+        return self._realized
 
 
 class SensitivityDialog(QDialog):

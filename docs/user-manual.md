@@ -432,7 +432,9 @@ Most commands accept `--json` for machine-readable output.
 - **`analyze`** — synthesize (unless already specified) and analyze; export
   results. Options include `--f-start`, `--f-stop`, `--points`, `--spacing`,
   `--backend {abcd,skrf}`, non-ideal flags (`--inductor-q`, `--q-frequency`,
-  `--inductor-dcr`, `--inductor-cpar`, `--capacitor-esr`, `--capacitor-esl`),
+  `--inductor-dcr`, `--inductor-cpar`, `--inductor-srf`,
+  `--inductor-loss-model {constant,dc_skin}`, `--inductor-dc-current`,
+  `--inductor-i-sat`, `--capacitor-esr`, `--capacitor-esl`),
   power stress (`--power W`), the harmonic readout (`--harmonics`,
   `--harmonics-f0 F`), and exporters `--export-s2p`, `--export-smith`,
   `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`,
@@ -657,6 +659,16 @@ the target is also shown, because air-core turn steps are coarse.
 It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
 drops for very short coils (`length/diameter < 0.2`, flagged in the result).
 
+When opened with an inductor selected in the schematic/table, the calculator
+shows an **Apply to selected inductor** button: it turns the ideal value into the
+physical winding (achieved L, DCR from the wire, core/turns/gauge provenance) and
+installs it in the circuit as an undoable edit. Applying a toroid also derives a
+saturation current (`I_sat = Bsat·N·Ae/L`) so the analysis can derate the
+inductance for a DC bias. The model is described in
+[ADR-016](adr/ADR-016-inductor-model.md): Q may be entered at a reference
+frequency, `srf_hz` sets the parallel resonance, and the optional `dc_skin` loss
+model makes the resistance rise with `sqrt(f)`.
+
 ---
 
 ## 12. Approximation families reference
@@ -733,9 +745,13 @@ happens in the background and reports progress in the status bar.
   transformers, and coupled inductors are not implemented.
 - **Asymmetric impedances** are handled by geometric-mean scaling
   (`√(Zs·Zl)`), an approximation; strongly unequal ports introduce error.
-- **Even-order elliptic/Chebyshev II** synthesis uses an equal-termination fit
-  with documented approximations.
+- **Even-order elliptic** is rejected (it needs a transformer or unequal
+  terminations); **even-order Chebyshev I** uses a modified equal-termination
+  prototype (see §12).
 - **Order caps** apply to some families (Bessel/Gaussian 1–10, Legendre 2–9).
+- **Real-inductor model is approximate**: `dc_skin` is a simple `sqrt(f)` law, DC
+  bias uses a core-agnostic `1/(1+(I/Isat)²)` derating, and air-core coils do not
+  model SRF/Q (see [ADR-016](adr/ADR-016-inductor-model.md)).
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

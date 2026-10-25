@@ -20,8 +20,10 @@ image.
 - **Analysis** with magnitude, S12/S22, phase, VSWR, group delay, impedance, and
   Smith-chart views, using a fast ladder backend (`abcd`) or a `scikit-rf`
   cross-check.
-- **Real-world effects**: finite inductor Q, DCR, capacitor ESL/ESR, and parasitic
-  capacitance.
+- **Real-world effects**: finite inductor Q, DCR, self-resonance, DC-bias
+  derating, capacitor ESL/ESR, and parasitic capacitance.
+- **Toroid / air-core realization**: turn a synthesized inductor into a physical
+  winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **E-series snapping** (IEC 60063 E6–E96) to turn ideal values into real parts.
 - **Tolerance analysis**: per-component tolerances and a Monte-Carlo envelope
   with yield estimates.

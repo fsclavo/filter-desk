@@ -1680,3 +1680,30 @@ def test_design_sweep_dialogs() -> None:
     assert spec is not None and spec.order == 5
     result.close()
     assert app is not None
+
+
+def test_coil_calculator_apply_realizes_inductor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication, QMessageBox
+
+    from filterdesk.domain.circuit import IdealInductor
+    from filterdesk.domain.enums import ElementRole
+    from filterdesk.gui.widgets import CoilCalculatorDialog
+
+    app = QApplication.instance() or QApplication([])
+    element = IdealInductor("L1", 1e-6, "in", "out", ElementRole.SERIES)
+    dialog = CoilCalculatorDialog(element=element)
+    assert dialog.toroid.current_design() is not None
+    monkeypatch.setattr(
+        QMessageBox,
+        "information",
+        lambda *a, **k: QMessageBox.StandardButton.Ok,
+    )
+    dialog._on_apply()
+    realized = dialog.realized_element()
+    assert realized is not None
+    assert realized.winding is not None
+    assert realized.winding.kind == "toroid"
+    dialog.close()
+    assert app is not None

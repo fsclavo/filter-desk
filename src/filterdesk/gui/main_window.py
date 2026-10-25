@@ -758,7 +758,25 @@ class MainWindow(QMainWindow):
         return IdealCapacitor(id="X", value_f=value, node_a="", node_b="", role=role)
 
     def _run_coil_calculator(self) -> None:
-        CoilCalculatorDialog(self).exec()
+        element = self._selected_element_obj()
+        selected = (
+            element
+            if isinstance(element, (IdealInductor, NonIdealInductor))
+            else None
+        )
+        dialog = CoilCalculatorDialog(self, element=selected)
+        dialog.exec()
+        realized = dialog.realized_element()
+        if realized is None or self._session.circuit is None:
+            return
+        elements = [
+            realized if el.id == realized.id else el
+            for el in self._session.circuit.elements
+        ]
+        new_circuit = replace(self._session.circuit, elements=elements)
+        self._push_circuit_edit(new_circuit, f"Realize {realized.id}")
+        self._status.setText(f"Realized {realized.id} as a physical winding")
+        self._run_analyze()
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:

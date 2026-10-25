@@ -12,5 +12,9 @@
 | [008](ADR-008-dataclasses-not-pydantic.md) | dataclasses, not Pydantic | Accepted |
 | [009](ADR-009-milestone-topology-series-c-hp.md) | Milestone HP topology | Accepted |
 | [010](ADR-010-bp-bs-frequency-definition.md) | BP/BS \(f_0\), BW | Accepted |
+| [011](ADR-011-asymmetric-z-geometric-mean.md) | Asymmetric Z via geometric mean | Accepted |
 | [012](ADR-012-phase5-families.md) | Phase 5 families (Bessel/Gaussian/Legendre; 5b zeros) | Accepted |
 | [013](ADR-013-phase5b-finite-zeros.md) | Phase 5b Cheby II / elliptic / K-m | Accepted |
+| [014](ADR-014-p1-debt-closure.md) | P1 debt closure (skrf unequal Z, order estimate, PlotBackend) | Accepted |
+| [015](ADR-015-cross-cutting-decisions.md) | Cross-cutting decisions (layers, file extension, pytest-qt) | Accepted |
+| [016](ADR-016-inductor-model.md) | Real inductor model (Q(f), SRF, DC bias, winding) | Accepted |
