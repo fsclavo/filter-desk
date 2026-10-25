@@ -1562,6 +1562,7 @@ def test_coil_calculator_air_core_live_values() -> None:
     app = QApplication.instance() or QApplication([])
     dialog = CoilCalculatorDialog()
     page = dialog.air_core
+    assert page._wire_stack.currentWidget() is page._awg
     page._diameter.setText("10")
     page._awg.setValue(24)
     page._l.setText("1u")
@@ -1584,14 +1585,20 @@ def test_coil_calculator_air_core_live_values() -> None:
     assert "bare" in page._wire_info.text()
 
     page._wire_mode.setCurrentIndex(1)
-    page._wire_mm.setText("0.800")
+    assert page._wire_stack.currentIndex() == 1
+    assert page._wire_stack.currentWidget() is page._wire_mm
+    page._wire_mm.setText("0.500")
     page._turns.setValue(0)
     page._l.setText("1u")
     page._recompute()
     design = page.current_design()
     assert design is not None
-    assert design.wire_diameter_mm == pytest.approx(0.8)
-    assert "0.800 mm" in page._wire_info.text()
+    assert design.wire_diameter_mm == pytest.approx(0.5)
+    assert "0.500 mm" in page._wire_info.text()
+
+    page._wire_mode.setCurrentIndex(0)
+    assert page._wire_stack.currentIndex() == 0
+    assert page._wire_stack.currentWidget() is page._awg
 
     page._turns.setValue(5)
     design = page.current_design()

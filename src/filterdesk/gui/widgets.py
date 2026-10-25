@@ -797,6 +797,7 @@ class _AirCoilPage(QWidget):
         return self._design_value
 
     def _on_wire_mode(self, index: int) -> None:
+        self._wire_stack.setCurrentIndex(index)
         if index == 1:
             self._wire_mm.setText(
                 f"{awg_diameter_mm(int(self._awg.value())):.3f}"
