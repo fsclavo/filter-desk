@@ -26,8 +26,13 @@ def pytest_sessionfinish(session: object, exitstatus: int) -> None:
 def pytest_unconfigure(config: object) -> None:
     """Hard-exit after pytest's summary to avoid a nondeterministic PySide6 /
     pyqtgraph shutdown crash (SIGSEGV/abort at interpreter exit) that would fail an
-    otherwise-green CI run with code 139/134."""
+    otherwise-green CI run with code 139/134.
+
+    Only on Linux: on Windows this hard-exit itself triggers an access violation.
+    """
     del config
+    if not sys.platform.startswith("linux"):
+        return
     try:
         sys.stdout.flush()
         sys.stderr.flush()

@@ -188,7 +188,9 @@ def _fit_even_arms(order: int, ripple_db: float) -> tuple[NormalizedArm, ...] | 
         return _arms_from_values([float(v) for v in values])
 
     def residuals(x: np.ndarray) -> np.ndarray:
-        return _ladder_s21_db(expand(np.maximum(x, 1e-7)), ws) - target
+        return np.asarray(
+            _ladder_s21_db(expand(np.maximum(x, 1e-7)), ws) - target, dtype=float
+        )
 
     lo = np.full(half, 1e-3)
     hi = np.full(half, 60.0)

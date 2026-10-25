@@ -267,7 +267,7 @@ def _refine_positive_arms(
 
     def residuals(x: np.ndarray) -> np.ndarray:
         arms = _pack_series_first(np.maximum(x, 1e-9), tz_order)
-        return _ladder_s21_db_vec(arms, ws) - target
+        return np.asarray(_ladder_s21_db_vec(arms, ws) - target, dtype=float)
 
     starts: list[np.ndarray] = [
         np.maximum(x_seed, 1e-4),
