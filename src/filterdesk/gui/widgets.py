@@ -25,8 +25,11 @@ from filterdesk.components_std import (
     SnapStrategy,
     design_attenuator,
     design_matching,
+    design_toroid,
     inductor_resistance_ohm_from_q,
+    list_cores,
 )
+from filterdesk.components_std.toroid import ToroidCore, ToroidDesign, ToroidError
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
@@ -598,3 +601,116 @@ class MatchingDialog(QDialog):
             return dialog.result_tuple()
         except (MatchingError, ValueError):
             return None
+
+
+class ToroidDialog(QDialog):
+    """Toroid turn / wire / saturation calculator with live results."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Toroid calculator")
+        self._cores: tuple[ToroidCore, ...] = list_cores()
+        self._design_value: ToroidDesign | None = None
+
+        self._core = QComboBox()
+        for core in self._cores:
+            self._core.addItem(
+                f"{core.name} - mix {core.material} "
+                f"({core.kind.replace('_', ' ')}, {core.color}), "
+                f"AL {core.al_nh:g} nH/N^2"
+            )
+        self._l = EngineeringLineEdit()
+        self._l.setText("1u")
+        self._turns = QSpinBox()
+        self._turns.setRange(0, 999)
+        self._turns.setSpecialValueText("auto (from L)")
+        self._current = EngineeringLineEdit()
+        self._current.setText("0")
+        self._turns_exact = QLabel("-")
+        self._turns_used = QLabel("-")
+        self._l_achieved = QLabel("-")
+        self._wire = QLabel("-")
+        self._length = QLabel("-")
+        self._flux = QLabel("-")
+        self._sat = QLabel("-")
+
+        form = QFormLayout(self)
+        form.addRow("Core", self._core)
+        form.addRow("Target L", self._l)
+        form.addRow("Turns (0 = auto)", self._turns)
+        form.addRow("Peak current (A)", self._current)
+        form.addRow("Exact turns", self._turns_exact)
+        form.addRow("Use turns", self._turns_used)
+        form.addRow("Achieved L", self._l_achieved)
+        form.addRow("Wire", self._wire)
+        form.addRow("Wire length", self._length)
+        form.addRow("Peak flux", self._flux)
+        form.addRow("Saturation", self._sat)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
+
+        self._core.currentIndexChanged.connect(self._recompute)
+        self._l.editingFinished.connect(self._recompute)
+        self._turns.valueChanged.connect(self._recompute)
+        self._current.editingFinished.connect(self._recompute)
+        self._recompute()
+
+    def selected_core(self) -> ToroidCore:
+        return self._cores[self._core.currentIndex()]
+
+    def current_design(self) -> ToroidDesign | None:
+        return self._design_value
+
+    def _recompute(self) -> None:
+        core = self.selected_core()
+        turns = int(self._turns.value())
+        try:
+            current = float(self._current.text().strip() or "0")
+            if turns > 0:
+                design = design_toroid(core, turns=turns, current_a=current)
+            else:
+                target = parse_si(self._l.text().strip() or "0")
+                design = design_toroid(core, inductance_h=target, current_a=current)
+        except (ToroidError, ValueError):
+            self._design_value = None
+            for label in (
+                self._turns_exact,
+                self._turns_used,
+                self._l_achieved,
+                self._wire,
+                self._length,
+                self._flux,
+                self._sat,
+            ):
+                label.setText("-")
+            return
+
+        self._design_value = design
+        self._turns_exact.setText(f"{design.turns_exact:.2f}")
+        self._turns_used.setText(str(design.turns))
+        self._l_achieved.setText(
+            format_engineering(design.inductance_h, "H", digits=6)
+        )
+        if design.wire.fits:
+            self._wire.setText(
+                f"AWG {design.wire.awg} ({design.wire.diameter_mm:.3f} mm), "
+                f"max {design.wire.max_diameter_mm:.3f} mm"
+            )
+        else:
+            self._wire.setText(
+                f"does not fit (max {design.wire.max_diameter_mm:.3f} mm)"
+            )
+        self._length.setText(f"{design.wire_length_m:.3f} m")
+        if design.flux_density_t is None:
+            self._flux.setText("-")
+            self._sat.setText("-")
+        else:
+            self._flux.setText(f"{design.flux_density_t * 1000.0:.1f} mT")
+            if design.saturation_ratio is None:
+                self._sat.setText("n/a (iron powder)")
+            else:
+                flag = "  SATURATED" if design.saturated else ""
+                self._sat.setText(f"B/Bsat = {design.saturation_ratio:.2f}{flag}")

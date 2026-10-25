@@ -272,6 +272,7 @@ specification edits require an explicit **Synthesize**.
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
+| **Toroid calculator** | **Design → Toroid calculator…** | turns from a target L (or fixed turns), wire gauge, wire length and flux/saturation |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -475,6 +476,18 @@ Most commands accept `--json` for machine-readable output.
   ```bash
   filterdesk compare out.s2p measured.s2p
   ```
+- **`bands`** — list the amateur/broadcast band presets.
+- **`attenuator`** — symmetric T/Pi pad (`--db`, `--z0`, `--kind`, `--json`).
+- **`match`** — L/Pi/T match to a complex load (`--z0`, `--rl`, `--xl`, `--f`,
+  `--topology`, `--q`, `--json`).
+- **`toroid`** — toroid turns/wire/saturation. Use `--core NAME` (or `--al AL`
+  plus optional `--od/--id/--height/--bsat`) with either `--inductance` or
+  `--turns`; add `--current A` for flux density, `--list` to show the cores, and
+  `--json` for machine output.
+  ```bash
+  filterdesk toroid --core T50-2 --inductance 1u --current 1
+  filterdesk toroid --core FT50-43 --turns 5 --current 0.5 --json
+  ```
 
 ---
 
@@ -571,6 +584,23 @@ Brune `Ls/Cs/Lp/Cp`). The format follows the extension:
 
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.
+
+### Toroid calculator
+
+**Design → Toroid calculator…** (or `filterdesk toroid`) computes windings from
+`L = AL * N^2`, with AL in nH/N². The built-in table covers common Amidon
+iron-powder cores (mixes 2, 6, 10) and ferrite 43; `--al`/`--od`/`--id`/
+`--height` accept a custom core. With a target inductance the turn count is
+rounded **up**, so the achieved L is at least the requested value. The tool also
+reports:
+
+- the thickest **AWG** that fits a single layer through the inner diameter
+  (85 % fill), with the estimated wire length;
+- peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores.
+
+AL spread is typically ±20–25 %, `A_e` is derived geometrically from the catalog
+dimensions (coating ignored), and iron-powder cores do not show a Bsat check.
+Treat the result as a starting point and verify against the core datasheet.
 
 ---
 

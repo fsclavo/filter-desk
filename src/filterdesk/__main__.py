@@ -32,8 +32,13 @@ from filterdesk.components_std import (
     MatchingTopology,
     SnapReport,
     SnapStrategy,
+    ToroidError,
     design_attenuator,
     design_matching,
+    design_toroid,
+    find_core,
+    list_cores,
+    make_custom_core,
     nonidealize_circuit,
     snap_circuit,
 )
@@ -296,6 +301,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Loaded Q (Pi/T only; defaults above the minimum)",
     )
     match.add_argument("--json", action="store_true", help="Emit JSON")
+
+    tor = sub.add_parser(
+        "toroid",
+        help="Toroid turns / wire / saturation calculator",
+    )
+    tor.add_argument(
+        "--core",
+        default=None,
+        help="Built-in core name (e.g. T50-2); use --list to see the table",
+    )
+    tor.add_argument("--al", default=None, help="Custom core AL in nH/N^2")
+    tor.add_argument("--od", default=None, help="Custom core outer diameter (mm)")
+    tor.add_argument("--id", default=None, help="Custom core inner diameter (mm)")
+    tor.add_argument("--height", default=None, help="Custom core height (mm)")
+    tor.add_argument("--bsat", type=float, default=None, help="Custom core Bsat (T)")
+    tor.add_argument(
+        "--inductance", default=None, help="Target inductance, e.g. 1u"
+    )
+    tor.add_argument(
+        "--turns", type=int, default=None, help="Turn count (instead of a target L)"
+    )
+    tor.add_argument(
+        "--current",
+        type=float,
+        default=0.0,
+        help="Peak current (A) for the flux-density estimate",
+    )
+    tor.add_argument("--list", action="store_true", help="List built-in cores")
+    tor.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -1338,6 +1372,119 @@ def main(argv: list[str] | None = None) -> int:
                 f"{format_engineering(preset.high_hz, 'Hz', digits=4)}  "
                 f"(center {format_engineering(preset.center_hz, 'Hz', digits=4)})"
             )
+        return 0
+
+    if args.command == "toroid":
+        if args.list:
+            for core in list_cores():
+                print(
+                    f"  {core.name:9s} {core.kind:11s} mix {core.material:>2s}  "
+                    f"AL={core.al_nh:6.1f} nH/N^2  "
+                    f"{core.od_mm:6.2f} x {core.id_mm:6.2f} x "
+                    f"{core.height_mm:5.2f} mm"
+                )
+            return 0
+        try:
+            if args.core is not None:
+                core = find_core(str(args.core))
+            elif args.al is not None:
+                core = make_custom_core(
+                    "custom",
+                    float(args.al),
+                    od_mm=float(args.od or 0.0),
+                    id_mm=float(args.id or 0.0),
+                    height_mm=float(args.height or 0.0),
+                    bsat_t=args.bsat,
+                )
+            else:
+                print(
+                    "error: supply --core NAME or --al AL (or --list)",
+                    file=sys.stderr,
+                )
+                return 2
+            toroid = design_toroid(
+                core,
+                inductance_h=(
+                    parse_si(str(args.inductance))
+                    if args.inductance is not None
+                    else None
+                ),
+                turns=args.turns,
+                current_a=float(args.current),
+            )
+        except (ToroidError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "core": {
+                            "name": core.name,
+                            "kind": core.kind,
+                            "material": core.material,
+                            "color": core.color,
+                            "al_nh": core.al_nh,
+                            "od_mm": core.od_mm,
+                            "id_mm": core.id_mm,
+                            "height_mm": core.height_mm,
+                            "ae_mm2": core.ae_mm2,
+                            "bsat_t": core.bsat_t,
+                        },
+                        "turns_exact": toroid.turns_exact,
+                        "turns": toroid.turns,
+                        "inductance_h": toroid.inductance_h,
+                        "target_inductance_h": toroid.target_inductance_h,
+                        "wire": {
+                            "fits": toroid.wire.fits,
+                            "awg": toroid.wire.awg,
+                            "diameter_mm": toroid.wire.diameter_mm,
+                            "max_diameter_mm": toroid.wire.max_diameter_mm,
+                            "fill_ratio": toroid.wire.fill_ratio,
+                        },
+                        "wire_length_m": toroid.wire_length_m,
+                        "flux_density_t": toroid.flux_density_t,
+                        "saturation_ratio": toroid.saturation_ratio,
+                        "saturated": toroid.saturated,
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+
+        print(
+            f"{core.name}  ({core.kind}, mix {core.material}, "
+            f"AL={core.al_nh:g} nH/N^2)"
+        )
+        if toroid.target_inductance_h is not None:
+            print(
+                "  Target L = "
+                f"{format_engineering(toroid.target_inductance_h, 'H', digits=4)}"
+            )
+        print(f"  Turns: {toroid.turns_exact:.2f} -> {toroid.turns}")
+        print(
+            f"  L = {format_engineering(toroid.inductance_h, 'H', digits=6)}"
+        )
+        if toroid.wire.fits:
+            print(
+                f"  Wire: AWG {toroid.wire.awg} "
+                f"({toroid.wire.diameter_mm:.3f} mm), "
+                f"max {toroid.wire.max_diameter_mm:.3f} mm, "
+                f"fill {(toroid.wire.fill_ratio or 0.0) * 100:.0f}%"
+            )
+        else:
+            print(
+                "  Wire: does not fit in one layer "
+                f"(max {toroid.wire.max_diameter_mm:.3f} mm)"
+            )
+        if toroid.wire_length_m > 0.0:
+            print(f"  Wire length ~ {toroid.wire_length_m:.3f} m")
+        if toroid.flux_density_t is not None:
+            print(f"  Bpk = {toroid.flux_density_t * 1000.0:.1f} mT")
+            if toroid.saturation_ratio is not None:
+                flag = "  SATURATED" if toroid.saturated else ""
+                print(f"  B/Bsat = {toroid.saturation_ratio:.2f}{flag}")
         return 0
 
     if args.command == "attenuator":

@@ -1524,3 +1524,30 @@ def test_main_window_export_build_sheet_filter_overrides_suffix(
     assert out.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
     window.close()
     assert app is not None
+
+
+def test_toroid_dialog_live_values() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import ToroidDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = ToroidDialog()
+    names = [core.name for core in dialog._cores]
+    dialog._core.setCurrentIndex(names.index("T50-2"))
+    dialog._l.setText("1u")
+    dialog._current.setText("1")
+    dialog._recompute()
+
+    design = dialog.current_design()
+    assert design is not None
+    assert design.core.name == "T50-2"
+    assert design.turns == 15
+    assert "AWG 16" in dialog._wire.text()
+    assert "n/a (iron powder)" in dialog._sat.text()
+
+    dialog._turns.setValue(10)
+    design = dialog.current_design()
+    assert design is not None and design.turns == 10
+    dialog.close()
+    assert app is not None
