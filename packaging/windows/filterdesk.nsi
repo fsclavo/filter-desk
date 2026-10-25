@@ -18,6 +18,9 @@ Unicode true
 !ifndef OUTFILE
   !define OUTFILE "..\..\FilterDesk-${VERSION}-windows-x86_64-setup.exe"
 !endif
+!ifndef ICONFILE
+  !define ICONFILE "filterdesk.ico"
+!endif
 
 !define APPNAME "FilterDesk"
 !define PUBLISHER "FilterDesk contributors"
@@ -30,7 +33,12 @@ InstallDirRegKey HKLM "Software\${APPNAME}" "InstallDir"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 
+Icon "${ICONFILE}"
+UninstallIcon "${ICONFILE}"
+
 !define MUI_ABORTWARNING
+!define MUI_ICON "${ICONFILE}"
+!define MUI_UNICON "${ICONFILE}"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES

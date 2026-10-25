@@ -10,6 +10,7 @@ Produces ``dist/FilterDesk/`` with the ``FilterDesk`` launcher (console=True so
 """
 
 import os
+import sys
 from pathlib import Path
 
 import numpy
@@ -20,6 +21,7 @@ from PyInstaller.utils.hooks import collect_data_files
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 ROOT = Path(SPECPATH).resolve().parent  # noqa: F821 - SPECPATH injected by PyInstaller
+_ICON = ROOT / "packaging" / "windows" / "filterdesk.ico"
 
 datas = []
 binaries = []
@@ -37,6 +39,8 @@ hiddenimports += [
 # pyqtgraph.examples (initialises Qt and aborts the isolated collector).
 datas += collect_data_files("skrf")
 datas += collect_data_files("pyqtgraph")
+# Bundled application icon (used by the GUI window/taskbar and About box).
+datas.append((str(ROOT / "src" / "filterdesk" / "assets"), "filterdesk/assets"))
 
 # Several wheels ship their native shared objects in sibling ``*.libs``
 # directories (scipy.libs/libscipy_openblas*.so, PIL.libs/libtiff*.so, …);
@@ -116,6 +120,7 @@ exe = EXE(  # noqa: F821
     strip=False,
     upx=False,
     console=True,
+    icon=str(_ICON) if sys.platform == "win32" and _ICON.is_file() else None,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

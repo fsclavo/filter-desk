@@ -1,4 +1,9 @@
-# FilterDesk
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-wordmark-dark.png">
+    <img src="assets/logo-wordmark.png" alt="FilterDesk" width="420">
+  </picture>
+</p>
 
 [![test](https://github.com/fsclavo/filter-desk/actions/workflows/test.yml/badge.svg)](https://github.com/fsclavo/filter-desk/actions/workflows/test.yml)
 [![release](https://img.shields.io/github/v/release/fsclavo/filter-desk)](https://github.com/fsclavo/filter-desk/releases)

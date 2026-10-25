@@ -1797,3 +1797,15 @@ def test_language_selection_persists(monkeypatch: pytest.MonkeyPatch) -> None:
     assert window.menuBar().actions()[0].text() == "&File"
     window.close()
     assert app is not None
+
+
+def test_app_icon_loads() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.app import _app_icon
+
+    app = QApplication.instance() or QApplication([])
+    icon = _app_icon()
+    assert not icon.isNull()
+    assert not icon.pixmap(32, 32).isNull()
+    assert app is not None

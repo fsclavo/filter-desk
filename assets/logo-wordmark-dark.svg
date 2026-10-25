@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="220" viewBox="0 0 760 220" role="img" aria-label="FilterDesk">
+  <title>FilterDesk</title>
+
+  <g transform="translate(20 20) scale(0.703125)">
+    <rect width="256" height="256" rx="52" ry="52" fill="#12263a"/>
+    <path d="M28 58 H112 C166 58 178 96 228 96"
+          fill="none" stroke="#4cc9f0" stroke-width="12"
+          stroke-linecap="round" opacity="0.13"/>
+    <path d="M34 136 H72" fill="none" stroke="#8fd6ef" stroke-width="9"
+          stroke-linecap="round"/>
+    <path d="M72 136
+             a10 10 0 0 1 20 0
+             a10 10 0 0 1 20 0
+             a10 10 0 0 1 20 0
+             a10 10 0 0 1 20 0"
+          fill="none" stroke="#4cc9f0" stroke-width="9"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M152 136 H222" fill="none" stroke="#8fd6ef" stroke-width="9"
+          stroke-linecap="round"/>
+    <circle cx="152" cy="136" r="6" fill="#f2f8fc"/>
+    <path d="M152 136 V166" fill="none" stroke="#eaf4fb" stroke-width="9"
+          stroke-linecap="round"/>
+    <path d="M132 166 H172" fill="none" stroke="#f2f8fc" stroke-width="9"
+          stroke-linecap="round"/>
+    <path d="M132 182 H172" fill="none" stroke="#f2f8fc" stroke-width="9"
+          stroke-linecap="round"/>
+    <path d="M152 182 V204" fill="none" stroke="#eaf4fb" stroke-width="9"
+          stroke-linecap="round"/>
+    <path d="M134 204 H170" fill="none" stroke="#8fd6ef" stroke-width="6"
+          stroke-linecap="round"/>
+    <path d="M142 212 H162" fill="none" stroke="#8fd6ef" stroke-width="6"
+          stroke-linecap="round"/>
+    <path d="M149 220 H155" fill="none" stroke="#8fd6ef" stroke-width="6"
+          stroke-linecap="round"/>
+  </g>
+
+  <text x="232" y="112"
+        font-family="DejaVu Sans, Arial, Helvetica, sans-serif"
+        font-size="72" font-weight="700" fill="#f2f8fc">FilterDesk</text>
+  <text x="236" y="154"
+        font-family="DejaVu Sans, Arial, Helvetica, sans-serif"
+        font-size="24" fill="#9fb3c8">Passive LC filter design</text>
+</svg>

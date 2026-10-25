@@ -3,12 +3,28 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication
 
 from filterdesk.gui.main_window import MainWindow
 from filterdesk.services.session import DesignSession
+
+
+def _app_icon() -> QIcon:
+    """Load the bundled application/window icon (empty if unavailable)."""
+    candidates = [Path(__file__).resolve().parent.parent / "assets" / "logo.png"]
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass is not None:
+        candidates.append(Path(str(meipass)) / "filterdesk" / "assets" / "logo.png")
+    for path in candidates:
+        if path.is_file():
+            pixmap = QPixmap(str(path))
+            if not pixmap.isNull():
+                return QIcon(pixmap)
+    return QIcon()
 
 
 def _hide_owned_console() -> None:
@@ -52,6 +68,9 @@ def run_gui(argv: list[str] | None = None) -> int:
     assert app is not None
     QCoreApplication.setOrganizationName("FilterDesk")
     QCoreApplication.setApplicationName("FilterDesk")
+    icon = _app_icon()
+    if not icon.isNull() and isinstance(app, QApplication):
+        app.setWindowIcon(icon)
     session = DesignSession()
     window = MainWindow(session)
     window.show()
