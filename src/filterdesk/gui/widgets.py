@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QSpinBox,
+    QStackedWidget,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -33,8 +34,13 @@ from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
     list_cores,
 )
-from filterdesk.components_std.air_coil import AirCoilDesign
-from filterdesk.components_std.toroid import ToroidCore, ToroidDesign, ToroidError
+from filterdesk.components_std.air_coil import AirCoilDesign, awg_for_diameter_mm
+from filterdesk.components_std.toroid import (
+    ToroidCore,
+    ToroidDesign,
+    ToroidError,
+    awg_diameter_mm,
+)
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
@@ -726,9 +732,16 @@ class _AirCoilPage(QWidget):
         self._l.setText("1u")
         self._diameter = EngineeringLineEdit()
         self._diameter.setText("10")
+        self._wire_mode = QComboBox()
+        self._wire_mode.addItems(["Wire AWG", "Wire diameter (mm)"])
         self._awg = QSpinBox()
         self._awg.setRange(8, 40)
         self._awg.setValue(24)
+        self._wire_mm = EngineeringLineEdit()
+        self._wire_mm.setText(f"{awg_diameter_mm(24):.3f}")
+        self._wire_stack = QStackedWidget()
+        self._wire_stack.addWidget(self._awg)
+        self._wire_stack.addWidget(self._wire_mm)
         self._turns = QSpinBox()
         self._turns.setRange(0, 9999)
         self._turns.setSpecialValueText("auto (from L)")
@@ -738,6 +751,7 @@ class _AirCoilPage(QWidget):
         self._l_achieved = QLabel("-")
         self._length = QLabel("-")
         self._ratio = QLabel("-")
+        self._wire_info = QLabel("-")
         self._wire = QLabel("-")
         self._resistance = QLabel("-")
 
@@ -750,39 +764,66 @@ class _AirCoilPage(QWidget):
         form = QFormLayout(self)
         form.addRow("Target L", self._l)
         form.addRow("Diameter (mm)", self._diameter)
-        form.addRow("Wire AWG", self._awg)
+        form.addRow("Wire", self._wire_mode)
+        form.addRow("", self._wire_stack)
         form.addRow("Turns (0 = auto)", self._turns)
         form.addRow("Exact turns", self._turns_exact)
         form.addRow("Use turns", self._turns_used)
         form.addRow("Achieved L", self._l_achieved)
         form.addRow("Coil length", self._length)
         form.addRow("Length / diameter", self._ratio)
+        form.addRow("Wire size", self._wire_info)
         form.addRow("Wire length", self._wire)
         form.addRow("DC resistance", self._resistance)
         form.addRow(note)
 
         self._l.editingFinished.connect(self._recompute)
         self._diameter.editingFinished.connect(self._recompute)
+        self._wire_mode.currentIndexChanged.connect(self._on_wire_mode)
         self._awg.valueChanged.connect(self._recompute)
+        self._wire_mm.editingFinished.connect(self._recompute)
         self._turns.valueChanged.connect(self._recompute)
         self._recompute()
 
     def current_design(self) -> AirCoilDesign | None:
         return self._design_value
 
+    def _on_wire_mode(self, index: int) -> None:
+        if index == 1:
+            self._wire_mm.setText(
+                f"{awg_diameter_mm(int(self._awg.value())):.3f}"
+            )
+        else:
+            try:
+                diameter = float(self._wire_mm.text().strip())
+            except ValueError:
+                diameter = 0.0
+            if diameter > 0.0:
+                self._awg.setValue(awg_for_diameter_mm(diameter))
+        self._recompute()
+
     def _recompute(self) -> None:
         turns = int(self._turns.value())
+        use_mm = self._wire_mode.currentIndex() == 1
         try:
             diameter = float(self._diameter.text().strip() or "0")
+            awg = None if use_mm else int(self._awg.value())
+            wire_mm = (
+                float(self._wire_mm.text().strip() or "0") if use_mm else None
+            )
             if turns > 0:
                 design = design_air_coil(
-                    diameter_mm=diameter, awg=int(self._awg.value()), turns=turns
+                    diameter_mm=diameter,
+                    awg=awg,
+                    wire_diameter_mm=wire_mm,
+                    turns=turns,
                 )
             else:
                 target = parse_si(self._l.text().strip() or "0")
                 design = design_air_coil(
                     diameter_mm=diameter,
-                    awg=int(self._awg.value()),
+                    awg=awg,
+                    wire_diameter_mm=wire_mm,
                     inductance_h=target,
                 )
         except (AirCoilError, ValueError):
@@ -793,6 +834,7 @@ class _AirCoilPage(QWidget):
                 self._l_achieved,
                 self._length,
                 self._ratio,
+                self._wire_info,
                 self._wire,
                 self._resistance,
             ):
@@ -808,6 +850,9 @@ class _AirCoilPage(QWidget):
         self._length.setText(f"{design.length_mm:.2f} mm")
         short = " (short coil)" if design.short_coil else ""
         self._ratio.setText(f"{design.length_to_diameter:.2f}{short}")
+        self._wire_info.setText(
+            f"{design.wire_diameter_mm:.3f} mm (AWG {design.awg} eq.)"
+        )
         self._wire.setText(f"{design.wire_length_m:.3f} m")
         self._resistance.setText(f"{design.resistance_ohm:.3f} Ohm")
 

@@ -22,6 +22,7 @@ __all__ = [
     "AirCoilDesign",
     "AirCoilError",
     "air_coil_inductance_h",
+    "awg_for_diameter_mm",
     "design_air_coil",
 ]
 
@@ -35,14 +36,30 @@ class AirCoilError(ValueError):
     """Raised for invalid air-core coil inputs."""
 
 
-def air_coil_inductance_h(turns: int, diameter_mm: float, awg: int) -> float:
+def awg_for_diameter_mm(diameter_mm: float) -> int:
+    """Nearest standard AWG (8–40) for a bare wire diameter in millimetres."""
+    if diameter_mm <= 0.0:
+        raise AirCoilError("wire diameter must be > 0")
+    return min(
+        range(8, 41), key=lambda awg: abs(awg_diameter_mm(awg) - diameter_mm)
+    )
+
+
+def air_coil_inductance_h(
+    turns: int,
+    diameter_mm: float,
+    *,
+    wire_diameter_mm: float,
+) -> float:
     """Wheeler inductance (henries) for a close-wound single-layer solenoid."""
     if turns < 1:
         raise AirCoilError("turns must be >= 1")
     if diameter_mm <= 0.0:
         raise AirCoilError("diameter must be > 0")
+    if wire_diameter_mm <= 0.0:
+        raise AirCoilError("wire diameter must be > 0")
     diameter_in = diameter_mm / _MM_PER_INCH
-    wire_in = awg_diameter_mm(awg) / _MM_PER_INCH
+    wire_in = wire_diameter_mm / _MM_PER_INCH
     radius = diameter_in / 2.0
     length = turns * wire_in
     return 1e-6 * (radius * radius * turns * turns) / (
@@ -52,7 +69,11 @@ def air_coil_inductance_h(turns: int, diameter_mm: float, awg: int) -> float:
 
 @dataclass(frozen=True, slots=True)
 class AirCoilDesign:
-    """Result of a single-layer air-core design."""
+    """Result of a single-layer air-core design.
+
+    ``awg`` is the nearest standard gauge for reference; the exact wire size is
+    always ``wire_diameter_mm`` (so a custom millimetre diameter is honoured).
+    """
 
     diameter_mm: float
     awg: int
@@ -75,23 +96,35 @@ class AirCoilDesign:
 def design_air_coil(
     *,
     diameter_mm: float,
-    awg: int,
+    awg: int | None = None,
+    wire_diameter_mm: float | None = None,
     inductance_h: float | None = None,
     turns: int | None = None,
 ) -> AirCoilDesign:
     """Design a close-wound air-core solenoid from a target L or a fixed turn count.
 
+    Specify the wire either by ``awg`` or by ``wire_diameter_mm`` (exactly one).
     With a target, the turn count is rounded **up** so the achieved inductance is
     at least the requested value.
     """
     if diameter_mm <= 0.0:
         raise AirCoilError("diameter must be > 0")
-    if not 8 <= awg <= 40:
-        raise AirCoilError("AWG must be between 8 and 40")
+    if (awg is None) == (wire_diameter_mm is None):
+        raise AirCoilError("supply exactly one of awg or wire_diameter_mm")
     if (inductance_h is None) == (turns is None):
         raise AirCoilError("supply exactly one of inductance_h or turns")
 
-    wire_mm = awg_diameter_mm(awg)
+    if wire_diameter_mm is None:
+        assert awg is not None
+        if not 8 <= awg <= 40:
+            raise AirCoilError("AWG must be between 8 and 40")
+        wire_mm = awg_diameter_mm(awg)
+        awg_ref = int(awg)
+    else:
+        if wire_diameter_mm <= 0.0:
+            raise AirCoilError("wire diameter must be > 0")
+        wire_mm = float(wire_diameter_mm)
+        awg_ref = awg_for_diameter_mm(wire_mm)
     radius_in = diameter_mm / _MM_PER_INCH / 2.0
     wire_in = wire_mm / _MM_PER_INCH
 
@@ -114,7 +147,9 @@ def design_air_coil(
         exact = float(count)
         target = None
 
-    achieved = air_coil_inductance_h(count, diameter_mm, awg)
+    achieved = air_coil_inductance_h(
+        count, diameter_mm, wire_diameter_mm=wire_mm
+    )
     length_mm = count * wire_mm
     length_to_diameter = length_mm / diameter_mm
     wire_length_m = count * math.pi * diameter_mm / 1000.0
@@ -123,7 +158,7 @@ def design_air_coil(
 
     return AirCoilDesign(
         diameter_mm=diameter_mm,
-        awg=awg,
+        awg=awg_ref,
         wire_diameter_mm=wire_mm,
         turns_exact=exact,
         turns=count,

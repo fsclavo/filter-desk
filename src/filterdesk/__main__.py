@@ -346,8 +346,10 @@ def build_parser() -> argparse.ArgumentParser:
     air.add_argument(
         "--diameter", required=True, help="Coil diameter (mm)"
     )
-    air.add_argument(
-        "--awg", type=int, default=24, help="Wire gauge (AWG 8-40)"
+    wire = air.add_mutually_exclusive_group()
+    wire.add_argument("--awg", type=int, default=None, help="Wire gauge (AWG 8-40)")
+    wire.add_argument(
+        "--wire-mm", type=float, default=None, help="Wire diameter (mm)"
     )
     air.add_argument("--json", action="store_true", help="Emit JSON")
 
@@ -1509,9 +1511,14 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "air-coil":
         try:
+            awg = args.awg
+            wire_mm = args.wire_mm
+            if awg is None and wire_mm is None:
+                awg = 24
             air_design = design_air_coil(
                 diameter_mm=float(args.diameter),
-                awg=int(args.awg),
+                awg=awg,
+                wire_diameter_mm=wire_mm,
                 inductance_h=(
                     parse_si(str(args.inductance))
                     if args.inductance is not None
@@ -1545,7 +1552,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         print(
             f"Air-core solenoid D = {air_design.diameter_mm:g} mm, "
-            f"AWG {air_design.awg} ({air_design.wire_diameter_mm:.3f} mm)"
+            f"wire {air_design.wire_diameter_mm:.3f} mm "
+            f"(AWG {air_design.awg} eq.)"
         )
         if air_design.target_inductance_h is not None:
             print(

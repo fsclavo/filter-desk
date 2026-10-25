@@ -1575,6 +1575,16 @@ def test_coil_calculator_air_core_live_values() -> None:
     assert "mm" in page._length.text()
     assert "Ohm" in page._resistance.text()
 
+    page._wire_mode.setCurrentIndex(1)
+    page._wire_mm.setText("0.800")
+    page._turns.setValue(0)
+    page._l.setText("1u")
+    page._recompute()
+    design = page.current_design()
+    assert design is not None
+    assert design.wire_diameter_mm == pytest.approx(0.8)
+    assert "0.800 mm" in page._wire_info.text()
+
     page._turns.setValue(5)
     design = page.current_design()
     assert design is not None and design.turns == 5

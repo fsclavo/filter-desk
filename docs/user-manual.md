@@ -489,8 +489,8 @@ Most commands accept `--json` for machine-readable output.
   filterdesk toroid --core FT50-43 --turns 5 --current 0.5 --json
   ```
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
-  `--diameter mm` and `--awg`; use `--inductance` or `--turns`; `--json` for
-  machine output.
+  `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
+  `--turns`; `--json` for machine output.
   ```bash
   filterdesk air-coil --diameter 10 --awg 24 --inductance 1u
   ```
