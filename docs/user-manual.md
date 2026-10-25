@@ -654,7 +654,7 @@ drops for very short coils (`length/diameter < 0.2`, flagged in the result).
 | Butterworth | `butterworth` | −3 dB | — | ≥ 1 |
 | Chebyshev Type I | `chebyshev_type_i` | ripple-edge | `passband_ripple_db` | ≥ 1 |
 | Chebyshev Type II | `chebyshev_type_ii` | stopband-edge | `stopband_attenuation_db` | ≥ 1 |
-| Elliptic (Cauer) | `elliptic` | ripple-edge | `passband_ripple_db` **and** `stopband_attenuation_db` (As > Ap) | ≥ 2 |
+| Elliptic (Cauer) | `elliptic` | ripple-edge | `passband_ripple_db` **and** `stopband_attenuation_db` (As > Ap) | odd ≥ 3 |
 | Bessel | `bessel` | −3 dB | — | 1–10 |
 | Gaussian | `gaussian` | −3 dB | — | 1–10 |
 | Legendre | `legendre` | −3 dB | — | 2–9 |
@@ -663,7 +663,8 @@ drops for very short coils (`length/diameter < 0.2`, flagged in the result).
 
 Butterworth/Bessel/Gaussian/Legendre/constant-*k*/m-derived must **not** set
 ripple or stopband attenuation; Chebyshev Type I must not set stopband
-attenuation; Chebyshev Type II must not set ripple.
+attenuation; Chebyshev Type II must not set ripple. Even-order elliptic needs a
+transformer or unequal terminations and is **rejected** (use an odd order).
 
 ---
 

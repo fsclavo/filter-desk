@@ -13,7 +13,7 @@ Normalized scipy prototype: passband edge \(\omega_p=1\), ripple \(A_p\), minimu
 
 | Symbol | Meaning |
 | --- | --- |
-| \(n\) | Order ≥ 2 (odd or even; even via equal-R |S21| fit) |
+| \(n\) | Order **odd ≥ 3** (even order needs a transformer / unequal terminations and is rejected) |
 | \(A_p\) | Passband ripple (dB) |
 | \(A_s\) | Stopband attenuation (dB) |
 | \(f_c\) | Passband ripple-edge frequency |

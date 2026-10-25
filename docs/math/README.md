@@ -8,7 +8,7 @@
 | Gaussian | ADR-012 + tables | 5 | Finite-order approx; order ≤10 |
 | Legendre | ADR-012 + tables | 5 | Papoulis; order 2…9 |
 | Chebyshev Type II | `chebyshev_type_ii.md` | 5b | Finite zeros (Cauer); even/odd |
-| Elliptic / Cauer | `elliptic.md` | 5b | Ap+As; even/odd (≥2) |
+| Elliptic / Cauer | `elliptic.md` | 5b | Ap+As; odd only (≥3) |
 | Constant-K | `constant_k_m_derived.md` | 5b | Image-parameter |
 | M-derived | `constant_k_m_derived.md` | 5b | Image-parameter |
 

@@ -25,7 +25,7 @@
 | Inputs | \(n\ge 2\), Ap, As, fc |
 | Prototype | `ellipap` zpk → complementary \(F(s)\) on \(j\omega\) → Cauer extraction |
 | Responses | LP, HP, BP, BS |
-| Even order | Equal-R via |S21| fit (transformer-free approximation) |
+| Even order | **Rejected** (equal-R needs a transformer/unequal terminations; odd orders only) |
 
 ### Constant-K / M-derived
 

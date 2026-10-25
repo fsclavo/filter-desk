@@ -15,6 +15,11 @@ def synthesize_elliptic_prototype(
     """Normalized elliptic LP: passband edge ω'=1, Ap / As in dB."""
     if order < 2:
         raise ValueError("elliptic requires order >= 2")
+    if order % 2 == 0:
+        raise ValueError(
+            "even-order elliptic needs a transformer or unequal terminations; "
+            "use an odd order"
+        )
     if passband_ripple_db <= 0.0:
         raise ValueError("passband_ripple_db must be > 0")
     if stopband_attenuation_db <= 0.0:

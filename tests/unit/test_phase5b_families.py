@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 from scipy import signal
 
 from filterdesk.analysis.adapters.abcd_ladder import LadderABCDAnalyzer
@@ -13,7 +14,7 @@ from filterdesk.domain.enums import (
     FilterResponse,
     TopologyId,
 )
-from filterdesk.domain.specs import FilterSpec
+from filterdesk.domain.specs import FilterSpec, SpecValidationError
 from filterdesk.synthesis import synthesize
 
 
@@ -181,7 +182,9 @@ def test_cheby2_even_order_matches_scipy() -> None:
     assert err < 0.6
 
 
-def test_elliptic_even_order_matches_scipy() -> None:
+def test_elliptic_even_order_rejected() -> None:
+    # Equal-termination even-order elliptic needs a transformer; rejecting is
+    # preferable to returning a network that violates the requested ripple.
     spec = _lp_spec(
         ApproximationFamily.ELLIPTIC,
         4,
@@ -189,38 +192,8 @@ def test_elliptic_even_order_matches_scipy() -> None:
         as_db=40.0,
         cutoff_hz=1.0 / (2 * np.pi),
     )
-    result = synthesize(spec)
-    sweep = SweepConfig(
-        f_start_hz=0.01 / (2 * np.pi),
-        f_stop_hz=4.0 / (2 * np.pi),
-        n_points=128,
-        spacing=SweepSpacing.LOGARITHMIC,
-    )
-    analysis = LadderABCDAnalyzer().analyze(result.circuit, sweep)
-    z, p, k = signal.ellipap(4, 0.5, 40)
-    _, href = signal.freqs_zpk(z, p, k, worN=2 * np.pi * analysis.frequency_hz)
-    err = float(
-        np.max(
-            np.abs(
-                20 * np.log10(np.abs(analysis.s21) + 1e-30)
-                - 20 * np.log10(np.abs(href) + 1e-30)
-            )
-        )
-    )
-    assert err < 0.75
-    # First finite zero should produce deep notch (≥ As)
-    wz = sorted(
-        {
-            abs(float(np.imag(zz)))
-            for zz in z
-            if abs(float(np.real(zz))) < 1e-8 and abs(float(np.imag(zz))) > 1e-8
-        }
-    )[0]
-    s21_db = 20 * np.log10(np.abs(analysis.s21) + 1e-30)
-    notch = float(
-        np.interp(wz / (2 * np.pi), analysis.frequency_hz, s21_db)
-    )
-    assert notch <= -40.0
+    with pytest.raises(SpecValidationError, match="odd orders"):
+        synthesize(spec)
 
 
 def test_cheby2_bp_matches_scipy_shape() -> None:

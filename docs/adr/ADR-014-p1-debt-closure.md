@@ -50,10 +50,13 @@ Kept the geometric-mean reactive scaling of ADR-011. A full Norton /
 minimum-inductance redesign (ratio tables, transformer insertion) is a research
 task with limited near-term payoff; documented as an accepted limitation.
 
-### B1.6 — exact even-order elliptic: **decided (accepted approximation)**
+### B1.6 — exact even-order elliptic: **decided (rejected)**
 
-Equal-R even-order Cauer requires a transformer or unequal terminations; the
-current equal-R `|S21|` fit (ADR-013) is retained as an accepted approximation.
+Equal-R even-order Cauer requires a transformer or unequal terminations. The
+previous transformer-free `|S21|` fit could violate the requested passband
+ripple (audit 2026-10-25: ~0.97 dB with Ap=0.5 dB) and order 2 could fail
+outright, so even orders are now rejected with a clear validation error. Odd
+orders (3, 5, 7, …) remain exact against `scipy.signal.ellipap`.
 
 ## Consequences
 

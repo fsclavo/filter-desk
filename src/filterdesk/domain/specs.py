@@ -123,6 +123,11 @@ def validate_spec(spec: FilterSpec) -> None:
             )
         if spec.order < 2:
             raise SpecValidationError("elliptic requires order >= 2")
+        if spec.order % 2 == 0:
+            raise SpecValidationError(
+                "even-order elliptic needs a transformer or unequal "
+                "terminations; FilterDesk supports odd orders only (3, 5, 7, …)"
+            )
     elif spec.family in _ALL_POLE_3DB:
         if spec.cutoff_definition != CutoffDefinition.HALF_POWER_3DB:
             raise SpecValidationError(
