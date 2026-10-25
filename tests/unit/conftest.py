@@ -44,6 +44,7 @@ def pytest_unconfigure(config: object) -> None:
 def _qt_teardown() -> object:
     yield
     try:
+        import shiboken6
         from PySide6.QtWidgets import QApplication
     except Exception:  # pragma: no cover - PySide6 always present in this suite
         return
@@ -51,6 +52,8 @@ def _qt_teardown() -> object:
     if app is None:
         return
     for widget in list(app.topLevelWidgets()):
+        if not shiboken6.isValid(widget):
+            continue
         debounce = getattr(widget, "_debounce", None)
         if debounce is not None:
             try:
