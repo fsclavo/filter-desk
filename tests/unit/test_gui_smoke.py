@@ -1526,28 +1526,57 @@ def test_main_window_export_build_sheet_filter_overrides_suffix(
     assert app is not None
 
 
-def test_toroid_dialog_live_values() -> None:
+def test_coil_calculator_toroid_live_values() -> None:
     from PySide6.QtWidgets import QApplication
 
-    from filterdesk.gui.widgets import ToroidDialog
+    from filterdesk.gui.widgets import CoilCalculatorDialog
 
     app = QApplication.instance() or QApplication([])
-    dialog = ToroidDialog()
-    names = [core.name for core in dialog._cores]
-    dialog._core.setCurrentIndex(names.index("T50-2"))
-    dialog._l.setText("1u")
-    dialog._current.setText("1")
-    dialog._recompute()
+    dialog = CoilCalculatorDialog()
+    page = dialog.toroid
+    names = [core.name for core in page._cores]
+    page._core.setCurrentIndex(names.index("T50-2"))
+    page._l.setText("1u")
+    page._current.setText("1")
+    page._recompute()
 
-    design = dialog.current_design()
+    design = page.current_design()
     assert design is not None
     assert design.core.name == "T50-2"
     assert design.turns == 15
-    assert "AWG 16" in dialog._wire.text()
-    assert "n/a (iron powder)" in dialog._sat.text()
+    assert "AWG 16" in page._wire.text()
+    assert "n/a (iron powder)" in page._sat.text()
 
-    dialog._turns.setValue(10)
-    design = dialog.current_design()
+    page._turns.setValue(10)
+    design = page.current_design()
     assert design is not None and design.turns == 10
+    dialog.close()
+    assert app is not None
+
+
+def test_coil_calculator_air_core_live_values() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import CoilCalculatorDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = CoilCalculatorDialog()
+    page = dialog.air_core
+    page._diameter.setText("10")
+    page._awg.setValue(24)
+    page._l.setText("1u")
+    page._turns.setValue(0)
+    page._recompute()
+
+    design = page.current_design()
+    assert design is not None
+    assert design.turns == 10
+    assert design.inductance_h >= 1e-6
+    assert "mm" in page._length.text()
+    assert "Ohm" in page._resistance.text()
+
+    page._turns.setValue(5)
+    design = page.current_design()
+    assert design is not None and design.turns == 5
     dialog.close()
     assert app is not None

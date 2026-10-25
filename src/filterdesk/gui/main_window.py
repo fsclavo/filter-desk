@@ -70,6 +70,7 @@ from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandPresetDialog,
+    CoilCalculatorDialog,
     EngineeringLineEdit,
     MatchingDialog,
     MonteCarloDialog,
@@ -77,7 +78,6 @@ from filterdesk.gui.widgets import (
     OptimizeDialog,
     ParasiticDialog,
     SnapDialog,
-    ToroidDialog,
 )
 from filterdesk.gui.workers import (
     start_analyze_thread,
@@ -421,9 +421,9 @@ class MainWindow(QMainWindow):
         act_match = QAction("Matching &network…", self)
         act_match.triggered.connect(self._run_matching)
         design_menu.addAction(act_match)
-        act_toroid = QAction("&Toroid calculator…", self)
-        act_toroid.triggered.connect(self._run_toroid_calculator)
-        design_menu.addAction(act_toroid)
+        act_coil = QAction("&Coil calculator…", self)
+        act_coil.triggered.connect(self._run_coil_calculator)
+        design_menu.addAction(act_coil)
         act_snap = QAction("Sna&p to E-series…", self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -742,8 +742,8 @@ class MainWindow(QMainWindow):
             )
         return IdealCapacitor(id="X", value_f=value, node_a="", node_b="", role=role)
 
-    def _run_toroid_calculator(self) -> None:
-        ToroidDialog(self).exec()
+    def _run_coil_calculator(self) -> None:
+        CoilCalculatorDialog(self).exec()
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:

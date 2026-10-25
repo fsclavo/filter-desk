@@ -272,7 +272,7 @@ specification edits require an explicit **Synthesize**.
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
-| **Toroid calculator** | **Design → Toroid calculator…** | turns from a target L (or fixed turns), wire gauge, wire length and flux/saturation |
+| **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC) |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -487,6 +487,12 @@ Most commands accept `--json` for machine-readable output.
   ```bash
   filterdesk toroid --core T50-2 --inductance 1u --current 1
   filterdesk toroid --core FT50-43 --turns 5 --current 0.5 --json
+  ```
+- **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
+  `--diameter mm` and `--awg`; use `--inductance` or `--turns`; `--json` for
+  machine output.
+  ```bash
+  filterdesk air-coil --diameter 10 --awg 24 --inductance 1u
   ```
 
 ---

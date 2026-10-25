@@ -25,6 +25,7 @@ from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
+    AirCoilError,
     AttenuatorError,
     AttenuatorKind,
     ESeries,
@@ -33,6 +34,7 @@ from filterdesk.components_std import (
     SnapReport,
     SnapStrategy,
     ToroidError,
+    design_air_coil,
     design_attenuator,
     design_matching,
     design_toroid,
@@ -330,6 +332,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tor.add_argument("--list", action="store_true", help="List built-in cores")
     tor.add_argument("--json", action="store_true", help="Emit JSON")
+
+    air = sub.add_parser(
+        "air-coil",
+        help="Single-layer air-core solenoid calculator",
+    )
+    air.add_argument(
+        "--inductance", default=None, help="Target inductance, e.g. 1u"
+    )
+    air.add_argument(
+        "--turns", type=int, default=None, help="Turn count (instead of a target L)"
+    )
+    air.add_argument(
+        "--diameter", required=True, help="Coil diameter (mm)"
+    )
+    air.add_argument(
+        "--awg", type=int, default=24, help="Wire gauge (AWG 8-40)"
+    )
+    air.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -1485,6 +1505,65 @@ def main(argv: list[str] | None = None) -> int:
             if toroid.saturation_ratio is not None:
                 flag = "  SATURATED" if toroid.saturated else ""
                 print(f"  B/Bsat = {toroid.saturation_ratio:.2f}{flag}")
+        return 0
+
+    if args.command == "air-coil":
+        try:
+            air_design = design_air_coil(
+                diameter_mm=float(args.diameter),
+                awg=int(args.awg),
+                inductance_h=(
+                    parse_si(str(args.inductance))
+                    if args.inductance is not None
+                    else None
+                ),
+                turns=args.turns,
+            )
+        except (AirCoilError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "diameter_mm": air_design.diameter_mm,
+                        "awg": air_design.awg,
+                        "wire_diameter_mm": air_design.wire_diameter_mm,
+                        "turns_exact": air_design.turns_exact,
+                        "turns": air_design.turns,
+                        "inductance_h": air_design.inductance_h,
+                        "target_inductance_h": air_design.target_inductance_h,
+                        "length_mm": air_design.length_mm,
+                        "length_to_diameter": air_design.length_to_diameter,
+                        "wire_length_m": air_design.wire_length_m,
+                        "resistance_ohm": air_design.resistance_ohm,
+                        "short_coil": air_design.short_coil,
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        print(
+            f"Air-core solenoid D = {air_design.diameter_mm:g} mm, "
+            f"AWG {air_design.awg} ({air_design.wire_diameter_mm:.3f} mm)"
+        )
+        if air_design.target_inductance_h is not None:
+            print(
+                "  Target L = "
+                f"{format_engineering(air_design.target_inductance_h, 'H', digits=4)}"
+            )
+        print(f"  Turns: {air_design.turns_exact:.2f} -> {air_design.turns}")
+        print(
+            f"  L = {format_engineering(air_design.inductance_h, 'H', digits=6)}"
+        )
+        short = " (short coil: formula less accurate)" if air_design.short_coil else ""
+        print(
+            f"  Coil length = {air_design.length_mm:.2f} mm "
+            f"(L/D = {air_design.length_to_diameter:.2f}){short}"
+        )
+        print(f"  Wire length ~ {air_design.wire_length_m:.3f} m")
+        print(f"  R_DC = {air_design.resistance_ohm:.4f} Ohm")
+        print("  note: SRF/Q not modelled (single close-wound layer)")
         return 0
 
     if args.command == "attenuator":

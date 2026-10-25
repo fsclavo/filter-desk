@@ -11,10 +11,13 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
 from filterdesk.components_std import (
+    AirCoilError,
     AttenuatorDesign,
     AttenuatorError,
     AttenuatorKind,
@@ -23,12 +26,14 @@ from filterdesk.components_std import (
     MatchingError,
     MatchingTopology,
     SnapStrategy,
+    design_air_coil,
     design_attenuator,
     design_matching,
     design_toroid,
     inductor_resistance_ohm_from_q,
     list_cores,
 )
+from filterdesk.components_std.air_coil import AirCoilDesign
 from filterdesk.components_std.toroid import ToroidCore, ToroidDesign, ToroidError
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
@@ -603,12 +608,11 @@ class MatchingDialog(QDialog):
             return None
 
 
-class ToroidDialog(QDialog):
-    """Toroid turn / wire / saturation calculator with live results."""
+class _ToroidPage(QWidget):
+    """Toroid turn / wire / saturation calculator (live results)."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Toroid calculator")
         self._cores: tuple[ToroidCore, ...] = list_cores()
         self._design_value: ToroidDesign | None = None
 
@@ -646,11 +650,6 @@ class ToroidDialog(QDialog):
         form.addRow("Wire length", self._length)
         form.addRow("Peak flux", self._flux)
         form.addRow("Saturation", self._sat)
-
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        buttons.rejected.connect(self.reject)
-        buttons.accepted.connect(self.accept)
-        form.addRow(buttons)
 
         self._core.currentIndexChanged.connect(self._recompute)
         self._l.editingFinished.connect(self._recompute)
@@ -714,3 +713,119 @@ class ToroidDialog(QDialog):
             else:
                 flag = "  SATURATED" if design.saturated else ""
                 self._sat.setText(f"B/Bsat = {design.saturation_ratio:.2f}{flag}")
+
+
+class _AirCoilPage(QWidget):
+    """Single-layer close-wound air-core solenoid (Wheeler)."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._design_value: AirCoilDesign | None = None
+
+        self._l = EngineeringLineEdit()
+        self._l.setText("1u")
+        self._diameter = EngineeringLineEdit()
+        self._diameter.setText("10")
+        self._awg = QSpinBox()
+        self._awg.setRange(8, 40)
+        self._awg.setValue(24)
+        self._turns = QSpinBox()
+        self._turns.setRange(0, 9999)
+        self._turns.setSpecialValueText("auto (from L)")
+
+        self._turns_exact = QLabel("-")
+        self._turns_used = QLabel("-")
+        self._l_achieved = QLabel("-")
+        self._length = QLabel("-")
+        self._ratio = QLabel("-")
+        self._wire = QLabel("-")
+        self._resistance = QLabel("-")
+
+        note = QLabel(
+            "Close-wound, single layer. Self-capacitance / SRF and Q are not "
+            "modelled; verify the winding at the operating frequency."
+        )
+        note.setWordWrap(True)
+
+        form = QFormLayout(self)
+        form.addRow("Target L", self._l)
+        form.addRow("Diameter (mm)", self._diameter)
+        form.addRow("Wire AWG", self._awg)
+        form.addRow("Turns (0 = auto)", self._turns)
+        form.addRow("Exact turns", self._turns_exact)
+        form.addRow("Use turns", self._turns_used)
+        form.addRow("Achieved L", self._l_achieved)
+        form.addRow("Coil length", self._length)
+        form.addRow("Length / diameter", self._ratio)
+        form.addRow("Wire length", self._wire)
+        form.addRow("DC resistance", self._resistance)
+        form.addRow(note)
+
+        self._l.editingFinished.connect(self._recompute)
+        self._diameter.editingFinished.connect(self._recompute)
+        self._awg.valueChanged.connect(self._recompute)
+        self._turns.valueChanged.connect(self._recompute)
+        self._recompute()
+
+    def current_design(self) -> AirCoilDesign | None:
+        return self._design_value
+
+    def _recompute(self) -> None:
+        turns = int(self._turns.value())
+        try:
+            diameter = float(self._diameter.text().strip() or "0")
+            if turns > 0:
+                design = design_air_coil(
+                    diameter_mm=diameter, awg=int(self._awg.value()), turns=turns
+                )
+            else:
+                target = parse_si(self._l.text().strip() or "0")
+                design = design_air_coil(
+                    diameter_mm=diameter,
+                    awg=int(self._awg.value()),
+                    inductance_h=target,
+                )
+        except (AirCoilError, ValueError):
+            self._design_value = None
+            for label in (
+                self._turns_exact,
+                self._turns_used,
+                self._l_achieved,
+                self._length,
+                self._ratio,
+                self._wire,
+                self._resistance,
+            ):
+                label.setText("-")
+            return
+
+        self._design_value = design
+        self._turns_exact.setText(f"{design.turns_exact:.2f}")
+        self._turns_used.setText(str(design.turns))
+        self._l_achieved.setText(
+            format_engineering(design.inductance_h, "H", digits=6)
+        )
+        self._length.setText(f"{design.length_mm:.2f} mm")
+        short = " (short coil)" if design.short_coil else ""
+        self._ratio.setText(f"{design.length_to_diameter:.2f}{short}")
+        self._wire.setText(f"{design.wire_length_m:.3f} m")
+        self._resistance.setText(f"{design.resistance_ohm:.3f} Ohm")
+
+
+class CoilCalculatorDialog(QDialog):
+    """Coil calculators: toroid (AL) and single-layer air-core (Wheeler)."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Coil calculator")
+        self.toroid = _ToroidPage(self)
+        self.air_core = _AirCoilPage(self)
+        tabs = QTabWidget(self)
+        tabs.addTab(self.toroid, "Toroid")
+        tabs.addTab(self.air_core, "Air-core")
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        layout = QVBoxLayout(self)
+        layout.addWidget(tabs)
+        layout.addWidget(buttons)

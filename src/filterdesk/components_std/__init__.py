@@ -1,5 +1,11 @@
 """Standard-component utilities: E-series tables and value snapping."""
 
+from filterdesk.components_std.air_coil import (
+    AirCoilDesign,
+    AirCoilError,
+    air_coil_inductance_h,
+    design_air_coil,
+)
 from filterdesk.components_std.attenuator import (
     AttenuatorDesign,
     AttenuatorError,
@@ -46,6 +52,8 @@ from filterdesk.components_std.toroid import (
 )
 
 __all__ = [
+    "AirCoilDesign",
+    "AirCoilError",
     "AttenuatorDesign",
     "AttenuatorError",
     "AttenuatorKind",
@@ -62,8 +70,10 @@ __all__ = [
     "ToroidDesign",
     "ToroidError",
     "WireFit",
+    "air_coil_inductance_h",
     "base_values",
     "design_attenuator",
+    "design_air_coil",
     "design_matching",
     "design_toroid",
     "e_series_values",
