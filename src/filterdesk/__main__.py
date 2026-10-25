@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 from pathlib import Path
@@ -110,6 +111,13 @@ from filterdesk.services.bands import (
     find_band,
 )
 from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.design_sweep import (
+    DesignSweepConfig,
+    DesignSweepRow,
+    SweepAxis,
+    parse_values,
+    run_design_sweep,
+)
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.synthesis import synthesis_note, synthesize
 from filterdesk.synthesis.api import SynthesisResult
@@ -556,6 +564,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="Restrict statistics to a frequency interval, e.g. --band-range 130M 150M",
     )
     sens.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+
+    sweep = sub.add_parser(
+        "sweep",
+        help="Sweep a design parameter into a comparison table",
+    )
+    _add_spec_args(sweep)
+    sweep.add_argument(
+        "--axis",
+        required=True,
+        choices=[axis.value for axis in SweepAxis],
+        help="Parameter to sweep",
+    )
+    sweep.add_argument(
+        "--values",
+        required=True,
+        help="Comma-separated values, e.g. 3,5,7,9 or butterworth,chebyshev_type_i",
+    )
+    sweep.add_argument("--points", type=int, default=512, help="Sweep points")
+    sweep.add_argument(
+        "--pass-band",
+        nargs=2,
+        metavar=("LOW", "HIGH"),
+        default=None,
+        help="Passband for the metrics (default: derived from the spec)",
+    )
+    sweep.add_argument(
+        "--stop-band",
+        nargs=2,
+        metavar=("LOW", "HIGH"),
+        default=None,
+        help="Stopband for the metrics (default: derived from the spec)",
+    )
+    sweep.add_argument(
+        "--csv",
+        type=Path,
+        default=None,
+        help="Write the comparison table to this CSV path",
+    )
+    sweep.add_argument(
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
@@ -1184,6 +1235,109 @@ def _sensitivity_to_json(report: SensitivityReport) -> dict[str, object]:
     }
 
 
+def _fmt_metric(value: float | None) -> str:
+    return "" if value is None else f"{value:.6g}"
+
+
+def _sweep_row_json(row: DesignSweepRow) -> dict[str, object]:
+    metrics = row.metrics
+    return {
+        "value": row.value,
+        "ok": row.ok,
+        "error": row.error,
+        "n_components": row.n_components,
+        "passband_ripple_db": metrics.passband_ripple_db if metrics else None,
+        "stopband_attenuation_db": (
+            metrics.stopband_attenuation_db if metrics else None
+        ),
+        "min_return_loss_db": metrics.min_return_loss_db if metrics else None,
+        "group_delay_ripple_s": (
+            metrics.group_delay_ripple_s if metrics else None
+        ),
+        "note": row.note,
+    }
+
+
+def _print_sweep_human(axis: SweepAxis, rows: list[DesignSweepRow]) -> None:
+    print(f"Design sweep — {axis.value}")
+    print(
+        f"  {'Value':>12s}  {'OK':3s} {'N':>3s} {'Ripple dB':>10s} "
+        f"{'Stop dB':>9s} {'RL dB':>7s} {'GD ps':>8s}  Note"
+    )
+    for row in rows:
+        if not row.ok:
+            print(f"  {str(row.value):>12s}  no   —  {row.error}")
+            continue
+        metrics = row.metrics
+        ripple = (
+            ""
+            if metrics is None or metrics.passband_ripple_db is None
+            else f"{metrics.passband_ripple_db:.3f}"
+        )
+        stop = (
+            ""
+            if metrics is None or metrics.stopband_attenuation_db is None
+            else f"{metrics.stopband_attenuation_db:.1f}"
+        )
+        rl = (
+            ""
+            if metrics is None or metrics.min_return_loss_db is None
+            else f"{metrics.min_return_loss_db:.1f}"
+        )
+        gd = (
+            ""
+            if metrics is None or metrics.group_delay_ripple_s is None
+            else f"{metrics.group_delay_ripple_s * 1e12:.1f}"
+        )
+        print(
+            f"  {str(row.value):>12s}  yes {row.n_components:3d} "
+            f"{ripple:>10s} {stop:>9s} {rl:>7s} {gd:>8s}  {row.note or ''}"
+        )
+
+
+def _write_sweep_csv(rows: list[DesignSweepRow], path: Path) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, lineterminator="\n")
+        writer.writerow(
+            [
+                "value",
+                "ok",
+                "error",
+                "n_components",
+                "passband_ripple_db",
+                "stopband_attenuation_db",
+                "min_return_loss_db",
+                "group_delay_ripple_s",
+                "note",
+            ]
+        )
+        for row in rows:
+            metrics = row.metrics
+            writer.writerow(
+                [
+                    row.value,
+                    row.ok,
+                    row.error or "",
+                    row.n_components,
+                    _fmt_metric(
+                        None if metrics is None else metrics.passband_ripple_db
+                    ),
+                    _fmt_metric(
+                        None
+                        if metrics is None
+                        else metrics.stopband_attenuation_db
+                    ),
+                    _fmt_metric(
+                        None if metrics is None else metrics.min_return_loss_db
+                    ),
+                    _fmt_metric(
+                        None if metrics is None else metrics.group_delay_ripple_s
+                    ),
+                    row.note or "",
+                ]
+            )
+
+
 def _objectives_from_cli(entries: list[str]) -> list[Objective]:
     out: list[Objective] = []
     for entry in entries:
@@ -1395,6 +1549,63 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(_sensitivity_to_json(sens_report), indent=2))
         else:
             _print_sensitivity_human(sens_report)
+        return 0
+
+    if args.command == "sweep":
+        try:
+            base = _spec_from_cli(args)
+            axis = SweepAxis(args.axis)
+            values = parse_values(axis, args.values)
+            passband = (
+                (
+                    parse_si(str(args.pass_band[0])),
+                    parse_si(str(args.pass_band[1])),
+                )
+                if args.pass_band is not None
+                else None
+            )
+            stopband = (
+                (
+                    parse_si(str(args.stop_band[0])),
+                    parse_si(str(args.stop_band[1])),
+                )
+                if args.stop_band is not None
+                else None
+            )
+            sweep_config = DesignSweepConfig(
+                base_spec=base,
+                axis=axis,
+                values=values,
+                points=int(args.points),
+                passband=passband,
+                stopband=stopband,
+            )
+            sweep_rows = run_design_sweep(sweep_config)
+        except (
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.csv is not None:
+            _write_sweep_csv(sweep_rows, args.csv)
+            print(f"Wrote {args.csv}", file=sys.stderr)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "axis": axis.value,
+                        "values": list(values),
+                        "rows": [_sweep_row_json(row) for row in sweep_rows],
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            _print_sweep_human(axis, sweep_rows)
         return 0
 
     if args.command == "analyze":

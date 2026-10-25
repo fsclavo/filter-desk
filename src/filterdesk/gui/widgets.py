@@ -46,10 +46,12 @@ from filterdesk.components_std.toroid import (
     ToroidError,
     awg_diameter_mm,
 )
+from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import ALL_PRESETS, Band, BandKind
+from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
 
 
 class EngineeringLineEdit(QLineEdit):
@@ -1031,3 +1033,152 @@ class BuildSheetDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.selection()
         return None
+
+
+class DesignSweepDialog(QDialog):
+    """Configure a design parameter sweep."""
+
+    _AXIS_LABELS: dict[SweepAxis, str] = {
+        SweepAxis.ORDER: "Order",
+        SweepAxis.FAMILY: "Family",
+        SweepAxis.CUTOFF: "Cutoff (Hz)",
+        SweepAxis.CENTER: "Center (Hz)",
+        SweepAxis.BANDWIDTH: "Bandwidth (Hz)",
+        SweepAxis.RIPPLE: "Passband ripple (dB)",
+        SweepAxis.STOPBAND_ATT: "Stopband attenuation (dB)",
+        SweepAxis.M_FACTOR: "m parameter",
+    }
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Parameter sweep")
+        self._axis = QComboBox()
+        for axis in SweepAxis:
+            self._axis.addItem(self._AXIS_LABELS.get(axis, axis.value), axis.value)
+        self._values = QLineEdit()
+        self._values.setPlaceholderText("e.g. 3,5,7,9")
+        self._points = QSpinBox()
+        self._points.setRange(64, 8192)
+        self._points.setValue(512)
+        form = QFormLayout(self)
+        form.addRow("Axis", self._axis)
+        form.addRow("Values", self._values)
+        form.addRow("Points", self._points)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def selection(self) -> tuple[SweepAxis, str, int]:
+        axis = SweepAxis(str(self._axis.currentData()))
+        return axis, self._values.text().strip(), int(self._points.value())
+
+    @classmethod
+    def ask(
+        cls, parent: QWidget | None = None
+    ) -> tuple[SweepAxis, str, int] | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.selection()
+        return None
+
+
+class DesignSweepResultDialog(QDialog):
+    """Show sweep rows and let the user load one into the design."""
+
+    def __init__(
+        self, rows: list[DesignSweepRow], parent: QWidget | None = None
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Design sweep")
+        self._rows = tuple(rows)
+        self._spec: FilterSpec | None = None
+
+        headers = [
+            "Value",
+            "OK",
+            "N",
+            "Ripple dB",
+            "Stop dB",
+            "RL dB",
+            "GD ps",
+            "Note / error",
+        ]
+        self._table = QTableWidget(len(self._rows), len(headers), self)
+        self._table.setHorizontalHeaderLabels(headers)
+        self._table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self._table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.ResizeToContents
+        )
+        first_ok = -1
+        for index, row in enumerate(self._rows):
+            metrics = row.metrics
+            if row.ok and first_ok < 0:
+                first_ok = index
+            cells = [
+                str(row.value),
+                "yes" if row.ok else "no",
+                str(row.n_components) if row.ok else "",
+                (
+                    ""
+                    if metrics is None or metrics.passband_ripple_db is None
+                    else f"{metrics.passband_ripple_db:.3f}"
+                ),
+                (
+                    ""
+                    if metrics is None
+                    or metrics.stopband_attenuation_db is None
+                    else f"{metrics.stopband_attenuation_db:.1f}"
+                ),
+                (
+                    ""
+                    if metrics is None or metrics.min_return_loss_db is None
+                    else f"{metrics.min_return_loss_db:.1f}"
+                ),
+                (
+                    ""
+                    if metrics is None
+                    or metrics.group_delay_ripple_s is None
+                    else f"{metrics.group_delay_ripple_s * 1e12:.1f}"
+                ),
+                row.note or row.error or "",
+            ]
+            for column, text in enumerate(cells):
+                self._table.setItem(index, column, QTableWidgetItem(text))
+        if first_ok >= 0:
+            self._table.selectRow(first_ok)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        apply = buttons.addButton(
+            "Apply selected", QDialogButtonBox.ButtonRole.ActionRole
+        )
+        apply.clicked.connect(self._on_apply)
+        buttons.rejected.connect(self.reject)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self._table)
+        layout.addWidget(buttons)
+
+    def _on_apply(self) -> None:
+        index = self._table.currentRow()
+        if 0 <= index < len(self._rows):
+            row = self._rows[index]
+            if row.ok and row.spec is not None:
+                self._spec = row.spec
+                self.accept()
+
+    def take_spec(self) -> FilterSpec | None:
+        """Specification of the applied row, if the user chose one."""
+        return self._spec

@@ -1645,3 +1645,38 @@ def test_build_sheet_dialog_selection() -> None:
     assert series is ESeries.E24 and group is True
     dialog.close()
     assert app is not None
+
+
+def test_design_sweep_dialogs() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DesignSweepDialog, DesignSweepResultDialog
+    from filterdesk.services.design_sweep import (
+        DesignSweepConfig,
+        SweepAxis,
+        run_design_sweep,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DesignSweepDialog()
+    axis, values, points = dialog.selection()
+    assert axis is SweepAxis.ORDER and values == "" and points == 512
+    dialog._values.setText("3,5")
+    assert dialog.selection()[1] == "3,5"
+    dialog.close()
+
+    session = DesignSession()
+    session.synthesize()
+    rows = run_design_sweep(
+        DesignSweepConfig(session.spec, SweepAxis.ORDER, (3, 5, 7), points=64)
+    )
+    result = DesignSweepResultDialog(list(rows))
+    assert result._table.rowCount() == 3
+    assert result.take_spec() is None
+    result._table.selectRow(1)
+    result._on_apply()
+    spec = result.take_spec()
+    assert spec is not None and spec.order == 5
+    result.close()
+    assert app is not None

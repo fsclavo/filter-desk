@@ -280,6 +280,7 @@ specification edits require an explicit **Synthesize**.
 | **Monte-Carlo tolerances** | **Design → Monte-Carlo tolerances…** | runs in the background; overlays the S21 envelope |
 | **Optimize to limits** | **Design → Optimize to limits…** | requires at least one enabled limit |
 | **Component sensitivity** | **Design → Component sensitivity…** | ranks parts by their effect on the response; suggests a tune direction when limits are set |
+| **Parameter sweep** | **Design → Parameter sweep…** | synthesizes a series of variants (order, family, frequency, ripple…) and compares metrics; a row can be loaded into the design |
 | **Scale response** | **Design → Scale response…** | scales cutoff (LP/HP) or center+bandwidth (BP/BS) |
 | **Tune a part** | **Tune +/−** (`Ctrl+]` / `Ctrl+[`), or the element menu | nudges by the part's relative step (default 2 %) |
 | **Set tolerance** | element menu → **Set tolerance…** | per-part ±% for Monte-Carlo |
@@ -459,6 +460,17 @@ Most commands accept `--json` for machine-readable output.
   ```bash
   filterdesk optimize --spec spec.json --objective passband:1M:100M \
       --objective stopband:150M:1G:60 --method nelder_mead --bound 0.3
+  ```
+- **`sweep`** — synthesize a series of variants along one axis and compare them.
+  `--axis {order,family,cutoff,center,bandwidth,ripple,stopband_att,m_factor}`,
+  `--values` (comma-separated; SI units for frequency axes), optional
+  `--pass-band`/`--stop-band` for the metrics, `--points`, `--csv FILE` and
+  `--json`. Invalid combinations (e.g. even-order elliptic) are reported per
+  row without aborting the sweep. Example:
+  ```bash
+  filterdesk sweep --axis order --values 3,5,7,9 \
+      --family chebyshev_type_i --response low_pass --order 5 \
+      --cutoff 100M --ripple 0.1
   ```
 - **`sensitivity`** — rank tunable components by their effect on the response.
   `--relative-step` (default 1 %), optional `--band-range LOW HIGH`, and

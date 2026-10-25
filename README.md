@@ -28,6 +28,8 @@ image.
 - **Optimization** against limit regions (passband/stopband masks).
 - **Component sensitivity** analysis that ranks parts by their effect and
   suggests a tuning direction.
+- **Design parameter sweeps** (order, family, frequency, ripple…) into a
+  comparison table, with one-click load of a chosen variant.
 - **Interactive tuning**: tune components, retune by dragging markers, and scale
   the whole response.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`), export CSV,

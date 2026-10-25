@@ -72,6 +72,8 @@ from filterdesk.gui.widgets import (
     BandPresetDialog,
     BuildSheetDialog,
     CoilCalculatorDialog,
+    DesignSweepDialog,
+    DesignSweepResultDialog,
     EngineeringLineEdit,
     MatchingDialog,
     MonteCarloDialog,
@@ -102,6 +104,11 @@ from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import get_plot_backend
 from filterdesk.services.bands import band_preset_spec, band_sweep
 from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.design_sweep import (
+    DesignSweepConfig,
+    parse_values,
+    run_design_sweep,
+)
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import DEFAULT_TITLE, DesignSession
 
@@ -444,6 +451,9 @@ class MainWindow(QMainWindow):
         act_sens = QAction("Component &sensitivity…", self)
         act_sens.triggered.connect(self._run_sensitivity)
         design_menu.addAction(act_sens)
+        act_sweep = QAction("Parameter s&weep…", self)
+        act_sweep.triggered.connect(self._run_design_sweep)
+        design_menu.addAction(act_sweep)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu("&Component")
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -886,6 +896,45 @@ class MainWindow(QMainWindow):
         if action is not None:
             ref, direction = action
             self._nudge_element(ref, direction)
+
+    def _run_design_sweep(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, "Parameter sweep", "Synthesize a circuit first."
+            )
+            return
+        try:
+            self._apply_spec_and_sweep_from_ui()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            return
+        options = DesignSweepDialog.ask(self)
+        if options is None:
+            return
+        axis, raw_values, points = options
+        try:
+            values = parse_values(axis, raw_values)
+            rows = run_design_sweep(
+                DesignSweepConfig(
+                    base_spec=self._session.spec,
+                    axis=axis,
+                    values=values,
+                    points=points,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, "Parameter sweep", _exc_text(exc))
+            return
+        if not rows:
+            QMessageBox.information(self, "Parameter sweep", "No variants.")
+            return
+        self._status.setText(f"Parameter sweep: {len(rows)} variants")
+        dialog = DesignSweepResultDialog(list(rows), self)
+        dialog.exec()
+        spec = dialog.take_spec()
+        if spec is not None:
+            self._spec.set_spec(spec)
+            self._run_synthesize_and_analyze()
 
     def _on_optimize_finished(self, result: object) -> None:
         assert isinstance(result, OptimizationResult)
