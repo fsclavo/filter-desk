@@ -19,6 +19,7 @@ from filterdesk.domain.circuit import (
     NonIdealCapacitor,
     NonIdealInductor,
     Port,
+    WindingSpec,
 )
 from filterdesk.domain.enums import ElementRole, TopologyId
 from filterdesk.domain.specs import (
@@ -28,6 +29,38 @@ from filterdesk.domain.specs import (
 )
 
 FORMAT_VERSION = 1
+
+
+def _opt_float(value: Any) -> float | None:
+    return None if value is None else float(value)
+
+
+def _opt_int(value: Any) -> int | None:
+    return None if value is None else int(value)
+
+
+def _winding_to_mapping(winding: WindingSpec) -> dict[str, object]:
+    return {
+        "kind": winding.kind,
+        "core": winding.core,
+        "material": winding.material,
+        "turns": winding.turns,
+        "wire_awg": winding.wire_awg,
+        "wire_bare_mm": winding.wire_bare_mm,
+        "wire_overall_mm": winding.wire_overall_mm,
+    }
+
+
+def _winding_from_mapping(data: dict[str, Any]) -> WindingSpec:
+    return WindingSpec(
+        kind=str(data.get("kind", "")),
+        core=str(data.get("core", "")),
+        material=str(data.get("material", "")),
+        turns=_opt_int(data.get("turns")),
+        wire_awg=_opt_int(data.get("wire_awg")),
+        wire_bare_mm=_opt_float(data.get("wire_bare_mm")),
+        wire_overall_mm=_opt_float(data.get("wire_overall_mm")),
+    )
 
 
 @dataclass(slots=True)
@@ -77,6 +110,20 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
             row["value_H"] = el.value_h
             row["series_R_Ohm"] = el.series_resistance_ohm
             row["parallel_C_F"] = el.parallel_capacitance_f
+            if el.q_ref is not None:
+                row["q_ref"] = el.q_ref
+            if el.q_frequency_hz is not None:
+                row["q_frequency_hz"] = el.q_frequency_hz
+            if el.srf_hz is not None:
+                row["srf_hz"] = el.srf_hz
+            if el.loss_model != "constant":
+                row["loss_model"] = el.loss_model
+            if el.dc_current_a:
+                row["dc_current_A"] = el.dc_current_a
+            if el.saturation_current_a is not None:
+                row["i_sat_A"] = el.saturation_current_a
+            if el.winding is not None:
+                row["winding"] = _winding_to_mapping(el.winding)
         elif isinstance(el, NonIdealCapacitor):
             row["value_F"] = el.value_f
             row["esr_Ohm"] = el.esr_ohm
@@ -197,6 +244,12 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                 )
             )
         elif etype == "nonideal_inductor":
+            winding_raw = row.get("winding")
+            winding = (
+                _winding_from_mapping(winding_raw)
+                if isinstance(winding_raw, dict)
+                else None
+            )
             elements.append(
                 NonIdealInductor(
                     id=str(row["id"]),
@@ -207,6 +260,13 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     series_resistance_ohm=float(row.get("series_R_Ohm", 0.0)),
                     parallel_capacitance_f=float(row.get("parallel_C_F", 0.0)),
                     g=g,
+                    q_ref=_opt_float(row.get("q_ref")),
+                    q_frequency_hz=_opt_float(row.get("q_frequency_hz")),
+                    srf_hz=_opt_float(row.get("srf_hz")),
+                    loss_model=str(row.get("loss_model", "constant")),
+                    dc_current_a=float(row.get("dc_current_A", 0.0)),
+                    saturation_current_a=_opt_float(row.get("i_sat_A")),
+                    winding=winding,
                 )
             )
         elif etype == "nonideal_capacitor":

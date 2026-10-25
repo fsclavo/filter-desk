@@ -131,10 +131,27 @@ class IdealDualBruneLC:
 
 
 @dataclass(frozen=True, slots=True)
-class NonIdealInductor:
-    """Inductor with series resistance (DCR / finite Q) and parasitic parallel C.
+class WindingSpec:
+    """Physical winding provenance for an inductor (BOM / reports)."""
 
-    Two-terminal model: ``(R + jw L) || 1/(jw Cp)``. Used as a series or shunt arm.
+    kind: str  # "toroid" or "air"
+    core: str = ""
+    material: str = ""
+    turns: int | None = None
+    wire_awg: int | None = None
+    wire_bare_mm: float | None = None
+    wire_overall_mm: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class NonIdealInductor:
+    """Inductor with losses, self-resonance and optional DC-bias derating.
+
+    Two-terminal model: ``(R(f) + jw L_eff) || 1/(jw Cp)``. ``R(f)`` comes from
+    the reference resistance (``series_resistance_ohm`` or ``q_ref`` at
+    ``q_frequency_hz``); ``loss_model="dc_skin"`` makes it rise as ``sqrt(f)``.
+    ``srf_hz`` (if set) overrides ``parallel_capacitance_f``. ``dc_current_a``
+    against ``saturation_current_a`` derates the inductance.
     """
 
     id: str
@@ -145,17 +162,77 @@ class NonIdealInductor:
     series_resistance_ohm: float = 0.0
     parallel_capacitance_f: float = 0.0
     g: float | None = None
+    q_ref: float | None = None
+    q_frequency_hz: float | None = None
+    srf_hz: float | None = None
+    loss_model: str = "constant"
+    dc_current_a: float = 0.0
+    saturation_current_a: float | None = None
+    winding: WindingSpec | None = None
+
+    def __post_init__(self) -> None:
+        if self.loss_model not in ("constant", "dc_skin"):
+            raise ValueError("loss_model must be 'constant' or 'dc_skin'")
+        if self.q_ref is not None and self.q_ref <= 0.0:
+            raise ValueError("q_ref must be > 0")
+        if self.srf_hz is not None and self.srf_hz <= 0.0:
+            raise ValueError("srf_hz must be > 0")
+        if self.saturation_current_a is not None and self.saturation_current_a <= 0.0:
+            raise ValueError("saturation_current_a must be > 0")
+        if self.dc_current_a < 0.0:
+            raise ValueError("dc_current_a must be >= 0")
 
     @property
     def element_type(self) -> ElementType:
         return ElementType.NONIDEAL_INDUCTOR
 
     @property
+    def reference_resistance_ohm(self) -> float:
+        """Series resistance at the reference frequency (DCR or from Q)."""
+        if self.series_resistance_ohm > 0.0:
+            return self.series_resistance_ohm
+        if (
+            self.q_ref is not None
+            and self.q_ref > 0.0
+            and self.q_frequency_hz is not None
+            and self.q_frequency_hz > 0.0
+        ):
+            return 2.0 * math.pi * self.q_frequency_hz * self.value_h / self.q_ref
+        return 0.0
+
+    @property
+    def effective_parallel_capacitance_f(self) -> float:
+        if self.srf_hz is not None and self.srf_hz > 0.0 and self.value_h > 0.0:
+            return 1.0 / (
+                (2.0 * math.pi * self.srf_hz) ** 2 * self.value_h
+            )
+        return self.parallel_capacitance_f
+
+    @property
+    def dc_bias_factor(self) -> float:
+        """Inductance retention from the first-order DC-bias roll-off."""
+        if (
+            self.saturation_current_a is None
+            or self.saturation_current_a <= 0.0
+            or self.dc_current_a <= 0.0
+        ):
+            return 1.0
+        ratio = self.dc_current_a / self.saturation_current_a
+        return 1.0 / (1.0 + ratio * ratio)
+
+    @property
+    def effective_inductance_h(self) -> float:
+        return self.value_h * self.dc_bias_factor
+
+    @property
     def self_resonant_frequency_hz(self) -> float | None:
-        if self.parallel_capacitance_f <= 0.0:
+        if self.srf_hz is not None and self.srf_hz > 0.0:
+            return self.srf_hz
+        capacitance = self.parallel_capacitance_f
+        if capacitance <= 0.0:
             return None
         return 1.0 / (
-            2.0 * math.pi * math.sqrt(self.value_h * self.parallel_capacitance_f)
+            2.0 * math.pi * math.sqrt(self.value_h * capacitance)
         )
 
 
@@ -217,6 +294,8 @@ class PhysicalComponent:
     parallel_capacitance_f: float = 0.0
     esr_ohm: float = 0.0
     esl_h: float = 0.0
+    srf_hz: float | None = None
+    winding: WindingSpec | None = None
 
 
 def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
@@ -252,8 +331,10 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
                     "inductor",
                     el.value_h,
                     "H",
-                    series_resistance_ohm=el.series_resistance_ohm,
-                    parallel_capacitance_f=el.parallel_capacitance_f,
+                    series_resistance_ohm=el.reference_resistance_ohm,
+                    parallel_capacitance_f=el.effective_parallel_capacitance_f,
+                    srf_hz=el.self_resonant_frequency_hz,
+                    winding=el.winding,
                 )
             )
         elif isinstance(el, NonIdealCapacitor):

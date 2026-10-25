@@ -1420,7 +1420,14 @@ class MainWindow(QMainWindow):
             kwargs = ParasiticDialog.ask(self, **dialog_kwargs)
             if not kwargs:
                 return
-            new_circuit = set_element_parasitics(circuit, element_id, **kwargs)
+            new_circuit = set_element_parasitics(
+                circuit,
+                element_id,
+                series_resistance_ohm=kwargs.get("series_resistance_ohm"),
+                parallel_capacitance_f=kwargs.get("parallel_capacitance_f"),
+                esr_ohm=kwargs.get("esr_ohm"),
+                esl_h=kwargs.get("esl_h"),
+            )
         except ValueError as exc:  # noqa: BLE001
             QMessageBox.warning(self, "Edit parasitics", _exc_text(exc))
             return

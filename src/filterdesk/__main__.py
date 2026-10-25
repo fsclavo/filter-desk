@@ -204,6 +204,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Capacitor equivalent series inductance, e.g. 0.5n",
     )
     ana.add_argument(
+        "--inductor-srf",
+        default=None,
+        help="Inductor self-resonant frequency, e.g. 500M",
+    )
+    ana.add_argument(
+        "--inductor-loss-model",
+        choices=["constant", "dc_skin"],
+        default=None,
+        help="Inductor resistance model (constant or rising with sqrt(f))",
+    )
+    ana.add_argument(
+        "--inductor-dc-current",
+        default=None,
+        help="DC bias current for inductance derating, e.g. 5",
+    )
+    ana.add_argument(
+        "--inductor-i-sat",
+        default=None,
+        help="Inductor saturation current, e.g. 8",
+    )
+    ana.add_argument(
         "--export-s2p",
         type=Path,
         default=None,
@@ -1393,6 +1414,14 @@ def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
         kwargs["capacitor_esr_ohm"] = parse_si(str(args.capacitor_esr))
     if getattr(args, "capacitor_esl", None) is not None:
         kwargs["capacitor_esl_h"] = parse_si(str(args.capacitor_esl))
+    if getattr(args, "inductor_srf", None) is not None:
+        kwargs["inductor_srf_hz"] = parse_si(str(args.inductor_srf))
+    if getattr(args, "inductor_dc_current", None) is not None:
+        kwargs["inductor_dc_current_a"] = parse_si(
+            str(args.inductor_dc_current)
+        )
+    if getattr(args, "inductor_i_sat", None) is not None:
+        kwargs["inductor_i_sat_a"] = parse_si(str(args.inductor_i_sat))
     return kwargs
 
 
@@ -1614,11 +1643,16 @@ def main(argv: list[str] | None = None) -> int:
             synth = synthesize(spec)
             _emit_synthesis_note(spec)
             nonideal = _nonideal_kwargs(args)
-            if nonideal:
+            loss_model = getattr(args, "inductor_loss_model", None)
+            if nonideal or loss_model is not None:
                 synth = SynthesisResult(
                     spec=synth.spec,
                     prototype=synth.prototype,
-                    circuit=nonidealize_circuit(synth.circuit, **nonideal),
+                    circuit=nonidealize_circuit(
+                        synth.circuit,
+                        **nonideal,
+                        inductor_loss_model=loss_model or "constant",
+                    ),
                 )
             sweep = _default_sweep(spec, args)
             analysis = analyze_circuit(

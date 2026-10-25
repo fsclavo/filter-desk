@@ -60,13 +60,24 @@ def _y_parallel_lc(
 
 def _z_nonideal_inductor(
     omega: NDArray[np.floating],
-    l_h: float,
-    r_ohm: float,
-    c_parallel_f: float,
+    el: NonIdealInductor,
 ) -> NDArray[np.complexfloating]:
-    z_series = r_ohm + 1j * omega * l_h
+    r_ref = el.reference_resistance_ohm
+    if (
+        el.loss_model == "dc_skin"
+        and r_ref > 0.0
+        and el.q_frequency_hz is not None
+        and el.q_frequency_hz > 0.0
+    ):
+        reference_omega = 2.0 * np.pi * el.q_frequency_hz
+        ratio = np.maximum(omega / reference_omega, 1.0)
+        resistance = r_ref * np.sqrt(ratio)
+    else:
+        resistance = np.full_like(omega, r_ref, dtype=np.float64)
+    z_series = resistance + 1j * omega * el.effective_inductance_h
+    c_parallel_f = el.effective_parallel_capacitance_f
     if c_parallel_f <= 0.0:
-        return z_series
+        return np.asarray(z_series, dtype=np.complex128)
     z_parallel = 1.0 / (1j * omega * c_parallel_f)
     return np.asarray(1.0 / (1.0 / z_series + 1.0 / z_parallel), dtype=np.complex128)
 
@@ -98,9 +109,7 @@ def _element_abcd(
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)
     if isinstance(el, NonIdealInductor):
-        z = _z_nonideal_inductor(
-            omega, el.value_h, el.series_resistance_ohm, el.parallel_capacitance_f
-        )
+        z = _z_nonideal_inductor(omega, el)
         if el.role == ElementRole.SERIES:
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)

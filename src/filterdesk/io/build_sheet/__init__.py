@@ -226,7 +226,16 @@ def build_sheet_rows(
                     and comp.series_resistance_ohm > 0.0
                     else None
                 ),
-                srf_hz=_component_srf_hz(comp),
+                srf_hz=(
+                    comp.srf_hz
+                    if comp.srf_hz is not None
+                    else _component_srf_hz(comp)
+                ),
+                core=comp.winding.core if comp.winding is not None else "",
+                turns=comp.winding.turns if comp.winding is not None else None,
+                wire_awg=(
+                    comp.winding.wire_awg if comp.winding is not None else None
+                ),
             )
         )
     return _group_rows(rows) if group else rows
