@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -36,6 +37,10 @@ class OptimizeMethod(StrEnum):
 
 class OptimizationError(ValueError):
     """Raised when an optimization run cannot start."""
+
+
+class OptimizationCancelled(RuntimeError):
+    """Raised when a running optimization is cancelled cooperatively."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +82,8 @@ def optimize_circuit(
     sweep: SweepConfig,
     limits: list[LimitRegion],
     config: OptimizationConfig | None = None,
+    *,
+    cancel: Callable[[], bool] | None = None,
 ) -> OptimizationResult:
     """Minimise limit violations by tuning component values within ``bound_pct``.
 
@@ -98,6 +105,8 @@ def optimize_circuit(
 
     def residuals(x: NDArray[np.float64]) -> NDArray[np.float64]:
         nonlocal evaluations
+        if cancel is not None and cancel():
+            raise OptimizationCancelled("optimization cancelled")
         evaluations += 1
         trial = apply_values(circuit, params, x)
         result = analyze_circuit(trial, sweep, backend=cfg.backend)
@@ -185,6 +194,7 @@ def optimize_circuit(
 
 __all__ = [
     "OptimizeMethod",
+    "OptimizationCancelled",
     "OptimizationConfig",
     "OptimizationError",
     "OptimizationResult",

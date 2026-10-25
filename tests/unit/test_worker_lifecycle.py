@@ -176,3 +176,86 @@ def test_close_event_terminates_stuck_thread() -> None:
     assert fake.interrupted and fake.quit_called and fake.terminated
     assert fake.wait_calls >= 2
     assert app is not None
+
+
+def test_monte_carlo_worker_cancels_cooperatively() -> None:
+    session = _session()
+    config = MonteCarloConfig(n_trials=1000, tolerance_pct=2.0, seed=1)
+    cancelled: list[bool] = []
+    thread, worker = start_monte_carlo_thread(
+        session.circuit,
+        SMALL_SWEEP,
+        config,
+        [],
+        lambda _r: None,
+        lambda _e: None,
+    )
+    worker.cancelled.connect(lambda: cancelled.append(True))
+    thread.start()
+    _spin_until(lambda: thread.isRunning(), timeout_s=2)
+    thread.requestInterruption()
+    _spin_until(lambda: bool(cancelled), timeout_s=10)
+    thread.quit()
+    assert thread.wait(5000)
+    assert cancelled
+
+
+def test_optimize_worker_cancels_cooperatively() -> None:
+    session = _session()
+    limits = [LimitRegion("pb", "s21_db", 140e6, 1e9, y_min=-3.0)]
+    config = OptimizationConfig(max_iter=1000)
+    cancelled: list[bool] = []
+    thread, worker = start_optimize_thread(
+        session.circuit,
+        SMALL_SWEEP,
+        limits,
+        config,
+        lambda _r: None,
+        lambda _e: None,
+    )
+    worker.cancelled.connect(lambda: cancelled.append(True))
+    thread.start()
+    _spin_until(lambda: thread.isRunning(), timeout_s=2)
+    thread.requestInterruption()
+    _spin_until(lambda: bool(cancelled), timeout_s=10)
+    thread.quit()
+    assert thread.wait(5000)
+    assert cancelled
+
+
+def test_close_event_cooperative_thread_does_not_terminate() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+
+    class CooperativeThread:
+        def __init__(self) -> None:
+            self.running = True
+            self.interrupted = False
+            self.quit_called = False
+            self.terminated = False
+
+        def isRunning(self) -> bool:
+            return self.running
+
+        def requestInterruption(self) -> None:
+            self.interrupted = True
+
+        def quit(self) -> None:
+            self.quit_called = True
+            self.running = False
+
+        def wait(self, _ms: int) -> bool:
+            return True
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    fake = CooperativeThread()
+    window._mc_thread = fake  # type: ignore[assignment]
+    window.close()
+    assert fake.interrupted and fake.quit_called
+    assert not fake.terminated
+    assert app is not None

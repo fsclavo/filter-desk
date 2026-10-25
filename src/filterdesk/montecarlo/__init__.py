@@ -2,6 +2,7 @@
 
 from filterdesk.montecarlo.engine import (
     ElementTolerance,
+    MonteCarloCancelled,
     MonteCarloConfig,
     MonteCarloResult,
     ToleranceDistribution,
@@ -12,6 +13,7 @@ from filterdesk.montecarlo.stats import wilson_interval, yield_fraction
 
 __all__ = [
     "ElementTolerance",
+    "MonteCarloCancelled",
     "MonteCarloConfig",
     "MonteCarloResult",
     "ToleranceDistribution",

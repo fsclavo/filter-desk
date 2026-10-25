@@ -23,6 +23,7 @@ from filterdesk.domain.overlays import LimitMetric, LimitRegion
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.montecarlo import (
     ElementTolerance,
+    MonteCarloCancelled,
     MonteCarloConfig,
     ToleranceDistribution,
     perturb_circuit,
@@ -340,3 +341,31 @@ def test_cli_montecarlo_json_and_yield(
     assert payload["distribution"] == "uniform"
     assert payload["yield"]["fraction"] == pytest.approx(1.0)
     assert "max_spread_db" in payload
+
+
+def test_monte_carlo_cancel_before_first_trial() -> None:
+    with pytest.raises(MonteCarloCancelled):
+        run_monte_carlo(
+            _circuit(),
+            _sweep(),
+            MonteCarloConfig(n_trials=5, seed=1),
+            cancel=lambda: True,
+        )
+
+
+def test_monte_carlo_partial_cancel_returns_completed_trials() -> None:
+    calls = 0
+
+    def cancel() -> bool:
+        nonlocal calls
+        calls += 1
+        return calls > 1
+
+    result = run_monte_carlo(
+        _circuit(),
+        _sweep(),
+        MonteCarloConfig(n_trials=10, seed=1),
+        cancel=cancel,
+    )
+    assert result.n_trials == 1
+    assert result.frequency_hz.shape == (_sweep().n_points,)

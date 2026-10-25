@@ -19,12 +19,13 @@ from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion
-from filterdesk.optimization.objectives import (
+from filterdesk.tuning import (
     Objective,
+    apply_values,
     combined_residuals,
     residual_norm,
+    tunable_params,
 )
-from filterdesk.optimization.variables import apply_values, tunable_params
 
 Band = tuple[float, float]
 

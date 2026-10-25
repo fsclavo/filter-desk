@@ -12,6 +12,7 @@ from filterdesk.optimization.objectives import (
     residual_norm,
 )
 from filterdesk.optimization.solvers import (
+    OptimizationCancelled,
     OptimizationConfig,
     OptimizationError,
     OptimizationResult,
@@ -27,6 +28,7 @@ from filterdesk.optimization.variables import (
 __all__ = [
     "Bounds",
     "Objective",
+    "OptimizationCancelled",
     "OptimizationConfig",
     "OptimizationError",
     "OptimizationResult",

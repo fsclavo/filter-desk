@@ -12,8 +12,16 @@ from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion
 from filterdesk.io.touchstone import TouchstoneData, read_touchstone
-from filterdesk.montecarlo import MonteCarloConfig, run_monte_carlo
-from filterdesk.optimization import OptimizationConfig, optimize_circuit
+from filterdesk.montecarlo import (
+    MonteCarloCancelled,
+    MonteCarloConfig,
+    run_monte_carlo,
+)
+from filterdesk.optimization import (
+    OptimizationCancelled,
+    OptimizationConfig,
+    optimize_circuit,
+)
 
 
 class AnalyzeWorker(QObject):
@@ -66,6 +74,7 @@ def start_analyze_thread(
 class MonteCarloWorker(QObject):
     finished = Signal(object)  # MonteCarloResult
     failed = Signal(str)
+    cancelled = Signal()
     progress = Signal(int, int)
 
     def __init__(
@@ -90,8 +99,11 @@ class MonteCarloWorker(QObject):
                 self._config,
                 limits=self._limits,
                 progress=self.progress.emit,
+                cancel=lambda: QThread.currentThread().isInterruptionRequested(),
             )
             self.finished.emit(result)
+        except MonteCarloCancelled:
+            self.cancelled.emit()
         except Exception as exc:  # noqa: BLE001 — surface to UI
             self.failed.emit(str(exc))
 
@@ -112,6 +124,7 @@ def start_monte_carlo_thread(
     worker.failed.connect(on_failed)
     worker.finished.connect(thread.quit)
     worker.failed.connect(thread.quit)
+    worker.cancelled.connect(thread.quit)
     thread.finished.connect(worker.deleteLater)
     thread._filterdesk_worker = worker  # type: ignore[attr-defined]
     return thread, worker
@@ -120,6 +133,7 @@ def start_monte_carlo_thread(
 class OptimizeWorker(QObject):
     finished = Signal(object)  # OptimizationResult
     failed = Signal(str)
+    cancelled = Signal()
 
     def __init__(
         self,
@@ -138,9 +152,15 @@ class OptimizeWorker(QObject):
     def run(self) -> None:
         try:
             result = optimize_circuit(
-                self._circuit, self._sweep, self._limits, self._config
+                self._circuit,
+                self._sweep,
+                self._limits,
+                self._config,
+                cancel=lambda: QThread.currentThread().isInterruptionRequested(),
             )
             self.finished.emit(result)
+        except OptimizationCancelled:
+            self.cancelled.emit()
         except Exception as exc:  # noqa: BLE001 — surface to UI
             self.failed.emit(str(exc))
 
@@ -161,6 +181,7 @@ def start_optimize_thread(
     worker.failed.connect(on_failed)
     worker.finished.connect(thread.quit)
     worker.failed.connect(thread.quit)
+    worker.cancelled.connect(thread.quit)
     thread.finished.connect(worker.deleteLater)
     thread._filterdesk_worker = worker  # type: ignore[attr-defined]
     return thread, worker

@@ -29,6 +29,10 @@ from filterdesk.domain.circuit import (
 from filterdesk.domain.overlays import LimitRegion
 
 
+class MonteCarloCancelled(RuntimeError):
+    """Raised when a Monte-Carlo run is stopped by its cancellation callback."""
+
+
 class ToleranceDistribution(StrEnum):
     UNIFORM = "uniform"
     NORMAL = "normal"
@@ -167,14 +171,21 @@ def _run_trials(
     config: MonteCarloConfig,
     active_limits: list[LimitRegion],
     progress: Callable[[int, int], None] | None,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], int]:
+    cancel: Callable[[], bool] | None,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], int, int]:
     rng = np.random.default_rng(config.seed)
     n = sweep.n_points
     s21 = np.empty((config.n_trials, n), dtype=np.float32)
     s11 = np.empty((config.n_trials, n), dtype=np.float32)
     step = max(1, config.n_trials // 100)
     passes = 0
+    done = 0
     for i in range(config.n_trials):
+        if cancel is not None and cancel():
+            if i == 0:
+                raise MonteCarloCancelled("Monte-Carlo cancelled")
+            done = i
+            break
         trial = perturb_circuit(circuit, rng, config)
         result = analyze_circuit(trial, sweep, backend=config.backend)
         s21[i, :] = mag_db(result.s21)
@@ -185,9 +196,15 @@ def _run_trials(
                 passes += 1
         if progress is not None and (i + 1) % step == 0:
             progress(i + 1, config.n_trials)
+        done = i + 1
     if progress is not None:
-        progress(config.n_trials, config.n_trials)
-    return s21.astype(np.float64), s11.astype(np.float64), passes
+        progress(done, config.n_trials)
+    return (
+        s21[:done].astype(np.float64),
+        s11[:done].astype(np.float64),
+        passes,
+        done,
+    )
 
 
 def run_monte_carlo(
@@ -197,15 +214,23 @@ def run_monte_carlo(
     *,
     limits: list[LimitRegion] | None = None,
     progress: Callable[[int, int], None] | None = None,
+    cancel: Callable[[], bool] | None = None,
 ) -> MonteCarloResult:
     """Run ``config.n_trials`` perturbed analyses and summarise the response.
 
     ``progress(done, total)`` is called periodically (and once at the end).
+    ``cancel`` is polled before each trial; stopping after some trials returns a
+    partial result, while cancelling before the first trial raises
+    :class:`MonteCarloCancelled`.
     """
     active = [lim for lim in (limits or []) if lim.enabled]
-    s21, s11, passes = _run_trials(circuit, sweep, config, active, progress)
+    s21, s11, passes, done = _run_trials(
+        circuit, sweep, config, active, progress, cancel
+    )
+    if done == 0:
+        raise MonteCarloCancelled("Monte-Carlo cancelled")
     perc = np.percentile(s21, [5, 50, 95], axis=0)
-    yield_fraction = passes / config.n_trials if active else None
+    yield_fraction = passes / done if active else None
 
     return MonteCarloResult(
         frequency_hz=np.asarray(sweep.frequencies_hz(), dtype=np.float64),
@@ -218,6 +243,6 @@ def run_monte_carlo(
         s11_db_max=np.asarray(np.max(s11, axis=0), dtype=np.float64),
         yield_fraction=yield_fraction,
         passes=passes,
-        n_trials=config.n_trials,
+        n_trials=done,
         config=config,
     )

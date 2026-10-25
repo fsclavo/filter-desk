@@ -20,6 +20,7 @@ from filterdesk.domain.enums import (
 from filterdesk.domain.overlays import LimitMetric, LimitRegion
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.optimization import (
+    OptimizationCancelled,
     OptimizationConfig,
     OptimizationError,
     OptimizeMethod,
@@ -328,3 +329,14 @@ def test_cli_optimize(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> Non
     assert payload["method"] == "nelder_mead"
     assert payload["final_cost"] <= payload["initial_cost"]
     assert len(payload["components"]) == 5
+
+
+def test_optimize_cancel_raises() -> None:
+    with pytest.raises(OptimizationCancelled):
+        optimize_circuit(
+            synthesize(_spec()).circuit,
+            _sweep(),
+            [_tight_passband()],
+            OptimizationConfig(max_iter=3),
+            cancel=lambda: True,
+        )
