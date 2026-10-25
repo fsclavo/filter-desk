@@ -272,7 +272,7 @@ specification edits require an explicit **Synthesize**.
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
-| **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC) |
+| **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -490,7 +490,8 @@ Most commands accept `--json` for machine-readable output.
   ```
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
   `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
-  `--turns`; `--json` for machine output.
+  `--turns`. Wire is enamelled grade 1 by default (`--bare-wire` or
+  `--enamel-mm` to override); `--json` for machine output.
   ```bash
   filterdesk air-coil --diameter 10 --awg 24 --inductance 1u
   ```
@@ -591,23 +592,38 @@ Brune `Ls/Cs/Lp/Cp`). The format follows the extension:
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.
 
-### Toroid calculator
+### Coil calculator
 
-**Design → Toroid calculator…** (or `filterdesk toroid`) computes windings from
-`L = AL * N^2`, with AL in nH/N². The built-in table covers common Amidon
-iron-powder cores (mixes 2, 6, 10) and ferrite 43; `--al`/`--od`/`--id`/
-`--height` accept a custom core. With a target inductance the turn count is
-rounded **up**, so the achieved L is at least the requested value. The tool also
-reports:
+**Design → Coil calculator…** has two tabs; both are also available from the CLI.
+
+**Toroid** (`filterdesk toroid`) computes windings from `L = AL * N^2`, with AL in
+nH/N². The built-in table covers common Amidon iron-powder cores (mixes 2, 6, 10)
+and ferrite 43; `--al`/`--od`/`--id`/`--height` accept a custom core. With a
+target inductance the turn count is rounded **up**, so the achieved L is at least
+the requested value. It also reports:
 
 - the thickest **AWG** that fits a single layer through the inner diameter
   (85 % fill), with the estimated wire length;
 - peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores
   (Bsat is the room-temperature typical value; derate it with temperature).
 
-AL spread is typically ±20–25 %, `A_e` is derived geometrically from the catalog
+AL spread is typically ±20–25 %, `Ae` is derived geometrically from the catalog
 dimensions (coating ignored), and iron-powder cores do not show a Bsat check.
 Treat the result as a starting point and verify against the core datasheet.
+
+**Air-core** (`filterdesk air-coil`) designs a single-layer, close-wound
+solenoid using Wheeler's formula `L[uH] = a^2 N^2 / (9a + 10b)`, with `a` the
+radius and `b = N * pitch` the winding length (inches internally). Inputs are the
+target L (or fixed turns), coil diameter and the wire size — **AWG** or its
+**bare diameter in mm**. By default the wire is **grade-1 enamelled**: the bare
+copper sets the DC resistance, while a typical enamel build (interpolated from
+IEC 60317-0-1) sets the pitch and length. Use a build of `0` for bare copper or
+enter a custom build in mm. Outputs are turns, coil length, length/diameter,
+bare/overall wire size, wire length and DC resistance; the best turn count below
+the target is also shown, because air-core turn steps are coarse.
+
+It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
+drops for very short coils (`length/diameter < 0.2`, flagged in the result).
 
 ---
 

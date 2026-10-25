@@ -742,12 +742,15 @@ class _AirCoilPage(QWidget):
         self._wire_stack = QStackedWidget()
         self._wire_stack.addWidget(self._awg)
         self._wire_stack.addWidget(self._wire_mm)
+        self._enamel = EngineeringLineEdit()
+        self._enamel.setPlaceholderText("auto (grade 1); 0 = bare")
         self._turns = QSpinBox()
         self._turns.setRange(0, 9999)
         self._turns.setSpecialValueText("auto (from L)")
 
         self._turns_exact = QLabel("-")
         self._turns_used = QLabel("-")
+        self._below = QLabel("-")
         self._l_achieved = QLabel("-")
         self._length = QLabel("-")
         self._ratio = QLabel("-")
@@ -756,9 +759,10 @@ class _AirCoilPage(QWidget):
         self._resistance = QLabel("-")
 
         note = QLabel(
-            "Bare wire, perfect close winding, single layer. Insulation/pitch "
-            "lengthen the coil and lower L slightly. Self-capacitance / SRF "
-            "and Q are not modelled; verify at the operating frequency."
+            "Perfect close winding, single layer. Wire defaults to typical "
+            "grade-1 enamel (blank build) — use 0 for bare copper. Enamel "
+            "lengthens the coil and lowers L. Self-capacitance / SRF and Q are "
+            "not modelled; verify at the operating frequency."
         )
         note.setWordWrap(True)
 
@@ -767,9 +771,11 @@ class _AirCoilPage(QWidget):
         form.addRow("Diameter (mm)", self._diameter)
         form.addRow("Wire", self._wire_mode)
         form.addRow("", self._wire_stack)
+        form.addRow("Enamel build (mm)", self._enamel)
         form.addRow("Turns (0 = auto)", self._turns)
         form.addRow("Exact turns", self._turns_exact)
         form.addRow("Use turns", self._turns_used)
+        form.addRow("Closest below", self._below)
         form.addRow("Achieved L", self._l_achieved)
         form.addRow("Coil length", self._length)
         form.addRow("Length / diameter", self._ratio)
@@ -783,6 +789,7 @@ class _AirCoilPage(QWidget):
         self._wire_mode.currentIndexChanged.connect(self._on_wire_mode)
         self._awg.valueChanged.connect(self._recompute)
         self._wire_mm.editingFinished.connect(self._recompute)
+        self._enamel.editingFinished.connect(self._recompute)
         self._turns.valueChanged.connect(self._recompute)
         self._recompute()
 
@@ -812,11 +819,14 @@ class _AirCoilPage(QWidget):
             wire_mm = (
                 float(self._wire_mm.text().strip() or "0") if use_mm else None
             )
+            enamel_text = self._enamel.text().strip()
+            enamel = float(enamel_text) if enamel_text else None
             if turns > 0:
                 design = design_air_coil(
                     diameter_mm=diameter,
                     awg=awg,
                     wire_diameter_mm=wire_mm,
+                    enamel_build_mm=enamel,
                     turns=turns,
                 )
             else:
@@ -825,6 +835,7 @@ class _AirCoilPage(QWidget):
                     diameter_mm=diameter,
                     awg=awg,
                     wire_diameter_mm=wire_mm,
+                    enamel_build_mm=enamel,
                     inductance_h=target,
                 )
         except (AirCoilError, ValueError):
@@ -832,6 +843,7 @@ class _AirCoilPage(QWidget):
             for label in (
                 self._turns_exact,
                 self._turns_used,
+                self._below,
                 self._l_achieved,
                 self._length,
                 self._ratio,
@@ -845,15 +857,30 @@ class _AirCoilPage(QWidget):
         self._design_value = design
         self._turns_exact.setText(f"{design.turns_exact:.2f}")
         self._turns_used.setText(str(design.turns))
+        if design.turns_below < design.turns:
+            self._below.setText(
+                f"{design.turns_below} -> "
+                f"{format_engineering(design.inductance_below_h, 'H', digits=6)}"
+            )
+        else:
+            self._below.setText("-")
         self._l_achieved.setText(
             format_engineering(design.inductance_h, "H", digits=6)
         )
         self._length.setText(f"{design.length_mm:.2f} mm")
         short = " (short coil)" if design.short_coil else ""
         self._ratio.setText(f"{design.length_to_diameter:.2f}{short}")
-        self._wire_info.setText(
-            f"{design.wire_diameter_mm:.3f} mm (AWG {design.awg} eq.)"
-        )
+        if design.enamel_build_mm > 0.0:
+            self._wire_info.setText(
+                f"{design.wire_diameter_mm:.3f} mm bare / "
+                f"{design.overall_diameter_mm:.3f} mm enamelled "
+                f"(AWG {design.awg} eq.)"
+            )
+        else:
+            self._wire_info.setText(
+                f"{design.wire_diameter_mm:.3f} mm bare "
+                f"(AWG {design.awg} eq.)"
+            )
         self._wire.setText(f"{design.wire_length_m:.3f} m")
         self._resistance.setText(f"{design.resistance_ohm:.3f} Ohm")
 

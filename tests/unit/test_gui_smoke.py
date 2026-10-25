@@ -1570,10 +1570,18 @@ def test_coil_calculator_air_core_live_values() -> None:
 
     design = page.current_design()
     assert design is not None
-    assert design.turns == 10
-    assert design.inductance_h >= 1e-6
+    assert design.turns == 11
+    assert design.turns_below == 10
+    assert design.enamel_build_mm > 0.0
     assert "mm" in page._length.text()
     assert "Ohm" in page._resistance.text()
+    assert "enamelled" in page._wire_info.text()
+
+    page._enamel.setText("0")
+    page._recompute()
+    design = page.current_design()
+    assert design is not None and design.enamel_build_mm == 0.0
+    assert "bare" in page._wire_info.text()
 
     page._wire_mode.setCurrentIndex(1)
     page._wire_mm.setText("0.800")

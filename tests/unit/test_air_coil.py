@@ -14,19 +14,22 @@ from filterdesk.components_std.air_coil import (
     air_coil_inductance_h,
     awg_for_diameter_mm,
     design_air_coil,
+    enamel_overall_diameter_mm,
 )
 from filterdesk.components_std.toroid import awg_diameter_mm
 
 
-def test_fixed_turns_wheeler() -> None:
-    design = design_air_coil(diameter_mm=10.0, awg=24, turns=10)
+def test_fixed_turns_bare_wire() -> None:
+    design = design_air_coil(
+        diameter_mm=10.0, awg=24, turns=10, enamel_build_mm=0.0
+    )
     assert design.turns == 10
     assert design.turns_exact == pytest.approx(10.0)
+    assert design.enamel_build_mm == 0.0
+    assert design.overall_diameter_mm == pytest.approx(design.wire_diameter_mm)
     assert design.wire_diameter_mm == pytest.approx(0.510559, rel=1e-5)
     assert design.length_mm == pytest.approx(10 * design.wire_diameter_mm)
-    assert design.length_to_diameter == pytest.approx(
-        design.length_mm / 10.0
-    )
+    assert design.length_to_diameter == pytest.approx(design.length_mm / 10.0)
     assert design.inductance_h == pytest.approx(
         air_coil_inductance_h(
             10, 10.0, wire_diameter_mm=design.wire_diameter_mm
@@ -35,13 +38,29 @@ def test_fixed_turns_wheeler() -> None:
     assert design.target_inductance_h is None
 
 
+def test_default_enamelled_wire() -> None:
+    enamelled = design_air_coil(diameter_mm=10.0, awg=24, turns=10)
+    bare = design_air_coil(
+        diameter_mm=10.0, awg=24, turns=10, enamel_build_mm=0.0
+    )
+    assert enamelled.enamel_build_mm > 0.0
+    assert enamelled.overall_diameter_mm == pytest.approx(
+        enamel_overall_diameter_mm(enamelled.wire_diameter_mm)
+    )
+    assert enamelled.overall_diameter_mm > enamelled.wire_diameter_mm
+    assert enamelled.length_mm > bare.length_mm
+    assert enamelled.inductance_h < bare.inductance_h
+    assert enamelled.resistance_ohm == pytest.approx(bare.resistance_ohm)
+
+
 def test_design_from_target_rounds_up() -> None:
     design = design_air_coil(diameter_mm=10.0, awg=24, inductance_h=1e-6)
-    assert design.turns_exact < 10.0
-    assert design.turns == 10
+    assert 10.0 < design.turns_exact < 11.0
+    assert design.turns == 11
     assert design.target_inductance_h == pytest.approx(1e-6)
     assert design.inductance_h >= 1e-6
-    assert design.inductance_h == pytest.approx(1.02467e-6, rel=1e-4)
+    assert design.turns_below == 10
+    assert design.inductance_below_h < 1e-6
     assert not design.short_coil
 
 
@@ -81,7 +100,10 @@ def test_turns_are_minimal(target: float) -> None:
     assert design.inductance_h >= target
     if design.turns > 1:
         previous = air_coil_inductance_h(
-            design.turns - 1, 10.0, wire_diameter_mm=wire
+            design.turns - 1,
+            10.0,
+            wire_diameter_mm=wire,
+            enamel_build_mm=design.enamel_build_mm,
         )
         assert previous < target
 
@@ -130,6 +152,10 @@ def test_validation() -> None:
         design_air_coil(diameter_mm=10.0, awg=24, inductance_h=0.0)
     with pytest.raises(AirCoilError, match="turns"):
         design_air_coil(diameter_mm=10.0, awg=24, turns=0)
+    with pytest.raises(AirCoilError, match="enamel"):
+        design_air_coil(
+            diameter_mm=10.0, awg=24, turns=5, enamel_build_mm=-0.1
+        )
 
 
 def test_cli_json(capsys: pytest.CaptureFixture[str]) -> None:
@@ -145,7 +171,9 @@ def test_cli_json(capsys: pytest.CaptureFixture[str]) -> None:
     ]
     assert main(args) == 0
     data = json.loads(capsys.readouterr().out)
-    assert data["turns"] == 10
+    assert data["turns"] == 11
+    assert data["turns_below"] == 10
+    assert data["enamel_build_mm"] > 0.0
     assert data["target_inductance_h"] == pytest.approx(1e-6)
     assert data["resistance_ohm"] > 0.0
     assert data["short_coil"] is False
@@ -171,9 +199,24 @@ def test_cli_json(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_cli_text_and_error(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["air-coil", "--diameter", "10", "--awg", "24", "--turns", "10"]) == 0
+    assert (
+        main(
+            [
+                "air-coil",
+                "--diameter",
+                "10",
+                "--awg",
+                "24",
+                "--turns",
+                "10",
+                "--bare-wire",
+            ]
+        )
+        == 0
+    )
     out = capsys.readouterr().out
     assert "Air-core solenoid" in out
     assert "Turns:" in out and "R_DC" in out
+    assert "bare" in out
     assert main(["air-coil", "--diameter", "10", "--awg", "24"]) == 2
     assert "error:" in capsys.readouterr().err

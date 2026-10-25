@@ -349,7 +349,17 @@ def build_parser() -> argparse.ArgumentParser:
     wire = air.add_mutually_exclusive_group()
     wire.add_argument("--awg", type=int, default=None, help="Wire gauge (AWG 8-40)")
     wire.add_argument(
-        "--wire-mm", type=float, default=None, help="Wire diameter (mm)"
+        "--wire-mm", type=float, default=None, help="Bare wire diameter (mm)"
+    )
+    enamel = air.add_mutually_exclusive_group()
+    enamel.add_argument(
+        "--bare-wire", action="store_true", help="Assume bare copper (no enamel)"
+    )
+    enamel.add_argument(
+        "--enamel-mm",
+        type=float,
+        default=None,
+        help="Enamel build (mm); default: typical grade-1 enamelled wire",
     )
     air.add_argument("--json", action="store_true", help="Emit JSON")
 
@@ -1515,10 +1525,12 @@ def main(argv: list[str] | None = None) -> int:
             wire_mm = args.wire_mm
             if awg is None and wire_mm is None:
                 awg = 24
+            enamel_mm = 0.0 if args.bare_wire else args.enamel_mm
             air_design = design_air_coil(
                 diameter_mm=float(args.diameter),
                 awg=awg,
                 wire_diameter_mm=wire_mm,
+                enamel_build_mm=enamel_mm,
                 inductance_h=(
                     parse_si(str(args.inductance))
                     if args.inductance is not None
@@ -1536,9 +1548,13 @@ def main(argv: list[str] | None = None) -> int:
                         "diameter_mm": air_design.diameter_mm,
                         "awg": air_design.awg,
                         "wire_diameter_mm": air_design.wire_diameter_mm,
+                        "enamel_build_mm": air_design.enamel_build_mm,
+                        "overall_diameter_mm": air_design.overall_diameter_mm,
                         "turns_exact": air_design.turns_exact,
                         "turns": air_design.turns,
+                        "turns_below": air_design.turns_below,
                         "inductance_h": air_design.inductance_h,
+                        "inductance_below_h": air_design.inductance_below_h,
                         "target_inductance_h": air_design.target_inductance_h,
                         "length_mm": air_design.length_mm,
                         "length_to_diameter": air_design.length_to_diameter,
@@ -1552,7 +1568,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         print(
             f"Air-core solenoid D = {air_design.diameter_mm:g} mm, "
-            f"wire {air_design.wire_diameter_mm:.3f} mm "
+            f"wire {air_design.wire_diameter_mm:.3f} mm bare / "
+            f"{air_design.overall_diameter_mm:.3f} mm over enamel "
             f"(AWG {air_design.awg} eq.)"
         )
         if air_design.target_inductance_h is not None:
@@ -1561,6 +1578,11 @@ def main(argv: list[str] | None = None) -> int:
                 f"{format_engineering(air_design.target_inductance_h, 'H', digits=4)}"
             )
         print(f"  Turns: {air_design.turns_exact:.2f} -> {air_design.turns}")
+        if air_design.turns_below < air_design.turns:
+            print(
+                f"  Closest below: {air_design.turns_below} -> "
+                f"{format_engineering(air_design.inductance_below_h, 'H', digits=6)}"
+            )
         print(
             f"  L = {format_engineering(air_design.inductance_h, 'H', digits=6)}"
         )
