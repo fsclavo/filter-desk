@@ -4,8 +4,16 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -13,8 +21,8 @@ jobs:
         python-version: ["3.11", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -26,21 +34,25 @@ jobs:
       - name: Install package and dev tools
         run: uv sync --frozen
       - name: Ruff
-        run: uv run ruff check src tests
+        run: uv run --frozen ruff check src tests
       - name: Mypy
-        run: uv run mypy
+        run: uv run --frozen mypy
       - name: Import-linter
-        run: uv run lint-imports
+        run: uv run --frozen lint-imports
       - name: Pytest (with coverage)
-        run: uv run pytest -q --cov=filterdesk --cov-report=term-missing:skip-covered
+        run: >-
+          uv run --frozen pytest -q
+          --cov=filterdesk --cov-report=term-missing:skip-covered
+          --cov-fail-under=70
         env:
           QT_QPA_PLATFORM: offscreen
 
   package-smoke:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
           python-version: "3.12"
           enable-cache: true

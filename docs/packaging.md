@@ -98,7 +98,19 @@ and launches the GUI.
 
 - **Matrix**: `ubuntu-latest` and `windows-latest` × Python `3.11` / `3.12`
   (Ruff, Mypy, Import-linter, Pytest).
-- **Coverage**: `pytest-cov` (`--cov=filterdesk`, branch coverage) — report-only.
+- **Coverage**: `pytest-cov` (`--cov=filterdesk`, branch coverage) with a
+  `--cov-fail-under=70` gate.
 - **`package-smoke`**: builds the PyInstaller onedir on `ubuntu-latest` and runs
   `FilterDesk --version` plus a headless `synthesize`, so bundling breakage is
   caught before a release tag.
+
+Dependency upkeep:
+
+- `.github/dependabot.yml` — weekly PRs for `uv` (pyproject/uv.lock) and
+  GitHub Actions.
+- `.github/workflows/security.yml` — weekly `pip-audit` (plus manual dispatch)
+  against the locked environment.
+
+CI uses the current Node 24-based action majors (`checkout@v7`,
+`setup-uv@v10`, `upload-artifact@v7`, `download-artifact@v8`,
+`action-gh-release@v3`).

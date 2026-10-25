@@ -1,0 +1,24 @@
+name: security
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Sync project (frozen)
+        run: uv sync --frozen
+      - name: pip-audit (known vulnerabilities)
+        run: uv run --frozen --with pip-audit pip-audit --skip-editable
