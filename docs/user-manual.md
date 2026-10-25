@@ -435,7 +435,8 @@ Most commands accept `--json` for machine-readable output.
   power stress (`--power W`), the harmonic readout (`--harmonics`,
   `--harmonics-f0 F`), and exporters `--export-s2p`, `--export-smith`,
   `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`,
-  `--export-build-sheet`.
+  `--export-build-sheet`. Build-sheet options: `--bom-series {E6,E12,E24,E48,E96}`,
+  `--bom-group`, and `--bom-columns` (comma-separated CSV columns).
   ```bash
   filterdesk analyze --spec my.spec.json --backend skrf \
     --export-s2p out.s2p --export-csv out.csv
@@ -590,13 +591,23 @@ LTspice-compatible netlist.
 
 **File → Export → build sheet / BOM…** (or `analyze --export-build-sheet PATH`)
 writes one row per physical part, expanding compound elements (`X1.L`/`X1.C`,
-Brune `Ls/Cs/Lp/Cp`). The format follows the extension:
+Brune `Ls/Cs/Lp/Cp`). Before choosing the file, the GUI offers an optional
+**E-series** snap and a **group identical parts** checkbox.
 
-- `.csv` — machine-readable BOM: `ref`, `role`, `type`, `value`, `value_si`,
-  `unit`, `tolerance_pct`, `parasitic`, `v_peak_v`, `i_peak_a`.
+The format follows the extension:
+
+- `.csv` — machine-readable BOM. Default columns: `ref`, `qty`, `role`, `type`,
+  `value`, `value_si`, `unit`, `series`, `nearest_value`, `delta_pct`,
+  `tolerance_pct`, `parasitic`, `dcr_ohm`, `srf_hz`, `core`, `turns`,
+  `wire_awg`, `v_peak_v`, `i_peak_a`. Use `--bom-columns` to pick a subset.
 - `.md` / `.html` — printable build sheet with the specification summary, the
-  BOM table (values, tolerance, parasitics, peak V/I) and optional notes.
-  HTML has no external assets, so it prints or exports to PDF from a browser.
+  BOM table (values, tolerance, parasitics, DCR/SRF, winding, peak V/I) and
+  optional notes. HTML has no external assets, so it prints or exports to PDF
+  from a browser.
+
+Options: `--bom-series E24` snaps L/C to a preferred series (showing the nearest
+value and the relative change), and `--bom-group` merges identical parts into one
+row with a combined reference list and a quantity.
 
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.

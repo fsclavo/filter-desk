@@ -238,6 +238,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write a BOM/build sheet to this path (.csv, .md or .html)",
     )
     ana.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+        help="Snap L/C to this E-series in the build sheet",
+    )
+    ana.add_argument(
+        "--bom-group",
+        action="store_true",
+        help="Group identical parts (combined refs + quantity) in the build sheet",
+    )
+    ana.add_argument(
+        "--bom-columns",
+        default=None,
+        help="Comma-separated BOM columns for .csv (default: full set)",
+    )
+    ana.add_argument(
         "--power",
         type=float,
         default=0.0,
@@ -1478,6 +1494,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {args.export_qucs}", file=sys.stderr)
 
         if args.export_build_sheet is not None:
+            bom_series = ESeries(args.bom_series) if args.bom_series else None
+            bom_columns = (
+                tuple(
+                    column.strip()
+                    for column in args.bom_columns.split(",")
+                    if column.strip()
+                )
+                if args.bom_columns
+                else None
+            )
             write_build_sheet(
                 synth.circuit,
                 args.export_build_sheet,
@@ -1485,6 +1511,9 @@ def main(argv: list[str] | None = None) -> int:
                 stress=stress,
                 power_w=args.power,
                 title=f"{spec.family.value} n={spec.order} {spec.response.value}",
+                series=bom_series,
+                group=bool(args.bom_group),
+                columns=bom_columns,
             )
             print(f"Wrote {args.export_build_sheet}", file=sys.stderr)
 

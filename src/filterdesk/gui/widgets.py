@@ -994,3 +994,40 @@ class SensitivityDialog(QDialog):
     def take_action(self) -> tuple[str, int] | None:
         """Element ref + direction to nudge, when the user chose to tune."""
         return self._action
+
+
+class BuildSheetDialog(QDialog):
+    """Options for a BOM / build-sheet export."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Build sheet options")
+        self._series = QComboBox()
+        self._series.addItem("No E-series snap", None)
+        for series in ESeries:
+            self._series.addItem(series.value, series)
+        self._group = QCheckBox("Group identical parts (combine refs and quantity)")
+        form = QFormLayout(self)
+        form.addRow("E-series", self._series)
+        form.addRow(self._group)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def selection(self) -> tuple[ESeries | None, bool]:
+        data = self._series.currentData()
+        series = ESeries(str(data)) if data is not None else None
+        return series, self._group.isChecked()
+
+    @classmethod
+    def ask(
+        cls, parent: QWidget | None = None
+    ) -> tuple[ESeries | None, bool] | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.selection()
+        return None

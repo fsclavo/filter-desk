@@ -70,6 +70,7 @@ from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandPresetDialog,
+    BuildSheetDialog,
     CoilCalculatorDialog,
     EngineeringLineEdit,
     MatchingDialog,
@@ -1807,6 +1808,10 @@ class MainWindow(QMainWindow):
                 self, "Export build sheet", "Synthesize a circuit first."
             )
             return
+        options = BuildSheetDialog.ask(self)
+        if options is None:
+            return
+        series, group = options
         path, selected = QFileDialog.getSaveFileName(
             self,
             "Export build sheet / BOM",
@@ -1829,6 +1834,8 @@ class MainWindow(QMainWindow):
                 stress=self._session.compute_stress(),
                 power_w=self._session.power_w,
                 title=self._export_title(),
+                series=series,
+                group=group,
             )
             self._status.setText(f"Wrote {target}")
         except Exception as exc:  # noqa: BLE001

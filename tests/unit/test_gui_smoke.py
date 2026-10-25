@@ -1444,6 +1444,7 @@ def test_main_window_export_build_sheet(
     session.synthesize()
     session.power_w = 10.0
     window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.BuildSheetDialog, "ask", lambda *a, **k: (None, False))
 
     out = tmp_path / "design_bom.md"
     monkeypatch.setattr(
@@ -1473,6 +1474,7 @@ def test_main_window_export_build_sheet_appends_csv_suffix(
     session = DesignSession()
     session.synthesize()
     window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.BuildSheetDialog, "ask", lambda *a, **k: (None, False))
 
     chosen = tmp_path / "design_bom"
     monkeypatch.setattr(
@@ -1511,6 +1513,7 @@ def test_main_window_export_build_sheet_filter_overrides_suffix(
     session = DesignSession()
     session.synthesize()
     window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(mw.BuildSheetDialog, "ask", lambda *a, **k: (None, False))
 
     chosen = tmp_path / "design_bom.md"
     monkeypatch.setattr(
@@ -1621,5 +1624,24 @@ def test_sensitivity_dialog_rows() -> None:
     dialog = SensitivityDialog(report)
     assert dialog._table.rowCount() == len(report.rows)
     assert dialog.take_action() is None
+    dialog.close()
+    assert app is not None
+
+
+def test_build_sheet_dialog_selection() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import ESeries
+    from filterdesk.gui.widgets import BuildSheetDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = BuildSheetDialog()
+    series, group = dialog.selection()
+    assert series is None and group is False
+
+    dialog._series.setCurrentIndex(dialog._series.findText("E24"))
+    dialog._group.setChecked(True)
+    series, group = dialog.selection()
+    assert series is ESeries.E24 and group is True
     dialog.close()
     assert app is not None
