@@ -788,9 +788,7 @@ class MainWindow(QMainWindow):
         self._status.setText(
             tr("Monte-Carlo: {trials} trials…", trials=config.n_trials)
         )
-        if self._mc_thread is not None and self._mc_thread.isRunning():
-            self._mc_thread.quit()
-            self._mc_thread.wait(100)
+        self._stop_thread(self._mc_thread, 2000)
         thread, worker = start_monte_carlo_thread(
             self._session.circuit,
             self._session.sweep,
@@ -1014,9 +1012,7 @@ class MainWindow(QMainWindow):
         assert self._session.circuit is not None
         assert self._session.sweep is not None
         self._status.setText(tr("Optimizing…"))
-        if self._optimize_thread is not None and self._optimize_thread.isRunning():
-            self._optimize_thread.quit()
-            self._optimize_thread.wait(100)
+        self._stop_thread(self._optimize_thread, 2000)
         thread, _worker = start_optimize_thread(
             self._session.circuit,
             self._session.sweep,
@@ -1118,9 +1114,7 @@ class MainWindow(QMainWindow):
             return
         assert self._session.sweep is not None
         self._status.setText(tr("Analyzing…"))
-        if self._analyze_thread is not None and self._analyze_thread.isRunning():
-            self._analyze_thread.quit()
-            self._analyze_thread.wait(100)
+        self._stop_thread(self._analyze_thread, 500)
         thread, _worker = start_analyze_thread(
             self._session.circuit,
             self._session.sweep,
@@ -1805,9 +1799,7 @@ class MainWindow(QMainWindow):
         )
         if not path:
             return
-        if self._import_thread is not None and self._import_thread.isRunning():
-            self._import_thread.quit()
-            self._import_thread.wait(100)
+        self._stop_thread(self._import_thread, 500)
         thread, _worker = start_import_thread(
             path, self._on_touchstone_loaded, self._on_touchstone_failed
         )

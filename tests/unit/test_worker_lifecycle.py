@@ -259,3 +259,36 @@ def test_close_event_cooperative_thread_does_not_terminate() -> None:
     assert fake.interrupted and fake.quit_called
     assert not fake.terminated
     assert app is not None
+
+
+def test_close_mid_monte_carlo_stops_real_thread(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.montecarlo import MonteCarloConfig
+
+    class _Dialog:
+        @staticmethod
+        def ask(*_args: object, **_kwargs: object) -> MonteCarloConfig:
+            return MonteCarloConfig(n_trials=200_000, tolerance_pct=2.0, seed=1)
+
+    monkeypatch.setattr(mw, "MonteCarloDialog", _Dialog)
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    window._points.setValue(32)
+    window._f_start.setText("10M")
+    window._f_stop.setText("1G")
+
+    window._run_monte_carlo()
+    thread = window._mc_thread
+    assert thread is not None
+    _spin_until(lambda: thread.isRunning(), timeout_s=2)
+    assert thread.isRunning()
+
+    window.close()
+    assert not thread.isRunning()
+    assert app is not None
