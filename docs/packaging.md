@@ -99,7 +99,7 @@ and launches the GUI.
 - **Matrix**: `ubuntu-latest` and `windows-latest` × Python `3.11` / `3.12`
   (Ruff, Mypy, Import-linter, Pytest).
 - **Coverage**: `pytest-cov` (`--cov=filterdesk`, branch coverage) with a
-  `--cov-fail-under=70` gate.
+  `--cov-fail-under=80` gate (currently ~81 %).
 - **`package-smoke`**: builds the PyInstaller onedir on `ubuntu-latest` and runs
   `FilterDesk --version` plus a headless `synthesize`, so bundling breakage is
   caught before a release tag.

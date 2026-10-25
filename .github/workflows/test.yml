@@ -43,7 +43,7 @@ jobs:
         run: >-
           uv run --frozen pytest -q
           --cov=filterdesk --cov-report=term-missing:skip-covered
-          --cov-fail-under=70
+          --cov-fail-under=80
         env:
           QT_QPA_PLATFORM: offscreen
 
