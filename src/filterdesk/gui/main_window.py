@@ -6,9 +6,10 @@ import math
 from dataclasses import replace
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, Qt, QThread, QTimer, QUrl
+from PySide6.QtCore import QByteArray, QPoint, Qt, QThread, QTimer, QUrl
 from PySide6.QtGui import (
     QAction,
+    QActionGroup,
     QCloseEvent,
     QDesktopServices,
     QKeySequence,
@@ -16,6 +17,7 @@ from PySide6.QtGui import (
     QUndoStack,
 )
 from PySide6.QtWidgets import (
+    QApplication,
     QDockWidget,
     QDoubleSpinBox,
     QFileDialog,
@@ -67,6 +69,13 @@ from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
+from filterdesk.gui.settings import (
+    GEOMETRY_KEY,
+    STATE_KEY,
+    THEME_KEY,
+    get_settings_store,
+)
+from filterdesk.gui.theme import ThemeColors, ThemeMode, apply_theme
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandPresetDialog,
@@ -182,6 +191,9 @@ class MainWindow(QMainWindow):
         self.resize(1280, 800)
         self._session = session or DesignSession()
         self._undo = QUndoStack(self)
+        self._theme_mode = self._load_theme_mode()
+        self._theme_colors: ThemeColors | None = None
+        self._theme_actions: dict[ThemeMode, QAction] = {}
         self._selected_element: str | None = None
         self._analyze_thread: QThread | None = None
         self._import_thread: QThread | None = None
@@ -252,6 +264,8 @@ class MainWindow(QMainWindow):
         self._limits_panel.limits_changed.connect(self._on_limits_edited)
         self._build_menus()
         self._load_session_into_ui()
+        self._apply_theme(self._theme_mode, persist=False)
+        self._restore_window_state()
         if auto_run:
             self._run_synthesize_and_analyze()
 
@@ -415,6 +429,24 @@ class MainWindow(QMainWindow):
         self._act_harmonics.setChecked(True)
         self._act_harmonics.toggled.connect(self._plots.set_harmonics_visible)
         view_menu.addAction(self._act_harmonics)
+        view_menu.addSeparator()
+        theme_menu = view_menu.addMenu("&Theme")
+        theme_group = QActionGroup(self)
+        theme_group.setExclusive(True)
+        for mode, label in (
+            (ThemeMode.SYSTEM, "System"),
+            (ThemeMode.LIGHT, "Light"),
+            (ThemeMode.DARK, "Dark"),
+        ):
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setChecked(mode is self._theme_mode)
+            action.triggered.connect(
+                lambda checked=False, m=mode: self._apply_theme(m)
+            )
+            theme_group.addAction(action)
+            theme_menu.addAction(action)
+            self._theme_actions[mode] = action
 
         design_menu = self.menuBar().addMenu("&Design")
         act_syn = QAction("&Synthesize + Analyze", self)
@@ -531,6 +563,43 @@ class MainWindow(QMainWindow):
         if title and title != DEFAULT_TITLE:
             return title
         return default_stem(self._session.spec)
+
+    def _load_theme_mode(self) -> ThemeMode:
+        raw = get_settings_store().get_str(THEME_KEY, ThemeMode.SYSTEM.value)
+        try:
+            return ThemeMode(raw)
+        except ValueError:
+            return ThemeMode.SYSTEM
+
+    def _apply_theme(self, mode: ThemeMode, *, persist: bool = True) -> None:
+        app = QApplication.instance()
+        if not isinstance(app, QApplication):
+            return
+        colors = apply_theme(app, mode)
+        self._theme_mode = mode
+        self._theme_colors = colors
+        self._plots.set_theme(colors)
+        self._schematic.refresh_theme()
+        action = self._theme_actions.get(mode)
+        if action is not None:
+            action.setChecked(True)
+        if persist:
+            get_settings_store().set_str(THEME_KEY, mode.value)
+            self._status.setText(f"Theme: {mode.value}")
+
+    def _restore_window_state(self) -> None:
+        store = get_settings_store()
+        geometry = store.get_bytes(GEOMETRY_KEY)
+        if geometry:
+            self.restoreGeometry(QByteArray(geometry))
+        state = store.get_bytes(STATE_KEY)
+        if state:
+            self.restoreState(QByteArray(state))
+
+    def _save_window_state(self) -> None:
+        store = get_settings_store()
+        store.set_bytes(GEOMETRY_KEY, bytes(self.saveGeometry().data()))
+        store.set_bytes(STATE_KEY, bytes(self.saveState().data()))
 
     def _apply_spec_and_sweep_from_ui(self) -> None:
         spec = self._spec.build_spec()
@@ -1916,6 +1985,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Export failed", _exc_text(exc))
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        self._save_window_state()
         if self._analyze_thread is not None and self._analyze_thread.isRunning():
             self._analyze_thread.quit()
             self._analyze_thread.wait(500)

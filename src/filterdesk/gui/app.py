@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtWidgets import QApplication
 
 from filterdesk.gui.main_window import MainWindow
@@ -49,6 +50,8 @@ def run_gui(argv: list[str] | None = None) -> int:
     if owns_app:
         app = QApplication(args)
     assert app is not None
+    QCoreApplication.setOrganizationName("FilterDesk")
+    QCoreApplication.setApplicationName("FilterDesk")
     session = DesignSession()
     window = MainWindow(session)
     window.show()

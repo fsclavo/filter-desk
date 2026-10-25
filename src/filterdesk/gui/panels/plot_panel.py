@@ -14,6 +14,7 @@ from filterdesk.analysis.types import AnalysisResult
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
+from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 
 if TYPE_CHECKING:
     from filterdesk.montecarlo import MonteCarloResult
@@ -294,6 +295,12 @@ class PlotPanel(QWidget):
     def set_harmonics_visible(self, visible: bool) -> None:
         self._show_harmonics = bool(visible)
         self._redraw_harmonics()
+
+    def set_theme(self, colors: ThemeColors) -> None:
+        """Apply theme colours to every plot and the Smith chart."""
+        for plot in self._plots:
+            apply_plot_theme(plot, colors)
+        self._smith.set_theme(colors)
 
     def _redraw_harmonics(self) -> None:
         for line in self._harmonic_lines:

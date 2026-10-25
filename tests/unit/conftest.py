@@ -40,6 +40,17 @@ def _qt_app() -> object:
     yield app
 
 
+@pytest.fixture(autouse=True)
+def _isolate_settings() -> object:
+    """Give every test a fresh in-memory settings store (never real QSettings)."""
+    from filterdesk.gui.settings import InMemorySettingsStore, set_settings_store
+
+    store = InMemorySettingsStore()
+    set_settings_store(store)
+    yield store
+    set_settings_store(None)
+
+
 
 def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     del session

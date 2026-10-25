@@ -15,6 +15,7 @@ from filterdesk.analysis.smith import (
 )
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
+from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 
 _GRID_Z = -20
 _LIMIT_Z = -15
@@ -191,6 +192,9 @@ class SmithChartWidget(QWidget):
             self._curve_s22_meas.setData(g22.real, g22.imag)
         else:
             self._curve_s22_meas.setData([], [])
+
+    def set_theme(self, colors: ThemeColors) -> None:
+        apply_plot_theme(self._plot, colors)
 
     def clear(self) -> None:
         self.set_s_params(

@@ -1707,3 +1707,45 @@ def test_coil_calculator_apply_realizes_inductor(
     assert realized.winding.kind == "toroid"
     dialog.close()
     assert app is not None
+
+
+def test_theme_menu_persists_and_applies() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.gui.settings import THEME_KEY, get_settings_store
+    from filterdesk.gui.theme import LIGHT, ThemeMode
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    window._apply_theme(ThemeMode.LIGHT)
+    assert get_settings_store().get_str(THEME_KEY) == "light"
+    assert window._theme_mode is ThemeMode.LIGHT
+    assert (
+        window._plots._mag.backgroundBrush().color().name()
+        == LIGHT.plot_background
+    )
+    window._apply_theme(ThemeMode.SYSTEM)
+    assert get_settings_store().get_str(THEME_KEY) == "system"
+    window.close()
+    assert app is not None
+
+
+def test_window_state_persisted_on_close() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.gui.settings import (
+        GEOMETRY_KEY,
+        STATE_KEY,
+        get_settings_store,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    window.close()
+    assert get_settings_store().get_bytes(GEOMETRY_KEY)
+    assert get_settings_store().get_bytes(STATE_KEY)
+    assert app is not None

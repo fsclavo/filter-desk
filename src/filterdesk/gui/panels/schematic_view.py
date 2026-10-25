@@ -170,6 +170,12 @@ class SchematicPanel(QWidget):
         pal.setColor(QPalette.ColorRole.WindowText, fg)
         self._view.setPalette(pal)
 
+    def refresh_theme(self) -> None:
+        """Reapply palette-derived colours (after an app theme change)."""
+        self._apply_theme_colors()
+        if self._circuit is not None:
+            self.set_circuit(self._circuit)
+
     def _fit_view(self) -> None:
         rect = self._scene.itemsBoundingRect().adjusted(-20, -20, 20, 20)
         if rect.isEmpty() or not self._view.viewport().isVisible():
