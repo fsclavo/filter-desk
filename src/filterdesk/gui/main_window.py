@@ -84,6 +84,7 @@ from filterdesk.gui.workers import (
     start_monte_carlo_thread,
     start_optimize_thread,
 )
+from filterdesk.io.build_sheet import write_build_sheet
 from filterdesk.io.csv_export import export_csv
 from filterdesk.io.native import load_project, save_project
 from filterdesk.io.qucs import write_qucs_schematic
@@ -108,6 +109,32 @@ def _exc_text(exc: BaseException) -> str:
     if text:
         return f"{type(exc).__name__}: {text}"
     return f"{type(exc).__name__} (no message)"
+
+
+_BUILD_SHEET_SUFFIXES: dict[str, tuple[str, ...]] = {
+    "csv": (".csv",),
+    "html": (".html", ".htm"),
+    "md": (".md", ".markdown"),
+}
+
+
+def _build_sheet_path(path: str, selected_filter: str) -> Path:
+    """Align the export extension with the filter the user picked in the dialog."""
+    target = Path(path)
+    suffix = target.suffix.lower()
+    if selected_filter.startswith("All files"):
+        if suffix in {s for group in _BUILD_SHEET_SUFFIXES.values() for s in group}:
+            return target
+        return target if suffix else target.with_suffix(".md")
+    if "CSV" in selected_filter:
+        allowed = _BUILD_SHEET_SUFFIXES["csv"]
+    elif "HTML" in selected_filter:
+        allowed = _BUILD_SHEET_SUFFIXES["html"]
+    else:
+        allowed = _BUILD_SHEET_SUFFIXES["md"]
+    if suffix in allowed:
+        return target
+    return target.with_suffix(allowed[0])
 
 
 _REPO_URL = "https://github.com/fsclavo/filter-desk"
@@ -322,6 +349,8 @@ class MainWindow(QMainWindow):
         act_export_asc.triggered.connect(self._export_asc)
         act_export_qucs = QAction("Export &Qucs (.sch)…", self)
         act_export_qucs.triggered.connect(self._export_qucs)
+        act_export_build = QAction("Export build sheet / &BOM…", self)
+        act_export_build.triggered.connect(self._export_build_sheet)
         act_quit = QAction("&Quit", self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
@@ -340,6 +369,7 @@ class MainWindow(QMainWindow):
         export_menu.addAction(act_export_spice)
         export_menu.addAction(act_export_asc)
         export_menu.addAction(act_export_qucs)
+        export_menu.addAction(act_export_build)
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
@@ -1735,6 +1765,40 @@ class MainWindow(QMainWindow):
                 circuit, path, title=self._export_title()
             )
             self._status.setText(f"Wrote {path}")
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+
+    def _export_build_sheet(self) -> None:
+        circuit = self._session.circuit
+        if circuit is None:
+            QMessageBox.information(
+                self, "Export build sheet", "Synthesize a circuit first."
+            )
+            return
+        path, selected = QFileDialog.getSaveFileName(
+            self,
+            "Export build sheet / BOM",
+            default_filename(self._session.spec, suffix="_bom.md"),
+            "Build sheet (*.md);;BOM CSV (*.csv);;HTML (*.html);;All files (*)",
+        )
+        if not path:
+            return
+        target = _build_sheet_path(path, selected)
+        tolerances = {
+            ref: tol.tolerance_pct
+            for ref, tol in self._session.element_tolerances.items()
+        }
+        try:
+            write_build_sheet(
+                circuit,
+                target,
+                spec=self._session.spec,
+                tolerances=tolerances,
+                stress=self._session.compute_stress(),
+                power_w=self._session.power_w,
+                title=self._export_title(),
+            )
+            self._status.setText(f"Wrote {target}")
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, "Export failed", _exc_text(exc))
 

@@ -368,6 +368,7 @@ the overlay with **View → Show measured overlay**.
 | Export SPICE netlist | File → Export → SPICE netlist… | — | `.net`/`.cir` (LTspice) |
 | Export LTspice schematic | File → Export → LTspice (.asc)… | — | `.asc` |
 | Export Qucs schematic | File → Export → Qucs (.sch)… | — | `.sch` (best-effort) |
+| Export build sheet / BOM | File → Export → build sheet / BOM… | — | `.md`, `.csv`, `.html` |
 
 The native project file stores the specification, circuit, sweep settings,
 markers, limits, per-component tolerances and tune steps, the TX Power setting,
@@ -431,7 +432,8 @@ Most commands accept `--json` for machine-readable output.
   `--inductor-dcr`, `--inductor-cpar`, `--capacitor-esr`, `--capacitor-esl`),
   power stress (`--power W`), the harmonic readout (`--harmonics`,
   `--harmonics-f0 F`), and exporters `--export-s2p`, `--export-smith`,
-  `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`.
+  `--export-csv`, `--export-spice`, `--export-asc`, `--export-qucs`,
+  `--export-build-sheet`.
   ```bash
   filterdesk analyze --spec my.spec.json --backend skrf \
     --export-s2p out.s2p --export-csv out.csv
@@ -554,6 +556,21 @@ Export always writes Hz/RI and (for `.s2p`) requires equal real port impedances.
 CSV columns are `frequency_hz`, `s21_db`, `s11_db`, `s22_db`, `s21_mag`,
 `s11_mag`, `vswr`, `group_delay_s`, `il_db`, `rl_db`. The SPICE export is a flat,
 LTspice-compatible netlist.
+
+### Build sheet / BOM
+
+**File → Export → build sheet / BOM…** (or `analyze --export-build-sheet PATH`)
+writes one row per physical part, expanding compound elements (`X1.L`/`X1.C`,
+Brune `Ls/Cs/Lp/Cp`). The format follows the extension:
+
+- `.csv` — machine-readable BOM: `ref`, `role`, `type`, `value`, `value_si`,
+  `unit`, `tolerance_pct`, `parasitic`, `v_peak_v`, `i_peak_a`.
+- `.md` / `.html` — printable build sheet with the specification summary, the
+  BOM table (values, tolerance, parasitics, peak V/I) and optional notes.
+  HTML has no external assets, so it prints or exports to PDF from a browser.
+
+Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
+are included automatically.
 
 ---
 

@@ -199,6 +199,91 @@ Element = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class PhysicalComponent:
+    """One physical L/C/R part of a (possibly compound) circuit element.
+
+    ``ref`` is the part designator (``L1``, ``C2``, ``X1.L`` …), ``element_id``
+    the originating circuit element. ``unit`` is ``"H"``, ``"F"`` or ``"Ohm"``.
+    """
+
+    ref: str
+    element_id: str
+    role: str
+    kind: str
+    value: float
+    unit: str
+    series_resistance_ohm: float = 0.0
+    parallel_capacitance_f: float = 0.0
+    esr_ohm: float = 0.0
+    esl_h: float = 0.0
+
+
+def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
+    """Expand circuit elements into one row per physical part (BOM view)."""
+    rows: list[PhysicalComponent] = []
+    for el in circuit.elements:
+        role = el.role.value
+        if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
+            rows.append(
+                PhysicalComponent(
+                    f"{el.id}.L", el.id, role, "inductor", el.value_h, "H"
+                )
+            )
+            rows.append(
+                PhysicalComponent(
+                    f"{el.id}.C", el.id, role, "capacitor", el.value_f, "F"
+                )
+            )
+        elif isinstance(el, (IdealBruneLC, IdealDualBruneLC)):
+            for ref, value, unit, kind in (
+                (f"{el.id}.Ls", el.series_l_h, "H", "inductor"),
+                (f"{el.id}.Cs", el.series_c_f, "F", "capacitor"),
+                (f"{el.id}.Lp", el.parallel_l_h, "H", "inductor"),
+                (f"{el.id}.Cp", el.parallel_c_f, "F", "capacitor"),
+            ):
+                rows.append(PhysicalComponent(ref, el.id, role, kind, value, unit))
+        elif isinstance(el, NonIdealInductor):
+            rows.append(
+                PhysicalComponent(
+                    el.id,
+                    el.id,
+                    role,
+                    "inductor",
+                    el.value_h,
+                    "H",
+                    series_resistance_ohm=el.series_resistance_ohm,
+                    parallel_capacitance_f=el.parallel_capacitance_f,
+                )
+            )
+        elif isinstance(el, NonIdealCapacitor):
+            rows.append(
+                PhysicalComponent(
+                    el.id,
+                    el.id,
+                    role,
+                    "capacitor",
+                    el.value_f,
+                    "F",
+                    esr_ohm=el.esr_ohm,
+                    esl_h=el.esl_h,
+                )
+            )
+        elif isinstance(el, IdealCapacitor):
+            rows.append(
+                PhysicalComponent(el.id, el.id, role, "capacitor", el.value_f, "F")
+            )
+        elif isinstance(el, IdealInductor):
+            rows.append(
+                PhysicalComponent(el.id, el.id, role, "inductor", el.value_h, "H")
+            )
+        else:
+            rows.append(
+                PhysicalComponent(el.id, el.id, role, "resistor", el.value_ohm, "Ohm")
+            )
+    return rows
+
+
 def series_node_path(num_series: int) -> list[str]:
     """Node sequence spanning series arms: ``in, n1, …, out``."""
     if num_series <= 0:

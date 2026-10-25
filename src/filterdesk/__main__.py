@@ -62,6 +62,7 @@ from filterdesk.domain.specs import (
     filter_spec_to_mapping,
 )
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.io.build_sheet import write_build_sheet
 from filterdesk.io.csv_export import (
     COLUMNS,
     CsvExportError,
@@ -221,6 +222,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="Write a Qucs .sch schematic to this path (best-effort)",
+    )
+    ana.add_argument(
+        "--export-build-sheet",
+        type=Path,
+        default=None,
+        help="Write a BOM/build sheet to this path (.csv, .md or .html)",
     )
     ana.add_argument(
         "--power",
@@ -1260,6 +1267,17 @@ def main(argv: list[str] | None = None) -> int:
                 title=f"{spec.family.value} n={spec.order} {spec.response.value}",
             )
             print(f"Wrote {args.export_qucs}", file=sys.stderr)
+
+        if args.export_build_sheet is not None:
+            write_build_sheet(
+                synth.circuit,
+                args.export_build_sheet,
+                spec=spec,
+                stress=stress,
+                power_w=args.power,
+                title=f"{spec.family.value} n={spec.order} {spec.response.value}",
+            )
+            print(f"Wrote {args.export_build_sheet}", file=sys.stderr)
 
         if args.json:
             n = analysis.frequency_hz.shape[0]

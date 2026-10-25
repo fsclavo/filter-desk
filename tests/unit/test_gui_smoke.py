@@ -1427,3 +1427,98 @@ def test_tune_actions_toolbar_and_component_menu() -> None:
 
     window.close()
     assert app is not None
+
+
+def test_main_window_export_build_sheet(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    session.power_w = 10.0
+    window = mw.MainWindow(session, auto_run=False)
+
+    out = tmp_path / "design_bom.md"
+    monkeypatch.setattr(
+        mw.QFileDialog,
+        "getSaveFileName",
+        lambda *a, **k: (str(out), "Build sheet (*.md)"),
+    )
+    window._export_build_sheet()
+    assert out.is_file()
+    text = out.read_text(encoding="utf-8")
+    assert "## Bill of materials" in text
+    assert "Forward power | 10 W" in text
+    assert "Wrote" in window._status.text()
+    window.close()
+    assert app is not None
+
+
+def test_main_window_export_build_sheet_appends_csv_suffix(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    chosen = tmp_path / "design_bom"
+    monkeypatch.setattr(
+        mw.QFileDialog,
+        "getSaveFileName",
+        lambda *a, **k: (str(chosen), "BOM CSV (*.csv)"),
+    )
+    window._export_build_sheet()
+    assert (tmp_path / "design_bom.csv").is_file()
+    window.close()
+    assert app is not None
+
+
+def test_build_sheet_path_aligns_extension() -> None:
+    from filterdesk.gui import main_window as mw
+
+    assert mw._build_sheet_path("x.md", "HTML (*.html)") == Path("x.html")
+    assert mw._build_sheet_path("x.md", "BOM CSV (*.csv)") == Path("x.csv")
+    assert mw._build_sheet_path("x", "BOM CSV (*.csv)") == Path("x.csv")
+    assert mw._build_sheet_path("x.markdown", "Build sheet (*.md)") == Path(
+        "x.markdown"
+    )
+    assert mw._build_sheet_path("x.csv", "All files (*)") == Path("x.csv")
+    assert mw._build_sheet_path("x.txt", "All files (*)") == Path("x.txt")
+
+
+def test_main_window_export_build_sheet_filter_overrides_suffix(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+
+    chosen = tmp_path / "design_bom.md"
+    monkeypatch.setattr(
+        mw.QFileDialog,
+        "getSaveFileName",
+        lambda *a, **k: (str(chosen), "HTML (*.html)"),
+    )
+    window._export_build_sheet()
+    out = tmp_path / "design_bom.html"
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
+    window.close()
+    assert app is not None

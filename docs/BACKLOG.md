@@ -155,7 +155,7 @@ intended implementation sequence.
 - [x] **Resistive attenuator designer** (S) — `components_std/attenuator.py` (`design_attenuator`); GUI **Design → Attenuator pad…** (live values, inserts a T/Pi pad at the input via `circuit_edit.insert_resistive_pad`); CLI `attenuator --db D [--z0 Z] [--kind t|pi] [--json]`.
 - [x] **Matching networks L / Pi / T** (L) — `components_std/matching.py` (`design_matching`, complex load, low-pass solution; Pi/T via virtual resistance from Q, numeric-verified `Zin=Z0`); GUI **Design → Matching network…** (live values + optional "model the load" building source→network→(series X)→port R); CLI `match --z0 --rl --xl --f [--topology l|pi|t] [--q Q] [--json]`.
 - [x] **Rejection presets** (S) — `BandKind.BSF` + `REJECTION_PRESETS` (AM broadcast 530–1710 kHz, FM broadcast 88–108 MHz) in `services/bands.py`; GUI **Design → Band preset…** (now includes band-stop + broadcast bands); CLI `--band am|fm --band-kind bsf`.
-- [ ] **Build sheet / BOM export** (M) — a construction document (values, E-series, per-part notes, schematic) to PDF/CSV; ideally consumes the (future) toroid turn calculator.
+- [x] **Build sheet / BOM export** (M) — `io/build_sheet` (`write_build_sheet`): one row per physical part (compound elements expanded) with value, tolerance, parasitics, and peak V/I; `.csv` BOM plus printable `.md`/`.html` build sheets with the spec summary and notes. GUI **File → Export → build sheet / BOM…**; CLI `analyze --export-build-sheet PATH`. Toroid turn calculator still pending (see below).
 
 Cross-links: toroid turn calculator (not yet listed) would pair with the BOM sheet;
 distributed elements (coax stubs, λ/4 lines, transformers) remain deferred (ADR-007).
