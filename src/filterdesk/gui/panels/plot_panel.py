@@ -13,6 +13,7 @@ from filterdesk.analysis.derived import group_delay_s, mag_db, phase_deg, vswr
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
+from filterdesk.gui.i18n import tr
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
 from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 
@@ -117,16 +118,16 @@ class PlotPanel(QWidget):
 
         self._tabs = QTabWidget()
         self._mag = _freq_plot("|S21| / |S11| (dB)")
-        self._mag.setLabel("left", "Magnitude", units="dB")
+        self._mag.setLabel("left", tr("Magnitude"), units="dB")
         self._mag.addLegend()
         self._curve_s21 = self._mag.plot(pen=pg.mkPen("#1f77b4", width=2), name="S21")
         self._curve_s11 = self._mag.plot(pen=pg.mkPen("#d62728", width=2), name="S11")
         dash = Qt.PenStyle.DashLine
         self._curve_s21_meas = self._mag.plot(
-            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name="S21 meas"
+            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name=tr("S21 meas")
         )
         self._curve_s11_meas = self._mag.plot(
-            pen=pg.mkPen("#d62728", width=1.4, style=dash), name="S11 meas"
+            pen=pg.mkPen("#d62728", width=1.4, style=dash), name=tr("S11 meas")
         )
         self._curve_mc_min = self._mag.plot(
             pen=pg.mkPen("#7f7f7f", width=1, style=dash)
@@ -143,12 +144,12 @@ class PlotPanel(QWidget):
             pen=pg.mkPen("#2ca02c", width=1.4, style=dash)
         )
 
-        self._gd_plot = _freq_plot("Group delay")
-        self._gd_plot.setLabel("left", "Group delay", units="s")
+        self._gd_plot = _freq_plot(tr("Group delay"))
+        self._gd_plot.setLabel("left", tr("Group delay"), units="s")
         self._curve_gd = self._gd_plot.plot(pen=pg.mkPen("#9467bd", width=2))
 
-        self._phase_plot = _freq_plot("Phase")
-        self._phase_plot.setLabel("left", "Phase", units="deg")
+        self._phase_plot = _freq_plot(tr("Phase"))
+        self._phase_plot.setLabel("left", tr("Phase"), units="deg")
         self._phase_plot.addLegend()
         self._curve_phase21 = self._phase_plot.plot(
             pen=pg.mkPen("#1f77b4", width=2), name="∠S21"
@@ -157,14 +158,14 @@ class PlotPanel(QWidget):
             pen=pg.mkPen("#d62728", width=2), name="∠S11"
         )
         self._curve_phase21_meas = self._phase_plot.plot(
-            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name="∠S21 meas"
+            pen=pg.mkPen("#1f77b4", width=1.4, style=dash), name=tr("∠S21 meas")
         )
         self._curve_phase11_meas = self._phase_plot.plot(
-            pen=pg.mkPen("#d62728", width=1.4, style=dash), name="∠S11 meas"
+            pen=pg.mkPen("#d62728", width=1.4, style=dash), name=tr("∠S11 meas")
         )
 
         self._rev_plot = _freq_plot("|S22| / |S12| (dB)")
-        self._rev_plot.setLabel("left", "Magnitude", units="dB")
+        self._rev_plot.setLabel("left", tr("Magnitude"), units="dB")
         self._rev_plot.addLegend()
         self._curve_s22 = self._rev_plot.plot(
             pen=pg.mkPen("#ff7f0e", width=2), name="S22"
@@ -173,14 +174,14 @@ class PlotPanel(QWidget):
             pen=pg.mkPen("#17becf", width=2), name="S12"
         )
         self._curve_s22_meas = self._rev_plot.plot(
-            pen=pg.mkPen("#ff7f0e", width=1.4, style=dash), name="S22 meas"
+            pen=pg.mkPen("#ff7f0e", width=1.4, style=dash), name=tr("S22 meas")
         )
         self._curve_s12_meas = self._rev_plot.plot(
-            pen=pg.mkPen("#17becf", width=1.4, style=dash), name="S12 meas"
+            pen=pg.mkPen("#17becf", width=1.4, style=dash), name=tr("S12 meas")
         )
 
-        self._z_plot = _freq_plot("Impedance")
-        self._z_plot.setLabel("left", "Impedance", units="Ω")
+        self._z_plot = _freq_plot(tr("Impedance"))
+        self._z_plot.setLabel("left", tr("Impedance"), units="Ω")
         self._z_plot.addLegend()
         self._curve_zin_abs = self._z_plot.plot(
             pen=pg.mkPen("#1f77b4", width=2), name="|Zin|"
@@ -195,7 +196,7 @@ class PlotPanel(QWidget):
             pen=pg.mkPen("#9467bd", width=1.6, style=dash), name="|Zout|"
         )
         self._curve_zin_abs_meas = self._z_plot.plot(
-            pen=pg.mkPen("#1f77b4", width=1.2, style=dash), name="|Zin| meas"
+            pen=pg.mkPen("#1f77b4", width=1.2, style=dash), name=tr("|Zin| meas")
         )
 
         self._smith = SmithChartWidget()
@@ -229,19 +230,21 @@ class PlotPanel(QWidget):
             )
             plot._filterdesk_proxy = proxy
 
-        self._tabs.addTab(self._mag, "Magnitude")
+        self._tabs.addTab(self._mag, tr("Magnitude"))
         self._tabs.addTab(self._rev_plot, "S12 / S22")
-        self._tabs.addTab(self._phase_plot, "Phase")
+        self._tabs.addTab(self._phase_plot, tr("Phase"))
         self._tabs.addTab(self._vswr_plot, "VSWR")
-        self._tabs.addTab(self._gd_plot, "Group delay")
-        self._tabs.addTab(self._z_plot, "Impedance")
+        self._tabs.addTab(self._gd_plot, tr("Group delay"))
+        self._tabs.addTab(self._z_plot, tr("Impedance"))
         self._tabs.addTab(self._smith, "Smith")
 
         self._readout = QLabel(
-            "Move the mouse over a plot to read frequency and values "
-            "(snaps to nearest sweep point). Drag marker lines (or Smith "
-            "spots) to move; bind a marker to a landmark to retune by dragging. "
-            "Use Markers / Limits docks to pin."
+            tr(
+                "Move the mouse over a plot to read frequency and values "
+                "(snaps to nearest sweep point). Drag marker lines (or Smith "
+                "spots) to move; bind a marker to a landmark to retune by "
+                "dragging. Use Markers / Limits docks to pin."
+            )
         )
         self._readout.setWordWrap(True)
         self._readout.setTextInteractionFlags(
@@ -350,11 +353,14 @@ class PlotPanel(QWidget):
         j = int(np.argmin(np.abs(f_mc - freq_hz)))
         lo = float(mc.s21_db_min[j])
         hi = float(mc.s21_db_max[j])
-        return (
-            f"   | MC S21 {lo:.3f} … {hi:.3f} dB "
-            f"(spread {hi - lo:.3f}, "
-            f"p05…p95 {float(mc.s21_db_p05[j]):.3f}…"
-            f"{float(mc.s21_db_p95[j]):.3f})"
+        return tr(
+            "   | MC S21 {lo:.3f} … {hi:.3f} dB (spread {spread:.3f}, "
+            "p05…p95 {p05:.3f}…{p95:.3f})",
+            lo=lo,
+            hi=hi,
+            spread=hi - lo,
+            p05=float(mc.s21_db_p05[j]),
+            p95=float(mc.s21_db_p95[j]),
         )
 
     def _apply_measured_legend(self, visible: bool) -> None:
@@ -457,7 +463,7 @@ class PlotPanel(QWidget):
             self._smith.clear()
             for cursor in self._cursors:
                 cursor.setVisible(False)
-            self._readout.setText("No analysis result.")
+            self._readout.setText(tr("No analysis result."))
             self._redraw_markers()
             self._redraw_limits()
             self._update_measured()
@@ -501,18 +507,19 @@ class PlotPanel(QWidget):
             z0_load_ohm=result.z0_load_ohm,
         )
         self._smith.set_markers(self._markers)
-        readout = (
+        readout = tr(
             "Move the mouse over a plot to read frequency and values "
             "(snaps to nearest sweep point). Drag marker lines or Smith "
-            "spots to move them; bind a marker to a landmark (cutoff / f_center "
-            "/ bandwidth) in the Markers dock to retune the design by dragging. "
-            "Smith: S11 red, S22 blue; green/purple = S11 start/stop."
+            "spots to move them; bind a marker to a landmark (cutoff / "
+            "f_center / bandwidth) in the Markers dock to retune the design "
+            "by dragging. Smith: S11 red, S22 blue; green/purple = S11 "
+            "start/stop."
         )
         if self._measured is not None and self._show_measured:
             label = self._measured_name or "measured"
-            readout += f"  Dashed = {label} overlay."
+            readout += tr("  Dashed = {label} overlay.", label=label)
         if self._mc_result is not None and self._show_mc:
-            readout += "  Grey band = Monte-Carlo envelope (hover for min…max)."
+            readout += tr("  Grey band = Monte-Carlo envelope (hover for min…max).")
         self._readout.setText(readout)
         self._redraw_markers()
         self._redraw_limits()
@@ -753,7 +760,7 @@ class PlotPanel(QWidget):
                 f"{m.id}@{format_engineering(m.frequency_hz, 'Hz', digits=4)}"
                 for m in self._markers
             ]
-            marker_bits = "   | markers: " + ", ".join(parts)
+            marker_bits = tr("   | markers: ") + ", ".join(parts)
         self._readout.setText(
             f"f = {format_engineering(f_hz, 'Hz', digits=6)}   "
             f"S21 = {s21:.3f} dB   "

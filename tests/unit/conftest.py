@@ -51,6 +51,16 @@ def _isolate_settings() -> object:
     set_settings_store(None)
 
 
+@pytest.fixture(autouse=True)
+def _reset_language() -> object:
+    """Always run tests in English so translation state cannot leak between them."""
+    from filterdesk.gui.i18n import Language, set_language
+
+    set_language(Language.EN)
+    yield None
+    set_language(Language.EN)
+
+
 
 def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     del session

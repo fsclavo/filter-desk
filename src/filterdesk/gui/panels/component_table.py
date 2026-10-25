@@ -26,6 +26,7 @@ from filterdesk.domain.circuit import (
     NonIdealInductor,
 )
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import role_label, tr
 
 
 def _base_element_id(ref: str) -> str:
@@ -58,7 +59,16 @@ class ComponentTablePanel(QWidget):
         super().__init__(parent)
         self._table = QTableWidget(0, 8)
         self._table.setHorizontalHeaderLabels(
-            ["Ref", "Role", "Type", "Value", "Parasitic", "Tol", "Vpk", "Ipk"]
+            [
+                tr("Ref"),
+                tr("Role"),
+                tr("Type"),
+                tr("Value"),
+                tr("Parasitic"),
+                tr("Tol"),
+                tr("Vpk"),
+                tr("Ipk"),
+            ]
         )
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -108,7 +118,7 @@ class ComponentTablePanel(QWidget):
             if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
                 self._add_row(
                     f"{el.id}.L",
-                    el.role.value,
+                    role_label(el.role),
                     "inductor",
                     format_engineering(el.value_h, "H", digits=6),
                     "",
@@ -118,7 +128,7 @@ class ComponentTablePanel(QWidget):
                 )
                 self._add_row(
                     f"{el.id}.C",
-                    el.role.value,
+                    role_label(el.role),
                     "capacitor",
                     format_engineering(el.value_f, "F", digits=6),
                     "",
@@ -136,7 +146,7 @@ class ComponentTablePanel(QWidget):
                 ):
                     self._add_row(
                         ref,
-                        el.role.value,
+                        role_label(el.role),
                         etype,
                         format_engineering(val, unit, digits=6),
                         "",
@@ -157,8 +167,8 @@ class ComponentTablePanel(QWidget):
                 value_text = format_engineering(el.value_ohm, "Ohm", digits=6)
             self._add_row(
                 el.id,
-                el.role.value,
-                el.element_type.value,
+                role_label(el.role),
+                tr(el.element_type.value),
                 value_text,
                 _parasitic_text(el),
                 tol_text(el.id),

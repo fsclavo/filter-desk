@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from filterdesk.domain.overlays import MAX_LIMITS, LimitMetric, LimitRegion
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import tr
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,28 +70,39 @@ class LimitsPanel(QWidget):
         self._limits: list[LimitRegion] = []
         self._table = QTableWidget(0, 7)
         self._table.setHorizontalHeaderLabels(
-            ["Id", "Metric", "f_low", "f_high", "y_min", "y_max", "On"]
+            [
+                "Id",
+                tr("Metric"),
+                tr("f_low"),
+                tr("f_high"),
+                tr("y_min"),
+                tr("y_max"),
+                tr("On"),
+            ]
         )
         self._table.cellChanged.connect(self._on_cell_changed)
         self._updating = False
 
         btn_add = QToolButton()
-        btn_add.setText("Add limit")
+        btn_add.setText(tr("Add limit"))
         btn_add.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         menu = QMenu(btn_add)
         for preset in _PRESETS:
-            action = menu.addAction(preset.label)
+            action = menu.addAction(tr(preset.label))
             action.triggered.connect(self._preset_handler(preset))
         btn_add.setMenu(menu)
         btn_add.setToolTip(
-            "Add a limit region preset, then edit the cells:\n"
-            "Metric (s21_db, s11_db, vswr, s11_mag, s22_mag), f_low/f_high, "
-            "y_min/y_max (blank = unbounded), On (yes/no).\n"
-            "Enabled limits are drawn as bands and drive Design → Optimize to limits…"
+            tr(
+                "Add a limit region preset, then edit the cells:\n"
+                "Metric (s21_db, s11_db, vswr, s11_mag, s22_mag), f_low/f_high, "
+                "y_min/y_max (blank = unbounded), On (yes/no).\n"
+                "Enabled limits are drawn as bands and drive "
+                "Design → Optimize to limits…"
+            )
         )
-        btn_del = QPushButton("Delete")
+        btn_del = QPushButton(tr("Delete"))
         btn_del.clicked.connect(self._delete_selected)
-        btn_clear = QPushButton("Clear")
+        btn_clear = QPushButton(tr("Clear"))
         btn_clear.clicked.connect(self._clear)
 
         row = QHBoxLayout()
@@ -132,7 +144,7 @@ class LimitsPanel(QWidget):
                 5,
                 QTableWidgetItem("" if lim.y_max is None else f"{lim.y_max:g}"),
             )
-            on_item = QTableWidgetItem("yes" if lim.enabled else "no")
+            on_item = QTableWidgetItem(tr("yes") if lim.enabled else tr("no"))
             self._table.setItem(r, 6, on_item)
         self._updating = False
 

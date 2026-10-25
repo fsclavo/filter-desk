@@ -1749,3 +1749,51 @@ def test_window_state_persisted_on_close() -> None:
     assert get_settings_store().get_bytes(GEOMETRY_KEY)
     assert get_settings_store().get_bytes(STATE_KEY)
     assert app is not None
+
+
+def test_spanish_language_applies() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.i18n import Language, current_language
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.gui.settings import (
+        LANGUAGE_KEY,
+        InMemorySettingsStore,
+        set_settings_store,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    set_settings_store(InMemorySettingsStore({LANGUAGE_KEY: "es"}))
+    window = MainWindow(DesignSession(), auto_run=False)
+    assert current_language() is Language.ES
+    assert window.menuBar().actions()[0].text() == "&Archivo"
+    assert window._spec._response.itemText(0) == "Paso bajo"
+    assert window._docks[0].windowTitle() == "Especificación"
+    window.close()
+    assert app is not None
+
+
+def test_language_selection_persists(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication, QMessageBox
+
+    from filterdesk.gui.i18n import Language
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.gui.settings import LANGUAGE_KEY, get_settings_store
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    shown: list[object] = []
+    monkeypatch.setattr(
+        QMessageBox,
+        "information",
+        lambda *a, **k: shown.append(a) or QMessageBox.StandardButton.Ok,
+    )
+    window._request_language(Language.ES)
+    assert get_settings_store().get_str(LANGUAGE_KEY) == "es"
+    assert shown
+    # The running UI stays in English until the app is restarted.
+    assert window.menuBar().actions()[0].text() == "&File"
+    window.close()
+    assert app is not None

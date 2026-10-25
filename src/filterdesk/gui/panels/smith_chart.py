@@ -15,6 +15,7 @@ from filterdesk.analysis.smith import (
 )
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
+from filterdesk.gui.i18n import tr
 from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 
 _GRID_Z = -20
@@ -53,7 +54,7 @@ class SmithChartWidget(QWidget):
         self._drag_marker_index: int | None = None
         self._drag_start_freq: float | None = None
 
-        self._plot = pg.PlotWidget(title="Smith chart — S11 / S22")
+        self._plot = pg.PlotWidget(title=tr("Smith chart — S11 / S22"))
         self._plot.setAspectLocked(True)
         self._plot.showGrid(x=False, y=False)
         self._plot.setLabel("bottom", "Re(Γ)")
@@ -77,10 +78,10 @@ class SmithChartWidget(QWidget):
         )
         dash = Qt.PenStyle.DashLine
         self._curve_s11_meas = self._plot.plot(
-            pen=pg.mkPen("#d62728", width=1.3, style=dash), name="S11 meas"
+            pen=pg.mkPen("#d62728", width=1.3, style=dash), name=tr("S11 meas")
         )
         self._curve_s22_meas = self._plot.plot(
-            pen=pg.mkPen("#1f77b4", width=1.3, style=dash), name="S22 meas"
+            pen=pg.mkPen("#1f77b4", width=1.3, style=dash), name=tr("S22 meas")
         )
         self._start_pt = pg.ScatterPlotItem(
             size=9,

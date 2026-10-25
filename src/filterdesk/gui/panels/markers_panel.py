@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from filterdesk.domain.overlays import LANDMARKS, MAX_MARKERS, Marker, MarkerLandmark
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import tr
 
 
 class MarkersPanel(QWidget):
@@ -27,15 +28,17 @@ class MarkersPanel(QWidget):
         super().__init__(parent)
         self._markers: list[Marker] = []
         self._table = QTableWidget(0, 4)
-        self._table.setHorizontalHeaderLabels(["Id", "Frequency", "Label", "Binds"])
+        self._table.setHorizontalHeaderLabels(
+            ["Id", tr("Frequency"), tr("Label"), tr("Binds")]
+        )
         self._table.cellChanged.connect(self._on_cell_changed)
         self._updating = False
 
-        btn_add = QPushButton("Add at cursor")
+        btn_add = QPushButton(tr("Add at cursor"))
         btn_add.clicked.connect(self.add_at_cursor_requested.emit)
-        btn_del = QPushButton("Delete")
+        btn_del = QPushButton(tr("Delete"))
         btn_del.clicked.connect(self._delete_selected)
-        btn_clear = QPushButton("Clear")
+        btn_clear = QPushButton(tr("Clear"))
         btn_clear.clicked.connect(self._clear)
 
         row = QHBoxLayout()
@@ -67,7 +70,7 @@ class MarkersPanel(QWidget):
         combo = QComboBox()
         combo.addItem("—", "")
         for landmark in LANDMARKS:
-            combo.addItem(landmark, landmark)
+            combo.addItem(tr(landmark), landmark)
         index = combo.findData(marker.landmark or "")
         combo.setCurrentIndex(index if index >= 0 else 0)
         combo.currentIndexChanged.connect(

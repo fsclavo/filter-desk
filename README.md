@@ -25,6 +25,7 @@ image.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.
+- **English/Spanish GUI** (applies on restart).
 - **E-series snapping** (IEC 60063 E6–E96) to turn ideal values into real parts.
 - **Tolerance analysis**: per-component tolerances and a Monte-Carlo envelope
   with yield estimates.

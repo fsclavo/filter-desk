@@ -62,6 +62,7 @@ from filterdesk.gui.commands import (
     SnapCommand,
     SynthesizeCommand,
 )
+from filterdesk.gui.i18n import Language, language_from_code, set_language, tr
 from filterdesk.gui.panels.component_table import ComponentTablePanel
 from filterdesk.gui.panels.harmonics_panel import HarmonicsPanel
 from filterdesk.gui.panels.limits_panel import LimitsPanel
@@ -71,6 +72,7 @@ from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
 from filterdesk.gui.settings import (
     GEOMETRY_KEY,
+    LANGUAGE_KEY,
     STATE_KEY,
     THEME_KEY,
     get_settings_store,
@@ -194,6 +196,9 @@ class MainWindow(QMainWindow):
         self._theme_mode = self._load_theme_mode()
         self._theme_colors: ThemeColors | None = None
         self._theme_actions: dict[ThemeMode, QAction] = {}
+        self._language = self._load_language()
+        self._language_actions: dict[Language, QAction] = {}
+        set_language(self._language)
         self._selected_element: str | None = None
         self._analyze_thread: QThread | None = None
         self._import_thread: QThread | None = None
@@ -241,7 +246,7 @@ class MainWindow(QMainWindow):
         self._points = QSpinBox()
         self._points.setRange(64, 8192)
         self._points.setValue(1024)
-        self._status = QLabel("Ready")
+        self._status = QLabel(tr("Ready"))
         self._build_toolbar()
         self.setStatusBar(QStatusBar())
         self.statusBar().addPermanentWidget(self._status)
@@ -272,7 +277,9 @@ class MainWindow(QMainWindow):
     def _add_dock(
         self, title: str, widget: QWidget, area: Qt.DockWidgetArea
     ) -> QDockWidget:
-        dock = QDockWidget(title, self)
+        # objectName stays the English key so saved layouts survive a language
+        # change; only the displayed title is translated.
+        dock = QDockWidget(tr(title), self)
         dock.setObjectName(title)
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
@@ -283,24 +290,24 @@ class MainWindow(QMainWindow):
         tb = QToolBar("Main")
         tb.setObjectName("MainToolBar")
         self.addToolBar(tb)
-        act_syn = QAction("Synthesize", self)
+        act_syn = QAction(tr("Synthesize"), self)
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         tb.addAction(act_syn)
-        act_an = QAction("Analyze", self)
+        act_an = QAction(tr("Analyze"), self)
         act_an.triggered.connect(self._run_analyze)
         tb.addAction(act_an)
         tb.addSeparator()
-        self._act_tune_up = QAction("Tune +", self)
+        self._act_tune_up = QAction(tr("Tune +"), self)
         self._act_tune_up.setShortcut("Ctrl+]")
         self._act_tune_up.setToolTip(
-            "Tune the selected component up one step (Ctrl+])"
+            tr("Tune the selected component up one step (Ctrl+])")
         )
         self._act_tune_up.triggered.connect(self._tune_selected_increase)
         tb.addAction(self._act_tune_up)
-        self._act_tune_dn = QAction("Tune −", self)
+        self._act_tune_dn = QAction(tr("Tune −"), self)
         self._act_tune_dn.setShortcut("Ctrl+[")
         self._act_tune_dn.setToolTip(
-            "Tune the selected component down one step (Ctrl+[)"
+            tr("Tune the selected component down one step (Ctrl+[)")
         )
         self._act_tune_dn.triggered.connect(self._tune_selected_decrease)
         tb.addAction(self._act_tune_dn)
@@ -312,7 +319,7 @@ class MainWindow(QMainWindow):
         self._power.setSuffix(" W")
         self._power.setValue(0.0)
         self._power.setMaximumWidth(110)
-        power_tip = (
+        power_tip = tr(
             "Forward transmit power (W) used to estimate the peak voltage and "
             "current in each L/C (the Vpk / Ipk columns). 0 disables it.\n"
             "Evaluated at the passband landmark (cutoff for LP/HP, center for "
@@ -324,7 +331,7 @@ class MainWindow(QMainWindow):
         pwrap = QWidget()
         play = QHBoxLayout(pwrap)
         play.setContentsMargins(4, 0, 4, 0)
-        p_label = QLabel("TX Power")
+        p_label = QLabel(tr("TX Power"))
         p_label.setToolTip(power_tip)
         play.addWidget(p_label)
         play.addWidget(self._power)
@@ -332,50 +339,50 @@ class MainWindow(QMainWindow):
         wrap = QWidget()
         lay = QHBoxLayout(wrap)
         lay.setContentsMargins(4, 0, 4, 0)
-        lay.addWidget(QLabel("Start Frequency"))
+        lay.addWidget(QLabel(tr("Start Frequency")))
         lay.addWidget(self._f_start)
-        lay.addWidget(QLabel("Stop Frequency"))
+        lay.addWidget(QLabel(tr("Stop Frequency")))
         lay.addWidget(self._f_stop)
         lay.addWidget(QLabel("N"))
         lay.addWidget(self._points)
         self._f_start.setMaximumWidth(90)
         self._f_stop.setMaximumWidth(90)
-        self._f_start.setToolTip("Sweep start frequency, e.g. 10M or 1G")
-        self._f_stop.setToolTip("Sweep stop frequency, e.g. 1G")
+        self._f_start.setToolTip(tr("Sweep start frequency, e.g. 10M or 1G"))
+        self._f_stop.setToolTip(tr("Sweep stop frequency, e.g. 1G"))
         tb.addWidget(wrap)
 
     def _build_menus(self) -> None:
-        file_menu = self.menuBar().addMenu("&File")
-        act_new = QAction("&New", self)
+        file_menu = self.menuBar().addMenu(tr("&File"))
+        act_new = QAction(tr("&New"), self)
         act_new.setShortcut(QKeySequence.StandardKey.New)
         act_new.triggered.connect(self._new_project)
-        act_open = QAction("&Open…", self)
+        act_open = QAction(tr("&Open…"), self)
         act_open.setShortcut(QKeySequence.StandardKey.Open)
         act_open.triggered.connect(self._open_project)
-        act_save = QAction("&Save", self)
+        act_save = QAction(tr("&Save"), self)
         act_save.setShortcut(QKeySequence.StandardKey.Save)
         act_save.triggered.connect(self._save_project)
-        act_save_as = QAction("Save &As…", self)
+        act_save_as = QAction(tr("Save &As…"), self)
         act_save_as.triggered.connect(self._save_project_as)
-        act_rename = QAction("&Rename project…", self)
+        act_rename = QAction(tr("&Rename project…"), self)
         act_rename.triggered.connect(self._rename_project)
-        act_import_ts = QAction("&Import Touchstone…", self)
+        act_import_ts = QAction(tr("&Import Touchstone…"), self)
         act_import_ts.triggered.connect(self._import_touchstone)
-        act_export_smith = QAction("Export &Smith chart…", self)
+        act_export_smith = QAction(tr("Export &Smith chart…"), self)
         act_export_smith.triggered.connect(self._export_smith_chart)
-        act_export_csv = QAction("Export C&SV…", self)
+        act_export_csv = QAction(tr("Export C&SV…"), self)
         act_export_csv.triggered.connect(self._export_csv)
-        act_export_spice = QAction("Export SPICE &netlist…", self)
+        act_export_spice = QAction(tr("Export SPICE &netlist…"), self)
         act_export_spice.triggered.connect(self._export_spice)
-        act_export_s2p = QAction("Export &Touchstone (.s2p)…", self)
+        act_export_s2p = QAction(tr("Export &Touchstone (.s2p)…"), self)
         act_export_s2p.triggered.connect(self._export_touchstone)
-        act_export_asc = QAction("Export LTspice (.&asc)…", self)
+        act_export_asc = QAction(tr("Export LTspice (.&asc)…"), self)
         act_export_asc.triggered.connect(self._export_asc)
-        act_export_qucs = QAction("Export &Qucs (.sch)…", self)
+        act_export_qucs = QAction(tr("Export &Qucs (.sch)…"), self)
         act_export_qucs.triggered.connect(self._export_qucs)
-        act_export_build = QAction("Export build sheet / &BOM…", self)
+        act_export_build = QAction(tr("Export build sheet / &BOM…"), self)
         act_export_build.triggered.connect(self._export_build_sheet)
-        act_quit = QAction("&Quit", self)
+        act_quit = QAction(tr("&Quit"), self)
         act_quit.setShortcut(QKeySequence.StandardKey.Quit)
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_new)
@@ -384,9 +391,9 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_save_as)
         file_menu.addAction(act_rename)
         file_menu.addSeparator()
-        import_menu = file_menu.addMenu("&Import")
+        import_menu = file_menu.addMenu(tr("&Import"))
         import_menu.addAction(act_import_ts)
-        export_menu = file_menu.addMenu("&Export")
+        export_menu = file_menu.addMenu(tr("&Export"))
         export_menu.addAction(act_export_smith)
         export_menu.addAction(act_export_csv)
         export_menu.addAction(act_export_s2p)
@@ -397,46 +404,46 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction(act_quit)
 
-        edit_menu = self.menuBar().addMenu("&Edit")
-        act_undo = self._undo.createUndoAction(self, "&Undo")
+        edit_menu = self.menuBar().addMenu(tr("&Edit"))
+        act_undo = self._undo.createUndoAction(self, tr("&Undo"))
         act_undo.setShortcut(QKeySequence.StandardKey.Undo)
-        act_redo = self._undo.createRedoAction(self, "&Redo")
+        act_redo = self._undo.createRedoAction(self, tr("&Redo"))
         act_redo.setShortcut(QKeySequence.StandardKey.Redo)
         edit_menu.addAction(act_undo)
         edit_menu.addAction(act_redo)
         edit_menu.addSeparator()
-        act_add_m = QAction("Add &marker at cursor", self)
+        act_add_m = QAction(tr("Add &marker at cursor"), self)
         act_add_m.setShortcut("Ctrl+M")
         act_add_m.triggered.connect(self._add_marker_at_cursor)
         edit_menu.addAction(act_add_m)
 
-        view_menu = self.menuBar().addMenu("&View")
+        view_menu = self.menuBar().addMenu(tr("&View"))
         for dock in self._docks:
             view_menu.addAction(dock.toggleViewAction())
         view_menu.addSeparator()
-        self._act_measured = QAction("Show &measured overlay", self)
+        self._act_measured = QAction(tr("Show &measured overlay"), self)
         self._act_measured.setCheckable(True)
         self._act_measured.setChecked(True)
         self._act_measured.toggled.connect(self._plots.set_measured_visible)
         view_menu.addAction(self._act_measured)
-        self._act_mc = QAction("Show Monte-Carlo &envelope", self)
+        self._act_mc = QAction(tr("Show Monte-Carlo &envelope"), self)
         self._act_mc.setCheckable(True)
         self._act_mc.setChecked(True)
         self._act_mc.toggled.connect(self._plots.set_monte_carlo_visible)
         view_menu.addAction(self._act_mc)
-        self._act_harmonics = QAction("Show &harmonic markers", self)
+        self._act_harmonics = QAction(tr("Show &harmonic markers"), self)
         self._act_harmonics.setCheckable(True)
         self._act_harmonics.setChecked(True)
         self._act_harmonics.toggled.connect(self._plots.set_harmonics_visible)
         view_menu.addAction(self._act_harmonics)
         view_menu.addSeparator()
-        theme_menu = view_menu.addMenu("&Theme")
+        theme_menu = view_menu.addMenu(tr("&Theme"))
         theme_group = QActionGroup(self)
         theme_group.setExclusive(True)
         for mode, label in (
-            (ThemeMode.SYSTEM, "System"),
-            (ThemeMode.LIGHT, "Light"),
-            (ThemeMode.DARK, "Dark"),
+            (ThemeMode.SYSTEM, tr("System")),
+            (ThemeMode.LIGHT, tr("Light")),
+            (ThemeMode.DARK, tr("Dark")),
         ):
             action = QAction(label, self)
             action.setCheckable(True)
@@ -447,61 +454,79 @@ class MainWindow(QMainWindow):
             theme_group.addAction(action)
             theme_menu.addAction(action)
             self._theme_actions[mode] = action
+        language_menu = view_menu.addMenu(tr("&Language"))
+        language_group = QActionGroup(self)
+        language_group.setExclusive(True)
+        for language, label in (
+            (Language.EN, tr("English")),
+            (Language.ES, tr("Español")),
+        ):
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setChecked(language is self._language)
+            action.triggered.connect(
+                lambda checked=False, lang=language: self._request_language(
+                    lang
+                )
+            )
+            language_group.addAction(action)
+            language_menu.addAction(action)
+            self._language_actions[language] = action
 
-        design_menu = self.menuBar().addMenu("&Design")
-        act_syn = QAction("&Synthesize + Analyze", self)
+        design_menu = self.menuBar().addMenu(tr("&Design"))
+        act_syn = QAction(tr("&Synthesize + Analyze"), self)
         act_syn.setShortcut("Ctrl+Return")
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         design_menu.addAction(act_syn)
-        act_band = QAction("&Band preset…", self)
+        act_band = QAction(tr("&Band preset…"), self)
         act_band.triggered.connect(self._run_band_preset)
         design_menu.addAction(act_band)
-        act_atten = QAction("&Attenuator pad…", self)
+        act_atten = QAction(tr("&Attenuator pad…"), self)
         act_atten.triggered.connect(self._run_attenuator)
         design_menu.addAction(act_atten)
-        act_match = QAction("Matching &network…", self)
+        act_match = QAction(tr("Matching &network…"), self)
         act_match.triggered.connect(self._run_matching)
         design_menu.addAction(act_match)
-        act_coil = QAction("&Coil calculator…", self)
+        act_coil = QAction(tr("&Coil calculator…"), self)
         act_coil.triggered.connect(self._run_coil_calculator)
         design_menu.addAction(act_coil)
-        act_snap = QAction("Sna&p to E-series…", self)
+        act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
-        act_nonideal = QAction("Apply &parasitics / Q…", self)
+        act_nonideal = QAction(tr("Apply &parasitics / Q…"), self)
         act_nonideal.triggered.connect(self._run_nonideal)
         design_menu.addAction(act_nonideal)
-        act_mc = QAction("&Monte-Carlo tolerances…", self)
+        act_mc = QAction(tr("&Monte-Carlo tolerances…"), self)
         act_mc.triggered.connect(self._run_monte_carlo)
         design_menu.addAction(act_mc)
-        act_scale = QAction("Scale &response…", self)
+        act_scale = QAction(tr("Scale &response…"), self)
         act_scale.triggered.connect(self._run_scale_response)
         design_menu.addAction(act_scale)
-        act_opt = QAction("&Optimize to limits…", self)
+        act_opt = QAction(tr("&Optimize to limits…"), self)
         act_opt.triggered.connect(self._run_optimize)
         design_menu.addAction(act_opt)
-        act_sens = QAction("Component &sensitivity…", self)
+        act_sens = QAction(tr("Component &sensitivity…"), self)
         act_sens.triggered.connect(self._run_sensitivity)
         design_menu.addAction(act_sens)
-        act_sweep = QAction("Parameter s&weep…", self)
+        act_sweep = QAction(tr("Parameter s&weep…"), self)
         act_sweep.triggered.connect(self._run_design_sweep)
         design_menu.addAction(act_sweep)
         design_menu.addSeparator()
-        self._component_menu = design_menu.addMenu("&Component")
+        self._component_menu = design_menu.addMenu(tr("&Component"))
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
 
-        help_menu = self.menuBar().addMenu("&Help")
-        act_about = QAction("&About FilterDesk", self)
+        help_menu = self.menuBar().addMenu(tr("&Help"))
+        act_about = QAction(tr("&About FilterDesk"), self)
         act_about.triggered.connect(self._show_about)
         help_menu.addAction(act_about)
-        act_about_qt = QAction("About &Qt", self)
+        act_about_qt = QAction(tr("About &Qt"), self)
         act_about_qt.triggered.connect(self._show_about_qt)
         help_menu.addAction(act_about_qt)
         help_menu.addSeparator()
-        act_github = QAction("&GitHub repository", self)
+        act_github = QAction(tr("&GitHub repository"), self)
         act_github.triggered.connect(self._open_github)
         help_menu.addAction(act_github)
-        act_docs = QAction("&User manual", self)
+        act_docs = QAction(tr("&User manual"), self)
         act_docs.triggered.connect(self._open_docs)
         help_menu.addAction(act_docs)
 
@@ -571,6 +596,20 @@ class MainWindow(QMainWindow):
         except ValueError:
             return ThemeMode.SYSTEM
 
+    def _load_language(self) -> Language:
+        raw = get_settings_store().get_str(LANGUAGE_KEY, Language.EN.value)
+        return language_from_code(raw)
+
+    def _request_language(self, language: Language) -> None:
+        if language is self._language:
+            return
+        get_settings_store().set_str(LANGUAGE_KEY, language.value)
+        QMessageBox.information(
+            self,
+            tr("Language"),
+            tr("Language changed. Restart FilterDesk to apply."),
+        )
+
     def _apply_theme(self, mode: ThemeMode, *, persist: bool = True) -> None:
         app = QApplication.instance()
         if not isinstance(app, QApplication):
@@ -585,7 +624,7 @@ class MainWindow(QMainWindow):
             action.setChecked(True)
         if persist:
             get_settings_store().set_str(THEME_KEY, mode.value)
-            self._status.setText(f"Theme: {mode.value}")
+            self._status.setText(tr("Theme: {mode}", mode=mode.value))
 
     def _restore_window_state(self) -> None:
         store = get_settings_store()
@@ -673,15 +712,15 @@ class MainWindow(QMainWindow):
             )
             self._undo.push(cmd)
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Synthesize failed", _exc_text(exc))
+            QMessageBox.warning(self, tr("Synthesize failed"), _exc_text(exc))
             return
-        self._status.setText("Synthesized — analyzing…")
+        self._status.setText(tr("Synthesized — analyzing…"))
         self._run_analyze()
 
     def _run_snap(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Snap to E-series", "Synthesize a circuit first."
+                self, tr("Snap to E-series"), tr("Synthesize a circuit first.")
             )
             return
         choice = SnapDialog.ask(self)
@@ -695,25 +734,29 @@ class MainWindow(QMainWindow):
         report = cmd.report
         if report is None or not report.entries:
             self._status.setText(
-                f"Snap to {series.value}: values already on the grid"
+                tr("Snap to {series}: values already on the grid", series=series.value)
             )
         else:
             self._status.setText(
-                f"Snapped to {series.value} ({strategy.value}) — "
-                f"max change {report.max_delta_pct:.2f}%"
+                tr(
+                    "Snapped to {series} ({strategy}) — max change {delta:.2f}%",
+                    series=series.value,
+                    strategy=strategy.value,
+                    delta=report.max_delta_pct,
+                )
             )
         self._run_analyze()
 
     def _run_nonideal(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Apply parasitics", "Synthesize a circuit first."
+                self, tr("Apply parasitics"), tr("Synthesize a circuit first.")
             )
             return
         try:
             kwargs = NonIdealDialog.ask(self)
         except ValueError as exc:
-            QMessageBox.warning(self, "Apply parasitics", _exc_text(exc))
+            QMessageBox.warning(self, tr("Apply parasitics"), _exc_text(exc))
             return
         if not kwargs:
             return
@@ -721,26 +764,30 @@ class MainWindow(QMainWindow):
             self._session, kwargs, on_applied=self._after_circuit_change
         )
         self._undo.push(cmd)
-        self._status.setText(f"Applied parasitics ({len(kwargs)} term(s))")
+        self._status.setText(
+            tr("Applied parasitics ({count} term(s))", count=len(kwargs))
+        )
         self._run_analyze()
 
     def _run_monte_carlo(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Monte-Carlo", "Synthesize a circuit first."
+                self, tr("Monte-Carlo"), tr("Synthesize a circuit first.")
             )
             return
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
             return
         config = MonteCarloDialog.ask(self)
         if config is None:
             return
         assert self._session.sweep is not None
         assert self._session.circuit is not None
-        self._status.setText(f"Monte-Carlo: {config.n_trials} trials…")
+        self._status.setText(
+            tr("Monte-Carlo: {trials} trials…", trials=config.n_trials)
+        )
         if self._mc_thread is not None and self._mc_thread.isRunning():
             self._mc_thread.quit()
             self._mc_thread.wait(100)
@@ -757,7 +804,13 @@ class MainWindow(QMainWindow):
         thread.start()
 
     def _on_mc_progress(self, done: int, total: int) -> None:
-        self._status.setText(f"Monte-Carlo: {done}/{total} trials…")
+        self._status.setText(
+            tr(
+                "Monte-Carlo: {done}/{total} trials…",
+                done=done,
+                total=total,
+            )
+        )
 
     def _on_mc_finished(self, result: object) -> None:
         assert isinstance(result, MonteCarloResult)
@@ -773,8 +826,8 @@ class MainWindow(QMainWindow):
         self._status.setText(msg)
 
     def _on_mc_failed(self, message: str) -> None:
-        QMessageBox.warning(self, "Monte-Carlo failed", message)
-        self._status.setText("Monte-Carlo failed")
+        QMessageBox.warning(self, tr("Monte-Carlo failed"), message)
+        self._status.setText(tr("Monte-Carlo failed"))
 
     def _run_band_preset(self) -> None:
         choice = BandPresetDialog.ask(self)
@@ -793,13 +846,19 @@ class MainWindow(QMainWindow):
             on_applied=self._after_circuit_change,
         )
         self._undo.push(cmd)
-        self._status.setText(f"Band preset: {band.name} {kind.value.upper()}")
+        self._status.setText(
+            tr(
+                "Band preset: {name} {kind}",
+                name=band.name,
+                kind=kind.value.upper(),
+            )
+        )
         self._run_analyze()
 
     def _run_attenuator(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Attenuator", "Synthesize a circuit first."
+                self, tr("Attenuator"), tr("Synthesize a circuit first.")
             )
             return
         design = AttenuatorDialog.ask(self)
@@ -812,7 +871,7 @@ class MainWindow(QMainWindow):
             r_shunt_ohm=design.r_shunt_ohm,
             at_input=True,
         )
-        self._push_circuit_edit(new_circuit, "Insert attenuator")
+        self._push_circuit_edit(new_circuit, tr("Insert attenuator"))
         self._status.setText(
             f"Inserted {design.kind.value.upper()} pad "
             f"{design.attenuation_db:g} dB @ {design.z0_ohm:g} Ohm"
@@ -844,13 +903,15 @@ class MainWindow(QMainWindow):
         ]
         new_circuit = replace(self._session.circuit, elements=elements)
         self._push_circuit_edit(new_circuit, f"Realize {realized.id}")
-        self._status.setText(f"Realized {realized.id} as a physical winding")
+        self._status.setText(
+            tr("Realized {ref} as a physical winding", ref=realized.id)
+        )
         self._run_analyze()
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Matching network", "Synthesize a circuit first."
+                self, tr("Matching network"), tr("Synthesize a circuit first.")
             )
             return
         result = MatchingDialog.ask(self)
@@ -894,7 +955,7 @@ class MainWindow(QMainWindow):
             new_circuit = circuit_edit.insert_elements(
                 self._session.circuit, elements, at_input=at_input
             )
-        self._push_circuit_edit(new_circuit, "Insert matching network")
+        self._push_circuit_edit(new_circuit, tr("Insert matching network"))
         self._status.setText(
             f"Inserted {design.topology.value.upper()} match "
             f"({design.source_ohm:g} -> {design.load_r_ohm:g}"
@@ -905,12 +966,12 @@ class MainWindow(QMainWindow):
     def _run_scale_response(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Scale response", "Synthesize a circuit first."
+                self, tr("Scale response"), tr("Synthesize a circuit first.")
             )
             return
         text, ok = QInputDialog.getText(
             self,
-            "Scale response",
+            tr("Scale response"),
             "Scale factor (e.g. 0.5 halves, 2 doubles):",
             text="1.0",
         )
@@ -920,35 +981,37 @@ class MainWindow(QMainWindow):
             factor = float(text)
             new_spec = scale_response(self._session.spec, factor)
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Scale response", _exc_text(exc))
+            QMessageBox.warning(self, tr("Scale response"), _exc_text(exc))
             return
         cmd = SynthesizeCommand(
             self._session, new_spec, on_applied=self._after_circuit_change
         )
         self._undo.push(cmd)
-        self._status.setText(f"Scaled response ×{factor:g}")
+        self._status.setText(tr("Scaled response ×{factor:g}", factor=factor))
         self._run_analyze()
 
     def _run_optimize(self) -> None:
         if self._session.circuit is None:
-            QMessageBox.information(self, "Optimize", "Synthesize a circuit first.")
+            QMessageBox.information(
+                self, tr("Optimize"), tr("Synthesize a circuit first.")
+            )
             return
         if not [lim for lim in self._session.limits if lim.enabled]:
             QMessageBox.information(
-                self, "Optimize", "Add at least one enabled limit region first."
+                self, tr("Optimize"), tr("Add at least one enabled limit region first.")
             )
             return
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
             return
         config = OptimizeDialog.ask(self)
         if config is None:
             return
         assert self._session.circuit is not None
         assert self._session.sweep is not None
-        self._status.setText("Optimizing…")
+        self._status.setText(tr("Optimizing…"))
         if self._optimize_thread is not None and self._optimize_thread.isRunning():
             self._optimize_thread.quit()
             self._optimize_thread.wait(100)
@@ -966,16 +1029,16 @@ class MainWindow(QMainWindow):
     def _run_sensitivity(self) -> None:
         if self._session.circuit is None or self._session.sweep is None:
             QMessageBox.information(
-                self, "Component sensitivity", "Synthesize a circuit first."
+                self, tr("Component sensitivity"), tr("Synthesize a circuit first.")
             )
             return
         try:
             report = self._session.sensitivity()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Component sensitivity", _exc_text(exc))
+            QMessageBox.warning(self, tr("Component sensitivity"), _exc_text(exc))
             return
         self._status.setText(
-            f"Sensitivity: {len(report.rows)} components analyzed"
+            tr("Sensitivity: {count} components analyzed", count=len(report.rows))
         )
         dialog = SensitivityDialog(report, self)
         dialog.exec()
@@ -987,13 +1050,13 @@ class MainWindow(QMainWindow):
     def _run_design_sweep(self) -> None:
         if self._session.circuit is None:
             QMessageBox.information(
-                self, "Parameter sweep", "Synthesize a circuit first."
+                self, tr("Parameter sweep"), tr("Synthesize a circuit first.")
             )
             return
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
             return
         options = DesignSweepDialog.ask(self)
         if options is None:
@@ -1010,12 +1073,12 @@ class MainWindow(QMainWindow):
                 )
             )
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Parameter sweep", _exc_text(exc))
+            QMessageBox.warning(self, tr("Parameter sweep"), _exc_text(exc))
             return
         if not rows:
-            QMessageBox.information(self, "Parameter sweep", "No variants.")
+            QMessageBox.information(self, tr("Parameter sweep"), tr("No variants."))
             return
-        self._status.setText(f"Parameter sweep: {len(rows)} variants")
+        self._status.setText(tr("Parameter sweep: {count} variants", count=len(rows)))
         dialog = DesignSweepResultDialog(list(rows), self)
         dialog.exec()
         spec = dialog.take_spec()
@@ -1028,7 +1091,7 @@ class MainWindow(QMainWindow):
         cmd = EditCircuitCommand(
             self._session,
             result.circuit,
-            text="Optimize",
+            text=tr("Optimize"),
             on_applied=self._after_circuit_change,
         )
         self._undo.push(cmd)
@@ -1039,8 +1102,8 @@ class MainWindow(QMainWindow):
         self._run_analyze()
 
     def _on_optimize_failed(self, message: str) -> None:
-        QMessageBox.warning(self, "Optimize failed", message)
-        self._status.setText("Optimize failed")
+        QMessageBox.warning(self, tr("Optimize failed"), message)
+        self._status.setText(tr("Optimize failed"))
 
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
@@ -1049,10 +1112,10 @@ class MainWindow(QMainWindow):
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
             return
         assert self._session.sweep is not None
-        self._status.setText("Analyzing…")
+        self._status.setText(tr("Analyzing…"))
         if self._analyze_thread is not None and self._analyze_thread.isRunning():
             self._analyze_thread.quit()
             self._analyze_thread.wait(100)
@@ -1098,15 +1161,15 @@ class MainWindow(QMainWindow):
         self._limits_panel.set_pass_fail_text("  ".join(parts))
 
     def _on_analyze_failed(self, message: str) -> None:
-        self._status.setText("Analysis failed")
+        self._status.setText(tr("Analysis failed"))
         text = message.strip() or "Unknown analysis error"
-        QMessageBox.critical(self, "Analysis failed", text)
+        QMessageBox.critical(self, tr("Analysis failed"), text)
 
     def _on_value_edited(self, element_id: str, value: float) -> None:
         try:
             old = self._session.lookup_element_value(element_id)
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid value", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid value"), _exc_text(exc))
             self._refresh_table()
             return
         if abs(old - value) < 1e-30 * max(1.0, abs(old)):
@@ -1126,7 +1189,7 @@ class MainWindow(QMainWindow):
             self._session,
             markers,
             on_applied=self._after_overlays_change,
-            text="Edit markers",
+            text=tr("Edit markers"),
         )
         self._undo.push(cmd)
 
@@ -1146,7 +1209,7 @@ class MainWindow(QMainWindow):
                 self._session,
                 markers,
                 on_applied=self._after_overlays_change,
-                text="Move marker",
+                text=tr("Move marker"),
             )
         self._undo.push(cmd)
 
@@ -1185,7 +1248,7 @@ class MainWindow(QMainWindow):
             self._session,
             limits,
             on_applied=self._after_overlays_change,
-            text="Edit limits",
+            text=tr("Edit limits"),
         )
         self._undo.push(cmd)
 
@@ -1202,13 +1265,13 @@ class MainWindow(QMainWindow):
         if freq is None or freq <= 0.0:
             QMessageBox.information(
                 self,
-                "Add marker",
-                "Move the mouse over a plot first to set the cursor frequency.",
+                tr("Add marker"),
+                tr("Move the mouse over a plot first to set the cursor frequency."),
             )
             return
         if not self._markers_panel.can_add():
             QMessageBox.warning(
-                self, "Add marker", "Maximum number of markers reached."
+                self, tr("Add marker"), tr("Maximum number of markers reached.")
             )
             return
         markers = list(self._session.markers)
@@ -1219,7 +1282,7 @@ class MainWindow(QMainWindow):
             self._session,
             markers,
             on_applied=self._after_overlays_change,
-            text="Add marker",
+            text=tr("Add marker"),
         )
         self._undo.push(cmd)
 
@@ -1265,11 +1328,11 @@ class MainWindow(QMainWindow):
         act_dn.triggered.connect(
             lambda *_: self._nudge_element(element_id, -1)
         )
-        act_step = menu.addAction("Set tune &step…")
+        act_step = menu.addAction(tr("Set tune &step…"))
         act_step.triggered.connect(
             lambda *_: self._set_element_step(element_id)
         )
-        act_tol = menu.addAction("Set &tolerance…")
+        act_tol = menu.addAction(tr("Set &tolerance…"))
         act_tol.triggered.connect(
             lambda *_: self._set_element_tolerance(element_id)
         )
@@ -1288,17 +1351,19 @@ class MainWindow(QMainWindow):
         try:
             new_value = self._session.nudged_value(element_id, direction)
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Tune", _exc_text(exc))
+            QMessageBox.warning(self, tr("Tune"), _exc_text(exc))
             return
         self._on_value_edited(element_id, new_value)
-        self._status.setText(f"Tuned {element_id} → {new_value:.6g}")
+        self._status.setText(
+            tr("Tuned {ref} → {value:.6g}", ref=element_id, value=new_value)
+        )
 
     def _set_element_tolerance(self, element_id: str) -> None:
         current = self._session.element_tolerance(element_id)
         text = f"{current.tolerance_pct:g}" if current is not None else ""
         text, ok = QInputDialog.getText(
             self,
-            "Component tolerance",
+            tr("Component tolerance"),
             f"Tolerance ±% for {element_id} (blank to clear):",
             text=text,
         )
@@ -1306,23 +1371,25 @@ class MainWindow(QMainWindow):
             return
         if not text.strip():
             self._session.clear_element_tolerance(element_id)
-            self._status.setText(f"Cleared tolerance for {element_id}")
+            self._status.setText(tr("Cleared tolerance for {ref}", ref=element_id))
             self._refresh_table()
             return
         try:
             pct = float(text)
             self._session.set_element_tolerance(element_id, pct)
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Component tolerance", _exc_text(exc))
+            QMessageBox.warning(self, tr("Component tolerance"), _exc_text(exc))
             return
-        self._status.setText(f"Tolerance for {element_id}: ±{pct:g}%")
+        self._status.setText(
+            tr("Tolerance for {ref}: ±{pct:g}%", ref=element_id, pct=pct)
+        )
         self._refresh_table()
 
     def _set_element_step(self, element_id: str) -> None:
         current = self._session.step_fraction(element_id)
         text, ok = QInputDialog.getText(
             self,
-            "Tune step",
+            tr("Tune step"),
             f"Relative step per nudge for {element_id} (0.02 = 2%):",
             text=f"{current:g}",
         )
@@ -1332,9 +1399,15 @@ class MainWindow(QMainWindow):
             fraction = float(text)
             self._session.set_element_step(element_id, fraction)
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Tune step", _exc_text(exc))
+            QMessageBox.warning(self, tr("Tune step"), _exc_text(exc))
             return
-        self._status.setText(f"Tune step for {element_id}: {fraction * 100:g}%")
+        self._status.setText(
+            tr(
+                "Tune step for {ref}: {pct:g}%",
+                ref=element_id,
+                pct=fraction * 100,
+            )
+        )
 
     def _populate_component_menu(self) -> None:
         """Rebuild the Design → Component menu for the selected element."""
@@ -1374,7 +1447,7 @@ class MainWindow(QMainWindow):
             )
         menu.addSeparator()
         circuit = self._session.circuit
-        act_del = menu.addAction("Delete element")
+        act_del = menu.addAction(tr("Delete element"))
         act_del.triggered.connect(lambda *_: self._delete_arm(element_id))
         if circuit is not None and len(circuit.elements) <= 1:
             act_del.setEnabled(False)
@@ -1432,7 +1505,7 @@ class MainWindow(QMainWindow):
                 lambda *_, r=role, k=kind: self._insert_arm(element_id, r, k, False)
             )
         menu.addSeparator()
-        act_del = menu.addAction("Delete element")
+        act_del = menu.addAction(tr("Delete element"))
         act_del.triggered.connect(lambda *_: self._delete_arm(element_id))
         return menu
 
@@ -1449,12 +1522,14 @@ class MainWindow(QMainWindow):
             current, unit = el.value_ohm, "Ohm"
         else:
             QMessageBox.information(
-                self, "Edit element", "Only ideal L/C/R arms can be edited here."
+                self,
+                tr("Edit element"),
+                tr("Only ideal L/C/R arms can be edited here."),
             )
             return
         text, ok = QInputDialog.getText(
             self,
-            "Edit element",
+            tr("Edit element"),
             f"{element_id} value:",
             text=format_engineering(current, unit, digits=6),
         )
@@ -1463,7 +1538,7 @@ class MainWindow(QMainWindow):
         try:
             value = parse_si(text)
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Edit element", _exc_text(exc))
+            QMessageBox.warning(self, tr("Edit element"), _exc_text(exc))
             return
         self._on_value_edited(element_id, value)
 
@@ -1500,7 +1575,7 @@ class MainWindow(QMainWindow):
             }
         else:
             QMessageBox.information(
-                self, "Edit parasitics", "Only L/C arms have parasitics."
+                self, tr("Edit parasitics"), tr("Only L/C arms have parasitics.")
             )
             return
         try:
@@ -1516,10 +1591,12 @@ class MainWindow(QMainWindow):
                 esl_h=kwargs.get("esl_h"),
             )
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Edit parasitics", _exc_text(exc))
+            QMessageBox.warning(self, tr("Edit parasitics"), _exc_text(exc))
             return
-        self._push_circuit_edit(new_circuit, f"Edit {element_id} parasitics")
-        self._status.setText(f"Updated parasitics on {element_id}")
+        self._push_circuit_edit(
+            new_circuit, tr("Edit {ref} parasitics", ref=element_id)
+        )
+        self._status.setText(tr("Updated parasitics on {ref}", ref=element_id))
         self._run_analyze()
 
     def _insert_arm(
@@ -1530,7 +1607,7 @@ class MainWindow(QMainWindow):
             return
         text, ok = QInputDialog.getText(
             self,
-            "Insert element",
+            tr("Insert element"),
             f"New {kind} value:",
             text=self._default_arm_text(kind),
         )
@@ -1539,7 +1616,7 @@ class MainWindow(QMainWindow):
         try:
             value = parse_si(text)
         except ValueError as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Insert element", _exc_text(exc))
+            QMessageBox.warning(self, tr("Insert element"), _exc_text(exc))
             return
         elements = list(circuit.elements)
         ids = [el.id for el in elements]
@@ -1555,9 +1632,9 @@ class MainWindow(QMainWindow):
                 circuit, role=role, kind=kind, value_si=value, before_id=before_id
             )
         except circuit_edit.CircuitEditError as exc:
-            QMessageBox.warning(self, "Insert element", _exc_text(exc))
+            QMessageBox.warning(self, tr("Insert element"), _exc_text(exc))
             return
-        self._push_circuit_edit(new_circuit, f"Insert {kind} arm")
+        self._push_circuit_edit(new_circuit, tr("Insert {kind} arm", kind=kind))
 
     def _convert_arm(self, element_id: str) -> None:
         circuit = self._session.circuit
@@ -1570,7 +1647,7 @@ class MainWindow(QMainWindow):
         reference_hz = circuit_edit.reference_frequency_hz(circuit)
         if reference_hz is None:
             QMessageBox.warning(
-                self, "Convert element", "No reference frequency available."
+                self, tr("Convert element"), tr("No reference frequency available.")
             )
             return
         try:
@@ -1578,9 +1655,9 @@ class MainWindow(QMainWindow):
                 circuit, element_id, target, reference_hz
             )
         except circuit_edit.CircuitEditError as exc:
-            QMessageBox.warning(self, "Convert element", _exc_text(exc))
+            QMessageBox.warning(self, tr("Convert element"), _exc_text(exc))
             return
-        self._push_circuit_edit(new_circuit, f"Convert {element_id}")
+        self._push_circuit_edit(new_circuit, tr("Convert {ref}", ref=element_id))
 
     def _delete_arm(self, element_id: str) -> None:
         circuit = self._session.circuit
@@ -1589,9 +1666,9 @@ class MainWindow(QMainWindow):
         try:
             new_circuit = circuit_edit.delete_arm(circuit, element_id)
         except circuit_edit.CircuitEditError as exc:
-            QMessageBox.warning(self, "Delete element", _exc_text(exc))
+            QMessageBox.warning(self, tr("Delete element"), _exc_text(exc))
             return
-        self._push_circuit_edit(new_circuit, f"Delete {element_id}")
+        self._push_circuit_edit(new_circuit, tr("Delete {ref}", ref=element_id))
 
     def _default_arm_text(self, kind: str) -> str:
         circuit = self._session.circuit
@@ -1613,7 +1690,7 @@ class MainWindow(QMainWindow):
     def _open_project(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Open FilterDesk project",
+            tr("Open FilterDesk project"),
             "",
             "FilterDesk (*.filterdesk.json *.fdsk.json);;JSON (*.json)",
         )
@@ -1626,14 +1703,14 @@ class MainWindow(QMainWindow):
             self._load_session_into_ui()
             self._run_analyze()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Open failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Open failed"), _exc_text(exc))
 
     def _new_project(self) -> None:
         if self._session.dirty:
             answer = QMessageBox.question(
                 self,
-                "New project",
-                "Discard the current unsaved changes?",
+                tr("New project"),
+                tr("Discard the current unsaved changes?"),
                 QMessageBox.StandardButton.Discard
                 | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,
@@ -1650,7 +1727,7 @@ class MainWindow(QMainWindow):
         if not current or current == DEFAULT_TITLE:
             current = default_stem(self._session.spec)
         text, ok = QInputDialog.getText(
-            self, "Rename project", "Project name:", text=current
+            self, tr("Rename project"), tr("Project name:"), text=current
         )
         if not ok:
             return
@@ -1664,7 +1741,7 @@ class MainWindow(QMainWindow):
     def _show_about(self) -> None:
         QMessageBox.about(
             self,
-            "About FilterDesk",
+            tr("About FilterDesk"),
             f"<b>FilterDesk</b> {__version__}<br><br>"
             "Passive lumped-element RF filter synthesis and analysis.<br>"
             "Licensed under the Apache License 2.0.<br>"
@@ -1673,7 +1750,7 @@ class MainWindow(QMainWindow):
         )
 
     def _show_about_qt(self) -> None:
-        QMessageBox.aboutQt(self, "About Qt")
+        QMessageBox.aboutQt(self, tr("About Qt"))
 
     def _open_github(self) -> None:
         QDesktopServices.openUrl(QUrl(_REPO_URL))
@@ -1690,7 +1767,7 @@ class MainWindow(QMainWindow):
     def _save_project_as(self) -> None:
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Save FilterDesk project",
+            tr("Save FilterDesk project"),
             default_filename(self._session.spec),
             "FilterDesk (*.filterdesk.json)",
         )
@@ -1704,7 +1781,7 @@ class MainWindow(QMainWindow):
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, "Invalid specification", _exc_text(exc))
+            QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
             return
         try:
             if self._session.title.strip() in ("", DEFAULT_TITLE):
@@ -1713,14 +1790,14 @@ class MainWindow(QMainWindow):
             self._session.path = str(path)
             self._session.dirty = False
             self._update_title()
-            self._status.setText(f"Saved {path}")
+            self._status.setText(tr("Saved {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Save failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Save failed"), _exc_text(exc))
 
     def _import_touchstone(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "Import Touchstone",
+            tr("Import Touchstone"),
             "",
             "Touchstone (*.s1p *.s2p *.s3p *.snp *.ts);;All files (*)",
         )
@@ -1734,7 +1811,7 @@ class MainWindow(QMainWindow):
         )
         self._import_thread = thread
         thread.start()
-        self._status.setText("Importing measured data…")
+        self._status.setText(tr("Importing measured data…"))
 
     def _on_touchstone_loaded(self, data: object) -> None:
         assert isinstance(data, TouchstoneData)
@@ -1744,7 +1821,7 @@ class MainWindow(QMainWindow):
         except TouchstoneError as exc:
             QMessageBox.information(
                 self,
-                "Import Touchstone",
+                tr("Import Touchstone"),
                 f"Loaded {name}\n{data.summary()}\n\n"
                 f"Compare/overlay currently supports 2-port data only ({exc}).",
             )
@@ -1761,23 +1838,23 @@ class MainWindow(QMainWindow):
             else:
                 detail += f"\n\nCompare (overlap band):\n{cmp.summary()}"
         self._status.setText(f"Imported {name}: {data.summary()}")
-        QMessageBox.information(self, "Import Touchstone", detail)
+        QMessageBox.information(self, tr("Import Touchstone"), detail)
 
     def _on_touchstone_failed(self, message: str) -> None:
-        QMessageBox.critical(self, "Import Touchstone", message)
+        QMessageBox.critical(self, tr("Import Touchstone"), message)
 
     def _export_smith_chart(self) -> None:
         result = self._session.analysis
         if result is None:
             QMessageBox.information(
                 self,
-                "Export Smith chart",
-                "Analyze a design first (Design → Synthesize + Analyze).",
+                tr("Export Smith chart"),
+                tr("Analyze a design first (Design → Synthesize + Analyze)."),
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export Smith chart",
+            tr("Export Smith chart"),
             default_filename(self._session.spec, suffix=".png"),
             "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)",
         )
@@ -1800,22 +1877,22 @@ class MainWindow(QMainWindow):
                 markers=self._session.markers,
                 title="Smith chart — S11 / S22",
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_csv(self) -> None:
         result = self._session.analysis
         if result is None:
             QMessageBox.information(
                 self,
-                "Export CSV",
-                "Analyze a design first (Design → Synthesize + Analyze).",
+                tr("Export CSV"),
+                tr("Analyze a design first (Design → Synthesize + Analyze)."),
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export CSV",
+            tr("Export CSV"),
             default_filename(self._session.spec, suffix=".csv"),
             "CSV (*.csv);;All files (*)",
         )
@@ -1831,22 +1908,22 @@ class MainWindow(QMainWindow):
                     f"{spec.response.value} backend={result.backend}"
                 ),
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_touchstone(self) -> None:
         result = self._session.analysis
         if result is None:
             QMessageBox.information(
                 self,
-                "Export Touchstone",
-                "Analyze a design first (Design → Synthesize + Analyze).",
+                tr("Export Touchstone"),
+                tr("Analyze a design first (Design → Synthesize + Analyze)."),
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export Touchstone (.s2p)",
+            tr("Export Touchstone (.s2p)"),
             default_filename(self._session.spec, suffix=".s2p"),
             "Touchstone (*.s2p);;All files (*)",
         )
@@ -1861,20 +1938,20 @@ class MainWindow(QMainWindow):
                 path,
                 comment=f"family={spec.family.value} order={spec.order}",
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_spice(self) -> None:
         circuit = self._session.circuit
         if circuit is None:
             QMessageBox.information(
-                self, "Export SPICE", "Synthesize a circuit first."
+                self, tr("Export SPICE"), tr("Synthesize a circuit first.")
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export SPICE netlist",
+            tr("Export SPICE netlist"),
             default_filename(self._session.spec, suffix=".net"),
             "SPICE netlist (*.net *.cir);;All files (*)",
         )
@@ -1887,20 +1964,20 @@ class MainWindow(QMainWindow):
                 title=self._export_title(),
                 ac=self._session.sweep,
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_asc(self) -> None:
         circuit = self._session.circuit
         if circuit is None:
             QMessageBox.information(
-                self, "Export LTspice", "Synthesize a circuit first."
+                self, tr("Export LTspice"), tr("Synthesize a circuit first.")
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export LTspice schematic",
+            tr("Export LTspice schematic"),
             default_filename(self._session.spec, suffix=".asc"),
             "LTspice schematic (*.asc);;All files (*)",
         )
@@ -1915,20 +1992,20 @@ class MainWindow(QMainWindow):
                 title=self._export_title(),
                 ac=self._session.sweep,
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_qucs(self) -> None:
         circuit = self._session.circuit
         if circuit is None:
             QMessageBox.information(
-                self, "Export Qucs", "Synthesize a circuit first."
+                self, tr("Export Qucs"), tr("Synthesize a circuit first.")
             )
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export Qucs schematic",
+            tr("Export Qucs schematic"),
             default_filename(self._session.spec, suffix=".sch"),
             "Qucs schematic (*.sch);;All files (*)",
         )
@@ -1940,15 +2017,15 @@ class MainWindow(QMainWindow):
             write_qucs_schematic(
                 circuit, path, title=self._export_title()
             )
-            self._status.setText(f"Wrote {path}")
+            self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def _export_build_sheet(self) -> None:
         circuit = self._session.circuit
         if circuit is None:
             QMessageBox.information(
-                self, "Export build sheet", "Synthesize a circuit first."
+                self, tr("Export build sheet"), tr("Synthesize a circuit first.")
             )
             return
         options = BuildSheetDialog.ask(self)
@@ -1957,7 +2034,7 @@ class MainWindow(QMainWindow):
         series, group = options
         path, selected = QFileDialog.getSaveFileName(
             self,
-            "Export build sheet / BOM",
+            tr("Export build sheet / BOM"),
             default_filename(self._session.spec, suffix="_bom.md"),
             "Build sheet (*.md);;BOM CSV (*.csv);;HTML (*.html);;All files (*)",
         )
@@ -1980,9 +2057,9 @@ class MainWindow(QMainWindow):
                 series=series,
                 group=group,
             )
-            self._status.setText(f"Wrote {target}")
+            self._status.setText(tr("Wrote {path}", path=target))
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.critical(self, "Export failed", _exc_text(exc))
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         self._save_window_state()

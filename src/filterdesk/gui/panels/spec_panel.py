@@ -31,6 +31,12 @@ from filterdesk.domain.specs import (
     default_topology,
 )
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import (
+    family_label,
+    response_label,
+    topology_label,
+    tr,
+)
 from filterdesk.gui.widgets import EngineeringLineEdit
 from filterdesk.synthesis.order_estimate import (
     OrderEstimateError,
@@ -67,30 +73,35 @@ class SpecPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._family = QComboBox()
-        for label, fam in (
-            ("Butterworth", ApproximationFamily.BUTTERWORTH),
-            ("Chebyshev Type I", ApproximationFamily.CHEBYSHEV_TYPE_I),
-            ("Chebyshev Type II", ApproximationFamily.CHEBYSHEV_TYPE_II),
-            ("Elliptic", ApproximationFamily.ELLIPTIC),
-            ("Bessel", ApproximationFamily.BESSEL),
-            ("Gaussian", ApproximationFamily.GAUSSIAN),
-            ("Legendre", ApproximationFamily.LEGENDRE),
-            ("Constant-K", ApproximationFamily.CONSTANT_K),
-            ("M-derived", ApproximationFamily.M_DERIVED),
+        for fam in (
+            ApproximationFamily.BUTTERWORTH,
+            ApproximationFamily.CHEBYSHEV_TYPE_I,
+            ApproximationFamily.CHEBYSHEV_TYPE_II,
+            ApproximationFamily.ELLIPTIC,
+            ApproximationFamily.BESSEL,
+            ApproximationFamily.GAUSSIAN,
+            ApproximationFamily.LEGENDRE,
+            ApproximationFamily.CONSTANT_K,
+            ApproximationFamily.M_DERIVED,
         ):
-            self._family.addItem(label, fam.value)
+            self._family.addItem(family_label(fam), fam.value)
         self._response = QComboBox()
-        self._response.addItem("Low-pass", FilterResponse.LOW_PASS.value)
-        self._response.addItem("High-pass", FilterResponse.HIGH_PASS.value)
-        self._response.addItem("Band-pass", FilterResponse.BAND_PASS.value)
-        self._response.addItem("Band-stop", FilterResponse.BAND_STOP.value)
+        for response in (
+            FilterResponse.LOW_PASS,
+            FilterResponse.HIGH_PASS,
+            FilterResponse.BAND_PASS,
+            FilterResponse.BAND_STOP,
+        ):
+            self._response.addItem(response_label(response), response.value)
         self._order = QSpinBox()
         self._order.setRange(1, 21)
         self._order.setValue(7)
-        self._estimate_btn = QPushButton("Estimate N")
+        self._estimate_btn = QPushButton(tr("Estimate N"))
         self._estimate_btn.setToolTip(
-            "Minimum order from Ap/As and pass/stop edges "
-            "(LP/HP classical families)"
+            tr(
+                "Minimum order from Ap/As and pass/stop edges "
+                "(LP/HP classical families)"
+            )
         )
         self._cutoff = EngineeringLineEdit()
         self._cutoff.setText("140M")
@@ -119,22 +130,22 @@ class SpecPanel(QWidget):
         self._topology = QComboBox()
         self._populate_topologies()
 
-        self._cutoff_label = QLabel("Passband f / cutoff")
-        self._f_stop_label = QLabel("Stopband f (est.)")
-        self._center_label = QLabel("Center")
-        self._bw_label = QLabel("Bandwidth")
-        self._ripple_label = QLabel("Ripple / Ap (dB)")
-        self._stop_label = QLabel("Stopband As (dB)")
-        self._m_label = QLabel("m parameter")
+        self._cutoff_label = QLabel(tr("Passband f / cutoff"))
+        self._f_stop_label = QLabel(tr("Stopband f (est.)"))
+        self._center_label = QLabel(tr("Center"))
+        self._bw_label = QLabel(tr("Bandwidth"))
+        self._ripple_label = QLabel(tr("Ripple / Ap (dB)"))
+        self._stop_label = QLabel(tr("Stopband As (dB)"))
+        self._m_label = QLabel(tr("m parameter"))
 
         order_row = QHBoxLayout()
         order_row.addWidget(self._order)
         order_row.addWidget(self._estimate_btn)
 
         form = QFormLayout()
-        form.addRow("Family", self._family)
-        form.addRow("Response", self._response)
-        form.addRow("Order", order_row)
+        form.addRow(tr("Family"), self._family)
+        form.addRow(tr("Response"), self._response)
+        form.addRow(tr("Order"), order_row)
         form.addRow(self._cutoff_label, self._cutoff)
         form.addRow(self._f_stop_label, self._f_stop)
         form.addRow(self._center_label, self._f_center)
@@ -142,9 +153,9 @@ class SpecPanel(QWidget):
         form.addRow(self._ripple_label, self._ripple)
         form.addRow(self._stop_label, self._stop_att)
         form.addRow(self._m_label, self._m_param)
-        form.addRow("Zsource", self._zs)
-        form.addRow("Zload", self._zl)
-        form.addRow("Topology", self._topology)
+        form.addRow(tr("Zsource"), self._zs)
+        form.addRow(tr("Zload"), self._zl)
+        form.addRow(tr("Topology"), self._topology)
 
         self._note = QLabel()
         self._note.setWordWrap(True)
@@ -179,29 +190,29 @@ class SpecPanel(QWidget):
     def _populate_topologies(self) -> None:
         self._topology.clear()
         response = _enum_from_combo(self._response, FilterResponse)
-        items: list[tuple[str, TopologyId]]
+        items: list[TopologyId]
         if response == FilterResponse.LOW_PASS:
             items = [
-                ("Series L input", TopologyId.LADDER_LP_SERIES_L_INPUT),
-                ("Shunt C input", TopologyId.LADDER_LP_SHUNT_C_INPUT),
+                TopologyId.LADDER_LP_SERIES_L_INPUT,
+                TopologyId.LADDER_LP_SHUNT_C_INPUT,
             ]
         elif response == FilterResponse.HIGH_PASS:
             items = [
-                ("Series C input", TopologyId.LADDER_HP_SERIES_C_INPUT),
-                ("Shunt L input", TopologyId.LADDER_HP_SHUNT_L_INPUT),
+                TopologyId.LADDER_HP_SERIES_C_INPUT,
+                TopologyId.LADDER_HP_SHUNT_L_INPUT,
             ]
         elif response == FilterResponse.BAND_PASS:
             items = [
-                ("Series resonator input", TopologyId.LADDER_BP_SERIES_RES_INPUT),
-                ("Shunt resonator input", TopologyId.LADDER_BP_SHUNT_RES_INPUT),
+                TopologyId.LADDER_BP_SERIES_RES_INPUT,
+                TopologyId.LADDER_BP_SHUNT_RES_INPUT,
             ]
         else:
             items = [
-                ("Series tank input", TopologyId.LADDER_BS_SERIES_TANK_INPUT),
-                ("Shunt tank input", TopologyId.LADDER_BS_SHUNT_TANK_INPUT),
+                TopologyId.LADDER_BS_SERIES_TANK_INPUT,
+                TopologyId.LADDER_BS_SHUNT_TANK_INPUT,
             ]
-        for label, topo in items:
-            self._topology.addItem(label, topo.value)
+        for topo in items:
+            self._topology.addItem(topology_label(topo), topo.value)
 
     def _on_family_changed(self) -> None:
         family = _enum_from_combo(self._family, ApproximationFamily)
@@ -247,10 +258,12 @@ class SpecPanel(QWidget):
             and self._order.value() % 2 == 0
         ):
             self._note.setText(
-                "Even-order Chebyshev I: FilterDesk uses the modified "
-                "equal-termination response, not the classical "
-                "unequal-termination tables. Use an odd order for textbook "
-                "values."
+                tr(
+                    "Even-order Chebyshev I: FilterDesk uses the modified "
+                    "equal-termination response, not the classical "
+                    "unequal-termination tables. Use an odd order for textbook "
+                    "values."
+                )
             )
             self._note.setVisible(True)
         else:
@@ -292,18 +305,20 @@ class SpecPanel(QWidget):
                 stopband_attenuation_db=as_db,
             )
         except (OrderEstimateError, SpecValidationError, ValueError) as exc:
-            QMessageBox.warning(self, "Estimate order", str(exc))
+            QMessageBox.warning(self, tr("Estimate order"), str(exc))
             return
         self._order.setValue(min(21, result.order))
         if family == ApproximationFamily.CHEBYSHEV_TYPE_II:
             self._cutoff.setText(_fmt_hz(result.f_stop_hz))
-        msg = (
-            f"Minimum order N = {result.order}\n"
-            f"Ωs = {result.omega_ratio:.4g}\n"
-            f"Natural f ≈ {format_engineering(result.natural_freq_hz, 'Hz')}\n\n"
-            f"{result.notes}"
+        msg = tr(
+            "Minimum order N = {order}\nΩs = {ratio:.6g}\nNatural f ≈ {freq}"
+            "\n\n{notes}",
+            order=result.order,
+            ratio=result.omega_ratio,
+            freq=format_engineering(result.natural_freq_hz, "Hz"),
+            notes=result.notes,
         )
-        QMessageBox.information(self, "Estimate order", msg)
+        QMessageBox.information(self, tr("Estimate order"), msg)
         self.spec_changed.emit()
 
     def set_spec(self, spec: FilterSpec) -> None:

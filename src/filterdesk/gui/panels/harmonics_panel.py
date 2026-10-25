@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from filterdesk.analysis.harmonics import HarmonicReport
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import tr
 from filterdesk.gui.widgets import EngineeringLineEdit
 
 
@@ -26,8 +27,8 @@ class HarmonicsPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._f0 = EngineeringLineEdit()
-        self._f0.setPlaceholderText("auto (band landmark)")
-        btn_auto = QPushButton("Use landmark")
+        self._f0.setPlaceholderText(tr("auto (band landmark)"))
+        btn_auto = QPushButton(tr("Use landmark"))
         btn_auto.clicked.connect(self._use_landmark)
         row = QHBoxLayout()
         row.addWidget(QLabel("f0"))
@@ -36,7 +37,12 @@ class HarmonicsPanel(QWidget):
 
         self._table = QTableWidget(0, 4)
         self._table.setHorizontalHeaderLabels(
-            ["Harmonic", "Frequency", "|S21| (dB)", "Suppression (dB)"]
+            [
+                tr("Harmonic"),
+                tr("Frequency"),
+                "|S21| (dB)",
+                tr("Suppression (dB)"),
+            ]
         )
         layout = QVBoxLayout(self)
         layout.addLayout(row)

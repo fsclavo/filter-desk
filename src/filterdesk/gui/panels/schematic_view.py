@@ -41,6 +41,7 @@ from filterdesk.domain.circuit import (
 )
 from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.units import format_engineering
+from filterdesk.gui.i18n import tr
 
 _PITCH_SIMPLE = 160.0
 _PITCH_RESONATOR = 220.0
@@ -207,7 +208,7 @@ class SchematicPanel(QWidget):
         label_font = QFont("Sans Serif", 10)
 
         if circuit is None or not circuit.elements:
-            placeholder = QGraphicsSimpleTextItem("No circuit — click Synthesize")
+            placeholder = QGraphicsSimpleTextItem(tr("No circuit — click Synthesize"))
             placeholder.setBrush(brush)
             placeholder.setFont(QFont("Sans Serif", 11))
             self._scene.addItem(placeholder)
@@ -219,7 +220,9 @@ class SchematicPanel(QWidget):
         x = _MARGIN_X
         y = _LINE_Y
 
-        src = QGraphicsSimpleTextItem(f"Zs = {circuit.port_in.impedance_ohm:g} Ω")
+        src = QGraphicsSimpleTextItem(
+            tr("Zs = {zs} Ω", zs=f"{circuit.port_in.impedance_ohm:g}")
+        )
         src.setBrush(brush)
         src.setFont(label_font)
         src.setPos(x - 60, y - 78)
@@ -256,7 +259,9 @@ class SchematicPanel(QWidget):
         tail.setPen(pen)
         self._scene.addItem(tail)
 
-        load = QGraphicsSimpleTextItem(f"Zl = {circuit.port_out.impedance_ohm:g} Ω")
+        load = QGraphicsSimpleTextItem(
+            tr("Zl = {zl} Ω", zl=f"{circuit.port_out.impedance_ohm:g}")
+        )
         load.setBrush(brush)
         load.setFont(label_font)
         load.setPos(x + 52, y - 78)

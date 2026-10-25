@@ -50,6 +50,7 @@ from filterdesk.components_std.toroid import (
 from filterdesk.domain.circuit import IdealInductor, NonIdealInductor
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.i18n import tr
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import ALL_PRESETS, Band, BandKind
@@ -66,7 +67,7 @@ class EngineeringLineEdit(QLineEdit):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setPlaceholderText("e.g. 140M, 50, 10n")
+        self.setPlaceholderText(tr("e.g. 140M, 50, 10n"))
 
 
 _STRATEGY_LABELS: dict[SnapStrategy, str] = {
@@ -88,20 +89,20 @@ class SnapDialog(QDialog):
         strategy: SnapStrategy | str = SnapStrategy.INDEPENDENT,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Snap to E-series")
+        self.setWindowTitle(tr("Snap to E-series"))
         self._series = QComboBox()
         for es in ESeries:
             self._series.addItem(es.value, es)
         self._series.setCurrentIndex(list(ESeries).index(ESeries(series)))
         self._strategy = QComboBox()
         for st in SnapStrategy:
-            self._strategy.addItem(_STRATEGY_LABELS[st], st)
+            self._strategy.addItem(tr(_STRATEGY_LABELS[st]), st)
         self._strategy.setCurrentIndex(
             list(SnapStrategy).index(SnapStrategy(strategy))
         )
         form = QFormLayout(self)
-        form.addRow("Series", self._series)
-        form.addRow("Strategy", self._strategy)
+        form.addRow(tr("Series"), self._series)
+        form.addRow(tr("Strategy"), self._strategy)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -137,26 +138,26 @@ class NonIdealDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Apply parasitics / finite Q")
+        self.setWindowTitle(tr("Apply parasitics / finite Q"))
         self._ind_q = EngineeringLineEdit()
-        self._ind_q.setPlaceholderText("e.g. 100 (blank = ideal)")
+        self._ind_q.setPlaceholderText(tr("e.g. 100 (blank = ideal)"))
         self._q_freq = EngineeringLineEdit()
-        self._q_freq.setPlaceholderText("e.g. 100M (required for Q)")
+        self._q_freq.setPlaceholderText(tr("e.g. 100M (required for Q)"))
         self._ind_dcr = EngineeringLineEdit()
-        self._ind_dcr.setPlaceholderText("e.g. 0.5 (ohm, optional)")
+        self._ind_dcr.setPlaceholderText(tr("e.g. 0.5 (ohm, optional)"))
         self._ind_cpar = EngineeringLineEdit()
-        self._ind_cpar.setPlaceholderText("e.g. 0.2p (F, optional)")
+        self._ind_cpar.setPlaceholderText(tr("e.g. 0.2p (F, optional)"))
         self._cap_esr = EngineeringLineEdit()
-        self._cap_esr.setPlaceholderText("e.g. 0.05 (ohm, optional)")
+        self._cap_esr.setPlaceholderText(tr("e.g. 0.05 (ohm, optional)"))
         self._cap_esl = EngineeringLineEdit()
-        self._cap_esl.setPlaceholderText("e.g. 0.5n (H, optional)")
+        self._cap_esl.setPlaceholderText(tr("e.g. 0.5n (H, optional)"))
         form = QFormLayout(self)
-        form.addRow("Inductor Q", self._ind_q)
-        form.addRow("Q reference freq", self._q_freq)
-        form.addRow("Inductor DCR", self._ind_dcr)
-        form.addRow("Inductor Cpar", self._ind_cpar)
-        form.addRow("Capacitor ESR", self._cap_esr)
-        form.addRow("Capacitor ESL", self._cap_esl)
+        form.addRow(tr("Inductor Q"), self._ind_q)
+        form.addRow(tr("Q reference freq"), self._q_freq)
+        form.addRow(tr("Inductor DCR"), self._ind_dcr)
+        form.addRow(tr("Inductor Cpar"), self._ind_cpar)
+        form.addRow(tr("Capacitor ESR"), self._cap_esr)
+        form.addRow(tr("Capacitor ESL"), self._cap_esl)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -172,7 +173,11 @@ class NonIdealDialog(QDialog):
             kwargs["inductor_q"] = float(q_text)
             freq_text = self._q_freq.text().strip()
             if not freq_text:
-                raise ValueError("Q reference frequency is required when Q is set")
+                raise ValueError(
+                        tr(
+                            "Q reference frequency is required when Q is set"
+                        )
+                    )
             kwargs["q_frequency_hz"] = parse_si(freq_text)
         for key, field in (
             ("inductor_dcr_ohm", self._ind_dcr),
@@ -212,7 +217,7 @@ class ParasiticDialog(QDialog):
         self._value = value
         form = QFormLayout(self)
         if kind == "inductor":
-            self.setWindowTitle("Inductor parasitics")
+            self.setWindowTitle(tr("Inductor parasitics"))
             self._r = EngineeringLineEdit()
             self._r.setText(format_engineering(series_resistance_ohm, "Ohm", digits=6))
             self._cp = EngineeringLineEdit()
@@ -220,21 +225,21 @@ class ParasiticDialog(QDialog):
                 format_engineering(parallel_capacitance_f, "F", digits=6)
             )
             self._q = EngineeringLineEdit()
-            self._q.setPlaceholderText("optional; overrides DCR")
+            self._q.setPlaceholderText(tr("optional; overrides DCR"))
             self._q_freq = EngineeringLineEdit()
-            self._q_freq.setPlaceholderText("e.g. 100M")
-            form.addRow("Series R (DCR)", self._r)
-            form.addRow("Parallel C (Cp)", self._cp)
-            form.addRow("Q", self._q)
-            form.addRow("Q reference freq", self._q_freq)
+            self._q_freq.setPlaceholderText(tr("e.g. 100M"))
+            form.addRow(tr("Series R (DCR)"), self._r)
+            form.addRow(tr("Parallel C (Cp)"), self._cp)
+            form.addRow(tr("Q"), self._q)
+            form.addRow(tr("Q reference freq"), self._q_freq)
         else:
-            self.setWindowTitle("Capacitor parasitics")
+            self.setWindowTitle(tr("Capacitor parasitics"))
             self._esr = EngineeringLineEdit()
             self._esr.setText(format_engineering(esr_ohm, "Ohm", digits=6))
             self._esl = EngineeringLineEdit()
             self._esl.setText(format_engineering(esl_h, "H", digits=6))
-            form.addRow("ESR", self._esr)
-            form.addRow("ESL", self._esl)
+            form.addRow(tr("ESR"), self._esr)
+            form.addRow(tr("ESL"), self._esl)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -252,7 +257,11 @@ class ParasiticDialog(QDialog):
             if q_text:
                 freq_text = self._q_freq.text().strip()
                 if not freq_text:
-                    raise ValueError("Q reference frequency is required when Q is set")
+                    raise ValueError(
+                        tr(
+                            "Q reference frequency is required when Q is set"
+                        )
+                    )
                 kwargs["series_resistance_ohm"] = inductor_resistance_ohm_from_q(
                     self._value, float(q_text), parse_si(freq_text)
                 )
@@ -286,7 +295,7 @@ class MonteCarloDialog(QDialog):
         initial: MonteCarloConfig | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Monte-Carlo tolerances")
+        self.setWindowTitle(tr("Monte-Carlo tolerances"))
         base = initial or MonteCarloConfig()
         self._trials = QSpinBox()
         self._trials.setRange(1, 100_000)
@@ -300,14 +309,14 @@ class MonteCarloDialog(QDialog):
             list(ToleranceDistribution).index(base.distribution)
         )
         self._seed = QLineEdit()
-        self._seed.setPlaceholderText("optional integer")
+        self._seed.setPlaceholderText(tr("optional integer"))
         if base.seed is not None:
             self._seed.setText(str(base.seed))
         form = QFormLayout(self)
-        form.addRow("Trials", self._trials)
-        form.addRow("Tolerance ± (%)", self._tol)
-        form.addRow("Distribution", self._dist)
-        form.addRow("Seed", self._seed)
+        form.addRow(tr("Trials"), self._trials)
+        form.addRow(tr("Tolerance ± (%)"), self._tol)
+        form.addRow(tr("Distribution"), self._dist)
+        form.addRow(tr("Seed"), self._seed)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -355,27 +364,27 @@ class OptimizeDialog(QDialog):
         initial: OptimizationConfig | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Optimize to limits")
+        self.setWindowTitle(tr("Optimize to limits"))
         base = initial or OptimizationConfig()
         self._method = QComboBox()
         for method in OptimizeMethod:
-            self._method.addItem(self._METHOD_LABELS[method], method)
+            self._method.addItem(tr(self._METHOD_LABELS[method]), method)
         self._method.setCurrentIndex(list(OptimizeMethod).index(base.method))
         self._bound = EngineeringLineEdit()
         self._bound.setText(f"{base.bound_pct:g}")
-        self._bound.setPlaceholderText("e.g. 0.2 = ±20%")
+        self._bound.setPlaceholderText(tr("e.g. 0.2 = ±20%"))
         self._max_iter = QSpinBox()
         self._max_iter.setRange(1, 100_000)
         self._max_iter.setValue(base.max_iter)
         self._seed = QLineEdit()
-        self._seed.setPlaceholderText("optional integer (global methods)")
+        self._seed.setPlaceholderText(tr("optional integer (global methods)"))
         if base.seed is not None:
             self._seed.setText(str(base.seed))
         form = QFormLayout(self)
-        form.addRow("Method", self._method)
-        form.addRow("Bound (± fraction)", self._bound)
-        form.addRow("Max iterations", self._max_iter)
-        form.addRow("Seed", self._seed)
+        form.addRow(tr("Method"), self._method)
+        form.addRow(tr("Bound (± fraction)"), self._bound)
+        form.addRow(tr("Max iterations"), self._max_iter)
+        form.addRow(tr("Seed"), self._seed)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -411,15 +420,15 @@ class BandPresetDialog(QDialog):
     """Choose an amateur band and filter kind for a quick preset design."""
 
     _KINDS: tuple[tuple[BandKind, str], ...] = (
-        (BandKind.LPF, "Transmit LPF"),
-        (BandKind.HPF, "High-pass"),
-        (BandKind.BPF, "Band-pass"),
-        (BandKind.BSF, "Band-stop (notch)"),
+        (BandKind.LPF, tr("Transmit LPF")),
+        (BandKind.HPF, tr("High-pass")),
+        (BandKind.BPF, tr("Band-pass")),
+        (BandKind.BSF, tr("Band-stop (notch)")),
     )
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Amateur band preset")
+        self.setWindowTitle(tr("Amateur band preset"))
         self._band = QComboBox()
         for band in ALL_PRESETS:
             self._band.addItem(band.name)
@@ -431,8 +440,8 @@ class BandPresetDialog(QDialog):
         for _kind, label in self._KINDS:
             self._kind.addItem(label)
         form = QFormLayout(self)
-        form.addRow("Band", self._band)
-        form.addRow("Filter", self._kind)
+        form.addRow(tr("Band"), self._band)
+        form.addRow(tr("Filter"), self._kind)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -460,25 +469,25 @@ class AttenuatorDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Attenuator pad")
+        self.setWindowTitle(tr("Attenuator pad"))
         self._db = EngineeringLineEdit()
         self._db.setText("6")
         self._z0 = EngineeringLineEdit()
         self._z0.setText("50")
         self._kind = QComboBox()
         for _kind, label in (
-            (AttenuatorKind.TEE, "T pad"),
-            (AttenuatorKind.PI, "Pi pad"),
+            (AttenuatorKind.TEE, tr("T pad")),
+            (AttenuatorKind.PI, tr("Pi pad")),
         ):
             self._kind.addItem(label)
         self._series = QLabel("—")
         self._shunt = QLabel("—")
         form = QFormLayout(self)
-        form.addRow("Attenuation (dB)", self._db)
-        form.addRow("System Z0 (Ohm)", self._z0)
-        form.addRow("Topology", self._kind)
-        form.addRow("Series R", self._series)
-        form.addRow("Shunt R", self._shunt)
+        form.addRow(tr("Attenuation (dB)"), self._db)
+        form.addRow(tr("System Z0 (Ohm)"), self._z0)
+        form.addRow(tr("Topology"), self._kind)
+        form.addRow(tr("Series R"), self._series)
+        form.addRow(tr("Shunt R"), self._shunt)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -526,14 +535,14 @@ class MatchingDialog(QDialog):
     """Design an L/Pi/T matching network to a complex load (live values)."""
 
     _TOPOS: tuple[tuple[MatchingTopology, str], ...] = (
-        (MatchingTopology.L, "L (2 elements)"),
-        (MatchingTopology.PI, "Pi (3 elements)"),
-        (MatchingTopology.T, "T (3 elements)"),
+        (MatchingTopology.L, tr("L (2 elements)")),
+        (MatchingTopology.PI, tr("Pi (3 elements)")),
+        (MatchingTopology.T, tr("T (3 elements)")),
     )
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Matching network")
+        self.setWindowTitle(tr("Matching network"))
         self._z0 = EngineeringLineEdit()
         self._z0.setText("50")
         self._rl = EngineeringLineEdit()
@@ -546,24 +555,24 @@ class MatchingDialog(QDialog):
         for _t, label in self._TOPOS:
             self._topo.addItem(label)
         self._q = EngineeringLineEdit()
-        self._q.setPlaceholderText("auto (Pi/T only)")
-        self._model = QCheckBox("Model the load (series X) at the output")
+        self._q.setPlaceholderText(tr("auto (Pi/T only)"))
+        self._model = QCheckBox(tr("Model the load (series X) at the output"))
         self._where = QComboBox()
-        self._where.addItem("Input")
-        self._where.addItem("Output")
+        self._where.addItem(tr("Input"))
+        self._where.addItem(tr("Output"))
         self._summary = QLabel("—")
         self._summary.setWordWrap(True)
 
         form = QFormLayout(self)
-        form.addRow("Source Z0 (Ohm)", self._z0)
-        form.addRow("Load R (Ohm)", self._rl)
-        form.addRow("Load X (Ohm, +ind/-cap)", self._xl)
-        form.addRow("Frequency", self._f)
-        form.addRow("Topology", self._topo)
-        form.addRow("Loaded Q", self._q)
-        form.addRow("Insert at", self._where)
+        form.addRow(tr("Source Z0 (Ohm)"), self._z0)
+        form.addRow(tr("Load R (Ohm)"), self._rl)
+        form.addRow(tr("Load X (Ohm, +ind/-cap)"), self._xl)
+        form.addRow(tr("Frequency"), self._f)
+        form.addRow(tr("Topology"), self._topo)
+        form.addRow(tr("Loaded Q"), self._q)
+        form.addRow(tr("Insert at"), self._where)
         form.addRow(self._model)
-        form.addRow("Elements", self._summary)
+        form.addRow(tr("Elements"), self._summary)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -647,7 +656,7 @@ class _ToroidPage(QWidget):
         self._l.setText("1u")
         self._turns = QSpinBox()
         self._turns.setRange(0, 999)
-        self._turns.setSpecialValueText("auto (from L)")
+        self._turns.setSpecialValueText(tr("auto (from L)"))
         self._current = EngineeringLineEdit()
         self._current.setText("0")
         self._turns_exact = QLabel("-")
@@ -659,17 +668,17 @@ class _ToroidPage(QWidget):
         self._sat = QLabel("-")
 
         form = QFormLayout(self)
-        form.addRow("Core", self._core)
-        form.addRow("Target L", self._l)
-        form.addRow("Turns (0 = auto)", self._turns)
-        form.addRow("Peak current (A)", self._current)
-        form.addRow("Exact turns", self._turns_exact)
-        form.addRow("Use turns", self._turns_used)
-        form.addRow("Achieved L", self._l_achieved)
-        form.addRow("Wire", self._wire)
-        form.addRow("Wire length", self._length)
-        form.addRow("Peak flux", self._flux)
-        form.addRow("Saturation", self._sat)
+        form.addRow(tr("Core"), self._core)
+        form.addRow(tr("Target L"), self._l)
+        form.addRow(tr("Turns (0 = auto)"), self._turns)
+        form.addRow(tr("Peak current (A)"), self._current)
+        form.addRow(tr("Exact turns"), self._turns_exact)
+        form.addRow(tr("Use turns"), self._turns_used)
+        form.addRow(tr("Achieved L"), self._l_achieved)
+        form.addRow(tr("Wire"), self._wire)
+        form.addRow(tr("Wire length"), self._length)
+        form.addRow(tr("Peak flux"), self._flux)
+        form.addRow(tr("Saturation"), self._sat)
 
         self._core.currentIndexChanged.connect(self._recompute)
         self._l.editingFinished.connect(self._recompute)
@@ -739,7 +748,7 @@ class _ToroidPage(QWidget):
         else:
             self._flux.setText(f"{design.flux_density_t * 1000.0:.1f} mT")
             if design.saturation_ratio is None:
-                self._sat.setText("n/a (iron powder)")
+                self._sat.setText(tr("n/a (iron powder)"))
             else:
                 flag = "  SATURATED" if design.saturated else ""
                 self._sat.setText(f"B/Bsat = {design.saturation_ratio:.2f}{flag}")
@@ -757,7 +766,7 @@ class _AirCoilPage(QWidget):
         self._diameter = EngineeringLineEdit()
         self._diameter.setText("10")
         self._wire_mode = QComboBox()
-        self._wire_mode.addItems(["Wire AWG", "Wire diameter (mm)"])
+        self._wire_mode.addItems([tr("Wire AWG"), tr("Wire diameter (mm)")])
         self._awg = QSpinBox()
         self._awg.setRange(8, 40)
         self._awg.setValue(24)
@@ -767,10 +776,10 @@ class _AirCoilPage(QWidget):
         self._wire_stack.addWidget(self._awg)
         self._wire_stack.addWidget(self._wire_mm)
         self._enamel = EngineeringLineEdit()
-        self._enamel.setPlaceholderText("auto (grade 1); 0 = bare")
+        self._enamel.setPlaceholderText(tr("auto (grade 1); 0 = bare"))
         self._turns = QSpinBox()
         self._turns.setRange(0, 9999)
-        self._turns.setSpecialValueText("auto (from L)")
+        self._turns.setSpecialValueText(tr("auto (from L)"))
 
         self._turns_exact = QLabel("-")
         self._turns_used = QLabel("-")
@@ -791,21 +800,21 @@ class _AirCoilPage(QWidget):
         note.setWordWrap(True)
 
         form = QFormLayout(self)
-        form.addRow("Target L", self._l)
-        form.addRow("Diameter (mm)", self._diameter)
-        form.addRow("Wire", self._wire_mode)
+        form.addRow(tr("Target L"), self._l)
+        form.addRow(tr("Diameter (mm)"), self._diameter)
+        form.addRow(tr("Wire"), self._wire_mode)
         form.addRow("", self._wire_stack)
-        form.addRow("Enamel build (mm)", self._enamel)
-        form.addRow("Turns (0 = auto)", self._turns)
-        form.addRow("Exact turns", self._turns_exact)
-        form.addRow("Use turns", self._turns_used)
-        form.addRow("Closest below", self._below)
-        form.addRow("Achieved L", self._l_achieved)
-        form.addRow("Coil length", self._length)
-        form.addRow("Length / diameter", self._ratio)
-        form.addRow("Wire size", self._wire_info)
-        form.addRow("Wire length", self._wire)
-        form.addRow("DC resistance", self._resistance)
+        form.addRow(tr("Enamel build (mm)"), self._enamel)
+        form.addRow(tr("Turns (0 = auto)"), self._turns)
+        form.addRow(tr("Exact turns"), self._turns_exact)
+        form.addRow(tr("Use turns"), self._turns_used)
+        form.addRow(tr("Closest below"), self._below)
+        form.addRow(tr("Achieved L"), self._l_achieved)
+        form.addRow(tr("Coil length"), self._length)
+        form.addRow(tr("Length / diameter"), self._ratio)
+        form.addRow(tr("Wire size"), self._wire_info)
+        form.addRow(tr("Wire length"), self._wire)
+        form.addRow(tr("DC resistance"), self._resistance)
         form.addRow(note)
 
         self._l.editingFinished.connect(self._recompute)
@@ -924,7 +933,7 @@ class CoilCalculatorDialog(QDialog):
         element: IdealInductor | NonIdealInductor | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Coil calculator")
+        self.setWindowTitle(tr("Coil calculator"))
         self.toroid = _ToroidPage(self)
         self.air_core = _AirCoilPage(self)
         self._element = element
@@ -933,12 +942,12 @@ class CoilCalculatorDialog(QDialog):
             self.toroid.set_target_inductance(element.value_h)
             self.air_core.set_target_inductance(element.value_h)
         self._tabs = QTabWidget(self)
-        self._tabs.addTab(self.toroid, "Toroid")
-        self._tabs.addTab(self.air_core, "Air-core")
+        self._tabs.addTab(self.toroid, tr("Toroid"))
+        self._tabs.addTab(self.air_core, tr("Air-core"))
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         if element is not None:
             apply = buttons.addButton(
-                "Apply to selected inductor",
+                tr("Apply to selected inductor"),
                 QDialogButtonBox.ButtonRole.ActionRole,
             )
             apply.clicked.connect(self._on_apply)
@@ -961,7 +970,7 @@ class CoilCalculatorDialog(QDialog):
                     element, toroid, current_a=self.toroid.current_a()
                 )
             except (InductorRealizationError, ValueError) as exc:
-                QMessageBox.warning(self, "Realize inductor", str(exc))
+                QMessageBox.warning(self, tr("Realize inductor"), str(exc))
                 return
         else:
             air = self.air_core.current_design()
@@ -970,12 +979,12 @@ class CoilCalculatorDialog(QDialog):
             try:
                 realization = realize_from_air_design(element, air)
             except (InductorRealizationError, ValueError) as exc:
-                QMessageBox.warning(self, "Realize inductor", str(exc))
+                QMessageBox.warning(self, tr("Realize inductor"), str(exc))
                 return
         self._realized = realization.element
         if realization.notes:
             QMessageBox.information(
-                self, "Winding notes", "\n".join(realization.notes)
+                self, tr("Winding notes"), "\n".join(realization.notes)
             )
         self.accept()
 
@@ -991,13 +1000,20 @@ class SensitivityDialog(QDialog):
         self, report: SensitivityReport, parent: QWidget | None = None
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Component sensitivity")
+        self.setWindowTitle(tr("Component sensitivity"))
         self._rows = report.rows
         self._action: tuple[str, int] | None = None
 
         self._table = QTableWidget(len(self._rows), 6, self)
         self._table.setHorizontalHeaderLabels(
-            ["Ref", "Value", "d|S21| dB/%", "RMS dB/%", "Worst f", "Suggestion"]
+            [
+                tr("Ref"),
+                tr("Value"),
+                tr("d|S21| dB/%"),
+                tr("RMS dB/%"),
+                tr("Worst f"),
+                tr("Suggestion"),
+            ]
         )
         self._table.setEditTriggers(
             QAbstractItemView.EditTrigger.NoEditTriggers
@@ -1020,9 +1036,9 @@ class SensitivityDialog(QDialog):
             )
             worst = format_engineering(row.worst_frequency_hz, "Hz", digits=6)
             suggestion = (
-                "increase"
+                tr("increase")
                 if row.direction > 0
-                else "decrease"
+                else tr("decrease")
                 if row.direction < 0
                 else "—"
             )
@@ -1047,9 +1063,13 @@ class SensitivityDialog(QDialog):
         buttons.rejected.connect(self.reject)
 
         note = QLabel(
-            f"{len(self._rows)} components · step "
-            f"{report.relative_step_pct:g}% · backend {report.backend}. "
-            "A tuning suggestion requires limits/objectives."
+            tr(
+                "{count} components · step {step:g}% · backend {backend}. "
+                "A tuning suggestion requires limits/objectives.",
+                count=len(self._rows),
+                step=report.relative_step_pct,
+                backend=report.backend,
+            )
         )
         note.setWordWrap(True)
 
@@ -1075,14 +1095,14 @@ class BuildSheetDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Build sheet options")
+        self.setWindowTitle(tr("Build sheet options"))
         self._series = QComboBox()
-        self._series.addItem("No E-series snap", None)
+        self._series.addItem(tr("No E-series snap"), None)
         for series in ESeries:
             self._series.addItem(series.value, series)
-        self._group = QCheckBox("Group identical parts (combine refs and quantity)")
+        self._group = QCheckBox(tr("Group identical parts (combine refs and quantity)"))
         form = QFormLayout(self)
-        form.addRow("E-series", self._series)
+        form.addRow(tr("E-series"), self._series)
         form.addRow(self._group)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
@@ -1123,19 +1143,19 @@ class DesignSweepDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Parameter sweep")
+        self.setWindowTitle(tr("Parameter sweep"))
         self._axis = QComboBox()
         for axis in SweepAxis:
-            self._axis.addItem(self._AXIS_LABELS.get(axis, axis.value), axis.value)
+            self._axis.addItem(tr(self._AXIS_LABELS.get(axis, axis.value)), axis.value)
         self._values = QLineEdit()
-        self._values.setPlaceholderText("e.g. 3,5,7,9")
+        self._values.setPlaceholderText(tr("e.g. 3,5,7,9"))
         self._points = QSpinBox()
         self._points.setRange(64, 8192)
         self._points.setValue(512)
         form = QFormLayout(self)
-        form.addRow("Axis", self._axis)
-        form.addRow("Values", self._values)
-        form.addRow("Points", self._points)
+        form.addRow(tr("Axis"), self._axis)
+        form.addRow(tr("Values"), self._values)
+        form.addRow(tr("Points"), self._points)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
@@ -1165,19 +1185,19 @@ class DesignSweepResultDialog(QDialog):
         self, rows: list[DesignSweepRow], parent: QWidget | None = None
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Design sweep")
+        self.setWindowTitle(tr("Design sweep"))
         self._rows = tuple(rows)
         self._spec: FilterSpec | None = None
 
         headers = [
-            "Value",
+            tr("Value"),
             "OK",
             "N",
-            "Ripple dB",
-            "Stop dB",
-            "RL dB",
-            "GD ps",
-            "Note / error",
+            tr("Ripple dB"),
+            tr("Stop dB"),
+            tr("RL dB"),
+            tr("GD ps"),
+            tr("Note / error"),
         ]
         self._table = QTableWidget(len(self._rows), len(headers), self)
         self._table.setHorizontalHeaderLabels(headers)
@@ -1201,7 +1221,7 @@ class DesignSweepResultDialog(QDialog):
                 first_ok = index
             cells = [
                 str(row.value),
-                "yes" if row.ok else "no",
+                tr("yes") if row.ok else tr("no"),
                 str(row.n_components) if row.ok else "",
                 (
                     ""
@@ -1234,7 +1254,7 @@ class DesignSweepResultDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         apply = buttons.addButton(
-            "Apply selected", QDialogButtonBox.ButtonRole.ActionRole
+            tr("Apply selected"), QDialogButtonBox.ButtonRole.ActionRole
         )
         apply.clicked.connect(self._on_apply)
         buttons.rejected.connect(self.reject)
