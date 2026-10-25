@@ -51,3 +51,30 @@ def test_spec_panel_build_roundtrip() -> None:
     assert spec2.family == ApproximationFamily.BUTTERWORTH
     assert spec2.passband_ripple_db is None
     assert app is not None
+
+
+def test_even_chebyshev1_shows_modified_note() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.enums import ApproximationFamily
+    from filterdesk.gui.panels.spec_panel import SpecPanel
+
+    app = QApplication.instance() or QApplication([])
+    panel = SpecPanel()
+    panel._family.setCurrentIndex(
+        panel._family.findData(ApproximationFamily.CHEBYSHEV_TYPE_I.value)
+    )
+    panel._order.setValue(4)
+    assert not panel._note.isHidden()
+    assert "modified" in panel._note.text()
+
+    panel._order.setValue(5)
+    assert panel._note.isHidden()
+
+    panel._family.setCurrentIndex(
+        panel._family.findData(ApproximationFamily.BUTTERWORTH.value)
+    )
+    panel._order.setValue(4)
+    assert panel._note.isHidden()
+    panel.close()
+    assert app is not None

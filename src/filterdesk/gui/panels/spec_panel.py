@@ -146,8 +146,13 @@ class SpecPanel(QWidget):
         form.addRow("Zload", self._zl)
         form.addRow("Topology", self._topology)
 
+        self._note = QLabel()
+        self._note.setWordWrap(True)
+        self._note.setVisible(False)
+
         layout = QVBoxLayout(self)
         layout.addLayout(form)
+        layout.addWidget(self._note)
         layout.addStretch(1)
 
         self._family.currentIndexChanged.connect(self._on_family_changed)
@@ -159,6 +164,7 @@ class SpecPanel(QWidget):
         self._zs.editingFinished.connect(self.spec_changed.emit)
         self._zl.editingFinished.connect(self.spec_changed.emit)
         self._order.valueChanged.connect(lambda *_: self.spec_changed.emit())
+        self._order.valueChanged.connect(lambda *_: self._update_note())
         self._ripple.valueChanged.connect(lambda *_: self.spec_changed.emit())
         self._stop_att.valueChanged.connect(lambda *_: self.spec_changed.emit())
         self._m_param.valueChanged.connect(lambda *_: self.spec_changed.emit())
@@ -168,6 +174,7 @@ class SpecPanel(QWidget):
         self._estimate_btn.clicked.connect(self._on_estimate_order)
         self._on_family_changed()
         self._update_freq_fields_visibility()
+        self._update_note()
 
     def _populate_topologies(self) -> None:
         self._topology.clear()
@@ -221,6 +228,7 @@ class SpecPanel(QWidget):
         self._estimate_btn.setEnabled(can_est)
         self._f_stop.setEnabled(can_est)
         self._f_stop_label.setEnabled(can_est)
+        self._update_note()
         if family == ApproximationFamily.ELLIPTIC and self._order.value() < 2:
             self._order.setValue(2)
         if family == ApproximationFamily.BUTTERWORTH and self._ripple.value() < 0.1:
@@ -231,6 +239,22 @@ class SpecPanel(QWidget):
         ):
             self._ripple.setValue(3.0)
         self._update_freq_fields_visibility()
+
+    def _update_note(self) -> None:
+        family = _enum_from_combo(self._family, ApproximationFamily)
+        if (
+            family == ApproximationFamily.CHEBYSHEV_TYPE_I
+            and self._order.value() % 2 == 0
+        ):
+            self._note.setText(
+                "Even-order Chebyshev I: FilterDesk uses the modified "
+                "equal-termination response, not the classical "
+                "unequal-termination tables. Use an odd order for textbook "
+                "values."
+            )
+            self._note.setVisible(True)
+        else:
+            self._note.setVisible(False)
 
     def _on_response_changed(self) -> None:
         self._populate_topologies()
@@ -317,6 +341,7 @@ class SpecPanel(QWidget):
         self._zl.setText(f"{spec.z_load_ohm:g}")
         self._on_family_changed()
         self._update_freq_fields_visibility()
+        self._update_note()
         self._family.blockSignals(False)
         self._response.blockSignals(False)
         self._topology.blockSignals(False)

@@ -379,3 +379,43 @@ def test_asymmetric_z_element_scaling_uses_geometric_mean() -> None:
             assert b.value_h == pytest.approx(a.value_h * ratio, rel=1e-12)
         if hasattr(a, "value_f") and hasattr(b, "value_f"):
             assert b.value_f == pytest.approx(a.value_f / ratio, rel=1e-12)
+
+
+def test_synthesis_note_only_for_even_chebyshev1() -> None:
+    from filterdesk.synthesis import synthesis_note
+
+    assert synthesis_note(_spec(Fam.CHEBYSHEV_TYPE_I, 4, Resp.LOW_PASS, ap=0.1))
+    assert synthesis_note(_spec(Fam.CHEBYSHEV_TYPE_I, 5, Resp.LOW_PASS, ap=0.1)) is None
+    assert synthesis_note(_spec(Fam.BUTTERWORTH, 4, Resp.LOW_PASS)) is None
+
+
+def test_cli_reports_even_chebyshev1_note(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    import json
+
+    from filterdesk.__main__ import main
+
+    base = [
+        "synthesize",
+        "--family",
+        "chebyshev_type_i",
+        "--response",
+        "low_pass",
+        "--cutoff",
+        "100M",
+        "--ripple",
+        "0.1",
+        "--order",
+        "4",
+    ]
+    assert main(base) == 0
+    assert "modified" in capsys.readouterr().err
+
+    assert main([*base, "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "note" in payload and "modified" in payload["note"]
+
+    odd = [*base[:-1], "5"]
+    assert main(odd) == 0
+    assert "Note:" not in capsys.readouterr().err

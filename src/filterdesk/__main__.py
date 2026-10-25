@@ -111,7 +111,7 @@ from filterdesk.services.bands import (
 )
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.session import default_sweep_for_spec
-from filterdesk.synthesis import synthesize
+from filterdesk.synthesis import synthesis_note, synthesize
 from filterdesk.synthesis.api import SynthesisResult
 from filterdesk.synthesis.order_estimate import (
     OrderEstimateError,
@@ -788,6 +788,12 @@ def _spec_from_cli(args: argparse.Namespace) -> FilterSpec:
     return filter_spec_from_mapping(mapping)
 
 
+def _emit_synthesis_note(spec: FilterSpec) -> None:
+    note = synthesis_note(spec)
+    if note:
+        print(f"Note: {note}", file=sys.stderr)
+
+
 def _print_synth_human(result: SynthesisResult) -> None:
     print("Specification:")
     for key, value in filter_spec_to_mapping(result.spec).items():
@@ -897,11 +903,15 @@ def _synth_to_json(result: SynthesisResult) -> dict[str, object]:
         ]
     else:
         proto_obj["g_values"] = list(result.prototype.g_values)
-    return {
+    note = synthesis_note(result.spec)
+    payload: dict[str, object] = {
         "spec": filter_spec_to_mapping(result.spec),
         "prototype": proto_obj,
         "components": components,
     }
+    if note is not None:
+        payload["note"] = note
+    return payload
 
 
 def _print_snap_report(report: SnapReport) -> None:
@@ -1242,6 +1252,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             result = synthesize(spec)
+            _emit_synthesis_note(spec)
         except (SpecValidationError, OSError, json.JSONDecodeError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
@@ -1255,6 +1266,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             result = synthesize(spec)
+            _emit_synthesis_note(spec)
             snapped_circuit, report = snap_circuit(
                 result.circuit, ESeries(args.series), SnapStrategy(args.strategy)
             )
@@ -1277,6 +1289,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
+            _emit_synthesis_note(spec)
             sweep = _default_sweep(spec, args)
             limits = None
             if args.limits is not None:
@@ -1309,6 +1322,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
+            _emit_synthesis_note(spec)
             sweep = _default_sweep(spec, args)
             opt_limits: list[LimitRegion] = []
             if args.limits is not None:
@@ -1346,6 +1360,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
+            _emit_synthesis_note(spec)
             sweep = _default_sweep(spec, args)
             sens_limits: list[LimitRegion] = []
             if args.limits is not None:
@@ -1386,6 +1401,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             spec = _spec_from_cli(args)
             synth = synthesize(spec)
+            _emit_synthesis_note(spec)
             nonideal = _nonideal_kwargs(args)
             if nonideal:
                 synth = SynthesisResult(
@@ -1539,6 +1555,9 @@ def main(argv: list[str] | None = None) -> int:
                 "n_points": n,
                 "samples": samples,
             }
+            note = synthesis_note(spec)
+            if note is not None:
+                payload["note"] = note
             if nonideal:
                 payload["nonideal"] = nonideal
             if stress is not None:

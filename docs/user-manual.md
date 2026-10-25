@@ -665,6 +665,10 @@ Butterworth/Bessel/Gaussian/Legendre/constant-*k*/m-derived must **not** set
 ripple or stopband attenuation; Chebyshev Type I must not set stopband
 attenuation; Chebyshev Type II must not set ripple. Even-order elliptic needs a
 transformer or unequal terminations and is **rejected** (use an odd order).
+Even-order Chebyshev I uses FilterDesk's **modified equal-termination**
+prototype: it meets the ripple/cutoff, but the stopband and element values differ
+from the classical unequal-termination tables — use an odd order for textbook
+values.
 
 ---
 
