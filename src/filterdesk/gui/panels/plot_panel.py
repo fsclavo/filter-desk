@@ -133,12 +133,7 @@ class PlotPanel(QWidget):
         self._curve_mc_max = self._mag.plot(
             pen=pg.mkPen("#7f7f7f", width=1, style=dash)
         )
-        self._mc_fill = pg.FillBetweenItem(
-            self._curve_mc_min,
-            self._curve_mc_max,
-            brush=pg.mkBrush(127, 127, 127, 55),
-        )
-        self._mag.addItem(self._mc_fill)
+        self._mc_fill: pg.FillBetweenItem | None = None
 
         self._vswr_plot = _freq_plot("VSWR")
         self._vswr_plot.setLabel("left", "VSWR")
@@ -316,13 +311,22 @@ class PlotPanel(QWidget):
             self._harmonic_lines.append(line)
 
     def _update_monte_carlo(self) -> None:
-        empty = np.array([], dtype=float)
         mc = self._mc_result
         if mc is None or not self._show_mc:
+            if self._mc_fill is not None:
+                self._mag.removeItem(self._mc_fill)
+                self._mc_fill = None
+            empty = np.array([], dtype=float)
             self._curve_mc_min.setData(empty, empty)
             self._curve_mc_max.setData(empty, empty)
-            self._mc_fill.setVisible(False)
             return
+        if self._mc_fill is None:
+            self._mc_fill = pg.FillBetweenItem(
+                self._curve_mc_min,
+                self._curve_mc_max,
+                brush=pg.mkBrush(127, 127, 127, 55),
+            )
+            self._mag.addItem(self._mc_fill)
         f = np.asarray(mc.frequency_hz, dtype=float)
         self._curve_mc_min.setData(f, np.asarray(mc.s21_db_min, dtype=float))
         self._curve_mc_max.setData(f, np.asarray(mc.s21_db_max, dtype=float))

@@ -22,17 +22,23 @@ _EXIT_STATUS = {"code": 0}
 
 @pytest.fixture(scope="session", autouse=True)
 def _qt_app() -> object:
-    """Keep a single QApplication alive for the whole session.
+    """Keep a single QApplication alive (and GC disabled) for the whole session.
 
     Tests use ``QApplication.instance() or QApplication([])``; if that per-test
     wrapper is garbage-collected it can destroy the Qt application mid-suite,
     corrupting Qt's widget registry (segfault/abort in later tests). A session
-    reference keeps it alive; the hard-exit skips Qt teardown.
+    reference keeps it alive. Cyclic GC is also disabled: collecting leaked
+    pyqtgraph items while new widgets are being built aborts inside C++. The
+    hard-exit skips both the final GC and Qt teardown.
     """
+    import gc
+
     from PySide6.QtWidgets import QApplication
 
+    gc.disable()
     app = QApplication.instance() or QApplication([])
     yield app
+
 
 
 def pytest_sessionfinish(session: object, exitstatus: int) -> None:

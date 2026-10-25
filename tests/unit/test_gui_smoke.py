@@ -674,6 +674,7 @@ def test_monte_carlo_overlay_toggles() -> None:
     assert panel._curve_mc_min.getData()[0] is None
     panel.set_monte_carlo_visible(True)
     assert panel._curve_mc_max.getData()[0].size == n
+    panel.set_monte_carlo(None)
     assert app is not None
 
 
@@ -700,6 +701,7 @@ def test_monte_carlo_readout_bits() -> None:
     assert "MC S21" in bits and "spread" in bits
     panel.set_monte_carlo_visible(False)
     assert panel._mc_readout_bits(f0) == ""
+    panel.set_monte_carlo(None)
     assert app is not None
 
 

@@ -1815,4 +1815,5 @@ class MainWindow(QMainWindow):
         if self._optimize_thread is not None and self._optimize_thread.isRunning():
             self._optimize_thread.quit()
             self._optimize_thread.wait(2000)
+        self._plots.set_monte_carlo(None)
         super().closeEvent(event)
