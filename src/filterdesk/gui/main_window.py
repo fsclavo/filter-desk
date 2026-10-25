@@ -2063,19 +2063,35 @@ class MainWindow(QMainWindow):
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
 
+    @staticmethod
+    def _stop_thread(thread: QThread | None, timeout_ms: int) -> None:
+        """Ask a worker thread to stop, terminating it as a last resort.
+
+        ``quit()`` only ends the thread's event loop; a long Monte-Carlo or
+        solver loop cannot always observe it. A QThread destroyed while still
+        running aborts Qt, so on timeout we terminate it before the window goes
+        away (the app hard-exits on shutdown anyway).
+        """
+        if thread is None:
+            return
+        try:
+            if not thread.isRunning():
+                return
+            thread.requestInterruption()
+            thread.quit()
+            if thread.wait(timeout_ms):
+                return
+            thread.terminate()
+            thread.wait(1000)
+        except RuntimeError:
+            # The C++ QThread was already deleted; nothing left to stop.
+            return
+
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
         self._save_window_state()
-        if self._analyze_thread is not None and self._analyze_thread.isRunning():
-            self._analyze_thread.quit()
-            self._analyze_thread.wait(500)
-        if self._import_thread is not None and self._import_thread.isRunning():
-            self._import_thread.quit()
-            self._import_thread.wait(500)
-        if self._mc_thread is not None and self._mc_thread.isRunning():
-            self._mc_thread.quit()
-            self._mc_thread.wait(2000)
-        if self._optimize_thread is not None and self._optimize_thread.isRunning():
-            self._optimize_thread.quit()
-            self._optimize_thread.wait(2000)
+        self._stop_thread(self._analyze_thread, 500)
+        self._stop_thread(self._import_thread, 500)
+        self._stop_thread(self._mc_thread, 2000)
+        self._stop_thread(self._optimize_thread, 2000)
         self._plots.set_monte_carlo(None)
         super().closeEvent(event)

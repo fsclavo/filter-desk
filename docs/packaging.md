@@ -103,6 +103,8 @@ and launches the GUI.
 - **`package-smoke`**: builds the PyInstaller onedir on `ubuntu-latest` and runs
   `FilterDesk --version` plus a headless `synthesize`, so bundling breakage is
   caught before a release tag.
+- **`gui-stability`** (main pushes only): repeats the GUI/worker tests 3× to
+  catch nondeterministic Qt/thread failures without slowing every pull request.
 
 Dependency upkeep:
 

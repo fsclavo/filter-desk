@@ -72,3 +72,37 @@ jobs:
         run: ./dist/FilterDesk/FilterDesk --version
       - name: Smoke test (headless synth)
         run: ./dist/FilterDesk/FilterDesk synthesize --family butterworth --response low_pass --order 3 --cutoff 100M
+
+  gui-stability:
+    # Repeat the GUI/worker tests on main to catch nondeterministic Qt/thread
+    # problems without slowing down every pull request.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install Qt system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libdbus-1-3 libxcb-cursor0
+      - name: Sync project (frozen)
+        run: uv sync --frozen
+      - name: Repeat GUI/worker tests (3x)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          for i in 1 2 3; do
+            echo "GUI stability pass $i"
+            uv run --frozen pytest -q \
+              tests/unit/test_gui_smoke.py \
+              tests/unit/test_gui_qtbot.py \
+              tests/unit/test_gui_selectors.py \
+              tests/unit/test_marker_drag.py \
+              tests/unit/test_marker_retune.py \
+              tests/unit/test_spec_panel.py \
+              tests/unit/test_worker_lifecycle.py
+          done
