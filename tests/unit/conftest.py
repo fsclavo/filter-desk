@@ -23,12 +23,30 @@ def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     _EXIT_STATUS["code"] = int(exitstatus)
 
 
+def _hard_exit(code: int) -> None:
+    """Terminate the process without running Python/C++ destructors.
+
+    On Windows ``os._exit`` itself raises an access violation after the Qt
+    shutdown sequence, so terminate via the kernel instead.
+    """
+    if sys.platform == "win32":  # pragma: no cover - exercised only on Windows CI
+        import ctypes
+
+        k32 = getattr(ctypes, "WinDLL")("kernel32")  # noqa: B009
+        k32.GetCurrentProcess.restype = ctypes.c_void_p
+        k32.TerminateProcess.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+        k32.TerminateProcess.restype = ctypes.c_int
+        handle = k32.GetCurrentProcess()
+        k32.TerminateProcess(handle, code)
+    os._exit(code)
+
+
 def pytest_unconfigure(config: object) -> None:
     """Hard-exit after pytest's summary to avoid the Qt shutdown crash.
 
     Uses the original ``sys.__stdout__``/``__stderr__`` (not pytest's capture
-    wrappers, which may already be torn down) and works on every platform;
-    coverage data and the terminal summary are written before this hook runs.
+    wrappers, which may already be torn down). Coverage data and the terminal
+    summary are written before this hook runs.
     """
     del config
     for stream in (sys.__stdout__, sys.__stderr__):
@@ -37,4 +55,4 @@ def pytest_unconfigure(config: object) -> None:
                 stream.flush()
         except Exception:  # noqa: BLE001 - best-effort flush
             pass
-    os._exit(_EXIT_STATUS["code"])
+    _hard_exit(_EXIT_STATUS["code"])
