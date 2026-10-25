@@ -902,7 +902,9 @@ class MainWindow(QMainWindow):
             for el in self._session.circuit.elements
         ]
         new_circuit = replace(self._session.circuit, elements=elements)
-        self._push_circuit_edit(new_circuit, f"Realize {realized.id}")
+        self._push_circuit_edit(
+            new_circuit, tr("Realize {ref}", ref=realized.id)
+        )
         self._status.setText(
             tr("Realized {ref} as a physical winding", ref=realized.id)
         )

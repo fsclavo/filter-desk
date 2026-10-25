@@ -615,6 +615,10 @@ _ES.update(
         "Markers": "Marcadores",
         "Limits": "Límites",
         "Harmonics": "Armónicos",
+        "Edit circuit": "Editar circuito",
+        "Edit {ref}": "Editar {ref}",
+        "Tune marker": "Ajustar marcador",
+        "Realize {ref}": "Realizar {ref}",
     }
 )
 

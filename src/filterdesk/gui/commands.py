@@ -13,6 +13,7 @@ from filterdesk.components_std import ESeries, SnapReport, SnapStrategy
 from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.overlays import LimitRegion, Marker
 from filterdesk.domain.specs import FilterSpec
+from filterdesk.gui.i18n import tr
 
 if TYPE_CHECKING:
     from filterdesk.services.session import DesignSession
@@ -26,10 +27,10 @@ class EditCircuitCommand(QUndoCommand):
         session: DesignSession,
         new_circuit: Circuit,
         *,
-        text: str = "Edit circuit",
+        text: str | None = None,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__(text)
+        super().__init__(text or tr("Edit circuit"))
         self._session = session
         self._new = deepcopy(new_circuit)
         self._old = deepcopy(session.circuit)
@@ -57,7 +58,7 @@ class SetElementValueCommand(QUndoCommand):
         *,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__(f"Edit {element_id}")
+        super().__init__(tr("Edit {ref}", ref=element_id))
         self._session = session
         self._element_id = element_id
         self._old = old_value
@@ -86,7 +87,7 @@ class SynthesizeCommand(QUndoCommand):
         new_sweep: SweepConfig | None = None,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__("Synthesize")
+        super().__init__(tr("Synthesize"))
         self._session = session
         self._new_spec = new_spec
         self._new_sweep = new_sweep
@@ -126,7 +127,7 @@ class SnapCommand(QUndoCommand):
         *,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__("Snap to E-series")
+        super().__init__(tr("Snap to E-series"))
         self._session = session
         self._series = ESeries(series)
         self._strategy = SnapStrategy(strategy)
@@ -156,7 +157,7 @@ class NonIdealCommand(QUndoCommand):
         *,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__("Apply parasitics")
+        super().__init__(tr("Apply parasitics"))
         self._session = session
         self._kwargs = dict(kwargs)
         self._old = deepcopy(session.circuit)
@@ -181,9 +182,9 @@ class SetMarkersCommand(QUndoCommand):
         new_markers: list[Marker],
         *,
         on_applied: Callable[[], None] | None = None,
-        text: str = "Edit markers",
+        text: str | None = None,
     ) -> None:
-        super().__init__(text)
+        super().__init__(text or tr("Edit markers"))
         self._session = session
         self._old = list(session.markers)
         self._new = list(new_markers)
@@ -211,7 +212,7 @@ class RetuneMarkerCommand(QUndoCommand):
         *,
         on_applied: Callable[[], None] | None = None,
     ) -> None:
-        super().__init__("Tune marker")
+        super().__init__(tr("Tune marker"))
         self._session = session
         self._new_markers = list(new_markers)
         self._new_spec = new_spec
@@ -245,9 +246,9 @@ class SetLimitsCommand(QUndoCommand):
         new_limits: list[LimitRegion],
         *,
         on_applied: Callable[[], None] | None = None,
-        text: str = "Edit limits",
+        text: str | None = None,
     ) -> None:
-        super().__init__(text)
+        super().__init__(text or tr("Edit limits"))
         self._session = session
         self._old = list(session.limits)
         self._new = list(new_limits)

@@ -74,3 +74,13 @@ def test_enum_labels_have_spanish() -> None:
     assert response_label(FilterResponse.HIGH_PASS) == "Paso alto"
     assert topology_label(TopologyId.LADDER_LP_SERIES_L_INPUT) == "Entrada L serie"
     assert role_label(ElementRole.SHUNT) == "paralelo"
+
+
+def test_undo_command_texts_are_translated() -> None:
+    from filterdesk.gui.commands import SetElementValueCommand
+    from filterdesk.services.session import DesignSession
+
+    set_language(Language.ES)
+    session = DesignSession()
+    command = SetElementValueCommand(session, "C1", 1.0, 1.1)
+    assert command.text() == "Editar C1"
