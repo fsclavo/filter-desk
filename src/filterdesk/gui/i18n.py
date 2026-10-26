@@ -241,6 +241,7 @@ _ES.update(
         "&Theme": "&Tema",
         "&Language": "&Idioma",
         "&Design": "&Diseño",
+        "&Tools": "&Herramientas",
         "&Synthesize + Analyze": "&Sintetizar + analizar",
         "&Band preset…": "&Preset de banda…",
         "&Attenuator pad…": "&Atenuador…",

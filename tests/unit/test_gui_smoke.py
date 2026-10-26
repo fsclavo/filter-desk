@@ -400,6 +400,47 @@ def test_file_menu_has_import_touchstone() -> None:
     assert app is not None
 
 
+def test_tools_menu_holds_calculators() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    menus = {
+        a.text(): a.menu() for a in window.menuBar().actions() if a.menu()
+    }
+    design_menu = menus.get("&Design")
+    tools_menu = menus.get("&Tools")
+    assert design_menu is not None and tools_menu is not None
+    design_labels = [a.text().replace("&", "") for a in design_menu.actions()]
+    tools_labels = [a.text().replace("&", "") for a in tools_menu.actions()]
+
+    for calculator in (
+        "Matching network",
+        "Attenuator pad",
+        "Coil calculator",
+        "Transformer / balun",
+        "Microstrip line",
+    ):
+        assert not any(calculator in label for label in design_labels)
+        assert any(calculator in label for label in tools_labels)
+
+    for filter_action in (
+        "Synthesize + Analyze",
+        "Band preset",
+        "Snap to E-series",
+        "Optimize to limits",
+        "Check spec compliance",
+        "Tune to VNA measurement",
+    ):
+        assert any(filter_action in label for label in design_labels)
+
+    window.close()
+    assert app is not None
+
+
 def test_help_menu(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication
 

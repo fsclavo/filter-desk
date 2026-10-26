@@ -285,11 +285,11 @@ specification edits require an explicit **Synthesize**.
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
 | **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, sets sweep) |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
-| **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
-| **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
-| **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
-| **Transformer / balun** | **Design → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
-| **Microstrip line** | **Design → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
+| **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
+| **Matching network** | **Tools → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
+| **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
+| **Transformer / balun** | **Tools → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
+| **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -658,7 +658,7 @@ are included automatically.
 
 ### Coil calculator
 
-**Design → Coil calculator…** has two tabs; both are also available from the CLI.
+**Tools → Coil calculator…** has two tabs; both are also available from the CLI.
 
 **Toroid** (`filterdesk toroid`) computes windings from `L = AL * N^2`, with AL in
 nH/N². The built-in table covers common Amidon iron-powder cores (mixes 2, 6, 10)
@@ -688,7 +688,7 @@ the target is also shown, because air-core turn steps are coarse.
 
 ### Transformer / balun / unun
 
-**Design → Transformer / balun…** (`filterdesk transformer`) is an ideal
+**Tools → Transformer / balun…** (`filterdesk transformer`) is an ideal
 transformer calculator for transformer-type ununs, baluns and power
 transformers. Enter the low/high impedances, the lowest frequency, the power and
 a built-in core. The impedance ratio is `R_high/R_low`, the turns ratio is its
@@ -705,7 +705,7 @@ core datasheet, especially for high power or wideband baluns.
 
 ### Microstrip / distributed calculators
 
-**Design → Microstrip line…** (`filterdesk microstrip`) synthesizes a
+**Tools → Microstrip line…** (`filterdesk microstrip`) synthesizes a
 microstrip width from a target `Z0`, substrate (`FR4`, `RO4350B`, `RO4003C`,
 `PTFE`, `Alumina`, `Air`) and frequency, using the Hammerstad-Jensen
 quasi-static model. It reports `eeff`, guided wavelength, quarter-wave length,
