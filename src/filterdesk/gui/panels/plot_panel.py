@@ -52,9 +52,7 @@ class FreqAxisItem(pg.AxisItem):  # type: ignore[misc]
         self, values: list[float], scale: float, spacing: float
     ) -> list[str]:
         del spacing
-        return [
-            _plain_decimal((10.0 ** float(v)) * float(scale)) for v in values
-        ]
+        return [_plain_decimal((10.0 ** float(v)) * float(scale)) for v in values]
 
 
 def _freq_plot(title: str) -> pg.PlotWidget:
@@ -258,6 +256,7 @@ class PlotPanel(QWidget):
         layout.addWidget(self._confidence_strip)
         layout.addWidget(self._tabs)
         layout.addWidget(self._readout)
+        self._apply_measured_legend(False)
 
     def cursor_frequency_hz(self) -> float | None:
         return self._cursor_freq_hz
@@ -591,9 +590,7 @@ class PlotPanel(QWidget):
         )
         self._marker_syncing = True
         try:
-            for plot, line in zip(
-                self._plots, self._marker_items[index], strict=True
-            ):
+            for plot, line in zip(self._plots, self._marker_items[index], strict=True):
                 line.setPos(self._x_pos(freq_hz, plot))
         finally:
             self._marker_syncing = False
@@ -655,9 +652,7 @@ class PlotPanel(QWidget):
                 )
                 line._filterdesk_marker_index = i
                 line.sigPositionChanged.connect(self._on_marker_line_moved)
-                line.sigPositionChangeFinished.connect(
-                    self._on_marker_line_finished
-                )
+                line.sigPositionChangeFinished.connect(self._on_marker_line_finished)
                 plot.addItem(line)
                 lines.append(line)
             self._marker_items.append(lines)

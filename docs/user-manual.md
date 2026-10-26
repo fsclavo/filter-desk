@@ -295,7 +295,9 @@ Six tabs, all with a logarithmic frequency axis:
 - **VSWR** — input VSWR.
 - **Group delay** — in seconds.
 - **Impedance** — input impedance (|Zin|, Re(Zin), Im(Zin)) and |Zout| in ohms.
-- **Smith** — S11 (red) and S22 (blue) loci.
+- **Smith** — S11 (red) and S22 (blue) loci. Measured loci and the
+  `S11 meas` / `S22 meas` legend entries appear only after a Touchstone file is
+  loaded.
 
 A **cursor readout** below the tabs reports `f`, `S21`, `S11`, `S22`, `S12`,
 `VSWR`, group delay, ∠S21, and |Zin| at the nearest sweep point, plus
@@ -401,7 +403,8 @@ The **Limits** dock defines pass/fail mask regions (up to **10**): columns
 **File → Import → Touchstone…** loads a measured `.s1p`/`.s2p`/`.sNp` file and
 overlays the measured traces (dashed) on the plots; for 2-port files it also
 reports a simulation-vs-measurement comparison over the overlapping band. Toggle
-the overlay with **View → Show measured overlay**.
+the overlay with **View → Show measured overlay**. The measured legend entries
+are hidden until a file is loaded and while the overlay is disabled.
 
 ---
 

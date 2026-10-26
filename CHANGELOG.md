@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Fixed
+
+- Smith chart and response plots no longer show `S11 meas` / `S22 meas` legend
+  entries when no measured Touchstone file is loaded.
+
 ## v0.12.0 — 2026-10-26
 
 ### Added

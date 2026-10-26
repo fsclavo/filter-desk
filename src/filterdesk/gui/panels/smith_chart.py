@@ -70,18 +70,14 @@ class SmithChartWidget(QWidget):
         self._limits: list[LimitRegion] = []
         self._limit_items: list[pg.PlotDataItem] = []
 
-        self._curve_s11 = self._plot.plot(
-            pen=pg.mkPen("#d62728", width=2), name="S11"
-        )
-        self._curve_s22 = self._plot.plot(
-            pen=pg.mkPen("#1f77b4", width=2), name="S22"
-        )
+        self._curve_s11 = self._plot.plot(pen=pg.mkPen("#d62728", width=2), name="S11")
+        self._curve_s22 = self._plot.plot(pen=pg.mkPen("#1f77b4", width=2), name="S22")
         dash = Qt.PenStyle.DashLine
         self._curve_s11_meas = self._plot.plot(
-            pen=pg.mkPen("#d62728", width=1.3, style=dash), name=tr("S11 meas")
+            pen=pg.mkPen("#d62728", width=1.3, style=dash)
         )
         self._curve_s22_meas = self._plot.plot(
-            pen=pg.mkPen("#1f77b4", width=1.3, style=dash), name=tr("S22 meas")
+            pen=pg.mkPen("#1f77b4", width=1.3, style=dash)
         )
         self._start_pt = pg.ScatterPlotItem(
             size=9,
@@ -154,12 +150,8 @@ class SmithChartWidget(QWidget):
         else:
             self._curve_s22.setData([], [])
         # Start/stop markers on S11 locus
-        self._start_pt.setData(
-            [float(self._s11.real[0])], [float(self._s11.imag[0])]
-        )
-        self._stop_pt.setData(
-            [float(self._s11.real[-1])], [float(self._s11.imag[-1])]
-        )
+        self._start_pt.setData([float(self._s11.real[0])], [float(self._s11.imag[0])])
+        self._stop_pt.setData([float(self._s11.real[-1])], [float(self._s11.imag[-1])])
         self._redraw_markers()
 
     def set_s11(
@@ -185,14 +177,29 @@ class SmithChartWidget(QWidget):
         if f.size == 0:
             self._curve_s11_meas.setData([], [])
             self._curve_s22_meas.setData([], [])
+            self._set_measured_legend(False, False)
             return
         g11 = np.asarray(s11, dtype=np.complex128)
         self._curve_s11_meas.setData(g11.real, g11.imag)
-        if s22 is not None and np.asarray(s22).size == f.size:
+        has_s22 = s22 is not None and np.asarray(s22).size == f.size
+        if has_s22:
             g22 = np.asarray(s22, dtype=np.complex128)
             self._curve_s22_meas.setData(g22.real, g22.imag)
         else:
             self._curve_s22_meas.setData([], [])
+        self._set_measured_legend(True, has_s22)
+
+    def _set_measured_legend(self, s11_visible: bool, s22_visible: bool) -> None:
+        legend = self._plot.plotItem.legend
+        if legend is None:
+            return
+        for curve, name, visible in (
+            (self._curve_s11_meas, tr("S11 meas"), s11_visible),
+            (self._curve_s22_meas, tr("S22 meas"), s22_visible),
+        ):
+            legend.removeItem(curve)
+            if visible:
+                legend.addItem(curve, name)
 
     def set_theme(self, colors: ThemeColors) -> None:
         apply_plot_theme(self._plot, colors)
@@ -357,9 +364,7 @@ class SmithChartWidget(QWidget):
         if index is None or start is None or index >= len(self._markers):
             return
         new_freq = self._markers[index].frequency_hz
-        if abs(new_freq - start) <= max(
-            1e-12, 1e-15 * max(abs(start), abs(new_freq))
-        ):
+        if abs(new_freq - start) <= max(1e-12, 1e-15 * max(abs(start), abs(new_freq))):
             return
         self.markers_changed.emit(list(self._markers))
 

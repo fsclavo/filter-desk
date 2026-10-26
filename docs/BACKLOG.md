@@ -9,7 +9,7 @@ count or release changes.
 **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.13.0 planning.
 
-**Verification:** local suite **920 passed, 1 skipped**; coverage **82.99 %**.
+**Verification:** local suite **923 passed, 1 skipped**; coverage **83.03 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40408577611
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -54,6 +54,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       undoable, with explicit preview.
 - [x] HF receive-band BPF wizard: band/requirements → candidate order table →
       apply → optional E24 snap; reuses normal BOM/VNA workflow.
+- [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
+      Smith chart and response plots no longer advertise empty `meas` traces.
 
 ---
 
