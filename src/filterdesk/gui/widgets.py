@@ -1318,6 +1318,7 @@ class TransformerDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Transformer / balun / unun")
+        self.setMinimumWidth(820)
         self._cores = list_cores()
         self._design_value: BalunDesign | None = None
         self._options: list[BalunDesign] = []
@@ -1363,10 +1364,24 @@ class TransformerDialog(QDialog):
         self._options_table.setEditTriggers(
             QAbstractItemView.EditTrigger.NoEditTriggers
         )
-        self._options_table.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
+        options_header = self._options_table.horizontalHeader()
+        for column in range(6):
+            options_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
+        options_header.setSectionResizeMode(
+            6, QHeaderView.ResizeMode.Stretch
         )
-        self._options_table.setMaximumHeight(140)
+        self._options_table.setColumnWidth(6, 300)
+        self._options_table.setWordWrap(True)
+        self._options_table.setTextElideMode(Qt.TextElideMode.ElideNone)
+        self._options_table.setMaximumHeight(180)
+        self._flags_legend = QLabel(
+            "LF = magnetizing reactance below target; SAT = Bsat/B below 3; "
+            "FIT = no single-layer fit; HF = many turns / leakage at high HF; "
+            "THERMAL = estimated hot temperature above 100 °C (or above Tc)."
+        )
+        self._flags_legend.setWordWrap(True)
 
         self._turns = QLabel("-")
         self._inductances = QLabel("-")
@@ -1403,6 +1418,7 @@ class TransformerDialog(QDialog):
         design_form.addRow("Highest frequency", self._frequency_max)
         design_form.addRow("Power (W)", self._power)
         design_form.addRow("Winding options", self._options_table)
+        design_form.addRow("Flags legend", self._flags_legend)
         design_form.addRow("Turns", self._turns)
         design_form.addRow("Inductances", self._inductances)
         design_form.addRow("V / I", self._vi)
@@ -1590,8 +1606,11 @@ class TransformerDialog(QDialog):
             )
             for col, value in enumerate(values):
                 item = QTableWidgetItem(value)
-                item.setToolTip("; ".join(design.notes))
+                item.setToolTip(
+                    f"{design.status_text}\n" + "; ".join(design.notes)
+                )
                 self._options_table.setItem(row, col, item)
+        self._options_table.resizeRowsToContents()
 
     def _on_option_selected(self) -> None:
         rows = self._options_table.selectionModel().selectedRows()

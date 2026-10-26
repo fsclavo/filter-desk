@@ -727,7 +727,9 @@ peak flux, but also add leakage and winding capacitance. At high HF (for example
 frequency is ≥20 MHz.
 
 The **Flags** column is intentionally stricter and explicit: `LF X/Z ...`,
-`SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL ...`.
+`SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL ...`. The table
+wraps the flags, stretches that column, and shows a full tooltip; a legend below
+the table explains every code.
 The thermal estimate uses the vendor complex-permeability data (μ' and μ'') for
 mixes 31/43/52/61, evaluates core loss over the band, adds an approximate copper
 loss, and applies a natural-convection thermal resistance for the core. It

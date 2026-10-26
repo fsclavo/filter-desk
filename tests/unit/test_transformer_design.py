@@ -207,6 +207,8 @@ def test_cli_transformer_options_and_topology(capsys) -> None:
 
 
 def test_transformer_dialog_options_and_topology(qtbot) -> None:
+    from PySide6.QtWidgets import QHeaderView
+
     from filterdesk.gui.widgets import TransformerDialog
 
     dialog = TransformerDialog()
@@ -227,7 +229,17 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
     assert dialog._options_table.rowCount() == 3
     assert dialog._options_table.horizontalHeaderItem(4).text() == "Bsat/B"
     assert dialog._options_table.horizontalHeaderItem(6).text() == "Flags"
-    assert "HF" in dialog._options_table.item(2, 6).text()
+    assert dialog._options_table.wordWrap()
+    assert (
+        dialog._options_table.horizontalHeader().sectionResizeMode(6)
+        == QHeaderView.ResizeMode.Stretch
+    )
+    assert "LF" in dialog._flags_legend.text()
+    assert "THERMAL" in dialog._flags_legend.text()
+    flags = dialog._options_table.item(2, 6).text()
+    assert "HF" in flags
+    assert "THERMAL" in flags
+    assert dialog._options_table.item(2, 6).toolTip().startswith(flags)
     dialog._options_table.selectRow(2)
     design = dialog.current_design()
     assert design is not None

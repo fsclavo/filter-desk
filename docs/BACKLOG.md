@@ -4,7 +4,7 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Release:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0) (published).  
+**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Next release:** v0.11.1 (pending) · **Released:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0).  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
 https://github.com/fsclavo/filter-desk/actions/runs/40343341656 (re-check after
 every push and update this URL).
@@ -31,7 +31,14 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ---
 
-## 2. v0.11.0 feature set
+## 2. Unreleased after v0.11.0
+
+- [x] Flags table: wider stretched column, word wrap, full tooltip and a visible
+      legend for `LF`, `SAT`, `FIT`, `HF`, `THERMAL`.
+- [ ] Decide whether to cut **v0.11.1** with this UI fix (it is not in the
+      v0.11.0 release assets).
+
+## 3. v0.11.0 feature set
 
 - Exact unequal terminations via output transformer `T1` (ADR-017), including
   SPICE/LTspice/Qucs export.
@@ -53,8 +60,9 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
   tab and build-sheet sidecar (physical toroid drawing removed as misleading).
 - Ratio labels show turns and impedance explicitly (`1:7 turns / 1:49 Z`); BOM,
   component table and schematic share the format.
-- Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL`); `Bsat/B` is
-  labelled correctly and the FT140-43/100 W case gets a thermal flag.
+- Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL`), with a
+  wrapped/stretched column, tooltip and visible legend; `Bsat/B` is labelled
+  correctly and the FT140-43/100 W case gets a thermal flag.
 - Material data now includes μi, Bsat, Curie and complex-permeability loss points
   for mixes 31/43/52/61; core loss, copper loss and a natural-convection thermal
   estimate replace the power-density heuristic.
@@ -67,7 +75,7 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ---
 
-## 3. Open backlog
+## 4. Open backlog
 
 ### P0 — before calling v0.11.0
 
@@ -116,7 +124,7 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ---
 
-## 4. Maintenance rule
+## 5. Maintenance rule
 
 Every change must update, in the same commit:
 
