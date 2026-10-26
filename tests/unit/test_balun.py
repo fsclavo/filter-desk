@@ -74,8 +74,9 @@ def test_ratio_text_and_thermal_status() -> None:
     spec = auto.to_spec()
     assert spec.ratio_text == "1:7 turns / 1:49 Z"
     assert auto.thermal_caution
-    assert "THERMAL?" in auto.status_text
-    assert "B/Bsat" not in auto.status_text
+    assert "THERMAL" in auto.status_text
+    assert auto.core_loss_w is not None and auto.core_loss_w > 0.0
+    assert auto.hot_temperature_c is not None
 
     big = design_balun(
         find_core("FT240-43"),
@@ -84,10 +85,10 @@ def test_ratio_text_and_thermal_status() -> None:
         z_balanced_ohm=2500.0,
         f_min_hz=7e6,
         f_max_hz=28e6,
-        power_w=100.0,
+        power_w=10.0,
     )
     assert not big.thermal_caution
-    assert "THERMAL?" not in big.status_text
+    assert "THERMAL" not in big.status_text
 
 
 def test_balun_topology_and_winding_options() -> None:

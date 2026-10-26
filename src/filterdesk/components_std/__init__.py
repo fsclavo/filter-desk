@@ -32,6 +32,14 @@ from filterdesk.components_std.matching import (
     MatchingTopology,
     design_matching,
 )
+from filterdesk.components_std.materials import (
+    MATERIALS,
+    FerriteMaterial,
+    bsat_at_temperature,
+    core_loss_density_w_cm3,
+    material_for,
+    thermal_resistance_c_w,
+)
 from filterdesk.components_std.microstrip import (
     MicrostripError,
     MicrostripLine,
@@ -99,6 +107,8 @@ __all__ = [
     "MatchingDesign",
     "MatchingElement",
     "MatchingError",
+    "MATERIALS",
+    "FerriteMaterial",
     "MatchingTopology",
     "MicrostripError",
     "MicrostripLine",
@@ -122,6 +132,8 @@ __all__ = [
     "base_values",
     "design_attenuator",
     "design_air_coil",
+    "bsat_at_temperature",
+    "core_loss_density_w_cm3",
     "design_balun",
     "design_balun_options",
     "design_matching",
@@ -129,8 +141,10 @@ __all__ = [
     "design_quarter_wave_transformer",
     "design_stub",
     "find_substrate",
+    "material_for",
     "list_substrates",
     "microstrip_width_for_z0",
+    "thermal_resistance_c_w",
     "design_toroid",
     "design_transformer",
     "design_transformer_options",

@@ -14,6 +14,13 @@ import math
 from dataclasses import dataclass
 from enum import StrEnum
 
+from filterdesk.components_std.materials import (
+    bsat_at_temperature,
+    copper_loss_w,
+    core_loss_density_w_cm3,
+    material_for,
+    thermal_resistance_c_w,
+)
 from filterdesk.components_std.toroid import (
     ToroidCore,
     WireFit,
@@ -72,6 +79,14 @@ class BalunDesign:
     reactance_ratio: float = 0.0
     hf_caution: bool = False
     power_w: float = 0.0
+    core_loss_w: float | None = None
+    copper_loss_w: float = 0.0
+    total_loss_w: float | None = None
+    thermal_resistance_c_w: float = 0.0
+    temperature_rise_c: float | None = None
+    hot_temperature_c: float | None = None
+    bsat_margin_hot: float | None = None
+    thermal_caution: bool = False
 
     @property
     def power_density_w_cm3(self) -> float:
@@ -79,26 +94,32 @@ class BalunDesign:
         return self.power_w / volume if volume > 0.0 else 0.0
 
     @property
-    def thermal_caution(self) -> bool:
-        return self.power_density_w_cm3 > 5.0
+    def thermal_text(self) -> str:
+        if self.hot_temperature_c is None:
+            return "not modeled"
+        material = material_for(self.core.material)
+        if material is not None and self.hot_temperature_c >= material.curie_c:
+            return f">{material.curie_c:.0f} C (over Tc)"
+        return f"{self.hot_temperature_c:.0f} C"
 
     @property
     def warnings(self) -> tuple[str, ...]:
         flags: list[str] = []
         if self.reactance_ratio < 4.0:
             flags.append(f"LF X/Z {self.reactance_ratio:.1f}")
-        if self.bsat_margin is None:
+        margin = self.bsat_margin_hot or self.bsat_margin
+        if margin is None:
             flags.append("SAT unknown")
-        elif self.bsat_margin < 1.0:
+        elif margin < 1.0:
             flags.append("SAT saturated")
-        elif self.bsat_margin < 3.0:
-            flags.append(f"SAT {self.bsat_margin:.1f}")
+        elif margin < 3.0:
+            flags.append(f"SAT {margin:.1f}")
         if self.fit.awg is None:
             flags.append("FIT no")
         if self.hf_caution:
             flags.append(f"HF {self.total_turns}T")
         if self.thermal_caution:
-            flags.append(f"THERMAL? {self.power_density_w_cm3:.1f} W/cm3")
+            flags.append(f"THERMAL {self.thermal_text}")
         return tuple(flags)
 
     @property
@@ -216,7 +237,7 @@ def design_balun(
     actual_turns = n_primary / n_secondary
     lm = al_h * n_primary * n_primary
     leakage = lm * (1.0 - coupling)
-    core_loss = (
+    core_loss_resistance = (
         2.0 * math.pi * f_min_hz * lm / tan_delta if tan_delta > 0.0 else None
     )
     common_mode = (
@@ -260,6 +281,34 @@ def design_balun(
     reactance_ratio = 2.0 * math.pi * f_min_hz * lm / z_unbalanced_ohm
     hf_caution = f_max_hz >= 20e6 and total_turns > 24
 
+    material = material_for(core.material)
+    core_loss: float | None = None
+    if material is not None:
+        loss_candidates = []
+        for freq in (f_min_hz, math.sqrt(f_min_hz * f_max_hz), f_max_hz):
+            b_at_f = b_peak * f_min_hz / freq
+            density = core_loss_density_w_cm3(material, freq, b_at_f)
+            loss_candidates.append(density * core.volume_cm3)
+        core_loss = max(loss_candidates)
+    d_pri = awg_diameter_mm(awg_primary) if awg_primary is not None else None
+    d_sec = awg_diameter_mm(awg_secondary) if awg_secondary is not None else None
+    l_pri = core.mean_turn_mm * n_primary / 1000.0
+    l_sec = core.mean_turn_mm * n_secondary / 1000.0
+    copper_loss = copper_loss_w(i_unbalanced, l_pri, d_pri) + copper_loss_w(
+        i_balanced, l_sec, d_sec
+    )
+    rth = thermal_resistance_c_w(core.od_mm, core.id_mm, core.height_mm)
+    total_loss = None if core_loss is None else core_loss + copper_loss
+    rise = None if total_loss is None else total_loss * rth
+    hot = None if rise is None else 25.0 + rise
+    bsat_hot = (
+        None
+        if material is None or hot is None
+        else bsat_at_temperature(material, hot)
+    )
+    margin_hot = None if bsat_hot is None else bsat_hot / b_peak
+    thermal_caution = hot is not None and hot > 100.0
+
     notes: list[str] = []
     if topology_value is TransformerTopology.AUTOTRANSFORMER:
         notes.append(
@@ -278,11 +327,11 @@ def design_balun(
             "many turns at HF: leakage/capacitance may degrade the high bands "
             "(prefer fewer turns)"
         )
-    power_density = power_w / core.volume_cm3 if core.volume_cm3 > 0.0 else 0.0
-    if power_density > 5.0:
+    if core_loss is not None and hot is not None:
         notes.append(
-            f"thermal heuristic: {power_density:.1f} W/cm3; temperature rise "
-            "is not modeled, verify with the core datasheet/measurement"
+            f"estimated core+copper loss {total_loss:.2f} W, "
+            f"hot {hot:.0f} C (complex-permeability model; "
+            "verify with measurement)"
         )
     if abs(actual_turns - turns) > 1e-12:
         notes.append(
@@ -304,7 +353,7 @@ def design_balun(
             "common-mode impedance is reported separately; the differential "
             "2-port does not model the choke's common-mode stopband"
         )
-    if core_loss is not None:
+    if core_loss_resistance is not None:
         notes.append("core loss uses a shunt Rp = 2*pi*f_min*Lm/tan_delta")
 
     return BalunDesign(
@@ -319,7 +368,7 @@ def design_balun(
         magnetizing_inductance_h=lm,
         leakage_inductance_h=leakage,
         winding_capacitance_f=winding_capacitance_f,
-        core_loss_ohm=core_loss,
+        core_loss_ohm=core_loss_resistance,
         common_mode_impedance_ohm=common_mode,
         z0_line_ohm=z0_line,
         length_m=length,
@@ -340,6 +389,14 @@ def design_balun(
         reactance_ratio=reactance_ratio,
         hf_caution=hf_caution,
         power_w=power_w,
+        core_loss_w=core_loss,
+        copper_loss_w=copper_loss,
+        total_loss_w=total_loss,
+        thermal_resistance_c_w=rth,
+        temperature_rise_c=rise,
+        hot_temperature_c=hot,
+        bsat_margin_hot=margin_hot,
+        thermal_caution=thermal_caution,
     )
 
 

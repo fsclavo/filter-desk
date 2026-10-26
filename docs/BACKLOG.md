@@ -4,7 +4,7 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.10.2 · **Next release:** v0.11.0 (pending).  
+**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Release:** v0.11.0 (tag/release pending).  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
 https://github.com/fsclavo/filter-desk/actions/runs/40338889725 (re-check after
 every push and update this URL).
@@ -31,7 +31,7 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ---
 
-## 2. Recently completed (unreleased since v0.10.2)
+## 2. v0.11.0 feature set
 
 - Exact unequal terminations via output transformer `T1` (ADR-017), including
   SPICE/LTspice/Qucs export.
@@ -53,8 +53,13 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
   tab and build-sheet sidecar (physical toroid drawing removed as misleading).
 - Ratio labels show turns and impedance explicitly (`1:7 turns / 1:49 Z`); BOM,
   component table and schematic share the format.
-- Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL?`); `Bsat/B` is
-  labelled correctly and the FT140-43/100 W case gets a thermal heuristic flag.
+- Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL`); `Bsat/B` is
+  labelled correctly and the FT140-43/100 W case gets a thermal flag.
+- Material data now includes μi, Bsat, Curie and complex-permeability loss points
+  for mixes 31/43/52/61; core loss, copper loss and a natural-convection thermal
+  estimate replace the power-density heuristic.
+- Added FT114/FT140-31, FT114-52 and FT350-61; smaller 31 AL values scaled from
+  μi and flagged for datasheet verification.
 - CLI `transformer` unified (transformer/unun/balun model and options); the old
   `balun` command was removed.
 - CI `gui-stability`: 15-min job, per-pass `timeout 300`,
@@ -66,10 +71,9 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ### P0 — before calling v0.11.0
 
-- [ ] Bump `pyproject.toml` to **0.11.0**, add changelog/release notes, tag and
-      publish. (S)
-- [ ] Re-run and record the final CI run URL, test count and coverage in this
-      file. (S)
+- [x] Bump `pyproject.toml`/`filterdesk.__version__`, add `CHANGELOG.md`, tag
+      and publish v0.11.0. (S)
+- [ ] Re-run the release workflow and record its asset URL in this file. (S)
 - [ ] Verify the unified GUI paths and CLI examples in the user manual. (S)
 
 ### P1 — correctness / validation
@@ -91,8 +95,8 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ### P2 — data / ergonomics
 
-- [ ] More ferrite data: FT114/FT140-31 and further 52/61 sizes with verified
-      AL, μi, Bsat/temperature and optional Steinmetz/core-loss coefficients. (M)
+- [ ] More ferrite data: confirm the estimated FT114/FT140-31 AL values and add
+      further 52/61 sizes with verified μi, Bsat/temperature and loss data. (M)
 - [ ] Toroid/transformer GUI: persist the selected winding option in the
       project/BOM notes and add per-option DCR/leakage estimates when the model
       supports them. (M)

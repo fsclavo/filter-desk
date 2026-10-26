@@ -707,6 +707,9 @@ previously split across two tools.
   Select **isolated** for two separate windings (total `Np + Ns`).
 - **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
   capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
+  Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
+  copper loss and a natural-convection thermal resistance give an estimated hot
+  temperature. This is a sizing estimate, not a high-flux or thermal simulation.
 - **Winding:** a **Winding** tab shows only the **electrical connection**
   schematic, tap/polarity and a text winding schedule. The **Save diagram…**
   button writes SVG. Build-sheet exports automatically write a
@@ -724,12 +727,15 @@ peak flux, but also add leakage and winding capacitance. At high HF (for example
 frequency is ≥20 MHz.
 
 The **Flags** column is intentionally stricter and explicit: `LF X/Z ...`,
-`SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL? ... W/cm3`.
-`THERMAL?` is a conservative power-density heuristic for cores with little
-volume for the requested power; it is **not** a temperature-rise calculation.
-For example, 100 W on an FT140-43 is flagged, while the larger FT240-43 is not.
-A matched sinusoidal load is assumed; mismatch, DC bias, duty cycle and ambient
-temperature can make the real transformer worse.
+`SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL ...`.
+The thermal estimate uses the vendor complex-permeability data (μ' and μ'') for
+mixes 31/43/52/61, evaluates core loss over the band, adds an approximate copper
+loss, and applies a natural-convection thermal resistance for the core. It
+reports the estimated hot temperature and flags `THERMAL` above 100 °C; above
+the material's Curie point it reports `>Tc`. The model assumes a matched
+sinusoidal load and low-flux μ'' data, so mismatch, DC bias, duty cycle,
+mounting and ambient temperature can make the real part much worse. For example,
+100 W on an FT140-43 is flagged; use a larger core or measure the actual rise.
 
 The model is **first-order and behavioral**: the TLT section is a single TEM
 line, not a full multi-line Guanella/Ruthoff derivation or an EM simulation;
@@ -874,6 +880,11 @@ happens in the background and reports progress in the status bar.
 - **Real-inductor model is approximate**: `dc_skin` is a simple `sqrt(f)` law, DC
   bias uses a core-agnostic `1/(1+(I/Isat)²)` derating, and air-core coils do not
   model SRF/Q (see [ADR-016](adr/ADR-016-inductor-model.md)).
+- **Ferrite loss/thermal model**: core loss uses low-flux complex-permeability
+  data and a natural-convection estimate, not vendor high-flux loss curves or a
+  thermal simulation. It is a conservative sizing aid; validate power designs
+  with the core datasheet or measurement. Some 31-size AL values are scaled from
+  the μi ratio and marked in the core table; confirm the exact batch.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

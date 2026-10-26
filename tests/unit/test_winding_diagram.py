@@ -25,6 +25,7 @@ def test_autotransformer_diagram_has_tap_and_connection() -> None:
     )
     ET.fromstring(diagram.svg)
     assert "TAP (3T)" in diagram.svg
+    assert "Winding on toroid" not in diagram.svg
     assert "21T total" in diagram.svg
     assert any("tap at turn 3" in line for line in diagram.schedule)
     assert any("no galvanic isolation" in line for line in diagram.schedule)

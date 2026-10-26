@@ -117,6 +117,11 @@ CORES: tuple[ToroidCore, ...] = (
     _core("FT37-43", "43", "ferrite", "black", 350.0, 9.53, 4.75, 3.18, 0.295),
     _core("FT50-43", "43", "ferrite", "black", 440.0, 12.70, 7.14, 4.78, 0.295),
     _core("FT82-43", "43", "ferrite", "black", 470.0, 20.96, 13.21, 6.35, 0.295),
+    # 31/52 AL values for the smaller/extra sizes are scaled from the
+    # same-size 43 core using the vendor μi ratio; verify the exact batch
+    # before production (the 240-31 value is from the Amidon table).
+    _core("FT114-31", "31", "ferrite", "gray/blue", 956.0, 29.01, 19.00, 7.49, 0.360),
+    _core("FT140-31", "31", "ferrite", "gray/blue", 1659.0, 35.56, 22.86, 12.70, 0.360),
     _core("FT114-43", "43", "ferrite", "black", 510.0, 29.01, 19.00, 7.49, 0.295),
     _core("FT140-43", "43", "ferrite", "black", 885.0, 35.56, 22.86, 12.70, 0.295),
     _core("FT240-43", "43", "ferrite", "black", 1075.0, 60.96, 35.56, 12.70, 0.295),
@@ -124,6 +129,8 @@ CORES: tuple[ToroidCore, ...] = (
     _core("FT114-61", "61", "ferrite", "gray", 80.0, 29.01, 19.00, 7.49, 0.250),
     _core("FT140-61", "61", "ferrite", "gray", 140.0, 35.56, 22.86, 12.70, 0.250),
     _core("FT240-61", "61", "ferrite", "gray", 170.0, 60.96, 35.56, 12.70, 0.250),
+    _core("FT350-61", "61", "ferrite", "gray", 178.0, 88.90, 50.80, 12.70, 0.250),
+    _core("FT114-52", "52", "ferrite", "gray", 160.0, 29.01, 19.00, 7.49, 0.420),
     _core("FT140-52", "52", "ferrite", "gray", 283.0, 35.25, 22.60, 12.70, 0.420),
     _core("FT240-52", "52", "ferrite", "gray", 325.0, 61.00, 35.55, 12.70, 0.420),
     _core("FT240-31", "31", "ferrite", "gray/blue", 2053.0, 61.00, 35.55, 12.70, 0.360),

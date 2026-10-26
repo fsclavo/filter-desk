@@ -2364,6 +2364,13 @@ def main(argv: list[str] | None = None) -> int:
                 "reactance_ratio": tr_design.reactance_ratio,
                 "hf_caution": tr_design.hf_caution,
                 "thermal_caution": tr_design.thermal_caution,
+                "thermal_text": tr_design.thermal_text,
+                "core_loss_w": tr_design.core_loss_w,
+                "copper_loss_w": tr_design.copper_loss_w,
+                "total_loss_w": tr_design.total_loss_w,
+                "temperature_rise_c": tr_design.temperature_rise_c,
+                "hot_temperature_c": tr_design.hot_temperature_c,
+                "bsat_margin_hot": tr_design.bsat_margin_hot,
                 "power_density_w_cm3": tr_design.power_density_w_cm3,
                 "warnings": list(tr_design.warnings),
                 "status": tr_design.status_text,
@@ -2402,6 +2409,8 @@ def main(argv: list[str] | None = None) -> int:
                         "fit_awg": d.fit.awg,
                         "hf_caution": d.hf_caution,
                         "thermal_caution": d.thermal_caution,
+                        "thermal_text": d.thermal_text,
+                        "total_loss_w": d.total_loss_w,
                         "status": d.status_text,
                     }
                     for d in options
@@ -2450,6 +2459,12 @@ def main(argv: list[str] | None = None) -> int:
             f"{tr_design.awg_secondary}; single-layer fit AWG "
             f"{tr_design.fit.awg}"
         )
+        if tr_design.total_loss_w is not None:
+            print(
+                f"  Loss: core {tr_design.core_loss_w:.2f} W, copper "
+                f"{tr_design.copper_loss_w:.3f} W, total "
+                f"{tr_design.total_loss_w:.2f} W; hot {tr_design.thermal_text}"
+            )
         print(f"  status: {tr_design.status_text}")
         for note in tr_design.notes:
             print(f"  note: {note}")

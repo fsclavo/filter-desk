@@ -1583,7 +1583,7 @@ class TransformerDialog(QDialog):
                 (
                     "-"
                     if design.bsat_margin is None
-                    else f"{design.bsat_margin:.1f}"
+                    else f"{(design.bsat_margin_hot or design.bsat_margin):.1f}"
                 ),
                 str(design.fit.awg) if design.fit.awg is not None else "n/f",
                 design.status_text,
@@ -1614,8 +1614,11 @@ class TransformerDialog(QDialog):
         model = f"{design.kind.value}, Zline {design.z0_line_ohm:.3g} Ohm"
         if design.length_m:
             model += f", l {design.length_m * 1000.0:.1f} mm"
-        if design.core_loss_ohm is not None:
-            model += f", Rp {design.core_loss_ohm:.4g} Ohm"
+        if design.total_loss_w is not None:
+            model += (
+                f", loss {design.total_loss_w:.2f} W, "
+                f"hot {design.thermal_text}"
+            )
         self._model.setText(model)
         self._vi.setText(
             f"{design.v_unbalanced_rms:.3g}/{design.v_balanced_rms:.3g} Vrms, "
@@ -1625,8 +1628,9 @@ class TransformerDialog(QDialog):
             self._flux.setText("-")
         else:
             text = f"{design.b_peak_t * 1000.0:.1f} mT"
-            if design.bsat_margin is not None:
-                text += f" (Bsat/B {design.bsat_margin:.2f})"
+            margin = design.bsat_margin_hot or design.bsat_margin
+            if margin is not None:
+                text += f" (Bsat/B {margin:.2f} hot)"
             self._flux.setText(text)
         self._wire.setText(
             f"primary AWG {design.awg_primary}, secondary AWG "
