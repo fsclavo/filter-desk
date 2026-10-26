@@ -17,6 +17,8 @@ scheme while the public CLI/GUI stabilizes.
 - Manual **Update spec from circuit** action: derives the target cutoff (or
   center/bandwidth) from the analyzed response while preserving family, order
   and topology; the circuit is untouched and the action is undoable.
+- HF receive-band BPF wizard: band/requirements → candidate order table →
+  apply → optional E24 snap, reusing the normal BOM and measurement workflow.
 
 ## v0.11.1 — 2026-10-26
 

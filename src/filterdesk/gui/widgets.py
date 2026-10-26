@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QSpinBox,
     QStackedWidget,
     QTableWidget,
@@ -77,8 +78,14 @@ from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
-from filterdesk.services.bands import ALL_PRESETS, Band, BandKind
+from filterdesk.services.bands import ALL_PRESETS, BANDS, Band, BandKind
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
+from filterdesk.services.hf_band import (
+    HfBandDesign,
+    HfBandDesignError,
+    HfBandRequest,
+    design_hf_band_filter,
+)
 from filterdesk.services.inductor_realization import (
     InductorRealizationError,
     realize_from_air_design,
@@ -1967,3 +1974,144 @@ class VnaTuningDialog(QDialog):
         self._apply_button.setEnabled(True)
 
 
+
+
+class HfBandWizardDialog(QDialog):
+    """Guided receive-band BPF design for an amateur HF allocation."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("HF band filter wizard")
+        self.setMinimumWidth(760)
+        self._design_value: HfBandDesign | None = None
+
+        self._band = QComboBox()
+        for band in BANDS:
+            self._band.addItem(band.name)
+        self._band.setCurrentIndex(
+            next((i for i, b in enumerate(BANDS) if b.name == "40 m"), 0)
+        )
+        self._z_in = EngineeringLineEdit()
+        self._z_in.setText("50")
+        self._z_out = EngineeringLineEdit()
+        self._z_out.setText("50")
+        self._max_il = EngineeringLineEdit()
+        self._max_il.setText("0.5")
+        self._min_stop = EngineeringLineEdit()
+        self._min_stop.setText("30")
+        self._guard = EngineeringLineEdit()
+        self._guard.setText("50")
+        self._max_order = QSpinBox()
+        self._max_order.setRange(2, 12)
+        self._max_order.setValue(8)
+        self._snap_e24 = QCheckBox("Snap to E24 after apply")
+        self._snap_e24.setChecked(False)
+
+        self._table = QTableWidget(0, 5)
+        self._table.setHorizontalHeaderLabels(
+            ["Order", "Passband", "Stop low", "Stop high", "Status"]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._result = QLabel("-")
+        self._result.setWordWrap(True)
+        self._notes = QLabel("-")
+        self._notes.setWordWrap(True)
+        self._confidence = ConfidenceBadge("filter_synthesis")
+
+        form = QFormLayout(self)
+        form.addRow("Band", self._band)
+        form.addRow("Source Z (Ohm)", self._z_in)
+        form.addRow("Load Z (Ohm)", self._z_out)
+        form.addRow("Max insertion loss (dB)", self._max_il)
+        form.addRow("Min stopband attenuation (dB)", self._min_stop)
+        form.addRow("Stopband guard (% of band span)", self._guard)
+        form.addRow("Max order", self._max_order)
+        form.addRow(self._snap_e24)
+        form.addRow("Candidates", self._table)
+
+        self._design_button = QPushButton("Design")
+        self._apply_button = QPushButton("Apply to project")
+        self._apply_button.setEnabled(False)
+        buttons = QDialogButtonBox()
+        buttons.addButton(
+            self._design_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        buttons.addButton(
+            self._apply_button, QDialogButtonBox.ButtonRole.AcceptRole
+        )
+        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        self._design_button.clicked.connect(self._run_design)
+        self._apply_button.clicked.connect(self.accept)
+        close.clicked.connect(self.reject)
+        form.addRow(self._confidence)
+        form.addRow("Result", self._result)
+        form.addRow("Notes", self._notes)
+        form.addRow(buttons)
+
+        self._run_design()
+
+    def current_design(self) -> HfBandDesign | None:
+        return self._design_value
+
+    def result_spec(self) -> FilterSpec | None:
+        if self._design_value is None or self._design_value.selected is None:
+            return None
+        return self._design_value.selected.spec
+
+    def result_band(self) -> Band | None:
+        return self._design_value.request.band if self._design_value else None
+
+    def snap_to_e24(self) -> bool:
+        return self._snap_e24.isChecked()
+
+    def _run_design(self) -> None:
+        try:
+            request = HfBandRequest(
+                band=BANDS[self._band.currentIndex()],
+                z_source_ohm=parse_si(self._z_in.text().strip() or "0"),
+                z_load_ohm=parse_si(self._z_out.text().strip() or "0"),
+                max_insertion_loss_db=float(self._max_il.text().strip() or "0"),
+                min_stopband_attenuation_db=float(
+                    self._min_stop.text().strip() or "0"
+                ),
+                stopband_guard=float(self._guard.text().strip() or "0") / 100.0,
+                max_order=self._max_order.value(),
+            )
+            design = design_hf_band_filter(request)
+        except (HfBandDesignError, ValueError) as exc:
+            self._design_value = None
+            self._table.setRowCount(0)
+            self._result.setText(str(exc))
+            self._notes.setText("-")
+            self._apply_button.setEnabled(False)
+            return
+        self._design_value = design
+        self._table.setRowCount(len(design.candidates))
+        for row, candidate in enumerate(design.candidates):
+            values = (
+                str(candidate.order),
+                f"{candidate.passband_min_db:.2f} dB",
+                f"{candidate.stopband_low_db:.1f} dB",
+                f"{candidate.stopband_high_db:.1f} dB",
+                "OK" if candidate.ok else "no",
+            )
+            for col, value in enumerate(values):
+                self._table.setItem(row, col, QTableWidgetItem(value))
+        self._table.resizeRowsToContents()
+        if design.selected is None:
+            self._result.setText("No order met the requirements")
+            self._notes.setText("; ".join(design.notes))
+            self._apply_button.setEnabled(False)
+            return
+        spec = design.selected.spec
+        self._result.setText(
+            f"Order {design.selected.order}; "
+            f"center {format_engineering(spec.f_center_hz or 0.0, 'Hz')}; "
+            f"bandwidth {format_engineering(spec.bandwidth_hz or 0.0, 'Hz')}"
+        )
+        self._notes.setText("; ".join(design.notes))
+        self._apply_button.setEnabled(True)

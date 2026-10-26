@@ -285,6 +285,7 @@ specification edits require an explicit **Synthesize**.
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
 | **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, sets sweep) |
+| **HF band filter wizard** | **Design → HF band filter wizard…** | receive-band BPF workflow: band + max IL/rejection → order search → apply, optional E24 snap |
 | **Update spec from circuit** | **Design → Update spec from circuit…** | derive cutoff/center and bandwidth from the current analyzed response; family, order and topology are kept, and the circuit is not changed |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
@@ -659,6 +660,26 @@ row with a combined reference list and a quantity.
 
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.
+
+### HF receive-band filter wizard
+
+**Design → HF band filter wizard…** builds a Chebyshev-I receive-band BPF from
+practical requirements, not from a fully specified prototype:
+
+- choose the amateur band and source/load impedance;
+- enter maximum passband insertion loss and minimum stopband attenuation;
+- choose how far outside the allocation the rejection is required
+  (`Stopband guard` as a percentage of the band span; default 50 %);
+- the wizard searches orders 2…N and shows passband/rejection for every
+  candidate, selecting the lowest order that meets both;
+- **Apply to project** synthesizes the selected design and sets a band sweep;
+  optionally **Snap to E24 after apply** converts the values to commercial
+  series values before analysis.
+
+After applying, use **File → Export → build sheet / BOM…** and the normal VNA
+measurement compare/overlay. The wizard is a starting design: verify the final
+values, parasitics and rejection with the normal analysis and measurement
+workflow.
 
 ### Updating the target spec from the circuit
 

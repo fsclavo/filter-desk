@@ -245,6 +245,11 @@ _ES.update(
         "&Synthesize + Analyze": "&Sintetizar + analizar",
         "&Band preset…": "&Preset de banda…",
         "Update spec from &circuit…": "Actualizar spec desde el &circuito…",
+        "HF band filter &wizard…": "&Asistente de filtro de banda HF…",
+        "HF band filter wizard": "Asistente de filtro de banda HF",
+        "Applied {band} BPF — analyzing…": (
+            "BPF de {band} aplicado — analizando…"
+        ),
         "Update spec from circuit": "Actualizar spec desde el circuito",
         "Analyze a circuit first.": "Analiza primero un circuito.",
         "Cutoff": "Corte",

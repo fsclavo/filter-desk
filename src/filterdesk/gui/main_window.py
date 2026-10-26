@@ -38,7 +38,7 @@ from filterdesk import __version__
 from filterdesk.analysis.compliance import check_spec_compliance
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
-from filterdesk.components_std import set_element_parasitics
+from filterdesk.components_std import ESeries, SnapStrategy, set_element_parasitics
 from filterdesk.confidence import filter_confidence_items
 from filterdesk.domain import circuit_edit
 from filterdesk.domain.circuit import (
@@ -91,6 +91,7 @@ from filterdesk.gui.widgets import (
     DesignSweepDialog,
     DesignSweepResultDialog,
     EngineeringLineEdit,
+    HfBandWizardDialog,
     MatchingDialog,
     MicrostripDialog,
     MonteCarloDialog,
@@ -493,6 +494,9 @@ class MainWindow(QMainWindow):
         act_update_spec = QAction(tr("Update spec from &circuit…"), self)
         act_update_spec.triggered.connect(self._run_update_spec_from_circuit)
         design_menu.addAction(act_update_spec)
+        act_hf_wizard = QAction(tr("HF band filter &wizard…"), self)
+        act_hf_wizard.triggered.connect(self._run_hf_band_wizard)
+        design_menu.addAction(act_hf_wizard)
         design_menu.addSeparator()
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
@@ -1249,6 +1253,41 @@ class MainWindow(QMainWindow):
         self._plots.set_confidence_items(
             () if circuit is None else filter_confidence_items(circuit)
         )
+
+    def _run_hf_band_wizard(self) -> None:
+        dialog = HfBandWizardDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        spec = dialog.result_spec()
+        band = dialog.result_band()
+        if spec is None or band is None:
+            return
+        try:
+            cmd = SynthesizeCommand(
+                self._session,
+                spec,
+                new_sweep=band_sweep(band),
+                on_applied=self._after_circuit_change,
+            )
+            self._undo.push(cmd)
+            if dialog.snap_to_e24():
+                self._undo.push(
+                    SnapCommand(
+                        self._session,
+                        ESeries.E24,
+                        SnapStrategy.INDEPENDENT,
+                        on_applied=self._after_circuit_change,
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(
+                self, tr("HF band filter wizard"), _exc_text(exc)
+            )
+            return
+        self._status.setText(
+            tr("Applied {band} BPF — analyzing…", band=band.name)
+        )
+        self._run_analyze()
 
     def _run_update_spec_from_circuit(self) -> None:
         circuit = self._session.circuit

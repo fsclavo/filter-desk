@@ -8,7 +8,7 @@ count or release changes.
 [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.12.0 planning.
 
-**Verification:** local suite **906 passed, 1 skipped**; coverage **82.96 %**.
+**Verification:** local suite **920 passed, 1 skipped**; coverage **82.99 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40393507768
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40375006934
 
@@ -51,6 +51,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Manual **Update spec from circuit** action: derives cutoff/center/bandwidth
       from the response while preserving family/order/topology; circuit untouched,
       undoable, with explicit preview.
+- [x] HF receive-band BPF wizard: band/requirements → candidate order table →
+      apply → optional E24 snap; reuses normal BOM/VNA workflow.
 
 ---
 

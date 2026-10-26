@@ -46,6 +46,8 @@ image.
 - **Optimization** against limit regions (passband/stopband masks).
 - **Component sensitivity** analysis that ranks parts by their effect and
   suggests a tuning direction.
+- **HF receive-band BPF wizard**: band + insertion-loss/rejection requirements
+  → order search → apply with optional E24 snap.
 - **Spec-from-circuit update**: manually re-target cutoff/center/bandwidth from
   the measured/analyzed response without silently changing the circuit.
 - **Design parameter sweeps** (order, family, frequency, ripple…) into a
