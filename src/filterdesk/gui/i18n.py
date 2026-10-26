@@ -614,7 +614,7 @@ _ES.update(
         "Applied output balun ({kind})": "Balun de salida aplicado ({kind})",
         "Remove output balun": "Quitar balun de salida",
         "Removed output balun": "Balun de salida quitado",
-        "BAL1 {ratio}:1 ({kind})": "BAL1 {ratio}:1 ({kind})",
+        "BAL1 {ratio} ({kind})": "BAL1 {ratio} ({kind})",
         "T1 {ratio}:1 (ideal)": "T1 {ratio}:1 (ideal)",
         "ideal": "ideal",
         "Check spec &compliance…": "Verificar &cumplimiento…",

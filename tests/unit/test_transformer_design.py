@@ -225,6 +225,9 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
     assert dialog.current_design() is not None
     assert dialog.current_design().n_primary == 3
     assert dialog._options_table.rowCount() == 3
+    assert dialog._options_table.horizontalHeaderItem(4).text() == "Bsat/B"
+    assert dialog._options_table.horizontalHeaderItem(6).text() == "Flags"
+    assert "HF" in dialog._options_table.item(2, 6).text()
     dialog._options_table.selectRow(2)
     design = dialog.current_design()
     assert design is not None

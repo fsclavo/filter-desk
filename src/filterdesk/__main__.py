@@ -2354,6 +2354,7 @@ def main(argv: list[str] | None = None) -> int:
                 "z_unbalanced_ohm": tr_design.z_unbalanced_ohm,
                 "z_balanced_ohm": tr_design.z_balanced_ohm,
                 "impedance_ratio": tr_design.impedance_ratio,
+                "ratio_text": tr_design.ratio_text,
                 "turns_ratio": tr_design.actual_turns_ratio,
                 "n_low": tr_design.n_primary,
                 "n_high": tr_design.n_secondary,
@@ -2362,6 +2363,10 @@ def main(argv: list[str] | None = None) -> int:
                 "total_turns": tr_design.total_turns,
                 "reactance_ratio": tr_design.reactance_ratio,
                 "hf_caution": tr_design.hf_caution,
+                "thermal_caution": tr_design.thermal_caution,
+                "power_density_w_cm3": tr_design.power_density_w_cm3,
+                "warnings": list(tr_design.warnings),
+                "status": tr_design.status_text,
                 "magnetizing_inductance_h": tr_design.magnetizing_inductance_h,
                 "leakage_inductance_h": tr_design.leakage_inductance_h,
                 "core_loss_ohm": tr_design.core_loss_ohm,
@@ -2396,6 +2401,8 @@ def main(argv: list[str] | None = None) -> int:
                         "bsat_margin": d.bsat_margin,
                         "fit_awg": d.fit.awg,
                         "hf_caution": d.hf_caution,
+                        "thermal_caution": d.thermal_caution,
+                        "status": d.status_text,
                     }
                     for d in options
                 ]
@@ -2414,9 +2421,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(
             f"  Turns: low={tr_design.n_primary}, high={tr_design.n_secondary} "
-            f"(ratio {tr_design.actual_turns_ratio:.3f}, "
-            f"Z ratio {tr_design.impedance_ratio:.3f}, "
-            f"X_Lm/Z {tr_design.reactance_ratio:.2f})"
+            f"({tr_design.ratio_text}, X_Lm/Z {tr_design.reactance_ratio:.2f})"
         )
         print(
             "  Lm (low side) = "
@@ -2438,13 +2443,14 @@ def main(argv: list[str] | None = None) -> int:
         if tr_design.b_peak_t is not None:
             b_txt = f"{tr_design.b_peak_t * 1000.0:.1f} mT"
             if tr_design.bsat_margin is not None:
-                b_txt += f" (B/Bsat={tr_design.bsat_margin:.2f})"
+                b_txt += f" (Bsat/B={tr_design.bsat_margin:.2f})"
             print(f"  Bpk = {b_txt}")
         print(
             f"  Wire: low AWG {tr_design.awg_primary}, high AWG "
             f"{tr_design.awg_secondary}; single-layer fit AWG "
             f"{tr_design.fit.awg}"
         )
+        print(f"  status: {tr_design.status_text}")
         for note in tr_design.notes:
             print(f"  note: {note}")
         return 0

@@ -190,7 +190,7 @@ class ComponentTablePanel(QWidget):
                 "BAL1",
                 role_label(ElementRole.SERIES),
                 tr("balun"),
-                f"{balun.turns_ratio:.4g}:1",
+                balun.ratio_text,
                 tr(balun.kind),
             )
         self._updating = False

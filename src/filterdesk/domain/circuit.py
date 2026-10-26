@@ -132,12 +132,15 @@ class IdealDualBruneLC:
 
 @dataclass(frozen=True, slots=True)
 class WindingSpec:
-    """Physical winding provenance for an inductor (BOM / reports)."""
+    """Physical winding provenance for an inductor/transformer (BOM/reports)."""
 
-    kind: str  # "toroid" or "air"
+    kind: str  # "toroid", "air" or "balun"
     core: str = ""
     material: str = ""
     turns: int | None = None
+    turns_secondary: int | None = None
+    topology: str = ""
+    impedance_ratio: float | None = None
     wire_awg: int | None = None
     wire_bare_mm: float | None = None
     wire_overall_mm: float | None = None
@@ -172,6 +175,40 @@ class BalunSpec:
     core: str = ""
     turns: int | None = None
     wire_awg: int | None = None
+
+    @property
+    def secondary_turns(self) -> int | None:
+        if self.turns is None or self.total_turns <= 0:
+            return None
+        if self.topology == "isolated":
+            return max(1, self.total_turns - self.turns)
+        return self.total_turns
+
+    @staticmethod
+    def _ratio_text(primary: int, secondary: int) -> str:
+        if primary <= 0 or secondary <= 0:
+            return "?"
+        if secondary >= primary:
+            return f"1:{secondary / primary:.3g}"
+        return f"{primary / secondary:.3g}:1"
+
+    @property
+    def turns_text(self) -> str:
+        secondary = self.secondary_turns
+        if self.turns is None or secondary is None:
+            return f"{self.turns_ratio:.4g}:1"
+        return self._ratio_text(self.turns, secondary)
+
+    @property
+    def impedance_text(self) -> str:
+        secondary = self.secondary_turns
+        if self.turns is None or secondary is None:
+            return "?"
+        return self._ratio_text(self.turns * self.turns, secondary * secondary)
+
+    @property
+    def ratio_text(self) -> str:
+        return f"{self.turns_text} turns / {self.impedance_text} Z"
 
     def __post_init__(self) -> None:
         if self.kind not in {"ideal", "unun", "guanella", "ruthroff", "choke"}:
@@ -439,6 +476,13 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
                     core=balun.core,
                     material=balun.kind,
                     turns=balun.turns,
+                    turns_secondary=balun.secondary_turns,
+                    topology=balun.topology,
+                    impedance_ratio=(
+                        None
+                        if balun.secondary_turns is None or not balun.turns
+                        else (balun.secondary_turns / balun.turns) ** 2
+                    ),
                     wire_awg=balun.wire_awg,
                 ),
             )

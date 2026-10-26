@@ -12,7 +12,6 @@ kinds the drawing is a simplified behavioral representation.
 from __future__ import annotations
 
 import html
-import math
 from dataclasses import dataclass
 
 from filterdesk.domain.circuit import BalunSpec
@@ -121,59 +120,6 @@ def _schematic(
     return parts
 
 
-def _toroid(
-    kind: str,
-    topology: str,
-    np: int,
-    ns: int,
-    total: int,
-    core: str,
-) -> list[str]:
-    parts: list[str] = [
-        '<rect x="440" y="40" width="430" height="330" rx="12" '
-        'fill="none" stroke="#555" stroke-width="1.5"/>',
-        '<text x="655" y="68" text-anchor="middle" font-size="16" '
-        'font-family="sans-serif" fill="#111">Winding on toroid</text>',
-        '<ellipse cx="655" cy="220" rx="150" ry="88" fill="#fafafa" '
-        'stroke="#333" stroke-width="3"/>',
-        '<ellipse cx="655" cy="220" rx="82" ry="38" fill="#ffffff" '
-        'stroke="#333" stroke-width="3"/>',
-    ]
-    loops = max(8, min(total, 24))
-    for index in range(loops):
-        angle = 2.0 * math.pi * index / loops
-        x0 = 655 + 150 * math.cos(angle)
-        y0 = 220 + 88 * math.sin(angle)
-        x1 = 655 + 82 * math.cos(angle)
-        y1 = 220 + 38 * math.sin(angle)
-        color = "#1565c0"
-        if topology == "isolated" and index % 2:
-            color = "#c62828"
-        parts.append(
-            f'<line x1="{x0:.2f}" y1="{y0:.2f}" x2="{x1:.2f}" '
-            f'y2="{y1:.2f}" stroke="{color}" stroke-width="4" '
-            'stroke-linecap="round"/>'
-        )
-    if topology == "autotransformer":
-        angle = 2.0 * math.pi * min(np / max(ns, 1), 1.0)
-        tx = 655 + 116 * math.cos(angle)
-        ty = 220 + 63 * math.sin(angle)
-        parts.append(
-            f'<circle cx="{tx:.2f}" cy="{ty:.2f}" r="7" fill="#ff9800" '
-            'stroke="#333" stroke-width="1"/>'
-        )
-        parts.append(
-            f'<text x="{tx + 12:.2f}" y="{ty - 8:.2f}" font-size="12" '
-            f'font-family="sans-serif" fill="#e65100">TAP {np}T</text>'
-        )
-    label = f"{core or 'core'}: {np}T + {ns - np if topology == 'isolated' else 0}T" if topology == "isolated" else f"{core or 'core'}: {total}T, tap {np}T"
-    parts += [
-        f'<text x="655" y="342" text-anchor="middle" font-size="12" '
-        f'font-family="sans-serif" fill="#111">{_esc(label)}</text>',
-        f'<text x="655" y="360" text-anchor="middle" font-size="11" '
-        f'font-family="sans-serif" fill="#666">{_esc(kind)} / {_esc(topology)}</text>',
-    ]
-    return parts
 
 
 def winding_diagram(
@@ -197,13 +143,12 @@ def winding_diagram(
     )
     title = f"{kind} {n_primary}:{n_secondary} on {core or 'toroid'}"
     svg = [
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" '
-        'width="900" height="420">',
-        '<rect width="900" height="420" fill="#ffffff"/>',
-        f'<text x="450" y="25" text-anchor="middle" font-size="18" '
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 420" '
+        'width="460" height="420">',
+        '<rect width="460" height="420" fill="#ffffff"/>',
+        f'<text x="230" y="25" text-anchor="middle" font-size="18" '
         f'font-family="sans-serif" fill="#111">{_esc(title)}</text>',
         *_schematic(kind, topology, n_primary, n_secondary, z_unbalanced_ohm, z_balanced_ohm),
-        *_toroid(kind, topology, n_primary, n_secondary, total, core),
         '</svg>',
     ]
     schedule: list[str] = []

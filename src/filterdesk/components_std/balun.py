@@ -71,6 +71,39 @@ class BalunDesign:
     total_turns: int = 0
     reactance_ratio: float = 0.0
     hf_caution: bool = False
+    power_w: float = 0.0
+
+    @property
+    def power_density_w_cm3(self) -> float:
+        volume = self.core.volume_cm3
+        return self.power_w / volume if volume > 0.0 else 0.0
+
+    @property
+    def thermal_caution(self) -> bool:
+        return self.power_density_w_cm3 > 5.0
+
+    @property
+    def warnings(self) -> tuple[str, ...]:
+        flags: list[str] = []
+        if self.reactance_ratio < 4.0:
+            flags.append(f"LF X/Z {self.reactance_ratio:.1f}")
+        if self.bsat_margin is None:
+            flags.append("SAT unknown")
+        elif self.bsat_margin < 1.0:
+            flags.append("SAT saturated")
+        elif self.bsat_margin < 3.0:
+            flags.append(f"SAT {self.bsat_margin:.1f}")
+        if self.fit.awg is None:
+            flags.append("FIT no")
+        if self.hf_caution:
+            flags.append(f"HF {self.total_turns}T")
+        if self.thermal_caution:
+            flags.append(f"THERMAL? {self.power_density_w_cm3:.1f} W/cm3")
+        return tuple(flags)
+
+    @property
+    def status_text(self) -> str:
+        return "; ".join(self.warnings) if self.warnings else "OK"
 
     @property
     def saturated(self) -> bool:
@@ -80,6 +113,10 @@ class BalunDesign:
     def impedance_ratio(self) -> float:
         """Balanced / unbalanced impedance ratio (e.g. 4.0 for a 1:4 unun)."""
         return (self.n_secondary / self.n_primary) ** 2
+
+    @property
+    def ratio_text(self) -> str:
+        return self.to_spec().ratio_text
 
     def to_spec(self) -> BalunSpec:
         return BalunSpec(
@@ -241,6 +278,12 @@ def design_balun(
             "many turns at HF: leakage/capacitance may degrade the high bands "
             "(prefer fewer turns)"
         )
+    power_density = power_w / core.volume_cm3 if core.volume_cm3 > 0.0 else 0.0
+    if power_density > 5.0:
+        notes.append(
+            f"thermal heuristic: {power_density:.1f} W/cm3; temperature rise "
+            "is not modeled, verify with the core datasheet/measurement"
+        )
     if abs(actual_turns - turns) > 1e-12:
         notes.append(
             f"rounded turns give ratio {actual_turns:.3f} (target {turns:.3f})"
@@ -296,6 +339,7 @@ def design_balun(
         total_turns=total_turns,
         reactance_ratio=reactance_ratio,
         hf_caution=hf_caution,
+        power_w=power_w,
     )
 
 

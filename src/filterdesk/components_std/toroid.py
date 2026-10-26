@@ -62,6 +62,14 @@ class ToroidCore:
         """Approximate wire length per turn (rectangular cross-section perimeter)."""
         return 2.0 * self.height_mm + (self.od_mm - self.id_mm)
 
+    @property
+    def volume_cm3(self) -> float:
+        """Approximate magnetic volume from mean path and geometric Ae."""
+        if self.od_mm <= 0.0 or self.id_mm <= 0.0:
+            return 0.0
+        mean_path_mm = math.pi * (self.od_mm + self.id_mm) / 2.0
+        return mean_path_mm * self.ae_mm2 / 1000.0
+
 
 def _core(
     name: str,

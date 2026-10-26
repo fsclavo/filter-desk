@@ -1351,7 +1351,7 @@ class TransformerDialog(QDialog):
 
         self._options_table = QTableWidget(0, 7)
         self._options_table.setHorizontalHeaderLabels(
-            ["Turns", "Total", "Lm", "X/Z", "B/Bsat", "Fit", "HF"]
+            ["Turns", "Total", "Lm", "X/Z", "Bsat/B", "Fit", "Flags"]
         )
         self._options_table.verticalHeader().setVisible(False)
         self._options_table.setSelectionBehavior(
@@ -1586,10 +1586,12 @@ class TransformerDialog(QDialog):
                     else f"{design.bsat_margin:.1f}"
                 ),
                 str(design.fit.awg) if design.fit.awg is not None else "n/f",
-                "caution" if design.hf_caution else "ok",
+                design.status_text,
             )
             for col, value in enumerate(values):
-                self._options_table.setItem(row, col, QTableWidgetItem(value))
+                item = QTableWidgetItem(value)
+                item.setToolTip("; ".join(design.notes))
+                self._options_table.setItem(row, col, item)
 
     def _on_option_selected(self) -> None:
         rows = self._options_table.selectionModel().selectedRows()
@@ -1601,11 +1603,10 @@ class TransformerDialog(QDialog):
 
     def _show_design(self, design: BalunDesign) -> None:
         self._design_value = design
+        spec = design.to_spec()
         self._turns.setText(
-            f"{design.n_primary} : {design.n_secondary} "
-            f"(total {design.total_turns}, "
-            f"Z ratio {design.impedance_ratio:.3f}, "
-            f"X/Z {design.reactance_ratio:.2f})"
+            f"{spec.ratio_text} "
+            f"(total {design.total_turns}, X/Z {design.reactance_ratio:.2f})"
         )
         lm = format_engineering(design.magnetizing_inductance_h, "H", digits=4)
         lk = format_engineering(design.leakage_inductance_h, "H", digits=4)
@@ -1625,7 +1626,7 @@ class TransformerDialog(QDialog):
         else:
             text = f"{design.b_peak_t * 1000.0:.1f} mT"
             if design.bsat_margin is not None:
-                text += f" (B/Bsat {design.bsat_margin:.2f})"
+                text += f" (Bsat/B {design.bsat_margin:.2f})"
             self._flux.setText(text)
         self._wire.setText(
             f"primary AWG {design.awg_primary}, secondary AWG "

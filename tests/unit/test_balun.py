@@ -60,6 +60,36 @@ def test_guanella_design_1_to_4() -> None:
     assert spec.core == "FT240-43"
 
 
+def test_ratio_text_and_thermal_status() -> None:
+    auto = design_balun(
+        find_core("FT140-43"),
+        kind="unun",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=2500.0,
+        f_min_hz=7e6,
+        f_max_hz=28e6,
+        power_w=100.0,
+        topology="autotransformer",
+    )
+    spec = auto.to_spec()
+    assert spec.ratio_text == "1:7 turns / 1:49 Z"
+    assert auto.thermal_caution
+    assert "THERMAL?" in auto.status_text
+    assert "B/Bsat" not in auto.status_text
+
+    big = design_balun(
+        find_core("FT240-43"),
+        kind="unun",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=2500.0,
+        f_min_hz=7e6,
+        f_max_hz=28e6,
+        power_w=100.0,
+    )
+    assert not big.thermal_caution
+    assert "THERMAL?" not in big.status_text
+
+
 def test_balun_topology_and_winding_options() -> None:
     auto = design_balun_options(
         _core(),
@@ -270,7 +300,7 @@ def test_balun_bom_and_cli(tmp_path, capsys) -> None:
     balun_rows = [row for row in rows if row.ref == "BAL1"]
     assert len(balun_rows) == 1
     assert balun_rows[0].kind == "balun"
-    assert balun_rows[0].value_text == f"{design.actual_turns_ratio:.4g}:1"
+    assert balun_rows[0].value_text.startswith("1:2 turns / 4")
     assert balun_rows[0].core == "FT240-43"
     assert balun_rows[0].turns == design.n_primary
 

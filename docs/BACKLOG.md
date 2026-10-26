@@ -5,7 +5,7 @@ decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
 **Last verified:** 2026-10-26 · **App version:** 0.10.2 · **Next release:** v0.11.0 (pending).  
-**Verification:** local suite 881 passed, 1 skipped; coverage 83.2 %. CI green:
+**Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
 https://github.com/fsclavo/filter-desk/actions/runs/40335213687 (re-check after
 every push and update this URL).
 
@@ -49,8 +49,12 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
   global bounds, synthetic tests.
 - Boundary `BAL1`: project model, ABCD/skrf analysis, BOM, exports and unified
   designer.
-- Winding diagram: connection schematic + stylized toroid SVG, schedule, GUI
-  **Winding** tab and build-sheet sidecar.
+- Winding diagram: electrical connection schematic + schedule, GUI **Winding**
+  tab and build-sheet sidecar (physical toroid drawing removed as misleading).
+- Ratio labels show turns and impedance explicitly (`1:7 turns / 1:49 Z`); BOM,
+  component table and schematic share the format.
+- Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL?`); `Bsat/B` is
+  labelled correctly and the FT140-43/100 W case gets a thermal heuristic flag.
 - CLI `transformer` unified (transformer/unun/balun model and options); the old
   `balun` command was removed.
 - CI `gui-stability`: 15-min job, per-pass `timeout 300`,
@@ -70,9 +74,9 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ### P1 — correctness / validation
 
-- [ ] **Physical winding drawing:** current output is a connection schematic +
-      stylized toroid. A real wire-route drawing needs field validation,
-      especially for Guanella/Ruthroff crossover and choke wiring. (M/L)
+- [ ] **Physical winding drawing:** current output is intentionally the
+      electrical connection only. A real wire-route/toroid drawing needs field
+      validation, especially for Guanella/Ruthroff crossover and choke wiring. (M/L)
 - [ ] **VNA hardware validation:** use the two available captures as holdout
       data; add a documented calibration/reference-plane protocol and compare
       phase/delay fits. (M)

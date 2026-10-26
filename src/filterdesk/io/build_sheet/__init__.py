@@ -123,6 +123,25 @@ _SHEET_HEADERS: tuple[str, ...] = (
 )
 
 
+def _balun_value_text(comp: PhysicalComponent) -> str:
+    winding = comp.winding
+    if winding is None or winding.turns is None:
+        return f"{comp.value:.4g}:1"
+    secondary = winding.turns_secondary
+    if secondary is None:
+        return f"{winding.turns}T"
+    if secondary >= winding.turns:
+        turns = f"1:{secondary / winding.turns:.3g}"
+    else:
+        turns = f"{winding.turns / secondary:.3g}:1"
+    impedance = (
+        f"{winding.impedance_ratio:.4g}"
+        if winding.impedance_ratio is not None
+        else "?"
+    )
+    return f"{turns} turns / {impedance} Z"
+
+
 def _parasitic_text(comp: PhysicalComponent) -> str:
     parts: list[str] = []
     if comp.series_resistance_ohm:
@@ -217,7 +236,11 @@ def build_sheet_rows(
                 value=comp.value,
                 unit=comp.unit,
                 value_text=(
-                    f"{comp.value:.4g}:1"
+                    (
+                        _balun_value_text(comp)
+                        if comp.kind == "balun"
+                        else f"{comp.value:.4g}:1"
+                    )
                     if comp.kind in {"transformer", "balun"}
                     else format_engineering(comp.value, comp.unit, digits=6)
                 ),
@@ -226,7 +249,7 @@ def build_sheet_rows(
                     "ideal"
                     if comp.kind == "transformer"
                     else (
-                        f"balun {comp.winding.material}"
+                        f"balun {comp.winding.material} {comp.winding.topology}"
                         if comp.kind == "balun" and comp.winding is not None
                         else _parasitic_text(comp)
                     )

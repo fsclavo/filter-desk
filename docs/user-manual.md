@@ -707,17 +707,29 @@ previously split across two tools.
   Select **isolated** for two separate windings (total `Np + Ns`).
 - **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
   capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
-- **Winding:** a **Winding** tab shows a connection schematic plus a stylized
-  toroid drawing, the tap/polarity and a text winding schedule. The **Save
-  diagram…** button writes SVG. Build-sheet exports automatically write a
-  `<name>_winding.svg` sidecar and reference/embed it.
+- **Winding:** a **Winding** tab shows only the **electrical connection**
+  schematic, tap/polarity and a text winding schedule. The **Save diagram…**
+  button writes SVG. Build-sheet exports automatically write a
+  `<name>_winding.svg` sidecar and reference/embed it. A physical toroid drawing
+  is intentionally not shown: a stylized one can be misleading about wire route
+  and crossover.
 - **Apply:** inserts the result as `BAL1` at the circuit output. It appears in
   the project, component table and BOM with core/turns/AWG.
 
-More turns increase `Lm` and lower peak flux, but also add leakage and winding
-capacitance. At high HF (for example 28 MHz), prefer fewer turns: 4:28 is
-flagged as an HF caution when the highest frequency is ≥20 MHz. The warning is
-a turn-count heuristic, not a parasitic extraction.
+The displayed ratio is explicit: for 50 → 2500 Ω with 3:21 it shows
+**`1:7 turns / 1:49 Z`**, not an ambiguous `0.1429:1`. The options table uses
+**`Bsat/B`** (safety margin), not `B/Bsat`. More turns increase `Lm` and lower
+peak flux, but also add leakage and winding capacitance. At high HF (for example
+28 MHz), prefer fewer turns: 4:28 is flagged as `HF 28T` when the highest
+frequency is ≥20 MHz.
+
+The **Flags** column is intentionally stricter and explicit: `LF X/Z ...`,
+`SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL? ... W/cm3`.
+`THERMAL?` is a conservative power-density heuristic for cores with little
+volume for the requested power; it is **not** a temperature-rise calculation.
+For example, 100 W on an FT140-43 is flagged, while the larger FT240-43 is not.
+A matched sinusoidal load is assumed; mismatch, DC bias, duty cycle and ambient
+temperature can make the real transformer worse.
 
 The model is **first-order and behavioral**: the TLT section is a single TEM
 line, not a full multi-line Guanella/Ruthoff derivation or an EM simulation;

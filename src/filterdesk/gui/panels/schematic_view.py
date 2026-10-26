@@ -283,8 +283,8 @@ class SchematicPanel(QWidget):
             balun = circuit.output_balun
             balun_label = QGraphicsSimpleTextItem(
                 tr(
-                    "BAL1 {ratio}:1 ({kind})",
-                    ratio=f"{balun.turns_ratio:.4g}",
+                    "BAL1 {ratio} ({kind})",
+                    ratio=balun.ratio_text,
                     kind=balun.kind,
                 )
             )
