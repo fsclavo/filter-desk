@@ -5,8 +5,9 @@ decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
 **Last verified:** 2026-10-26 · **App version:** 0.10.2 · **Next release:** v0.11.0 (pending).  
-**Verification:** local suite 881 passed, 1 skipped; coverage 83.2 %. CI is
-re-checked after every push; update the run URL here when it changes.
+**Verification:** local suite 881 passed, 1 skipped; coverage 83.2 %. CI green:
+https://github.com/fsclavo/filter-desk/actions/runs/40335213687 (re-check after
+every push and update this URL).
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
