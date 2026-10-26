@@ -27,6 +27,8 @@ image.
   cross-check.
 - **Real-world effects**: finite inductor Q, DCR, self-resonance, DC-bias
   derating, capacitor ESL/ESR, and parasitic capacitance.
+- **Transformer / unun / balun calculator**: turns, Lm, flux/saturation and wire
+  gauges on the built-in toroid table.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.

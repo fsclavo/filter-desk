@@ -246,6 +246,7 @@ _ES.update(
         "&Attenuator pad…": "&Atenuador…",
         "Matching &network…": "Red de &adaptación…",
         "&Coil calculator…": "Calculadora de &bobinas…",
+        "Trans&former / balun…": "Transformador / &balun…",
         "Sna&p to E-series…": "Ajustar a serie &E…",
         "Apply &parasitics / Q…": "Aplicar &parásitos / Q…",
         "&Monte-Carlo tolerances…": "Tolerancias &Monte-Carlo…",

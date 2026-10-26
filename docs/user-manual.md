@@ -288,6 +288,7 @@ specification edits require an explicit **Synthesize**.
 | **Attenuator pad** | **Design → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
 | **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
+| **Transformer / balun** | **Design → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -527,6 +528,11 @@ Most commands accept `--json` for machine-readable output.
   filterdesk toroid --core T50-2 --inductance 1u --current 1
   filterdesk toroid --core FT50-43 --turns 5 --current 0.5 --json
   ```
+- **`transformer`** — transformer-type unun / balun / power transformer on a
+  built-in toroid core: `filterdesk transformer --z-low 50 --z-high 200
+  --core FT50-43 --frequency 3.5M --power 10`. The low-impedance winding is
+  sized for `X_Lm >= 4 * Z_low` at the lowest frequency; the tool reports turns,
+  Lm, V/I, peak flux versus Bsat, wire gauges and single-layer fit.
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
   `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
   `--turns`. Wire is enamelled grade 1 by default (`--bare-wire` or
@@ -670,6 +676,23 @@ IEC 60317-0-1) sets the pitch and length. Use a build of `0` for bare copper or
 enter a custom build in mm. Outputs are turns, coil length, length/diameter,
 bare/overall wire size, wire length and DC resistance; the best turn count below
 the target is also shown, because air-core turn steps are coarse.
+
+### Transformer / balun / unun
+
+**Design → Transformer / balun…** (`filterdesk transformer`) is an ideal
+transformer calculator for transformer-type ununs, baluns and power
+transformers. Enter the low/high impedances, the lowest frequency, the power and
+a built-in core. The impedance ratio is `R_high/R_low`, the turns ratio is its
+square root, and the low-side turns are chosen so that
+`X_Lm = 2*pi*f_min*Lm >= 4*Z_low` (the factor is adjustable in the API/CLI).
+It reports the rounded turns, actual impedance ratio, magnetizing inductance,
+RMS voltages/currents, peak flux and Bsat margin, recommended AWG for each
+winding, and whether both windings fit in one layer.
+
+This is an ideal-transformer model, not a Guanella/Ruthroff transmission-line
+transformer model: common-mode choking, leakage inductance and core loss are
+not simulated. Verify the winding layout, core loss and saturation against the
+core datasheet, especially for high power or wideband baluns.
 
 It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
 drops for very short coils (`length/diameter < 0.2`, flagged in the result).

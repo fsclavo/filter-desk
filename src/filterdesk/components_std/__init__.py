@@ -50,6 +50,12 @@ from filterdesk.components_std.toroid import (
     make_custom_core,
     turns_for_inductance,
 )
+from filterdesk.components_std.transformer import (
+    TransformerDesign,
+    TransformerError,
+    TransformerKind,
+    design_transformer,
+)
 
 __all__ = [
     "AirCoilDesign",
@@ -68,6 +74,9 @@ __all__ = [
     "SnapStrategy",
     "ToroidCore",
     "ToroidDesign",
+    "TransformerDesign",
+    "TransformerError",
+    "TransformerKind",
     "ToroidError",
     "WireFit",
     "air_coil_inductance_h",
@@ -76,6 +85,7 @@ __all__ = [
     "design_air_coil",
     "design_matching",
     "design_toroid",
+    "design_transformer",
     "e_series_values",
     "find_core",
     "inductor_resistance_ohm_from_q",

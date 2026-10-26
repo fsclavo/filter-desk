@@ -94,6 +94,7 @@ from filterdesk.gui.widgets import (
     ParasiticDialog,
     SensitivityDialog,
     SnapDialog,
+    TransformerDialog,
 )
 from filterdesk.gui.workers import (
     start_analyze_thread,
@@ -491,6 +492,9 @@ class MainWindow(QMainWindow):
         act_coil = QAction(tr("&Coil calculator…"), self)
         act_coil.triggered.connect(self._run_coil_calculator)
         design_menu.addAction(act_coil)
+        act_transformer = QAction(tr("Trans&former / balun…"), self)
+        act_transformer.triggered.connect(self._run_transformer)
+        design_menu.addAction(act_transformer)
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -962,6 +966,9 @@ class MainWindow(QMainWindow):
             tr("Realized {ref} as a physical winding", ref=realized.id)
         )
         self._run_analyze()
+
+    def _run_transformer(self) -> None:
+        TransformerDialog(self).exec()
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:

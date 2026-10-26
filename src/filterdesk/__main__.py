@@ -40,10 +40,13 @@ from filterdesk.components_std import (
     SnapReport,
     SnapStrategy,
     ToroidError,
+    TransformerError,
+    TransformerKind,
     design_air_coil,
     design_attenuator,
     design_matching,
     design_toroid,
+    design_transformer,
     find_core,
     list_cores,
     make_custom_core,
@@ -422,6 +425,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Enamel build (mm); default: typical grade-1 enamelled wire",
     )
     air.add_argument("--json", action="store_true", help="Emit JSON")
+
+    tr = sub.add_parser(
+        "transformer",
+        help="Design a transformer-type unun / balun / power transformer",
+    )
+    tr.add_argument(
+        "--kind",
+        choices=[k.value for k in TransformerKind],
+        default=TransformerKind.UNUN.value,
+        help="Device kind (calculation is the same ideal transformer model)",
+    )
+    tr.add_argument("--z-low", required=True, help="Low-side impedance (ohm)")
+    tr.add_argument("--z-high", required=True, help="High-side impedance (ohm)")
+    tr.add_argument("--core", required=True, help="Built-in core name, e.g. FT50-43")
+    tr.add_argument("--frequency", default="1M", help="Lowest frequency, e.g. 1M")
+    tr.add_argument("--power", type=float, default=10.0, help="Power (W)")
+    tr.add_argument(
+        "--reactance-factor",
+        type=float,
+        default=4.0,
+        help="Minimum magnetizing reactance / Z_low (default 4)",
+    )
+    tr.add_argument(
+        "--current-density",
+        type=float,
+        default=4.0,
+        help="Wire current density (A/mm^2, default 4)",
+    )
+    tr.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -2080,6 +2112,87 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Wire length ~ {air_design.wire_length_m:.3f} m")
         print(f"  R_DC = {air_design.resistance_ohm:.4f} Ohm")
         print("  note: SRF/Q not modelled (single close-wound layer)")
+        return 0
+
+    if args.command == "transformer":
+        try:
+            core = find_core(str(args.core))
+            tr_design = design_transformer(
+                core,
+                z_low_ohm=parse_si(str(args.z_low)),
+                z_high_ohm=parse_si(str(args.z_high)),
+                frequency_hz=parse_si(str(args.frequency)),
+                power_w=float(args.power),
+                kind=TransformerKind(str(args.kind)),
+                reactance_factor=float(args.reactance_factor),
+                current_density_a_mm2=float(args.current_density),
+            )
+        except (TransformerError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "kind": tr_design.kind.value,
+                        "core": tr_design.core.name,
+                        "z_low_ohm": tr_design.z_low_ohm,
+                        "z_high_ohm": tr_design.z_high_ohm,
+                        "impedance_ratio": tr_design.impedance_ratio,
+                        "turns_ratio": tr_design.turns_ratio,
+                        "n_low": tr_design.n_low,
+                        "n_high": tr_design.n_high,
+                        "actual_impedance_ratio": tr_design.actual_impedance_ratio,
+                        "magnetizing_inductance_h": tr_design.magnetizing_inductance_h,
+                        "v_low_rms": tr_design.v_low_rms,
+                        "v_high_rms": tr_design.v_high_rms,
+                        "i_low_rms_a": tr_design.i_low_rms_a,
+                        "i_high_rms_a": tr_design.i_high_rms_a,
+                        "b_peak_t": tr_design.b_peak_t,
+                        "bsat_margin": tr_design.bsat_margin,
+                        "saturated": tr_design.saturated,
+                        "awg_low": tr_design.awg_low,
+                        "awg_high": tr_design.awg_high,
+                        "fit_awg": tr_design.fit.awg,
+                        "fit_diameter_mm": tr_design.fit.diameter_mm,
+                        "notes": list(tr_design.notes),
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        print(
+            f"{tr_design.kind.value}: {tr_design.z_low_ohm:g} -> "
+            f"{tr_design.z_high_ohm:g} Ohm on {tr_design.core.name}"
+        )
+        print(
+            f"  Turns: low={tr_design.n_low}, high={tr_design.n_high} "
+            f"(ratio {tr_design.n_high / tr_design.n_low:.3f}, "
+            f"Z ratio {tr_design.actual_impedance_ratio:.3f})"
+        )
+        print(
+            "  Lm (low side) = "
+            f"{format_engineering(tr_design.magnetizing_inductance_h, 'H', digits=4)}"
+        )
+        print(
+            f"  V low/high = {tr_design.v_low_rms:.3g} / "
+            f"{tr_design.v_high_rms:.3g} Vrms"
+        )
+        print(
+            f"  I low/high = {tr_design.i_low_rms_a:.3g} / "
+            f"{tr_design.i_high_rms_a:.3g} Arms"
+        )
+        if tr_design.b_peak_t is not None:
+            b_txt = f"{tr_design.b_peak_t * 1000.0:.1f} mT"
+            if tr_design.bsat_margin is not None:
+                b_txt += f" (B/Bsat={tr_design.bsat_margin:.2f})"
+            print(f"  Bpk = {b_txt}")
+        print(
+            f"  Wire: low AWG {tr_design.awg_low}, high AWG {tr_design.awg_high}; "
+            f"single-layer fit AWG {tr_design.fit.awg}"
+        )
+        for note in tr_design.notes:
+            print(f"  note: {note}")
         return 0
 
     if args.command == "attenuator":

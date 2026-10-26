@@ -37,6 +37,7 @@ from filterdesk.components_std import (
     design_attenuator,
     design_matching,
     design_toroid,
+    design_transformer,
     inductor_resistance_ohm_from_q,
     list_cores,
 )
@@ -46,6 +47,11 @@ from filterdesk.components_std.toroid import (
     ToroidDesign,
     ToroidError,
     awg_diameter_mm,
+)
+from filterdesk.components_std.transformer import (
+    TransformerDesign,
+    TransformerError,
+    TransformerKind,
 )
 from filterdesk.domain.circuit import IdealInductor, NonIdealInductor
 from filterdesk.domain.specs import FilterSpec
@@ -1274,3 +1280,115 @@ class DesignSweepResultDialog(QDialog):
     def take_spec(self) -> FilterSpec | None:
         """Specification of the applied row, if the user chose one."""
         return self._spec
+
+
+class TransformerDialog(QDialog):
+    """Transformer-type unun / balun / power transformer calculator."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Transformer / balun")
+        self._cores = list_cores()
+        self._design_value: TransformerDesign | None = None
+
+        self._core = QComboBox()
+        for core in self._cores:
+            self._core.addItem(
+                f"{core.name} - mix {core.material}, AL {core.al_nh:g} nH/N^2"
+            )
+        self._kind = QComboBox()
+        self._kind.addItems([k.value for k in TransformerKind])
+        self._z_low = EngineeringLineEdit()
+        self._z_low.setText("50")
+        self._z_high = EngineeringLineEdit()
+        self._z_high.setText("200")
+        self._frequency = EngineeringLineEdit()
+        self._frequency.setText("3.5M")
+        self._power = EngineeringLineEdit()
+        self._power.setText("10")
+
+        self._turns = QLabel("-")
+        self._lm = QLabel("-")
+        self._vi = QLabel("-")
+        self._flux = QLabel("-")
+        self._wire = QLabel("-")
+        self._notes = QLabel("-")
+        self._notes.setWordWrap(True)
+
+        form = QFormLayout(self)
+        form.addRow("Core", self._core)
+        form.addRow("Kind", self._kind)
+        form.addRow("Low-side Z (Ohm)", self._z_low)
+        form.addRow("High-side Z (Ohm)", self._z_high)
+        form.addRow("Lowest frequency", self._frequency)
+        form.addRow("Power (W)", self._power)
+        form.addRow("Turns", self._turns)
+        form.addRow("Magnetizing L", self._lm)
+        form.addRow("V / I", self._vi)
+        form.addRow("Peak flux", self._flux)
+        form.addRow("Wire", self._wire)
+        form.addRow("Notes", self._notes)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
+
+        self._core.currentIndexChanged.connect(self._recompute)
+        self._kind.currentIndexChanged.connect(self._recompute)
+        for field in (self._z_low, self._z_high, self._frequency, self._power):
+            field.editingFinished.connect(self._recompute)
+        self._recompute()
+
+    def selected_core(self) -> ToroidCore:
+        return self._cores[self._core.currentIndex()]
+
+    def current_design(self) -> TransformerDesign | None:
+        return self._design_value
+
+    def _recompute(self) -> None:
+        try:
+            design = design_transformer(
+                self.selected_core(),
+                z_low_ohm=parse_si(self._z_low.text().strip() or "0"),
+                z_high_ohm=parse_si(self._z_high.text().strip() or "0"),
+                frequency_hz=parse_si(self._frequency.text().strip() or "0"),
+                power_w=float(self._power.text().strip() or "0"),
+                kind=TransformerKind(self._kind.currentText()),
+            )
+        except (TransformerError, ValueError):
+            self._design_value = None
+            for label in (
+                self._turns,
+                self._lm,
+                self._vi,
+                self._flux,
+                self._wire,
+                self._notes,
+            ):
+                label.setText("-")
+            return
+        self._design_value = design
+        self._turns.setText(
+            f"{design.n_low} : {design.n_high} "
+            f"(Z ratio {design.actual_impedance_ratio:.3f})"
+        )
+        self._lm.setText(
+            format_engineering(design.magnetizing_inductance_h, "H", digits=4)
+        )
+        self._vi.setText(
+            f"{design.v_low_rms:.3g}/{design.v_high_rms:.3g} Vrms, "
+            f"{design.i_low_rms_a:.3g}/{design.i_high_rms_a:.3g} Arms"
+        )
+        if design.b_peak_t is None:
+            self._flux.setText("-")
+        else:
+            text = f"{design.b_peak_t * 1000.0:.1f} mT"
+            if design.bsat_margin is not None:
+                text += f" (B/Bsat {design.bsat_margin:.2f})"
+            self._flux.setText(text)
+        self._wire.setText(
+            f"low AWG {design.awg_low}, high AWG {design.awg_high}; "
+            f"fit AWG {design.fit.awg}"
+        )
+        self._notes.setText("; ".join(design.notes) if design.notes else "-")
