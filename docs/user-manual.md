@@ -710,17 +710,10 @@ previously split across two tools.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.
-- **Winding:** a **Winding** tab shows only the **electrical connection**
-  schematic, tap/polarity and a text winding schedule. The schematic is
-  kind-specific: Guanella shows parallel-input/series-output lines, Ruthroff
-  shows its transformer+line crossover, and a choke shows a bifilar
-  common-mode choke; they are not drawn as the same autotransformer. The **Save diagram…**
-  button writes SVG. Build-sheet exports automatically write a
-  `<name>_winding.svg` sidecar and reference/embed it. A physical toroid drawing
-  is intentionally not shown: a stylized one can be misleading about wire route
-  and crossover.
 - **Apply:** inserts the result as `BAL1` at the circuit output. It appears in
-  the project, component table and BOM with core/turns/AWG.
+  the project, component table and BOM with core/turns/AWG. The dialog has only
+  **Design** and **Model** tabs; winding diagrams were removed because they were
+  not reliable enough.
 
 The displayed ratio is explicit: for 50 → 2500 Ω with 3:21 it shows
 **`1:7 turns / 1:49 Z`**, not an ambiguous `0.1429:1`. The options table uses

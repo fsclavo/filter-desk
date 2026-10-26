@@ -213,6 +213,8 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
 
     dialog = TransformerDialog()
     qtbot.addWidget(dialog)
+    assert dialog._tabs.count() == 2
+    assert [dialog._tabs.tabText(i) for i in range(2)] == ["Design", "Model"]
     for index, core in enumerate(dialog._cores):
         if core.name == "FT240-43":
             dialog._core.setCurrentIndex(index)

@@ -412,13 +412,9 @@ def test_balun_dialog(qtbot) -> None:
     assert design.kind is BalunKind.UNUN
     spec = dialog.balun_spec()
     assert spec is not None
-    assert dialog.current_diagram() is not None
-    assert "<svg" in dialog.current_diagram().svg
     dialog._topology.setCurrentText("isolated")
     dialog._recompute()
-    diagram = dialog.current_diagram()
-    assert diagram is not None
-    assert "P " in diagram.svg and "S " in diagram.svg
+    assert dialog.current_design() is not None
     dialog._topology.setCurrentText("autotransformer")
     dialog._kind.setCurrentText("guanella")
     dialog._recompute()

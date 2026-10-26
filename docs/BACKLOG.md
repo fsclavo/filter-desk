@@ -35,9 +35,11 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 - [x] Flags table: wider stretched column, word wrap, full tooltip and a visible
       legend for `LF`, `SAT`, `FIT`, `HF`, `THERMAL`.
-- [x] Kind-specific connection schematics: Guanella (parallel input / series
-      output), Ruthroff (transformer+line crossover) and choke (bifilar CMC) no
-      longer reuse the autotransformer tap drawing.
+- [x] Removed the Winding diagram tab/SVG/build-sheet sidecar; the designer now
+      has only **Design** and **Model**. The connection drawings were not
+      reliable enough for Guanella/Ruthroff/choke assemblies.
+- [x] Kept the electrical ratio/status information in the component table, BOM
+      and schematic label (no winding drawing).
 - [ ] Decide whether to cut **v0.11.1** with this UI fix (it is not in the
       v0.11.0 release assets); also includes the kind-specific TLT diagrams.
 
@@ -59,8 +61,6 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
   global bounds, synthetic tests.
 - Boundary `BAL1`: project model, ABCD/skrf analysis, BOM, exports and unified
   designer.
-- Winding diagram: electrical connection schematic + schedule, GUI **Winding**
-  tab and build-sheet sidecar (physical toroid drawing removed as misleading).
 - Ratio labels show turns and impedance explicitly (`1:7 turns / 1:49 Z`); BOM,
   component table and schematic share the format.
 - Winding flags are explicit (`LF`, `SAT`, `FIT`, `HF`, `THERMAL`), with a

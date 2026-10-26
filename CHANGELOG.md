@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased (after v0.11.0)
+
+### Removed
+
+- Winding diagram tab, SVG export and build-sheet sidecar. The connection
+  drawings were not reliable enough for Guanella/Ruthroff/choke assemblies; the
+  designer now has only **Design** and **Model** tabs.
+
 ## v0.11.0 — 2026-10-26
 
 ### Added

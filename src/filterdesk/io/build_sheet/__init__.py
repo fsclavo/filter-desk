@@ -19,11 +19,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from filterdesk.analysis.stress import StressReport
-from filterdesk.components_std import (
-    ESeries,
-    nearest_e_series,
-    winding_diagram_for_spec,
-)
+from filterdesk.components_std import ESeries, nearest_e_series
 from filterdesk.domain.circuit import (
     Circuit,
     PhysicalComponent,
@@ -396,7 +392,6 @@ def render_build_sheet_markdown(
     power_w: float = 0.0,
     title: str = "",
     notes: Sequence[str] = (),
-    winding_svg_path: str | None = None,
 ) -> str:
     """Render a Markdown build sheet (spec summary + BOM + notes)."""
     lines: list[str] = [f"# {title.strip() or 'Filter build sheet'}"]
@@ -415,14 +410,6 @@ def render_build_sheet_markdown(
     ]
     lines += ["| " + " | ".join(_table_cells(row)) + " |" for row in rows]
 
-    if winding_svg_path:
-        lines += [
-            "",
-            "## Winding diagram",
-            "",
-            f"![Winding diagram]({winding_svg_path})",
-        ]
-
     if notes:
         lines += ["", "## Notes", ""]
         lines += [f"- {note}" for note in notes]
@@ -438,7 +425,6 @@ def render_build_sheet_html(
     power_w: float = 0.0,
     title: str = "",
     notes: Sequence[str] = (),
-    winding_svg: str | None = None,
 ) -> str:
     """Render a printable HTML build sheet (no external assets)."""
     heading = html.escape(title.strip() or "Filter build sheet")
@@ -477,9 +463,6 @@ def render_build_sheet_html(
         parts += [f"<td>{html.escape(cell)}</td>" for cell in _table_cells(row)]
         parts.append("</tr>")
     parts.append("</table>")
-
-    if winding_svg:
-        parts += ["<h2>Winding diagram</h2>", winding_svg]
 
     if notes:
         parts.append("<h2>Notes</h2>")
@@ -520,15 +503,6 @@ def write_build_sheet(
         group=group,
     )
     suffix = target.suffix.lower()
-    diagram = (
-        None
-        if circuit.output_balun is None
-        else winding_diagram_for_spec(circuit.output_balun)
-    )
-    diagram_path: Path | None = None
-    if diagram is not None and suffix in {".md", ".markdown", ".html", ".htm"}:
-        diagram_path = target.with_name(f"{target.stem}_winding.svg")
-        diagram_path.write_text(diagram.svg, encoding="utf-8")
     if suffix == ".csv":
         text = render_bom_csv(rows, columns=columns)
     elif suffix in {".md", ".markdown"}:
@@ -538,9 +512,6 @@ def write_build_sheet(
             power_w=power_w,
             title=title,
             notes=notes,
-            winding_svg_path=(
-                None if diagram_path is None else diagram_path.name
-            ),
         )
     elif suffix in {".html", ".htm"}:
         text = render_build_sheet_html(
@@ -549,7 +520,6 @@ def write_build_sheet(
             power_w=power_w,
             title=title,
             notes=notes,
-            winding_svg=None if diagram is None else diagram.svg,
         )
     else:
         raise BuildSheetError(

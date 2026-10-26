@@ -87,11 +87,6 @@ from filterdesk.components_std.transformer import (
     design_transformer,
     design_transformer_options,
 )
-from filterdesk.components_std.winding import (
-    WindingDiagram,
-    winding_diagram,
-    winding_diagram_for_spec,
-)
 
 __all__ = [
     "AirCoilDesign",
@@ -125,7 +120,6 @@ __all__ = [
     "TransformerError",
     "TransformerKind",
     "TransformerTopology",
-    "WindingDiagram",
     "ToroidError",
     "WireFit",
     "air_coil_inductance_h",
@@ -159,7 +153,5 @@ __all__ = [
     "nonidealize_circuit",
     "set_element_parasitics",
     "snap_circuit",
-    "winding_diagram",
-    "winding_diagram_for_spec",
     "turns_for_inductance",
 ]
