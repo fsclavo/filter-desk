@@ -43,4 +43,6 @@ rejected (n=2 failed, n≥6 exceeded Ap, seed-sensitive).
 - The SPICE netlist exports the transformer exactly with a VCVS/CCCS pair and a
   0 V current-sense source. LTspice `.asc` embeds the same directives; Qucs
   `.sch` uses a best-effort `Tr` component (ratio orientation should be checked
-  in Qucs).
+  in Qucs). The SPICE transformer equations are validated against the ABCD
+  analyzer by an independent MNA test; an ngspice test runs when ngspice is
+  available.

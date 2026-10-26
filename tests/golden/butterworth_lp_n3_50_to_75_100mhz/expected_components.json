@@ -1,0 +1,27 @@
+{
+  "component_relative_tolerance": 1e-09,
+  "output_transformer_ratio": 0.816496580927726,
+  "components": [
+    {
+      "ref": "L1",
+      "role": "series",
+      "type": "inductor",
+      "g": 0.9999999999999999,
+      "value_H": 7.957747154594766e-08
+    },
+    {
+      "ref": "C2",
+      "role": "shunt",
+      "type": "capacitor",
+      "g": 2.0,
+      "value_F": 6.366197723675814e-11
+    },
+    {
+      "ref": "L3",
+      "role": "series",
+      "type": "inductor",
+      "g": 0.9999999999999999,
+      "value_H": 7.957747154594766e-08
+    }
+  ]
+}

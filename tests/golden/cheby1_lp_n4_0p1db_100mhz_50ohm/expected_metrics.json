@@ -1,0 +1,36 @@
+{
+  "status": "phase_2",
+  "analyzer": "ladder_abcd",
+  "sweep": {
+    "f_start_hz": 1000000.0,
+    "f_stop_hz": 10000000000.0,
+    "n_points": 4001,
+    "spacing": "logarithmic"
+  },
+  "tolerances": {
+    "s21_db_abs": 0.05,
+    "s11_db_abs": 0.5,
+    "backend_crosscheck_abs": 1e-09
+  },
+  "expectations": {},
+  "checkpoints": [
+    {
+      "frequency_hz": 50003453.49769783,
+      "s21_db": -0.025230589324853198,
+      "s11_db": -22.37117835330033,
+      "note": "passband"
+    },
+    {
+      "frequency_hz": 100000000.0,
+      "s21_db": -0.09999999999999887,
+      "s11_db": -16.427747172383743,
+      "note": "cutoff"
+    },
+    {
+      "frequency_hz": 500034534.9769783,
+      "s21_db": -57.30134416357754,
+      "s11_db": -8.084446645220504e-06,
+      "note": "stopband"
+    }
+  ]
+}

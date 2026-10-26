@@ -1,0 +1,37 @@
+[
+  {
+    "ref": "L1",
+    "kind": "inductor",
+    "value_text": "88.2345 nH",
+    "parasitic": "",
+    "tolerance_pct": null
+  },
+  {
+    "ref": "C2",
+    "kind": "capacitor",
+    "value_text": "41.5771 pF",
+    "parasitic": "",
+    "tolerance_pct": null
+  },
+  {
+    "ref": "L3",
+    "kind": "inductor",
+    "value_text": "140.88 nH",
+    "parasitic": "",
+    "tolerance_pct": null
+  },
+  {
+    "ref": "C4",
+    "kind": "capacitor",
+    "value_text": "26.0401 pF",
+    "parasitic": "",
+    "tolerance_pct": null
+  },
+  {
+    "ref": "T1",
+    "kind": "transformer",
+    "value_text": "1.164:1",
+    "parasitic": "ideal",
+    "tolerance_pct": null
+  }
+]

@@ -93,6 +93,8 @@ def test_skrf_supports_unequal_ports() -> None:
     [
         "cheby1_bp_n4_100m_bw20m",
         "cheby1_bs_n5_100m_bw20m",
+        "butterworth_lp_n3_50_to_75_100mhz",
+        "cheby1_lp_n4_0p1db_100mhz_50ohm",
     ],
 )
 def test_abcd_matches_skrf_band(case: str) -> None:
@@ -143,6 +145,8 @@ def test_abcd_matches_skrf_nonideal() -> None:
         "butterworth_lp_n5_1mhz_50ohm",
         "cheby1_bp_n4_100m_bw20m",
         "cheby1_bs_n5_100m_bw20m",
+        "butterworth_lp_n3_50_to_75_100mhz",
+        "cheby1_lp_n4_0p1db_100mhz_50ohm",
     ],
 )
 def test_golden_metric_checkpoints(case: str) -> None:
