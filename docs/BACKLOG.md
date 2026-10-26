@@ -6,7 +6,7 @@ count or release changes.
 **Status:** living document.  
 **Last verified:** 2026-10-26 · **App version:** 0.10.2 · **Next release:** v0.11.0 (pending).  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
-https://github.com/fsclavo/filter-desk/actions/runs/40335213687 (re-check after
+https://github.com/fsclavo/filter-desk/actions/runs/40338889725 (re-check after
 every push and update this URL).
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
