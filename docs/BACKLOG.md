@@ -46,7 +46,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 
 | ID | Item | Detail / limitation | Refs | Status |
 | --- | --- | --- | --- | --- |
-| B1.1 | **Even-order Chebyshev Type I** | Modified even-order prototype for equal terminations (reflection zero relocated to DC): exact continued-fraction Darlington synthesis, symmetric positive arms, least-squares fallback at high order. `docs/math/chebyshev_type_i.md` §5 | — | **DONE (2026-10-15)** |
+| B1.1 | **Even-order Chebyshev Type I** | Classical even-order g-values + ideal output transformer (ADR-017); exact textbook response/values, including 50/50. Modified equal-termination network retired. | ADR-017 | **DONE (2026-10-26)** |
 | B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, ADR-014 | **Decided (accepted)** |
 | B1.3 | **M-derived BP/BS** | Shipped in v0.5.5 via generic LP→BP/BS finite-zero transform (`test_m_derived_bp_smoke`); ADR-013 | `docs/phase5b/BPBS_FINITE_ZERO_STATUS.md` | **DONE (2026-10-15)** |
 | B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |

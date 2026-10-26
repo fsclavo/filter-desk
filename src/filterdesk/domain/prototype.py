@@ -61,9 +61,13 @@ class Prototype:
     passband_ripple_db: float | None = None
     stopband_attenuation_db: float | None = None
     m_parameter: float | None = None
+    #: Classical load/source termination ratio (R_L/R_S); 1.0 for equal-R.
+    load_ratio: float = 1.0
     notes: str = "omega_c=1 rad/s; Z0'=1 ohm"
 
     def __post_init__(self) -> None:
+        if self.load_ratio <= 0.0:
+            raise ValueError("load_ratio must be > 0")
         if self.arms is not None:
             if self.order < 1:
                 raise ValueError("order must be >= 1")

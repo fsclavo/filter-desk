@@ -174,8 +174,8 @@ def check_spec_compliance(
         )
     if spec.family == ApproximationFamily.CHEBYSHEV_TYPE_I and spec.order % 2 == 0:
         notes.append(
-            "Even-order Chebyshev I uses the modified equal-termination "
-            "response; the stopband differs from classical tables."
+            "Even-order Chebyshev I uses the classical equal-ripple prototype "
+            "with an ideal output transformer (ADR-017)."
         )
     if spec.family in _IMAGE:
         notes.append("Image-parameter family; strict -3 dB/ripple checks skipped.")

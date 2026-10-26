@@ -17,6 +17,7 @@ from filterdesk.analysis.adapters.abcd_ladder import (
     _element_abcd,
     abcd_to_s,
     cascade_abcd,
+    transformer_abcd,
 )
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
@@ -130,7 +131,16 @@ def _grid(response: Resp, n: int = 400) -> np.ndarray:
 def _s21(circuit, f: np.ndarray) -> np.ndarray:
     omega = 2 * np.pi * np.asarray(f, dtype=float)
     abcd = cascade_abcd([_element_abcd(el, omega) for el in circuit.elements])
-    return np.asarray(abcd_to_s(abcd, Z0, Z0)[1], dtype=complex)
+    if circuit.output_transformer_ratio != 1.0:
+        abcd = abcd @ transformer_abcd(circuit.output_transformer_ratio, omega.size)
+    return np.asarray(
+        abcd_to_s(
+            abcd,
+            circuit.port_in.impedance_ohm,
+            circuit.port_out.impedance_ohm,
+        )[1],
+        dtype=complex,
+    )
 
 
 def _analyze(circuit, response: Resp, n: int = 400):
@@ -415,11 +425,11 @@ def test_cli_reports_even_chebyshev1_note(
         "4",
     ]
     assert main(base) == 0
-    assert "modified" in capsys.readouterr().err
+    assert "classical" in capsys.readouterr().err
 
     assert main([*base, "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert "note" in payload and "modified" in payload["note"]
+    assert "note" in payload and "classical" in payload["note"]
 
     odd = [*base[:-1], "5"]
     assert main(odd) == 0

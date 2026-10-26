@@ -72,19 +72,24 @@ def ltspice_asc(
     """Return an LTspice ``.asc`` schematic for ``circuit``."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
-    if circuit.output_transformer_ratio != 1.0:
-        raise SpiceExportError(
-            "ideal output transformer export is not implemented yet"
-        )
+
+    ratio = circuit.output_transformer_ratio
+    has_transformer = ratio != 1.0
+    load_net = (
+        "0" if circuit.port_out.node == circuit.ground else circuit.port_out.node
+    )
+    alias = {load_net: "T1_p"} if has_transformer else {}
 
     def net(name: str) -> str:
-        return "0" if name == circuit.ground else name
+        if name == circuit.ground:
+            return "0"
+        return alias.get(name, name)
 
     in_net = net(circuit.port_in.node)
-    out_net = net(circuit.port_out.node)
+    out_net = "T1_s" if has_transformer else load_net
 
     layout = _Layout()
-    lines: list[str] = ["Version 4", "SHEET 1 1200 680"]
+    lines: list[str] = ["Version 4", "SHEET 1 1200 820"]
 
     # Terminations: V1 (AC 1) -> Rsource -> ladder -> Rload -> ground.
     layout.place("voltage", "V1", "AC 1", "src", "0")
@@ -121,6 +126,18 @@ def ltspice_asc(
     layout.place("res", "Rload", _value(zl), out_net, "0")
 
     lines.extend(layout.lines)
+
+    if has_transformer:
+        gain = _value(1.0 / ratio)
+        lines.append(
+            f"TEXT 96 704 Left 2 !E_T1 {load_net} 0 T1_p 0 {gain}"
+        )
+        lines.append(
+            f"TEXT 96 736 Left 2 !V_T1sense {load_net} T1_s 0"
+        )
+        lines.append(
+            f"TEXT 96 768 Left 2 !F_T1 T1_p 0 V_T1sense {gain}"
+        )
 
     directive = ".ac dec 101 1meg 1g"
     if ac is not None:

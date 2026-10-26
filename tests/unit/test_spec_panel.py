@@ -53,7 +53,7 @@ def test_spec_panel_build_roundtrip() -> None:
     assert app is not None
 
 
-def test_even_chebyshev1_shows_modified_note() -> None:
+def test_even_chebyshev1_shows_classical_note() -> None:
     from PySide6.QtWidgets import QApplication
 
     from filterdesk.domain.enums import ApproximationFamily
@@ -66,7 +66,7 @@ def test_even_chebyshev1_shows_modified_note() -> None:
     )
     panel._order.setValue(4)
     assert not panel._note.isHidden()
-    assert "modified" in panel._note.text()
+    assert "classical" in panel._note.text()
 
     panel._order.setValue(5)
     assert panel._note.isHidden()

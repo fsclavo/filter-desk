@@ -259,10 +259,9 @@ class SpecPanel(QWidget):
         ):
             self._note.setText(
                 tr(
-                    "Even-order Chebyshev I: FilterDesk uses the modified "
-                    "equal-termination response, not the classical "
-                    "unequal-termination tables. Use an odd order for textbook "
-                    "values."
+                    "Even-order Chebyshev I: classical equal-ripple prototype "
+                    "with an ideal output transformer (ADR-017); response and "
+                    "element values match the textbook tables."
                 )
             )
             self._note.setVisible(True)

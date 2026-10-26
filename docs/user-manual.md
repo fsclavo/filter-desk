@@ -704,10 +704,9 @@ Butterworth/Bessel/Gaussian/Legendre/constant-*k*/m-derived must **not** set
 ripple or stopband attenuation; Chebyshev Type I must not set stopband
 attenuation; Chebyshev Type II must not set ripple. Even-order elliptic needs a
 transformer or unequal terminations and is **rejected** (use an odd order).
-Even-order Chebyshev I uses FilterDesk's **modified equal-termination**
-prototype: it meets the ripple/cutoff, but the stopband and element values differ
-from the classical unequal-termination tables — use an odd order for textbook
-values.
+Even-order Chebyshev I uses the classical equal-ripple prototype plus an
+ideal output transformer, so its response and element values match the textbook
+tables.
 
 ---
 
@@ -760,12 +759,12 @@ happens in the background and reports progress in the status bar.
   inductors are not implemented. Unequal ports use an ideal **output**
   transformer; general mid-ladder transformers are not.
 - **Transformer exports**: the ideal `T1` is included in analysis, compliance,
-  project files, the BOM and the SPICE netlist (E/F controlled-source model).
-  LTspice `.asc` and Qucs `.sch` still raise a clear error when the ratio differs
-  from 1.0.
+  project files and the BOM. SPICE uses an exact E/F controlled-source model;
+  LTspice `.asc` embeds the same directives; Qucs `.sch` uses a best-effort
+  `Tr` component (verify the ratio orientation in Qucs).
 - **Even-order elliptic** is rejected (it needs an unequal-R Cauer synthesis);
-  **even-order Chebyshev I** uses a modified equal-termination prototype (see
-  §12).
+  **even-order Chebyshev I** uses the classical prototype + output transformer
+  and matches textbook values (see §12).
 - **Order caps** apply to some families (Bessel/Gaussian 1–10, Legendre 2–9).
 - **Real-inductor model is approximate**: `dc_skin` is a simple `sqrt(f)` law, DC
   bias uses a core-agnostic `1/(1+(I/Isat)²)` derating, and air-core coils do not

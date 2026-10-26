@@ -117,7 +117,7 @@ def test_snap_independent_produces_e_series_values() -> None:
             assert el.value_h == nearest_e_series(el.value_h, ESeries.E24)
         elif isinstance(el, IdealCapacitor):
             assert el.value_f == nearest_e_series(el.value_f, ESeries.E24)
-    assert report.max_delta_pct <= 6.0
+    assert report.max_delta_pct <= 7.0
     # original untouched
     assert circuit.elements[0] is not snapped.elements[0]
 

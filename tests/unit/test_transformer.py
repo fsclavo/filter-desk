@@ -32,7 +32,7 @@ from filterdesk.domain.project import circuit_from_mapping, circuit_to_mapping
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.io.build_sheet import write_build_sheet
 from filterdesk.io.qucs import qucs_schematic
-from filterdesk.io.spice import SpiceExportError, ltspice_asc, spice_netlist
+from filterdesk.io.spice import ltspice_asc, spice_netlist
 from filterdesk.synthesis import synthesize
 
 ZCUT = 100e6
@@ -112,10 +112,11 @@ def test_transformer_spice_export_and_limits() -> None:
     assert "V_T1sense out T1_s" in net
     assert "F_T1 T1_p 0 V_T1sense" in net
     assert "Rload T1_s 0 75" in net
-    with pytest.raises(SpiceExportError, match="transformer"):
-        ltspice_asc(circuit)
-    with pytest.raises(SpiceExportError, match="transformer"):
-        qucs_schematic(circuit)
+    asc = ltspice_asc(circuit)
+    assert "E_T1" in asc and "F_T1" in asc and "V_T1sense" in asc
+    assert "T1_s" in asc
+    qucs = qucs_schematic(circuit)
+    assert "<Tr T1" in qucs and "<GND" in qucs
 
 
 def test_compliance_with_transformer() -> None:

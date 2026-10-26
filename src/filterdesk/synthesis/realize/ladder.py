@@ -339,10 +339,14 @@ def realize_ladder(spec: FilterSpec, prototype: Prototype) -> Circuit:
     # at the output with an ideal transformer. This is exact for equal-R
     # prototypes (versus the old geometric-mean approximation).
     z0 = spec.z_source_ohm
+    ladder_load = z0 * (
+        1.0 if prototype.arms is not None else prototype.load_ratio
+    )
     transformer_ratio = (
         1.0
-        if abs(z0 - spec.z_load_ohm) <= 1e-12 * max(z0, spec.z_load_ohm)
-        else math.sqrt(z0 / spec.z_load_ohm)
+        if abs(ladder_load - spec.z_load_ohm)
+        <= 1e-12 * max(ladder_load, spec.z_load_ohm)
+        else math.sqrt(ladder_load / spec.z_load_ohm)
     )
     is_resonator = spec.response in (
         FilterResponse.BAND_PASS,

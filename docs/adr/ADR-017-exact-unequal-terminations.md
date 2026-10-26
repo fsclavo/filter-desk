@@ -26,10 +26,11 @@ analyzers apply the ABCD matrix
 response equals the equal-\(Z_S\) prototype **exactly**. The GUI component
 table, project file and build sheet/BOM show a `T1` entry.
 
-Even-order Chebyshev I keeps its modified equal-termination network (with the
-output transformer for unequal ports). Even-order elliptic remains rejected:
-its exact equal-R realization needs an unequal-R Cauer synthesis, which is a
-separate task.
+Even-order Chebyshev I now uses its **classical** equal-ripple prototype and
+the output transformer (even for 50/50 ports), so its response and element
+values match textbook tables. Even-order elliptic remains rejected: its exact
+equal-R realization needs an unequal-R Cauer synthesis, which is a separate
+task.
 
 ## Consequences
 
@@ -39,5 +40,6 @@ separate task.
 - No change for \(Z_S=Z_L\) (ratio 1.0).
 - Project JSON is backward compatible (missing field defaults to 1.0).
 - The SPICE netlist exports the transformer exactly with a VCVS/CCCS pair and a
-  0 V current-sense source. LTspice `.asc` and Qucs `.sch` still raise a clear
-  error when the ratio differs from 1.0.
+  0 V current-sense source. LTspice `.asc` embeds the same directives; Qucs
+  `.sch` uses a best-effort `Tr` component (ratio orientation should be checked
+  in Qucs).

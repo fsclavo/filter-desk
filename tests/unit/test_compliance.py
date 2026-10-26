@@ -121,7 +121,7 @@ def test_notes_for_documented_approximations() -> None:
     report = check_spec_compliance(
         even_cheb, synthesize(even_cheb).circuit, points=1200
     )
-    assert any("modified equal-termination" in note for note in report.notes)
+    assert any("classical equal-ripple" in note for note in report.notes)
 
     asym = _spec(Fam.BUTTERWORTH, 3, Resp.LOW_PASS, zl=75.0)
     report = check_spec_compliance(asym, synthesize(asym).circuit, points=1200)

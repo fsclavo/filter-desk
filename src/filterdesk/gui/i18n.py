@@ -75,13 +75,13 @@ _ES: dict[str, str] = {
     "Series tank input": "Entrada tanque serie",
     "Shunt tank input": "Entrada tanque paralelo",
     (
-        "Even-order Chebyshev I: FilterDesk uses the modified equal-termination "
-        "response, not the classical unequal-termination tables. Use an odd "
-        "order for textbook values."
+        "Even-order Chebyshev I: classical equal-ripple prototype with an "
+        "ideal output transformer (ADR-017); response and element values match "
+        "the textbook tables."
     ): (
-        "Chebyshev I de orden par: FilterDesk usa la respuesta modificada de "
-        "terminaciones iguales, no las tablas clásicas de terminaciones "
-        "desiguales. Use un orden impar para valores de manual."
+        "Chebyshev I de orden par: prototipo clásico de rizado constante con "
+        "transformador de salida ideal (ADR-017); respuesta y valores coinciden "
+        "con las tablas."
     ),
     "Estimate order": "Estimar orden",
     "Minimum order N = {order}\\nΩs = {ratio:.6g}\\nNatural f ≈ {freq}\\n\\n{notes}": (

@@ -28,8 +28,8 @@ def synthesis_note(spec: FilterSpec) -> str | None:
         and spec.order % 2 == 0
     ):
         return (
-            "Even-order Chebyshev I uses FilterDesk's modified "
-            "equal-termination prototype (not the classical "
-            "unequal-termination tables); use an odd order for textbook values."
+            "Even-order Chebyshev I uses the classical equal-ripple "
+            "prototype with an ideal output transformer (ADR-017); it "
+            "matches the textbook response and values."
         )
     return None

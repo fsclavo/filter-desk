@@ -73,6 +73,21 @@ class _Builder:
         self._wire(cx, bottom, cx, bottom + 20)
         self.components.append(f"<GND * 1 {cx} {bottom + 20} 0 0 0 0>")
 
+    def place_transformer(self, name: str, ratio: float) -> None:
+        """Best-effort 4-pin Qucs ``Tr`` at the ladder output (ADR-017)."""
+        cx = self.x + 30
+        cy = _RAIL_Y + 30
+        # Primary top: (self.x, rail); secondary top: (self.x+60, rail).
+        # Bottom pins are grounded at rail+60.
+        self.components.append(
+            f'<Tr {name} 1 {cx} {cy} -33 -34 0 0 "{ratio:.10g}" 1>'
+        )
+        self.components.append(f"<GND * 1 {self.x} {_RAIL_Y + 60} 0 0 0 0>")
+        self.components.append(
+            f"<GND * 1 {self.x + 60} {_RAIL_Y + 60} 0 0 0 0>"
+        )
+        self.x += 60
+
 
 def qucs_schematic(
     circuit: Circuit,
@@ -83,10 +98,6 @@ def qucs_schematic(
     """Return a Qucs ``.sch`` schematic for ``circuit`` (best-effort)."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
-    if circuit.output_transformer_ratio != 1.0:
-        raise SpiceExportError(
-            "ideal output transformer export is not implemented yet"
-        )
     del title, z0_ohm  # reserved for a future simulation block; API symmetry
 
     b = _Builder()
@@ -116,6 +127,8 @@ def qucs_schematic(
         else:
             b.place_shunt(ctype, el.id, _value(value))
 
+    if circuit.output_transformer_ratio != 1.0:
+        b.place_transformer("T1", circuit.output_transformer_ratio)
     b.components.append(f'<Port P2 1 {b.x} {_RAIL_Y} 4 -44 0 2 "2" 1 "analog" 0>')
 
     return "\n".join(
