@@ -10,6 +10,8 @@ scheme while the public CLI/GUI stabilizes.
 - Central model-confidence registry with GUI badges, a contextual filter
   **Model status** strip, a Help → Model confidence inventory and an
   Assumptions section in Markdown/HTML build sheets.
+- Cross-backend validation matrix, ngspice CI job and
+  `docs/validation-matrix.md`.
 
 ## v0.11.1 — 2026-10-26
 

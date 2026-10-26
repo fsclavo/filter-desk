@@ -73,6 +73,30 @@ jobs:
       - name: Smoke test (headless synth)
         run: ./dist/FilterDesk/FilterDesk synthesize --family butterworth --response low_pass --order 3 --cutoff 100M
 
+  spice-validation:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install Qt and ngspice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libdbus-1-3 libxcb-cursor0 ngspice
+      - name: Sync project (frozen)
+        run: uv sync --frozen
+      - name: SPICE and validation matrix
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          uv run --frozen pytest -q \
+            tests/unit/test_spice_mna.py \
+            tests/unit/test_spice_export.py \
+            tests/unit/test_validation_matrix.py
+
   gui-stability:
     # Repeat the GUI/worker tests on main to catch nondeterministic Qt/thread
     # problems without slowing down every pull request.

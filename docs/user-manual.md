@@ -890,7 +890,8 @@ Touchstone I/O are cross-checked; ideal filter components are a separate
 loss/temperature, microstrip and toroid calculators are estimated; VNA tuning
 and Guanella/Ruthroff TLT are experimental; distributed filter synthesis is
 not evaluated. The build sheet includes an **Assumptions** section with the
-same model limits.
+same model limits. The detailed test cases and tolerances are in
+[Validation matrix](validation-matrix.md).
 
 ## 16. Known limitations
 

@@ -101,6 +101,8 @@ designer is now one dialog with **Design** and **Model** tabs.
 - [ ] **Balun model depth:** full multi-line Guanella/Ruthroff, common-mode
       impedance in the differential 2-port, winding geometry, and validated
       SPICE/LTspice/Qucs export of the TLT section. (L)
+- [ ] **Installed package acceptance:** run the release checklist on a clean
+      AppImage/Windows installation. (S)
 - [ ] **Distributed netlist:** microstrip/stub/quarter-wave are calculators;
       add transmission-line/stub elements to circuits, ABCD/skrf, BOM and
       distributed synthesis. (L)
