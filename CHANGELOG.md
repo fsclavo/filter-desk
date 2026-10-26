@@ -3,7 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
-## Unreleased (after v0.11.0)
+## v0.11.1 — 2026-10-26
+
+### Fixed
+
+- Balun ratios display turns and impedance explicitly (`1:7 turns / 1:49 Z`).
+- `Bsat/B` is labelled correctly and winding flags are readable with a wrapped
+  column, tooltip and visible legend.
+- Core-loss/thermal estimates use the material complex-permeability data and
+  explicit assumptions.
 
 ### Removed
 

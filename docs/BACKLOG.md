@@ -4,7 +4,7 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Next release:** v0.11.1 (pending) · **Released:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0).  
+**Last verified:** 2026-10-26 · **App version:** 0.11.1 · **Release v0.11.1:** pending · **Previous:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0).  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
 https://github.com/fsclavo/filter-desk/actions/runs/40369935124 (re-check after
 every push and update this URL).
@@ -27,7 +27,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
   Qucs, CSV, Smith chart).
 
 The former separate `Balun / unun` tool was removed; the transformer/balun/unun
-designer is now one dialog with **Design**, **Model** and **Winding** tabs.
+designer is now one dialog with **Design** and **Model** tabs.
 
 ---
 
