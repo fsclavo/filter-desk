@@ -12,6 +12,8 @@ scheme while the public CLI/GUI stabilizes.
   Assumptions section in Markdown/HTML build sheets.
 - Cross-backend validation matrix, ngspice CI job and
   `docs/validation-matrix.md`.
+- VNA measurement metadata sidecars, CLI holdout evaluation, fit-quality notes
+  and a reproducible measurement protocol.
 
 ## v0.11.1 — 2026-10-26
 

@@ -1954,6 +1954,8 @@ class VnaTuningDialog(QDialog):
                 f"; phase S21 {result.phase_s21_deg or 0.0:+.2f} deg"
                 f", S11 {result.phase_s11_deg or 0.0:+.2f} deg"
             )
+        if result.quality_notes:
+            details += "; quality: " + "; ".join(result.quality_notes)
         self._details.setText(details)
         self._table.setRowCount(len(result.refs))
         for row, (ref, initial, final) in enumerate(

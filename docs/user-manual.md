@@ -543,6 +543,8 @@ Most commands accept `--json` for machine-readable output.
 - **`tune-vna`** — synthesize from a spec, then trim component values to a
   measured `.s2p`: `filterdesk tune-vna measured.s2p --family chebyshev_type_i
   --response low_pass --order 4 --cutoff 100M --ripple 0.1 --bound 0.2`.
+  Add `--holdout holdout.s2p` for post-fit evaluation and `--fit-phase` for
+  phase/delay; metadata is read from `<measured>.s2p.vna.json` or `--metadata`.
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
   `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
   `--turns`. Wire is enamelled grade 1 by default (`--bare-wire` or
@@ -771,6 +773,8 @@ first-pass sizing and should be verified with a 2-D/3-D field solver or VNA.
 
 ### VNA-guided tuning
 
+The full measurement protocol is in [VNA measurement protocol](vna-measurement-protocol.md).
+
 Import a measured 2-port Touchstone file (**File → Import → Touchstone…**),
 synthesize/analyze the nominal design, then use **Design → Tune to VNA
 measurement…** (`filterdesk tune-vna`). The dialog fits the circuit's L/C/R
@@ -779,12 +783,15 @@ The fit is a bounded local trim (`±20 %` by default) around the current values;
 it reports initial/final RMS error in dB, the per-component changes, and can
 apply the tuned circuit as one undoable edit.
 
-The phase is deliberately not used: cable delay and reference-plane offset are
-usually not calibrated out of an uncalibrated VNA measurement. Deep stopband
-points are floored at −80 dB to avoid fitting noise. The fit can be restricted
-to one subset by selecting refs in the API; the GUI tunes all components. Use a
-calibrated measurement, a sensible fit band, and verify the result against the
-expected component tolerances before committing to hardware.
+Phase fitting is optional (`--fit-phase`): it adds a shared delay and per-signal
+phase offsets, and is only meaningful with a known calibration/reference plane.
+Deep stopband points are floored at −80 dB to avoid fitting noise. Bounds can be
+local, wide or multi-start global; the fit can be restricted to selected refs in
+the API. The CLI accepts a second `--holdout` capture and reads a
+`<capture>.vna.json` metadata sidecar; the holdout is evaluated only after the
+fit. Quality notes flag high RMS, values at bounds, delay at a bound and a
+holdout much worse than the fit. Use a calibrated measurement and verify against
+component tolerances before committing to hardware.
 
 It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
 drops for very short coils (`length/diameter < 0.2`, flagged in the result).

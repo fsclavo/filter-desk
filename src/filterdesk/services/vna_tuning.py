@@ -125,6 +125,11 @@ class VnaTuningResult:
     phase_s11_deg: float | None = None
     phase_s21_deg: float | None = None
     n_starts: int = 1
+    holdout_rms_db: float | None = None
+    holdout_rms_s11_db: float | None = None
+    holdout_rms_s21_db: float | None = None
+    holdout_points: int = 0
+    quality_notes: tuple[str, ...] = ()
 
     @property
     def improvement_db(self) -> float:
@@ -265,9 +270,14 @@ def fit_circuit_to_measurement(
     config: VnaTuningConfig | None = None,
     *,
     refs: Sequence[str] | None = None,
+    holdout: AnalysisResult | None = None,
     cancel: Callable[[], bool] | None = None,
 ) -> VnaTuningResult:
-    """Trim L/C/R values to a measured response (magnitude, optional phase)."""
+    """Trim L/C/R values to a measured response (magnitude, optional phase).
+
+    ``holdout`` is evaluated only after fitting; it is never used to choose
+    component values.
+    """
     cfg = config or VnaTuningConfig()
     mode = VnaBoundMode(str(cfg.bound_mode))
     params = _selected_params(circuit, refs)
@@ -396,6 +406,46 @@ def fit_circuit_to_measurement(
     phase_s11 = (
         float(best_x[n_components + 2]) if cfg.fit_phase and cfg.fit_s11 else None
     )
+    holdout_rms = holdout_s11 = holdout_s21 = None
+    holdout_points = 0
+    if holdout is not None:
+        h_idx = _select_points(holdout, cfg)
+        h_freq = np.asarray(holdout.frequency_hz, dtype=float)[h_idx]
+        h_s11 = np.maximum(
+            mag_db(np.asarray(holdout.s11, dtype=np.complex128)[h_idx]),
+            cfg.floor_db,
+        )
+        h_s21 = np.maximum(
+            mag_db(np.asarray(holdout.s21, dtype=np.complex128)[h_idx]),
+            cfg.floor_db,
+        )
+        h_sim = analyze_at_frequencies(final_circuit, h_freq, backend=cfg.backend)
+        h_s11_sim = np.maximum(mag_db(h_sim.s11), cfg.floor_db)
+        h_s21_sim = np.maximum(mag_db(h_sim.s21), cfg.floor_db)
+        holdout_rms = _rms(
+            np.concatenate((h_s11_sim - h_s11, h_s21_sim - h_s21))
+        )
+        holdout_s11 = _rms(h_s11_sim - h_s11)
+        holdout_s21 = _rms(h_s21_sim - h_s21)
+        holdout_points = int(h_freq.size)
+
+    quality: list[str] = []
+    if final_rms > 3.0:
+        quality.append(f"high fit RMS ({final_rms:.2f} dB)")
+    for index, (param, value) in enumerate(zip(params, final_x, strict=True)):
+        lo = components_bounds.lower[index]
+        hi = components_bounds.upper[index]
+        if value <= lo * 1.001 or value >= hi * 0.999:
+            quality.append(f"{param.ref} at bound")
+    if (
+        cfg.fit_phase
+        and delay_s is not None
+        and abs(delay_s) >= cfg.max_delay_ns * 0.999e-9
+    ):
+        quality.append("delay at bound")
+    if holdout_rms is not None and holdout_rms > max(3.0, final_rms * 2.0):
+        quality.append("holdout much worse than fit")
+
     return VnaTuningResult(
         success=bool(best_solution.success) or final_rms <= initial_rms,
         message=str(best_solution.message),
@@ -420,6 +470,11 @@ def fit_circuit_to_measurement(
         phase_s11_deg=phase_s11,
         phase_s21_deg=phase_s21,
         n_starts=len(starts),
+        holdout_rms_db=holdout_rms,
+        holdout_rms_s11_db=holdout_s11,
+        holdout_rms_s21_db=holdout_s21,
+        holdout_points=holdout_points,
+        quality_notes=tuple(quality),
     )
 
 

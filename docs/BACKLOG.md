@@ -8,7 +8,7 @@ count or release changes.
 [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.12.0 planning.
 
-**Verification:** local suite **898 passed, 1 skipped**; coverage **83.26 %**.
+**Verification:** local suite **901 passed, 1 skipped**; coverage **83.21 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40384408983
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40375006934
 
@@ -46,6 +46,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Build-sheet **Assumptions** section.
 - [x] Cross-backend validation matrix (10 synthesis paths), ngspice CI job and
       `docs/validation-matrix.md`.
+- [x] VNA measurement metadata sidecar, CLI holdout evaluation, fit-quality notes
+      and `docs/vna-measurement-protocol.md`. Real captures remain P0.
 
 ---
 
@@ -66,8 +68,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       including GUI launch, synthesize, Touchstone import and BOM export. (S)
 - [ ] **LTspice/Qucs external validation:** open representative netlists/schematics
       and confirm syntax, transformer ratio orientation and node mapping. (M)
-- [ ] **VNA holdout:** use the two real captures as holdout data with a
-      documented calibration/reference-plane protocol. (M)
+- [ ] **VNA holdout (hardware):** run the two real captures through the new
+      protocol and record calibration/reference-plane metadata. The tooling and
+      synthetic holdout tests are ready. (M)
 
 ### P1 — validation / model depth
 

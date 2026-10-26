@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -26,6 +27,12 @@ from filterdesk.domain.enums import (
 )
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.io.touchstone import write_touchstone_s2p
+from filterdesk.services.vna_measurement import (
+    VnaMeasurementMetadata,
+    metadata_path_for,
+    read_vna_metadata,
+    write_vna_metadata,
+)
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
     VnaTuningCancelled,
@@ -167,6 +174,43 @@ def test_fit_improves_perturbed_measurement() -> None:
         assert 0.8 * initial <= final <= 1.2 * initial
     assert result.n_evaluations > 0
     assert all(value > 0.0 for value in result.final_values)
+
+
+def test_holdout_is_evaluated_without_reaching_fit() -> None:
+    circuit = _nominal()
+    fit_data = _measured(circuit, scale_l=1.08, scale_c=0.96)
+    holdout = _measured(circuit, scale_l=1.03, scale_c=0.98)
+    cfg = VnaTuningConfig(max_points=51, max_nfev=80)
+    without = fit_circuit_to_measurement(circuit, fit_data, cfg)
+    with_holdout = fit_circuit_to_measurement(
+        circuit, fit_data, cfg, holdout=holdout
+    )
+    assert np.allclose(without.final_values, with_holdout.final_values)
+    assert with_holdout.holdout_rms_db is not None
+    assert with_holdout.holdout_points > 0
+    assert with_holdout.holdout_rms_s11_db is not None
+    assert with_holdout.holdout_rms_s21_db is not None
+
+
+def test_metadata_sidecar(tmp_path: Path) -> None:
+    touchstone = tmp_path / "capture.s2p"
+    touchstone.write_text("# HZ S RI R 50\n", encoding="utf-8")
+    metadata = VnaMeasurementMetadata(
+        vna_model="NanoVNA",
+        calibration="SOLT",
+        reference_plane="SMA plane",
+        cables="30 cm RG316",
+        connectors="SMA",
+        temperature_c=23.5,
+        measured_at="2026-10-26",
+    )
+    sidecar = write_vna_metadata(metadata, touchstone)
+    assert sidecar == metadata_path_for(touchstone)
+    restored = read_vna_metadata(touchstone)
+    assert restored == metadata
+    sidecar.write_text('{"unknown": 1}', encoding="utf-8")
+    with pytest.raises(ValueError, match="unknown VNA metadata"):
+        read_vna_metadata(touchstone)
 
 
 def test_fit_band_and_single_parameter_subset() -> None:
@@ -343,6 +387,46 @@ def test_cli_tune_vna_phase_json(tmp_path, capsys) -> None:
     assert payload["delay_s"] == pytest.approx(25e-9, abs=1e-12)
     assert payload["phase_s21_deg"] == pytest.approx(30.0, abs=0.01)
     assert payload["bound_mode"] == "local"
+
+
+def test_cli_tune_vna_holdout_and_metadata(tmp_path, capsys) -> None:
+    circuit = _nominal()
+    fit_data = _measured(circuit, scale_l=1.06)
+    holdout = _measured(circuit, scale_c=0.98)
+    fit_path = tmp_path / "fit.s2p"
+    holdout_path = tmp_path / "holdout.s2p"
+    write_touchstone_s2p(fit_data, fit_path)
+    write_touchstone_s2p(holdout, holdout_path)
+    meta = VnaMeasurementMetadata(
+        vna_model="TestVNA", calibration="SOLT", reference_plane="plane"
+    )
+    write_vna_metadata(meta, fit_path)
+    args = [
+        "tune-vna",
+        str(fit_path),
+        "--holdout",
+        str(holdout_path),
+        "--family",
+        "chebyshev_type_i",
+        "--response",
+        "low_pass",
+        "--order",
+        "4",
+        "--cutoff",
+        "100M",
+        "--ripple",
+        "0.1",
+        "--max-points",
+        "31",
+        "--max-nfev",
+        "40",
+        "--json",
+    ]
+    assert main(args) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["holdout_rms_db"] is not None
+    assert payload["holdout_points"] > 0
+    assert payload["metadata"]["vna_model"] == "TestVNA"
 
 
 def test_cli_tune_vna_bad_file(tmp_path, capsys) -> None:

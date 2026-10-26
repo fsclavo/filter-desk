@@ -135,6 +135,10 @@ from filterdesk.services.design_sweep import (
     run_design_sweep,
 )
 from filterdesk.services.session import default_sweep_for_spec
+from filterdesk.services.vna_measurement import (
+    metadata_path_for,
+    read_vna_metadata,
+)
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
     VnaTuningConfig,
@@ -871,6 +875,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Synthesize a design and trim L/C values to a measured .s2p",
     )
     tune.add_argument("measured", type=Path, help="Measured Touchstone .s2p")
+    tune.add_argument(
+        "--holdout",
+        type=Path,
+        default=None,
+        help="Optional second capture evaluated only after fitting",
+    )
+    tune.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+        help="VNA metadata JSON (default: <measured>.vna.json if present)",
+    )
     _add_spec_args(tune)
     tune.add_argument(
         "--bound", type=float, default=0.2, help="Local trim bound (default 0.2)"
@@ -2831,6 +2847,14 @@ def main(argv: list[str] | None = None) -> int:
             spec = _spec_from_cli(args)
             data = read_touchstone(args.measured)
             measured = data.to_analysis_result()
+            holdout = None
+            if args.holdout is not None:
+                holdout = read_touchstone(args.holdout).to_analysis_result()
+            meta_path = args.metadata
+            if meta_path is None:
+                candidate = metadata_path_for(args.measured)
+                meta_path = candidate if candidate.exists() else None
+            metadata = None if meta_path is None else read_vna_metadata(meta_path)
             nominal = synthesize(spec)
             cfg = VnaTuningConfig(
                 bound_pct=float(args.bound),
@@ -2847,7 +2871,9 @@ def main(argv: list[str] | None = None) -> int:
                 f_min_hz=parse_si(str(args.f_min)) if args.f_min else None,
                 f_max_hz=parse_si(str(args.f_max)) if args.f_max else None,
             )
-            tuned = fit_circuit_to_measurement(nominal.circuit, measured, cfg)
+            tuned = fit_circuit_to_measurement(
+                nominal.circuit, measured, cfg, holdout=holdout
+            )
         except (VnaTuningError, TouchstoneError, OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
@@ -2866,6 +2892,28 @@ def main(argv: list[str] | None = None) -> int:
                         "message": tuned.message,
                         "n_evaluations": tuned.n_evaluations,
                         "n_points": int(tuned.frequency_hz.size),
+                        "holdout_rms_db": tuned.holdout_rms_db,
+                        "holdout_rms_s11_db": tuned.holdout_rms_s11_db,
+                        "holdout_rms_s21_db": tuned.holdout_rms_s21_db,
+                        "holdout_points": tuned.holdout_points,
+                        "quality_notes": list(tuned.quality_notes),
+                        "metadata": (
+                            None
+                            if metadata is None
+                            else {
+                                "vna_model": metadata.vna_model,
+                                "calibration": metadata.calibration,
+                                "reference_plane": metadata.reference_plane,
+                                "cables": metadata.cables,
+                                "connectors": metadata.connectors,
+                                "terminations": metadata.terminations,
+                                "fixture": metadata.fixture,
+                                "temperature_c": metadata.temperature_c,
+                                "measured_at": metadata.measured_at,
+                                "operator": metadata.operator,
+                                "notes": metadata.notes,
+                            }
+                        ),
                         "bound_mode": tuned.bound_mode.value,
                         "n_starts": tuned.n_starts,
                         "delay_s": tuned.delay_s,
@@ -2900,6 +2948,15 @@ def main(argv: list[str] | None = None) -> int:
                 f"S21 {tuned.phase_s21_deg or 0.0:+.2f} deg, "
                 f"S11 {tuned.phase_s11_deg or 0.0:+.2f} deg"
             )
+        if tuned.holdout_rms_db is not None:
+            print(
+                f"  Holdout: {tuned.holdout_rms_db:.3f} dB RMS "
+                f"({tuned.holdout_points} points)"
+            )
+        if tuned.quality_notes:
+            print(f"  quality: {'; '.join(tuned.quality_notes)}")
+        if metadata is not None:
+            print(f"  metadata: {metadata.summary()}")
         for ref, initial, final in zip(
             tuned.refs, tuned.initial_values, tuned.final_values, strict=True
         ):
