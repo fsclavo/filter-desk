@@ -7,8 +7,9 @@ scheme while the public CLI/GUI stabilizes.
 
 ### Added
 
-- Central model-confidence registry with GUI badges, a Help → Model confidence
-  inventory and an Assumptions section in Markdown/HTML build sheets.
+- Central model-confidence registry with GUI badges, a contextual filter
+  **Model status** strip, a Help → Model confidence inventory and an
+  Assumptions section in Markdown/HTML build sheets.
 
 ## v0.11.1 — 2026-10-26
 

@@ -11,6 +11,7 @@ from filterdesk.confidence import (
     ConfidenceLevel,
     assumptions_for_circuit,
     confidence_for,
+    filter_confidence_items,
 )
 from filterdesk.domain.circuit import BalunSpec, Circuit, IdealResistor, Port
 from filterdesk.io.build_sheet import write_build_sheet
@@ -48,6 +49,32 @@ def test_assumptions_plain_and_balun() -> None:
     )
     with_balun = assumptions_for_circuit(_circuit(balun))
     assert any("BAL1" in item for item in with_balun)
+
+
+def test_filter_confidence_items_and_strip(qtbot) -> None:
+    items = filter_confidence_items(_circuit())
+    keys = {item.key for item in items}
+    assert {"filter_synthesis", "filter_analysis", "filter_components"} <= keys
+    allowed = {"ideal", "validated", "cross-checked"}
+    assert all(item.level.value in allowed for item in items)
+
+    balun = BalunSpec(
+        kind="guanella",
+        topology="autotransformer",
+        turns_ratio=0.5,
+        total_turns=6,
+        turns=3,
+        core="FT240-43",
+    )
+    keys_with_balun = {item.key for item in filter_confidence_items(_circuit(balun))}
+    assert "balun_tlt" in keys_with_balun
+
+    from filterdesk.gui.widgets import ConfidenceStrip
+
+    strip = ConfidenceStrip()
+    qtbot.addWidget(strip)
+    strip.set_items(items)
+    assert strip.items == items
 
 
 def test_confidence_badge_and_dialog(qtbot) -> None:

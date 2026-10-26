@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -101,6 +102,7 @@ class EngineeringLineEdit(QLineEdit):
 
 
 _CONFIDENCE_COLORS: dict[str, str] = {
+    "ideal": "#546e7a",
     "validated": "#1b5e20",
     "cross-checked": "#0d47a1",
     "estimated": "#8a4b00",
@@ -112,20 +114,30 @@ _CONFIDENCE_COLORS: dict[str, str] = {
 class ConfidenceBadge(QLabel):
     """Small, consistent model-confidence label with an explanatory tooltip."""
 
-    def __init__(self, key: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, key: str, parent: QWidget | None = None, *, prefix: str = ""
+    ) -> None:
         super().__init__(parent)
         self._item: ConfidenceItem | None = None
+        self._prefix = prefix
         self.set_key(key)
 
     @property
     def item(self) -> ConfidenceItem | None:
         return self._item
 
-    def set_key(self, key: str) -> None:
-        item = confidence_for(key)
+    def set_key(self, key: str, *, prefix: str | None = None) -> None:
+        if prefix is not None:
+            self._prefix = prefix
+        self.set_item(confidence_for(key))
+
+    def set_item(self, item: ConfidenceItem, *, prefix: str | None = None) -> None:
+        if prefix is not None:
+            self._prefix = prefix
         self._item = item
         color = _CONFIDENCE_COLORS[item.level.value]
-        self.setText(f"Model: {item.level.value}")
+        label = f"{self._prefix}: " if self._prefix else "Model: "
+        self.setText(f"{label}{item.level.value}")
         self.setStyleSheet(
             f"QLabel {{ color: white; background: {color}; padding: 2px 7px; "
             "border-radius: 4px; }"
@@ -135,6 +147,37 @@ class ConfidenceBadge(QLabel):
             f"Evidence: {item.evidence}\n"
             f"Limits: {item.limits}"
         )
+
+
+class ConfidenceStrip(QWidget):
+    """Compact, contextual filter-result status strip."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._layout = QHBoxLayout(self)
+        self._layout.setContentsMargins(4, 2, 4, 2)
+        self._layout.addWidget(QLabel("Model status:"))
+        self._layout.addStretch(1)
+        self._items: tuple[ConfidenceItem, ...] = ()
+
+    @property
+    def items(self) -> tuple[ConfidenceItem, ...]:
+        return self._items
+
+    def set_items(self, items: tuple[ConfidenceItem, ...]) -> None:
+        self._items = items
+        while self._layout.count() > 2:
+            layout_item = self._layout.takeAt(2)
+            if layout_item is not None:
+                widget = layout_item.widget()
+                if widget is not None:
+                    widget.deleteLater()
+        for confidence_item in items:
+            badge = ConfidenceBadge(
+                confidence_item.key, prefix=confidence_item.area
+            )
+            badge.set_item(confidence_item)
+            self._layout.addWidget(badge)
 
 
 class ConfidenceDialog(QDialog):

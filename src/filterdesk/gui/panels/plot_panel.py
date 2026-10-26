@@ -11,11 +11,13 @@ from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 
 from filterdesk.analysis.derived import group_delay_s, mag_db, phase_deg, vswr
 from filterdesk.analysis.types import AnalysisResult
+from filterdesk.confidence import ConfidenceItem
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.i18n import tr
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
 from filterdesk.gui.theme import ThemeColors, apply_plot_theme
+from filterdesk.gui.widgets import ConfidenceStrip
 
 if TYPE_CHECKING:
     from filterdesk.montecarlo import MonteCarloResult
@@ -251,7 +253,9 @@ class PlotPanel(QWidget):
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
 
+        self._confidence_strip = ConfidenceStrip()
         layout = QVBoxLayout(self)
+        layout.addWidget(self._confidence_strip)
         layout.addWidget(self._tabs)
         layout.addWidget(self._readout)
 
@@ -298,6 +302,9 @@ class PlotPanel(QWidget):
     def set_harmonics_visible(self, visible: bool) -> None:
         self._show_harmonics = bool(visible)
         self._redraw_harmonics()
+
+    def set_confidence_items(self, items: tuple[ConfidenceItem, ...]) -> None:
+        self._confidence_strip.set_items(items)
 
     def set_theme(self, colors: ThemeColors) -> None:
         """Apply theme colours to every plot and the Smith chart."""

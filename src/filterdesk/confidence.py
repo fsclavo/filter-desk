@@ -14,6 +14,7 @@ from filterdesk.domain.circuit import Circuit, NonIdealCapacitor, NonIdealInduct
 
 
 class ConfidenceLevel(StrEnum):
+    IDEAL = "ideal"
     VALIDATED = "validated"
     CROSS_CHECKED = "cross-checked"
     ESTIMATED = "estimated"
@@ -31,6 +32,27 @@ class ConfidenceItem:
 
 
 ITEMS: tuple[ConfidenceItem, ...] = (
+    ConfidenceItem(
+        "filter_synthesis",
+        "Filter synthesis",
+        ConfidenceLevel.VALIDATED,
+        "Golden component/metric cases and classical prototype checks.",
+        "Even-order elliptic is rejected; order caps apply to some families.",
+    ),
+    ConfidenceItem(
+        "filter_analysis",
+        "Filter analysis",
+        ConfidenceLevel.CROSS_CHECKED,
+        "ABCD ladder cross-checked against scikit-rf and analytic circuits.",
+        "Ideal ladders unless parasitics are applied; no distributed elements.",
+    ),
+    ConfidenceItem(
+        "filter_components",
+        "Filter components",
+        ConfidenceLevel.IDEAL,
+        "Ideal R/L/C values in the working circuit.",
+        "Apply parasitics/Q/tolerances for an estimated real-component model.",
+    ),
     ConfidenceItem(
         "synthesis",
         "Lumped LC synthesis",
@@ -186,10 +208,42 @@ def assumptions_for_circuit(circuit: Circuit) -> tuple[str, ...]:
     return tuple(assumptions)
 
 
+def filter_confidence_items(circuit: Circuit) -> tuple[ConfidenceItem, ...]:
+    """Contextual badges for the filter result strip."""
+    from filterdesk.domain.circuit import NonIdealCapacitor, NonIdealInductor
+
+    items = [
+        confidence_for("filter_synthesis"),
+        confidence_for("filter_analysis"),
+    ]
+    nonideal = any(
+        isinstance(el, (NonIdealInductor, NonIdealCapacitor))
+        for el in circuit.elements
+    )
+    if nonideal:
+        items.append(
+            ConfidenceItem(
+                "filter_components",
+                "Filter components",
+                ConfidenceLevel.ESTIMATED,
+                "Non-ideal/parasitic component model.",
+                "Parasitic values are estimates unless measured data is supplied.",
+            )
+        )
+    else:
+        items.append(confidence_for("filter_components"))
+    if circuit.output_transformer_ratio != 1.0:
+        items.append(confidence_for("t1"))
+    if circuit.output_balun is not None:
+        items.append(confidence_for("balun_tlt"))
+    return tuple(items)
+
+
 __all__ = [
     "ConfidenceItem",
     "ConfidenceLevel",
     "ITEMS",
     "assumptions_for_circuit",
     "confidence_for",
+    "filter_confidence_items",
 ]

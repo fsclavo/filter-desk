@@ -39,6 +39,7 @@ from filterdesk.analysis.compliance import check_spec_compliance
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import set_element_parasitics
+from filterdesk.confidence import filter_confidence_items
 from filterdesk.domain import circuit_edit
 from filterdesk.domain.circuit import (
     Circuit,
@@ -579,6 +580,7 @@ class MainWindow(QMainWindow):
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
+        self._refresh_confidence()
         self._session.dirty = was_dirty
         self._update_title()
 
@@ -1237,6 +1239,12 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(self, tr("Optimize failed"), message)
         self._status.setText(tr("Optimize failed"))
 
+    def _refresh_confidence(self) -> None:
+        circuit = self._session.circuit
+        self._plots.set_confidence_items(
+            () if circuit is None else filter_confidence_items(circuit)
+        )
+
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
             self._run_synthesize_and_analyze()
@@ -1267,6 +1275,7 @@ class MainWindow(QMainWindow):
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
         self._refresh_harmonics()
+        self._refresh_confidence()
         metrics = self._session.summary_metrics()
         self._status.setText(
             f"Done ({result.backend}, {result.frequency_hz.shape[0]} pts)  "

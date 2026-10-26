@@ -870,7 +870,11 @@ happens in the background and reports progress in the status bar.
 
 ## 15. Model confidence and limitations
 
-**Help → Model confidence…** shows the status of each model. The statuses are:
+The filter response panel shows a compact **Model status** strip: synthesis
+(e.g. `validated`), analysis (`cross-checked`) and components (`ideal`, or
+`estimated` after parasitics). If the project has a T1/BAL1, their model status
+is shown too. **Help → Model confidence…** shows the full inventory. The
+statuses are:
 
 | Status | Meaning |
 | --- | --- |
@@ -881,10 +885,12 @@ happens in the background and reports progress in the status bar.
 | **not evaluated** | Calculator or interface exists, but it is not a validated model. |
 
 Important examples: LC synthesis and T1 are validated; ABCD↔scikit-rf and
-Touchstone I/O are cross-checked; ferrite loss/temperature, microstrip and
-toroid calculators are estimated; VNA tuning and Guanella/Ruthroff TLT are
-experimental; distributed filter synthesis is not evaluated. The build sheet
-includes an **Assumptions** section with the same model limits.
+Touchstone I/O are cross-checked; ideal filter components are a separate
+`ideal` state (upgraded to `estimated` when parasitics are applied); ferrite
+loss/temperature, microstrip and toroid calculators are estimated; VNA tuning
+and Guanella/Ruthroff TLT are experimental; distributed filter synthesis is
+not evaluated. The build sheet includes an **Assumptions** section with the
+same model limits.
 
 ## 16. Known limitations
 
