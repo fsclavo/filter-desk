@@ -197,10 +197,31 @@ def test_spice_transformer_model_with_ngspice(tmp_path) -> None:
         pytest.skip("ngspice is not installed")
     circuit = synthesize(_spec(50.0, 75.0)).circuit
     net = spice_netlist(circuit, ac=SweepConfig(1e6, 1e9, 21, SweepSpacing.LOGARITHMIC))
-    net = net.replace(".backanno", ".print ac v(T1_s)\n.backanno")
+    # ``.backanno`` is an LTspice convenience directive; ngspice rejects it.
+    net = net.replace(".backanno\n", "").replace(
+        ".end", ".print ac v(T1_s)\n.end"
+    )
     path = tmp_path / "t1.cir"
     path.write_text(net, encoding="utf-8")
     output = subprocess.run(
         ["ngspice", "-b", str(path)], check=True, capture_output=True, text=True
     )
-    assert "T1_s" in output.stdout
+    text = output.stdout
+    assert "v(t1_s)" in text.lower()
+    samples: list[tuple[float, complex]] = []
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 4 and parts[0].isdigit():
+            samples.append(
+                (
+                    float(parts[1]),
+                    complex(float(parts[2].rstrip(",")), float(parts[3])),
+                )
+            )
+    freqs = np.asarray([sample[0] for sample in samples])
+    abcd = LadderABCDAnalyzer().analyze_at_frequencies(circuit, freqs)
+    assert len(samples) > 20
+    for (_freq, vload), expected in zip(samples, abcd.s21, strict=True):
+        # v(T1_s) is the load voltage; S21 = 2*sqrt(zs/zl)*Vload/Vsource.
+        got = 2.0 * np.sqrt(50.0 / 75.0) * vload
+        assert abs(got - expected) < 1e-4
