@@ -18,7 +18,11 @@ import math
 from dataclasses import dataclass
 
 from filterdesk.analysis.adapters.abcd_ladder import element_impedance_ohm
-from filterdesk.domain.circuit import Circuit
+from filterdesk.domain.circuit import (
+    Circuit,
+    MicrostripLineElement,
+    MicrostripStubElement,
+)
 from filterdesk.domain.enums import ElementRole
 
 
@@ -88,6 +92,8 @@ def compute_stress(
 
     entries: list[ElementStress] = []
     for el in circuit.elements:
+        if isinstance(el, (MicrostripLineElement, MicrostripStubElement)):
+            continue
         z = element_impedance_ohm(el, frequency_hz)
         magnitude = abs(z)
         if el.role == ElementRole.SERIES:

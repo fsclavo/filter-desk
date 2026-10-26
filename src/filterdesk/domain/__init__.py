@@ -10,6 +10,8 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     Port,
 )
 from filterdesk.domain.enums import (
@@ -18,6 +20,7 @@ from filterdesk.domain.enums import (
     ElementRole,
     ElementType,
     FilterResponse,
+    MicrostripStubKind,
     TopologyId,
 )
 from filterdesk.domain.prototype import Prototype
@@ -45,6 +48,9 @@ __all__ = [
     "IdealParallelLC",
     "IdealResistor",
     "IdealSeriesLC",
+    "MicrostripLineElement",
+    "MicrostripStubElement",
+    "MicrostripStubKind",
     "Port",
     "Prototype",
     "SpecValidationError",

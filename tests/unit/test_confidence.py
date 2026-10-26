@@ -31,7 +31,7 @@ def test_registry_has_expected_levels() -> None:
     assert confidence_for("synthesis").level is ConfidenceLevel.VALIDATED
     assert confidence_for("vna").level is ConfidenceLevel.EXPERIMENTAL
     assert confidence_for("thermal").level is ConfidenceLevel.ESTIMATED
-    assert confidence_for("distributed").level is ConfidenceLevel.NOT_EVALUATED
+    assert confidence_for("distributed").level is ConfidenceLevel.EXPERIMENTAL
     with pytest.raises(KeyError):
         confidence_for("nope")
 
@@ -117,9 +117,7 @@ def test_help_menu_has_confidence() -> None:
 
     app = QApplication.instance() or QApplication([])
     window = MainWindow(DesignSession(), auto_run=False)
-    menus = {
-        a.text(): a.menu() for a in window.menuBar().actions() if a.menu()
-    }
+    menus = {a.text(): a.menu() for a in window.menuBar().actions() if a.menu()}
     help_menu = menus.get("&Help")
     assert help_menu is not None
     assert any("confidence" in a.text().lower() for a in help_menu.actions())

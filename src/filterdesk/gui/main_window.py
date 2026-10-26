@@ -47,6 +47,8 @@ from filterdesk.domain.circuit import (
     IdealCapacitor,
     IdealInductor,
     IdealResistor,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
@@ -90,6 +92,7 @@ from filterdesk.gui.widgets import (
     ConfidenceDialog,
     DesignSweepDialog,
     DesignSweepResultDialog,
+    DistributedSynthesisDialog,
     EngineeringLineEdit,
     HfBandWizardDialog,
     MatchingDialog,
@@ -235,9 +238,7 @@ class MainWindow(QMainWindow):
         self._add_dock(
             "Schematic", self._schematic, Qt.DockWidgetArea.TopDockWidgetArea
         )
-        self._add_dock(
-            "Components", self._table, Qt.DockWidgetArea.RightDockWidgetArea
-        )
+        self._add_dock("Components", self._table, Qt.DockWidgetArea.RightDockWidgetArea)
         self._add_dock(
             "Markers", self._markers_panel, Qt.DockWidgetArea.RightDockWidgetArea
         )
@@ -269,9 +270,7 @@ class MainWindow(QMainWindow):
         self._spec.spec_changed.connect(self._mark_dirty)
         self._table.value_edited.connect(self._on_value_edited)
         self._schematic.element_selected.connect(self._on_schematic_element_selected)
-        self._schematic.context_menu_requested.connect(
-            self._on_schematic_context_menu
-        )
+        self._schematic.context_menu_requested.connect(self._on_schematic_context_menu)
         self._table.element_selected.connect(self._on_table_element_selected)
         self._markers_panel.markers_changed.connect(self._on_markers_edited)
         self._markers_panel.add_at_cursor_requested.connect(self._add_marker_at_cursor)
@@ -458,9 +457,7 @@ class MainWindow(QMainWindow):
             action = QAction(label, self)
             action.setCheckable(True)
             action.setChecked(mode is self._theme_mode)
-            action.triggered.connect(
-                lambda checked=False, m=mode: self._apply_theme(m)
-            )
+            action.triggered.connect(lambda checked=False, m=mode: self._apply_theme(m))
             theme_group.addAction(action)
             theme_menu.addAction(action)
             self._theme_actions[mode] = action
@@ -475,9 +472,7 @@ class MainWindow(QMainWindow):
             action.setCheckable(True)
             action.setChecked(language is self._language)
             action.triggered.connect(
-                lambda checked=False, lang=language: self._request_language(
-                    lang
-                )
+                lambda checked=False, lang=language: self._request_language(lang)
             )
             language_group.addAction(action)
             language_menu.addAction(action)
@@ -497,6 +492,9 @@ class MainWindow(QMainWindow):
         act_hf_wizard = QAction(tr("HF band filter &wizard…"), self)
         act_hf_wizard.triggered.connect(self._run_hf_band_wizard)
         design_menu.addAction(act_hf_wizard)
+        act_distributed = QAction(tr("&Distributed microstrip realization…"), self)
+        act_distributed.triggered.connect(self._run_distributed)
+        design_menu.addAction(act_distributed)
         design_menu.addSeparator()
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
@@ -697,9 +695,7 @@ class MainWindow(QMainWindow):
     def _refresh_table(self) -> None:
         """Rebuild the component table (tolerances + power-stress columns)."""
         report = self._session.compute_stress()
-        self._table.set_circuit(
-            self._session.circuit, self._tolerance_map(), report
-        )
+        self._table.set_circuit(self._session.circuit, self._tolerance_map(), report)
         if report is None:
             self._stress_label.setText("")
             return
@@ -719,11 +715,7 @@ class MainWindow(QMainWindow):
     def _refresh_harmonics(self) -> None:
         report = self._session.compute_harmonics()
         self._harmonics_panel.set_report(report)
-        freqs = (
-            [h.frequency_hz for h in report.harmonics]
-            if report is not None
-            else []
-        )
+        freqs = [h.frequency_hz for h in report.harmonics] if report is not None else []
         self._plots.set_harmonics(freqs)
 
     def _after_circuit_change(self) -> None:
@@ -872,9 +864,7 @@ class MainWindow(QMainWindow):
             )
             return
         try:
-            report = check_spec_compliance(
-                self._session.spec, self._session.circuit
-            )
+            report = check_spec_compliance(self._session.spec, self._session.circuit)
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, tr("Spec compliance"), _exc_text(exc))
             return
@@ -912,9 +902,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, tr("Spec compliance"), text)
         else:
             QMessageBox.warning(self, tr("Spec compliance"), text)
-        self._status.setText(
-            tr("Spec compliance: {result}", result=result)
-        )
+        self._status.setText(tr("Spec compliance: {result}", result=result))
 
     def _run_band_preset(self) -> None:
         choice = BandPresetDialog.ask(self)
@@ -967,17 +955,13 @@ class MainWindow(QMainWindow):
 
     def _matching_element(self, role: ElementRole, kind: str, value: float) -> Element:
         if kind == "L":
-            return IdealInductor(
-                id="X", value_h=value, node_a="", node_b="", role=role
-            )
+            return IdealInductor(id="X", value_h=value, node_a="", node_b="", role=role)
         return IdealCapacitor(id="X", value_f=value, node_a="", node_b="", role=role)
 
     def _run_coil_calculator(self) -> None:
         element = self._selected_element_obj()
         selected = (
-            element
-            if isinstance(element, (IdealInductor, NonIdealInductor))
-            else None
+            element if isinstance(element, (IdealInductor, NonIdealInductor)) else None
         )
         dialog = CoilCalculatorDialog(self, element=selected)
         dialog.exec()
@@ -989,9 +973,7 @@ class MainWindow(QMainWindow):
             for el in self._session.circuit.elements
         ]
         new_circuit = replace(self._session.circuit, elements=elements)
-        self._push_circuit_edit(
-            new_circuit, tr("Realize {ref}", ref=realized.id)
-        )
+        self._push_circuit_edit(new_circuit, tr("Realize {ref}", ref=realized.id))
         self._status.setText(
             tr("Realized {ref} as a physical winding", ref=realized.id)
         )
@@ -1028,6 +1010,32 @@ class MainWindow(QMainWindow):
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()
+
+    def _run_distributed(self) -> None:
+        if self._session.spec.response != FilterResponse.LOW_PASS:
+            QMessageBox.information(
+                self,
+                tr("Distributed microstrip realization"),
+                tr("Choose a low-pass specification first."),
+            )
+            return
+        dialog = DistributedSynthesisDialog(self._session.spec, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        design = dialog.design()
+        if design is None:
+            return
+        self._push_circuit_edit(
+            design.circuit, tr("Apply distributed microstrip realization")
+        )
+        self._run_analyze()
+        message = tr(
+            "Applied distributed microstrip realization on {substrate}",
+            substrate=design.substrate.name,
+        )
+        if design.warnings:
+            message += " — " + "; ".join(design.warnings)
+        self._status.setText(message)
 
     def _run_vna_tuning(self) -> None:
         if self._session.circuit is None:
@@ -1092,9 +1100,7 @@ class MainWindow(QMainWindow):
             )
             new_circuit = replace(
                 new_circuit,
-                port_out=replace(
-                    new_circuit.port_out, impedance_ohm=design.load_r_ohm
-                ),
+                port_out=replace(new_circuit.port_out, impedance_ohm=design.load_r_ohm),
             )
         else:
             new_circuit = circuit_edit.insert_elements(
@@ -1280,13 +1286,9 @@ class MainWindow(QMainWindow):
                     )
                 )
         except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(
-                self, tr("HF band filter wizard"), _exc_text(exc)
-            )
+            QMessageBox.warning(self, tr("HF band filter wizard"), _exc_text(exc))
             return
-        self._status.setText(
-            tr("Applied {band} BPF — analyzing…", band=band.name)
-        )
+        self._status.setText(tr("Applied {band} BPF — analyzing…", band=band.name))
         self._run_analyze()
 
     def _run_update_spec_from_circuit(self) -> None:
@@ -1300,13 +1302,9 @@ class MainWindow(QMainWindow):
             )
             return
         try:
-            update = update_spec_from_response(
-                self._session.spec, circuit, analysis
-            )
+            update = update_spec_from_response(self._session.spec, circuit, analysis)
         except (SpecUpdateError, ValueError) as exc:
-            QMessageBox.warning(
-                self, tr("Update spec from circuit"), _exc_text(exc)
-            )
+            QMessageBox.warning(self, tr("Update spec from circuit"), _exc_text(exc))
             return
         old = update.old_spec
         new = update.new_spec
@@ -1561,28 +1559,18 @@ class MainWindow(QMainWindow):
             ),
         )
 
-    def _add_tune_actions(
-        self, menu: QMenu, el: Element, element_id: str
-    ) -> None:
+    def _add_tune_actions(self, menu: QMenu, el: Element, element_id: str) -> None:
         if not self._is_tunable(el):
             return
         pct = self._session.step_fraction(element_id) * 100.0
         act_up = menu.addAction(f"Tune +{pct:g}%  (Ctrl+])")
-        act_up.triggered.connect(
-            lambda *_: self._nudge_element(element_id, 1)
-        )
+        act_up.triggered.connect(lambda *_: self._nudge_element(element_id, 1))
         act_dn = menu.addAction(f"Tune −{pct:g}%  (Ctrl+[)")
-        act_dn.triggered.connect(
-            lambda *_: self._nudge_element(element_id, -1)
-        )
+        act_dn.triggered.connect(lambda *_: self._nudge_element(element_id, -1))
         act_step = menu.addAction(tr("Set tune &step…"))
-        act_step.triggered.connect(
-            lambda *_: self._set_element_step(element_id)
-        )
+        act_step.triggered.connect(lambda *_: self._set_element_step(element_id))
         act_tol = menu.addAction(tr("Set &tolerance…"))
-        act_tol.triggered.connect(
-            lambda *_: self._set_element_tolerance(element_id)
-        )
+        act_tol.triggered.connect(lambda *_: self._set_element_tolerance(element_id))
 
     def _tune_selected_increase(self) -> None:
         if self._selected_element is not None:
@@ -1708,9 +1696,7 @@ class MainWindow(QMainWindow):
         )
         self._undo.push(cmd)
 
-    def _on_schematic_context_menu(
-        self, element_id: str, global_pos: QPoint
-    ) -> None:
+    def _on_schematic_context_menu(self, element_id: str, global_pos: QPoint) -> None:
         menu = self._build_schematic_menu(element_id)
         if menu is not None:
             menu.exec(global_pos)
@@ -1723,11 +1709,12 @@ class MainWindow(QMainWindow):
         if el is None:
             return None
         menu = QMenu(self)
+        distributed = isinstance(el, (MicrostripLineElement, MicrostripStubElement))
         act_edit = menu.addAction("Edit value…")
-        act_edit.triggered.connect(
-            lambda *_: self._edit_element_value(element_id)
-        )
-        self._add_tune_actions(menu, el, element_id)
+        act_edit.triggered.connect(lambda *_: self._edit_element_value(element_id))
+        act_edit.setEnabled(not distributed)
+        if not distributed:
+            self._add_tune_actions(menu, el, element_id)
         if isinstance(
             el, (IdealCapacitor, IdealInductor, NonIdealCapacitor, NonIdealInductor)
         ):
@@ -1815,9 +1802,7 @@ class MainWindow(QMainWindow):
             dialog_kwargs = {
                 "kind": kind,
                 "value": el.value_f,
-                "esr_ohm": (
-                    el.esr_ohm if isinstance(el, NonIdealCapacitor) else 0.0
-                ),
+                "esr_ohm": (el.esr_ohm if isinstance(el, NonIdealCapacitor) else 0.0),
                 "esl_h": el.esl_h if isinstance(el, NonIdealCapacitor) else 0.0,
             }
         else:
@@ -1958,8 +1943,7 @@ class MainWindow(QMainWindow):
                 self,
                 tr("New project"),
                 tr("Discard the current unsaved changes?"),
-                QMessageBox.StandardButton.Discard
-                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,
             )
             if answer != QMessageBox.StandardButton.Discard:
@@ -2262,9 +2246,7 @@ class MainWindow(QMainWindow):
         if not path.lower().endswith(".sch"):
             path += ".sch"
         try:
-            write_qucs_schematic(
-                circuit, path, title=self._export_title()
-            )
+            write_qucs_schematic(circuit, path, title=self._export_title())
             self._status.setText(tr("Wrote {path}", path=path))
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))

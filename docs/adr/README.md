@@ -8,7 +8,7 @@
 | [004](ADR-004-native-json-project.md) | Versioned JSON native project | Accepted |
 | [005](ADR-005-plotting-pyqtgraph.md) | PyQtGraph primary plotting | Accepted |
 | [006](ADR-006-cutoff-ripple-conventions.md) | Cutoff / ripple conventions | Accepted |
-| [007](ADR-007-deferred-distributed-elements.md) | Defer TL/transformers | Accepted |
+| [007](ADR-007-deferred-distributed-elements.md) | Defer TL/transformers | Superseded by 018 for microstrip v1 |
 | [008](ADR-008-dataclasses-not-pydantic.md) | dataclasses, not Pydantic | Accepted |
 | [009](ADR-009-milestone-topology-series-c-hp.md) | Milestone HP topology | Accepted |
 | [010](ADR-010-bp-bs-frequency-definition.md) | BP/BS \(f_0\), BW | Accepted |
@@ -20,3 +20,4 @@
 | [016](ADR-016-inductor-model.md) | Real inductor model (Q(f), SRF, DC bias, winding) | Accepted |
 
 - [ADR-017](ADR-017-exact-unequal-terminations.md) — exact unequal terminations via output transformer
+- [ADR-018](ADR-018-distributed-microstrip-v1.md) — distributed microstrip elements and v1 LP synthesis

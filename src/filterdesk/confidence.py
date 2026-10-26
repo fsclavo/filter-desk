@@ -10,7 +10,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from filterdesk.domain.circuit import Circuit, NonIdealCapacitor, NonIdealInductor
+from filterdesk.domain.circuit import (
+    Circuit,
+    MicrostripLineElement,
+    MicrostripStubElement,
+    NonIdealCapacitor,
+    NonIdealInductor,
+)
 
 
 class ConfidenceLevel(StrEnum):
@@ -137,8 +143,7 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "Microstrip/stub calculators",
         ConfidenceLevel.ESTIMATED,
         "Hammerstad-Jensen quasi-static synthesis and first-order loss.",
-        "No thickness in Z0, discontinuities, radiation, dispersion or field "
-        "solver.",
+        "No thickness in Z0, discontinuities, radiation, dispersion or field solver.",
     ),
     ConfidenceItem(
         "toroid",
@@ -163,10 +168,13 @@ ITEMS: tuple[ConfidenceItem, ...] = (
     ),
     ConfidenceItem(
         "distributed",
-        "Distributed circuit synthesis",
-        ConfidenceLevel.NOT_EVALUATED,
-        "Calculators exist, but no netlist/domain elements yet.",
-        "Not available for filter synthesis; do not treat calculators as a full model.",
+        "Distributed microstrip synthesis",
+        ConfidenceLevel.EXPERIMENTAL,
+        "Stepped-impedance LP conversion with ABCD/skrf cross-checks and "
+        "analytic line/stub tests.",
+        "Low-pass, Butterworth/Chebyshev-I, order <= 3 only. Ideal TEM model: "
+        "no dispersion, discontinuities, radiation, coupling or fabrication "
+        "tolerances. Verify the board with Touchstone/VNA.",
     ),
 )
 
@@ -198,27 +206,32 @@ def assumptions_for_circuit(circuit: Circuit) -> tuple[str, ...]:
             "behaviour is approximate."
         )
     if any(
-        isinstance(el, (NonIdealInductor, NonIdealCapacitor))
-        for el in circuit.elements
+        isinstance(el, (NonIdealInductor, NonIdealCapacitor)) for el in circuit.elements
     ):
         assumptions.append(
             "Parasitic values are user/model estimates unless measured data is "
             "supplied."
+        )
+    if any(
+        isinstance(el, (MicrostripLineElement, MicrostripStubElement))
+        for el in circuit.elements
+    ):
+        assumptions.append(
+            "Distributed elements use an ideal TEM microstrip model; verify "
+            "dispersion, discontinuities, radiation and fabrication tolerances "
+            "on the physical board."
         )
     return tuple(assumptions)
 
 
 def filter_confidence_items(circuit: Circuit) -> tuple[ConfidenceItem, ...]:
     """Contextual badges for the filter result strip."""
-    from filterdesk.domain.circuit import NonIdealCapacitor, NonIdealInductor
-
     items = [
         confidence_for("filter_synthesis"),
         confidence_for("filter_analysis"),
     ]
     nonideal = any(
-        isinstance(el, (NonIdealInductor, NonIdealCapacitor))
-        for el in circuit.elements
+        isinstance(el, (NonIdealInductor, NonIdealCapacitor)) for el in circuit.elements
     )
     if nonideal:
         items.append(
@@ -236,6 +249,11 @@ def filter_confidence_items(circuit: Circuit) -> tuple[ConfidenceItem, ...]:
         items.append(confidence_for("t1"))
     if circuit.output_balun is not None:
         items.append(confidence_for("balun_tlt"))
+    if any(
+        isinstance(el, (MicrostripLineElement, MicrostripStubElement))
+        for el in circuit.elements
+    ):
+        items.append(confidence_for("distributed"))
     return tuple(items)
 
 

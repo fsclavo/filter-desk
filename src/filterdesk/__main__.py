@@ -69,6 +69,8 @@ from filterdesk.domain.circuit import (
     IdealInductor,
     IdealParallelLC,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
@@ -147,6 +149,10 @@ from filterdesk.services.vna_tuning import (
 )
 from filterdesk.synthesis import synthesis_note, synthesize
 from filterdesk.synthesis.api import SynthesisResult
+from filterdesk.synthesis.distributed import (
+    DistributedSynthesisError,
+    design_distributed_lowpass,
+)
 from filterdesk.synthesis.order_estimate import (
     OrderEstimateError,
     estimate_minimum_order,
@@ -539,6 +545,34 @@ def build_parser() -> argparse.ArgumentParser:
     stub.add_argument("--frequency", default="1G", help="Design frequency")
     _add_microstrip_substrate(stub)
     stub.add_argument("--json", action="store_true", help="Emit JSON")
+
+    dist = sub.add_parser(
+        "distributed",
+        help="Microstrip stepped-impedance low-pass realization (experimental)",
+    )
+    _add_spec_args(dist)
+    _add_microstrip_substrate(dist)
+    dist.add_argument(
+        "--angle",
+        type=float,
+        default=30.0,
+        help="Electrical length at cutoff (degrees; auto-adjusted to fit Z0)",
+    )
+    dist.add_argument("--z0-min", type=float, default=10.0, help="Minimum line Z0")
+    dist.add_argument("--z0-max", type=float, default=120.0, help="Maximum line Z0")
+    dist.add_argument(
+        "--export-s2p",
+        type=Path,
+        default=None,
+        help="Write the distributed response as Touchstone .s2p",
+    )
+    dist.add_argument(
+        "--export-build-sheet",
+        type=Path,
+        default=None,
+        help="Write a distributed BOM/build sheet (.csv/.md/.html)",
+    )
+    dist.add_argument("--json", action="store_true", help="Emit JSON")
 
     snap = sub.add_parser(
         "snap",
@@ -1687,6 +1721,86 @@ def main(argv: list[str] | None = None) -> int:
             _print_synth_human(result)
             if compliance is not None:
                 _print_compliance(compliance)
+        return 0
+
+    if args.command == "distributed":
+        try:
+            spec = _spec_from_cli(args)
+            dist_substrate = _microstrip_substrate(args)
+            dist_design = design_distributed_lowpass(
+                spec,
+                dist_substrate,
+                electrical_length_deg=float(args.angle),
+                z0_min_ohm=float(args.z0_min),
+                z0_max_ohm=float(args.z0_max),
+            )
+            dist_sweep = default_sweep_for_spec(spec)
+            dist_result = analyze_circuit(
+                dist_design.circuit, dist_sweep, backend="abcd"
+            )
+            if args.export_s2p is not None:
+                write_touchstone_s2p(
+                    dist_result,
+                    args.export_s2p,
+                    comment="FilterDesk distributed microstrip realization",
+                )
+                print(f"Wrote {args.export_s2p}", file=sys.stderr)
+            if args.export_build_sheet is not None:
+                write_build_sheet(
+                    dist_design.circuit,
+                    args.export_build_sheet,
+                    spec=spec,
+                    title="Distributed microstrip realization",
+                )
+                print(f"Wrote {args.export_build_sheet}", file=sys.stderr)
+        except (
+            DistributedSynthesisError,
+            SpecValidationError,
+            OSError,
+            json.JSONDecodeError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        dist_line_rows = [
+            {
+                "ref": el.id,
+                "z0_ohm": el.z0_ohm,
+                "width_mm": el.width_mm,
+                "length_mm": el.length_m * 1e3,
+                "angle_deg": el.angle_deg,
+                "substrate": el.substrate,
+            }
+            for el in dist_design.circuit.elements
+            if isinstance(el, (MicrostripLineElement, MicrostripStubElement))
+        ]
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "spec": filter_spec_to_mapping(spec),
+                        "substrate": dist_design.substrate.name,
+                        "electrical_length_deg": dist_design.electrical_length_deg,
+                        "warnings": list(dist_design.warnings),
+                        "lines": dist_line_rows,
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"Distributed LP: {spec.family.value}, order {spec.order}, "
+                f"{dist_design.substrate.name}, "
+                f"theta={dist_design.electrical_length_deg:g} deg"
+            )
+            for dist_line in dist_line_rows:
+                print(
+                    f"  {dist_line['ref']}: Z0={dist_line['z0_ohm']:.4g} ohm, "
+                    f"W={dist_line['width_mm']:.3g} mm, "
+                    f"L={dist_line['length_mm']:.4g} mm"
+                )
+            for dist_warning in dist_design.warnings:
+                print(f"  warning: {dist_warning}", file=sys.stderr)
         return 0
 
     if args.command == "snap":

@@ -247,9 +247,7 @@ _ES.update(
         "Update spec from &circuit…": "Actualizar spec desde el &circuito…",
         "HF band filter &wizard…": "&Asistente de filtro de banda HF…",
         "HF band filter wizard": "Asistente de filtro de banda HF",
-        "Applied {band} BPF — analyzing…": (
-            "BPF de {band} aplicado — analizando…"
-        ),
+        "Applied {band} BPF — analyzing…": ("BPF de {band} aplicado — analizando…"),
         "Update spec from circuit": "Actualizar spec desde el circuito",
         "Analyze a circuit first.": "Analiza primero un circuito.",
         "Cutoff": "Corte",
@@ -271,6 +269,25 @@ _ES.update(
         "&Coil calculator…": "Calculadora de &bobinas…",
         "Trans&former / balun / unun…": "Transformador / &balun / unun…",
         "&Microstrip line…": "Línea &microstrip…",
+        "&Distributed microstrip realization…": (
+            "&Realización microstrip distribuida…"
+        ),
+        "Distributed microstrip realization": "Realización microstrip distribuida",
+        "Applied distributed microstrip realization on {substrate}": (
+            "Realización microstrip distribuida aplicada en {substrate}"
+        ),
+        "Apply distributed microstrip realization": (
+            "Aplicar realización microstrip distribuida"
+        ),
+        "Choose a low-pass specification first.": (
+            "Elige primero una especificación pasabajos."
+        ),
+        "Confidence": "Confianza",
+        "Substrate": "Sustrato",
+        "Electrical length (deg)": "Longitud eléctrica (grados)",
+        "Minimum Z0 (Ohm)": "Z0 mínima (Ohm)",
+        "Maximum Z0 (Ohm)": "Z0 máxima (Ohm)",
+        "Preview": "Vista previa",
         "Tune to &VNA measurement…": "Ajustar a medición del &VNA…",
         "Tune to VNA measurement": "Ajustar a medición del VNA",
         "VNA tuning": "Ajuste por VNA",
@@ -311,9 +328,7 @@ _ES.update(
         "Sweep start frequency, e.g. 10M or 1G": (
             "Frecuencia inicial del barrido, p. ej. 10M o 1G"
         ),
-        "Sweep stop frequency, e.g. 1G": (
-            "Frecuencia final del barrido, p. ej. 1G"
-        ),
+        "Sweep stop frequency, e.g. 1G": ("Frecuencia final del barrido, p. ej. 1G"),
         # Widgets ------------------------------------------------------------
         "Apply parasitics / finite Q": "Aplicar parásitos / Q finita",
         "Inductor Q": "Q del inductor",
@@ -454,8 +469,7 @@ _ES.update(
         "Minimum order N = {order}\nΩs = {ratio:.6g}\nNatural f ≈ {freq}\n\n{notes}": (
             "Orden mínimo N = {order}\nΩs = {ratio:.6g}\nf natural ≈ {freq}\n\n{notes}"
         ),
-        "Minimum order from Ap/As and pass/stop edges "
-        "(LP/HP classical families)": (
+        "Minimum order from Ap/As and pass/stop edges (LP/HP classical families)": (
             "Orden mínimo a partir de Ap/As y los bordes de paso/rechazo "
             "(LP/HP, familias clásicas)"
         ),
@@ -548,9 +562,7 @@ _ES.update(
         "Convert {ref}": "Convertir {ref}",
         "Delete element": "Eliminar elemento",
         "Delete {ref}": "Eliminar {ref}",
-        "Discard the current unsaved changes?": (
-            "¿Descartar los cambios sin guardar?"
-        ),
+        "Discard the current unsaved changes?": ("¿Descartar los cambios sin guardar?"),
         "Edit element": "Editar elemento",
         "Edit limits": "Editar límites",
         "Edit markers": "Editar marcadores",
@@ -582,9 +594,7 @@ _ES.update(
         ),
         "Monte-Carlo": "Monte-Carlo",
         "Monte-Carlo failed": "Monte-Carlo fallido",
-        "Monte-Carlo: {done}/{total} trials…": (
-            "Monte-Carlo: {done}/{total} ensayos…"
-        ),
+        "Monte-Carlo: {done}/{total} trials…": ("Monte-Carlo: {done}/{total} ensayos…"),
         "Monte-Carlo: {trials} trials…": "Monte-Carlo: {trials} ensayos…",
         "Move marker": "Mover marcador",
         "Move the mouse over a plot first to set the cursor frequency.": (
@@ -596,9 +606,7 @@ _ES.update(
             "No hay frecuencia de referencia disponible."
         ),
         "No variants.": "Sin variantes.",
-        "Only L/C arms have parasitics.": (
-            "Solo las ramas L/C tienen parásitos."
-        ),
+        "Only L/C arms have parasitics.": ("Solo las ramas L/C tienen parásitos."),
         "Only ideal L/C/R arms can be edited here.": (
             "Solo se pueden editar aquí ramas L/C/R ideales."
         ),
@@ -654,9 +662,7 @@ _ES.update(
         "Tolerance for {ref}: ±{pct:g}%": "Tolerancia de {ref}: ±{pct:g}%",
         "Tune": "Ajuste",
         "Tune step": "Paso de ajuste",
-        "Tune step for {ref}: {pct:g}%": (
-            "Paso de ajuste de {ref}: {pct:g}%"
-        ),
+        "Tune step for {ref}: {pct:g}%": ("Paso de ajuste de {ref}: {pct:g}%"),
         "Tuned {ref} → {value:.6g}": "Ajustado {ref} → {value:.6g}",
         "Updated parasitics on {ref}": "Parásitos actualizados en {ref}",
         "Wrote {path}": "Escrito {path}",

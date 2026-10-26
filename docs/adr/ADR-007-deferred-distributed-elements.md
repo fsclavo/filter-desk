@@ -1,6 +1,6 @@
 # ADR-007: Deferred distributed / transformer elements
 
-- **Status:** Accepted
+- **Status:** Superseded for the microstrip-v1 scope by ADR-018; original deferral otherwise accepted
 - **Date:** 2026-03-29
 - **Phase:** 0
 

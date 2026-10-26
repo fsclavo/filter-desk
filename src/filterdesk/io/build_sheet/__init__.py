@@ -57,6 +57,11 @@ class BuildSheetRow:
     core: str = ""
     turns: int | None = None
     wire_awg: int | None = None
+    substrate: str = ""
+    width_mm: float = 0.0
+    length_mm: float = 0.0
+    angle_deg: float = 0.0
+    stub_kind: str = ""
 
 
 BOM_COLUMNS: tuple[str, ...] = (
@@ -77,6 +82,11 @@ BOM_COLUMNS: tuple[str, ...] = (
     "core",
     "turns",
     "wire_awg",
+    "substrate",
+    "width_mm",
+    "length_mm",
+    "angle_deg",
+    "stub_kind",
     "v_peak_v",
     "i_peak_a",
 )
@@ -99,6 +109,11 @@ _SHEET_COLUMNS: tuple[str, ...] = (
     "core",
     "turns",
     "wire_awg",
+    "substrate",
+    "width_mm",
+    "length_mm",
+    "angle_deg",
+    "stub_kind",
 )
 _SHEET_HEADERS: tuple[str, ...] = (
     "Ref",
@@ -117,6 +132,11 @@ _SHEET_HEADERS: tuple[str, ...] = (
     "Core",
     "Turns",
     "AWG",
+    "Substrate",
+    "W",
+    "L",
+    "Angle",
+    "Stub",
 )
 
 
@@ -132,9 +152,7 @@ def _balun_value_text(comp: PhysicalComponent) -> str:
     else:
         turns = f"{winding.turns / secondary:.3g}:1"
     impedance = (
-        f"{winding.impedance_ratio:.4g}"
-        if winding.impedance_ratio is not None
-        else "?"
+        f"{winding.impedance_ratio:.4g}" if winding.impedance_ratio is not None else "?"
     )
     return f"{turns} turns / {impedance} Z"
 
@@ -173,7 +191,18 @@ def _group_key(row: BuildSheetRow) -> tuple[object, ...]:
         part = (row.kind, row.series, round(row.nearest_value, 15))
     else:
         part = (row.kind, row.value_text, round(row.value, 15))
-    return (part, row.tolerance_pct, row.core, row.turns, row.wire_awg)
+    return (
+        part,
+        row.tolerance_pct,
+        row.core,
+        row.turns,
+        row.wire_awg,
+        row.substrate,
+        row.width_mm,
+        row.length_mm,
+        row.angle_deg,
+        row.stub_kind,
+    )
 
 
 def _max_optional(a: float | None, b: float | None) -> float | None:
@@ -248,7 +277,15 @@ def build_sheet_rows(
                     else (
                         f"balun {comp.winding.material} {comp.winding.topology}"
                         if comp.kind == "balun" and comp.winding is not None
-                        else _parasitic_text(comp)
+                        else (
+                            "TEM line"
+                            if comp.kind == "microstrip_line"
+                            else (
+                                f"TEM {comp.stub_kind} stub"
+                                if comp.kind == "microstrip_stub"
+                                else _parasitic_text(comp)
+                            )
+                        )
                     )
                 ),
                 v_peak_v=entry.v_peak_v if entry is not None else None,
@@ -258,20 +295,20 @@ def build_sheet_rows(
                 delta_pct=delta,
                 dcr_ohm=(
                     comp.series_resistance_ohm
-                    if comp.kind == "inductor"
-                    and comp.series_resistance_ohm > 0.0
+                    if comp.kind == "inductor" and comp.series_resistance_ohm > 0.0
                     else None
                 ),
                 srf_hz=(
-                    comp.srf_hz
-                    if comp.srf_hz is not None
-                    else _component_srf_hz(comp)
+                    comp.srf_hz if comp.srf_hz is not None else _component_srf_hz(comp)
                 ),
                 core=comp.winding.core if comp.winding is not None else "",
                 turns=comp.winding.turns if comp.winding is not None else None,
-                wire_awg=(
-                    comp.winding.wire_awg if comp.winding is not None else None
-                ),
+                wire_awg=(comp.winding.wire_awg if comp.winding is not None else None),
+                substrate=comp.substrate,
+                width_mm=comp.width_mm,
+                length_mm=comp.length_mm,
+                angle_deg=comp.angle_deg,
+                stub_kind=comp.stub_kind,
             )
         )
     return _group_rows(rows) if group else rows
@@ -324,6 +361,16 @@ def _column_value(row: BuildSheetRow, column: str, *, human: bool = False) -> st
         return "" if row.turns is None else str(row.turns)
     if column == "wire_awg":
         return "" if row.wire_awg is None else str(row.wire_awg)
+    if column == "substrate":
+        return row.substrate
+    if column == "width_mm":
+        return "" if row.width_mm <= 0.0 else f"{row.width_mm:.4g}"
+    if column == "length_mm":
+        return "" if row.length_mm <= 0.0 else f"{row.length_mm:.4g}"
+    if column == "angle_deg":
+        return "" if row.angle_deg <= 0.0 else f"{row.angle_deg:.4g}"
+    if column == "stub_kind":
+        return row.stub_kind
     if column == "v_peak_v":
         return "" if row.v_peak_v is None else f"{row.v_peak_v:.4g}"
     if column == "i_peak_a":
@@ -347,9 +394,7 @@ def summary_pairs(
     if spec.cutoff_hz > 0.0:
         pairs.append(("Cutoff", format_engineering(spec.cutoff_hz, "Hz", digits=6)))
     if spec.f_center_hz is not None:
-        pairs.append(
-            ("Center", format_engineering(spec.f_center_hz, "Hz", digits=6))
-        )
+        pairs.append(("Center", format_engineering(spec.f_center_hz, "Hz", digits=6)))
     if spec.bandwidth_hz is not None:
         pairs.append(
             ("Bandwidth", format_engineering(spec.bandwidth_hz, "Hz", digits=6))
@@ -517,9 +562,7 @@ def write_build_sheet(
         group=group,
     )
     assumption_items = (
-        assumptions_for_circuit(circuit)
-        if assumptions is None
-        else tuple(assumptions)
+        assumptions_for_circuit(circuit) if assumptions is None else tuple(assumptions)
     )
     suffix = target.suffix.lower()
     if suffix == ".csv":

@@ -71,6 +71,7 @@ from filterdesk.domain.circuit import (
     BalunSpec,
     Circuit,
     IdealInductor,
+    MicrostripLineElement,
     NonIdealInductor,
 )
 from filterdesk.domain.specs import FilterSpec
@@ -97,6 +98,11 @@ from filterdesk.services.vna_tuning import (
     VnaTuningError,
     VnaTuningResult,
     fit_circuit_to_measurement,
+)
+from filterdesk.synthesis.distributed import (
+    DistributedDesign,
+    DistributedSynthesisError,
+    design_distributed_lowpass,
 )
 
 
@@ -150,9 +156,7 @@ class ConfidenceBadge(QLabel):
             "border-radius: 4px; }"
         )
         self.setToolTip(
-            f"{item.area}\n"
-            f"Evidence: {item.evidence}\n"
-            f"Limits: {item.limits}"
+            f"{item.area}\nEvidence: {item.evidence}\nLimits: {item.limits}"
         )
 
 
@@ -180,9 +184,7 @@ class ConfidenceStrip(QWidget):
                 if widget is not None:
                     widget.deleteLater()
         for confidence_item in items:
-            badge = ConfidenceBadge(
-                confidence_item.key, prefix=confidence_item.area
-            )
+            badge = ConfidenceBadge(confidence_item.key, prefix=confidence_item.area)
             badge.set_item(confidence_item)
             self._layout.addWidget(badge)
 
@@ -247,15 +249,12 @@ class SnapDialog(QDialog):
         self._strategy = QComboBox()
         for st in SnapStrategy:
             self._strategy.addItem(tr(_STRATEGY_LABELS[st]), st)
-        self._strategy.setCurrentIndex(
-            list(SnapStrategy).index(SnapStrategy(strategy))
-        )
+        self._strategy.setCurrentIndex(list(SnapStrategy).index(SnapStrategy(strategy)))
         form = QFormLayout(self)
         form.addRow(tr("Series"), self._series)
         form.addRow(tr("Strategy"), self._strategy)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -309,8 +308,7 @@ class NonIdealDialog(QDialog):
         form.addRow(tr("Capacitor ESR"), self._cap_esr)
         form.addRow(tr("Capacitor ESL"), self._cap_esl)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -323,11 +321,7 @@ class NonIdealDialog(QDialog):
             kwargs["inductor_q"] = float(q_text)
             freq_text = self._q_freq.text().strip()
             if not freq_text:
-                raise ValueError(
-                        tr(
-                            "Q reference frequency is required when Q is set"
-                        )
-                    )
+                raise ValueError(tr("Q reference frequency is required when Q is set"))
             kwargs["q_frequency_hz"] = parse_si(freq_text)
         for key, field in (
             ("inductor_dcr_ohm", self._ind_dcr),
@@ -371,9 +365,7 @@ class ParasiticDialog(QDialog):
             self._r = EngineeringLineEdit()
             self._r.setText(format_engineering(series_resistance_ohm, "Ohm", digits=6))
             self._cp = EngineeringLineEdit()
-            self._cp.setText(
-                format_engineering(parallel_capacitance_f, "F", digits=6)
-            )
+            self._cp.setText(format_engineering(parallel_capacitance_f, "F", digits=6))
             self._q = EngineeringLineEdit()
             self._q.setPlaceholderText(tr("optional; overrides DCR"))
             self._q_freq = EngineeringLineEdit()
@@ -391,8 +383,7 @@ class ParasiticDialog(QDialog):
             form.addRow(tr("ESR"), self._esr)
             form.addRow(tr("ESL"), self._esl)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -408,9 +399,7 @@ class ParasiticDialog(QDialog):
                 freq_text = self._q_freq.text().strip()
                 if not freq_text:
                     raise ValueError(
-                        tr(
-                            "Q reference frequency is required when Q is set"
-                        )
+                        tr("Q reference frequency is required when Q is set")
                     )
                 kwargs["series_resistance_ohm"] = inductor_resistance_ohm_from_q(
                     self._value, float(q_text), parse_si(freq_text)
@@ -455,9 +444,7 @@ class MonteCarloDialog(QDialog):
         self._dist = QComboBox()
         for dist in ToleranceDistribution:
             self._dist.addItem(dist.value, dist)
-        self._dist.setCurrentIndex(
-            list(ToleranceDistribution).index(base.distribution)
-        )
+        self._dist.setCurrentIndex(list(ToleranceDistribution).index(base.distribution))
         self._seed = QLineEdit()
         self._seed.setPlaceholderText(tr("optional integer"))
         if base.seed is not None:
@@ -468,8 +455,7 @@ class MonteCarloDialog(QDialog):
         form.addRow(tr("Distribution"), self._dist)
         form.addRow(tr("Seed"), self._seed)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -536,8 +522,7 @@ class OptimizeDialog(QDialog):
         form.addRow(tr("Max iterations"), self._max_iter)
         form.addRow(tr("Seed"), self._seed)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -563,7 +548,6 @@ class OptimizeDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.to_config()
         return None
-
 
 
 class BandPresetDialog(QDialog):
@@ -593,8 +577,7 @@ class BandPresetDialog(QDialog):
         form.addRow(tr("Band"), self._band)
         form.addRow(tr("Filter"), self._kind)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -639,8 +622,7 @@ class AttenuatorDialog(QDialog):
         form.addRow(tr("Series R"), self._series)
         form.addRow(tr("Shunt R"), self._shunt)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -724,8 +706,7 @@ class MatchingDialog(QDialog):
         form.addRow(self._model)
         form.addRow(tr("Elements"), self._summary)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -762,8 +743,7 @@ class MatchingDialog(QDialog):
             value_text = format_engineering(el.value, unit, digits=4)
             parts.append(f"{el.role.value} {el.kind}={value_text}")
         self._summary.setText(
-            "  ".join(parts)
-            + f"   (Zin={design.input_impedance_ohm.real:.4g}"
+            "  ".join(parts) + f"   (Zin={design.input_impedance_ohm.real:.4g}"
             f"{design.input_impedance_ohm.imag:+g}j)"
         )
 
@@ -879,9 +859,7 @@ class _ToroidPage(QWidget):
         self._design_value = design
         self._turns_exact.setText(f"{design.turns_exact:.2f}")
         self._turns_used.setText(str(design.turns))
-        self._l_achieved.setText(
-            format_engineering(design.inductance_h, "H", digits=6)
-        )
+        self._l_achieved.setText(format_engineering(design.inductance_h, "H", digits=6))
         if design.wire.fits:
             self._wire.setText(
                 f"AWG {design.wire.awg} ({design.wire.diameter_mm:.3f} mm), "
@@ -986,9 +964,7 @@ class _AirCoilPage(QWidget):
     def _on_wire_mode(self, index: int) -> None:
         self._wire_stack.setCurrentIndex(index)
         if index == 1:
-            self._wire_mm.setText(
-                f"{awg_diameter_mm(int(self._awg.value())):.3f}"
-            )
+            self._wire_mm.setText(f"{awg_diameter_mm(int(self._awg.value())):.3f}")
         else:
             try:
                 diameter = float(self._wire_mm.text().strip())
@@ -1004,9 +980,7 @@ class _AirCoilPage(QWidget):
         try:
             diameter = float(self._diameter.text().strip() or "0")
             awg = None if use_mm else int(self._awg.value())
-            wire_mm = (
-                float(self._wire_mm.text().strip() or "0") if use_mm else None
-            )
+            wire_mm = float(self._wire_mm.text().strip() or "0") if use_mm else None
             enamel_text = self._enamel.text().strip()
             enamel = float(enamel_text) if enamel_text else None
             if turns > 0:
@@ -1052,9 +1026,7 @@ class _AirCoilPage(QWidget):
             )
         else:
             self._below.setText("-")
-        self._l_achieved.setText(
-            format_engineering(design.inductance_h, "H", digits=6)
-        )
+        self._l_achieved.setText(format_engineering(design.inductance_h, "H", digits=6))
         self._length.setText(f"{design.length_mm:.2f} mm")
         short = " (short coil)" if design.short_coil else ""
         self._ratio.setText(f"{design.length_to_diameter:.2f}{short}")
@@ -1066,8 +1038,7 @@ class _AirCoilPage(QWidget):
             )
         else:
             self._wire_info.setText(
-                f"{design.wire_diameter_mm:.3f} mm bare "
-                f"(AWG {design.awg} eq.)"
+                f"{design.wire_diameter_mm:.3f} mm bare (AWG {design.awg} eq.)"
             )
         self._wire.setText(f"{design.wire_length_m:.3f} m")
         self._resistance.setText(f"{design.resistance_ohm:.3f} Ohm")
@@ -1165,15 +1136,9 @@ class SensitivityDialog(QDialog):
                 tr("Suggestion"),
             ]
         )
-        self._table.setEditTriggers(
-            QAbstractItemView.EditTrigger.NoEditTriggers
-        )
-        self._table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
-        self._table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
-        )
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
@@ -1255,8 +1220,7 @@ class BuildSheetDialog(QDialog):
         form.addRow(tr("E-series"), self._series)
         form.addRow(self._group)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -1268,9 +1232,7 @@ class BuildSheetDialog(QDialog):
         return series, self._group.isChecked()
 
     @classmethod
-    def ask(
-        cls, parent: QWidget | None = None
-    ) -> tuple[ESeries | None, bool] | None:
+    def ask(cls, parent: QWidget | None = None) -> tuple[ESeries | None, bool] | None:
         dialog = cls(parent)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.selection()
@@ -1307,8 +1269,7 @@ class DesignSweepDialog(QDialog):
         form.addRow(tr("Values"), self._values)
         form.addRow(tr("Points"), self._points)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
@@ -1319,9 +1280,7 @@ class DesignSweepDialog(QDialog):
         return axis, self._values.text().strip(), int(self._points.value())
 
     @classmethod
-    def ask(
-        cls, parent: QWidget | None = None
-    ) -> tuple[SweepAxis, str, int] | None:
+    def ask(cls, parent: QWidget | None = None) -> tuple[SweepAxis, str, int] | None:
         dialog = cls(parent)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.selection()
@@ -1351,15 +1310,9 @@ class DesignSweepResultDialog(QDialog):
         ]
         self._table = QTableWidget(len(self._rows), len(headers), self)
         self._table.setHorizontalHeaderLabels(headers)
-        self._table.setEditTriggers(
-            QAbstractItemView.EditTrigger.NoEditTriggers
-        )
-        self._table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
-        self._table.setSelectionMode(
-            QAbstractItemView.SelectionMode.SingleSelection
-        )
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.ResizeToContents
@@ -1380,8 +1333,7 @@ class DesignSweepResultDialog(QDialog):
                 ),
                 (
                     ""
-                    if metrics is None
-                    or metrics.stopband_attenuation_db is None
+                    if metrics is None or metrics.stopband_attenuation_db is None
                     else f"{metrics.stopband_attenuation_db:.1f}"
                 ),
                 (
@@ -1391,8 +1343,7 @@ class DesignSweepResultDialog(QDialog):
                 ),
                 (
                     ""
-                    if metrics is None
-                    or metrics.group_delay_ripple_s is None
+                    if metrics is None or metrics.group_delay_ripple_s is None
                     else f"{metrics.group_delay_ripple_s * 1e12:.1f}"
                 ),
                 row.note or row.error or "",
@@ -1482,9 +1433,7 @@ class TransformerDialog(QDialog):
             options_header.setSectionResizeMode(
                 column, QHeaderView.ResizeMode.ResizeToContents
             )
-        options_header.setSectionResizeMode(
-            6, QHeaderView.ResizeMode.Stretch
-        )
+        options_header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
         self._options_table.setColumnWidth(6, 300)
         self._options_table.setWordWrap(True)
         self._options_table.setTextElideMode(Qt.TextElideMode.ElideNone)
@@ -1606,7 +1555,6 @@ class TransformerDialog(QDialog):
     def remove_requested(self) -> bool:
         return self._remove_requested
 
-
     def _remove(self) -> None:
         self._remove_requested = True
         self.accept()
@@ -1624,9 +1572,7 @@ class TransformerDialog(QDialog):
                 topology=TransformerTopology(self._topology.currentText()),
                 coupling=float(self._coupling.text().strip() or "0") / 100.0,
                 tan_delta=float(self._tan_delta.text().strip() or "0") / 100.0,
-                winding_capacitance_f=parse_si(
-                    self._winding_c.text().strip() or "0"
-                )
+                winding_capacitance_f=parse_si(self._winding_c.text().strip() or "0")
                 * 1e-12,
                 line_z0_ohm=(
                     parse_si(self._line_z0.text().strip())
@@ -1677,9 +1623,7 @@ class TransformerDialog(QDialog):
             values = (
                 f"{design.n_primary}:{design.n_secondary}",
                 str(design.total_turns),
-                format_engineering(
-                    design.magnetizing_inductance_h, "H", digits=3
-                ),
+                format_engineering(design.magnetizing_inductance_h, "H", digits=3),
                 f"{design.reactance_ratio:.2f}",
                 (
                     "-"
@@ -1691,9 +1635,7 @@ class TransformerDialog(QDialog):
             )
             for col, value in enumerate(values):
                 item = QTableWidgetItem(value)
-                item.setToolTip(
-                    f"{design.status_text}\n" + "; ".join(design.notes)
-                )
+                item.setToolTip(f"{design.status_text}\n" + "; ".join(design.notes))
                 self._options_table.setItem(row, col, item)
         self._options_table.resizeRowsToContents()
 
@@ -1719,10 +1661,7 @@ class TransformerDialog(QDialog):
         if design.length_m:
             model += f", l {design.length_m * 1000.0:.1f} mm"
         if design.total_loss_w is not None:
-            model += (
-                f", loss {design.total_loss_w:.2f} W, "
-                f"hot {design.thermal_text}"
-            )
+            model += f", loss {design.total_loss_w:.2f} W, hot {design.thermal_text}"
         self._model.setText(model)
         self._vi.setText(
             f"{design.v_unbalanced_rms:.3g}/{design.v_balanced_rms:.3g} Vrms, "
@@ -1741,6 +1680,7 @@ class TransformerDialog(QDialog):
             f"{design.awg_secondary}; fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
+
 
 class MicrostripDialog(QDialog):
     """Microstrip line calculator (Hammerstad-Jensen, first-order losses)."""
@@ -1832,11 +1772,99 @@ class MicrostripDialog(QDialog):
         )
         if line.length_m:
             self._length_result.setText(
-                f"{line.electrical_length_deg():.1f} deg, "
-                f"loss {line.loss_db():.4f} dB"
+                f"{line.electrical_length_deg():.1f} deg, loss {line.loss_db():.4f} dB"
             )
         else:
             self._length_result.setText("-")
+
+
+class DistributedSynthesisDialog(QDialog):
+    """Convert the current low-pass spec into microstrip line sections."""
+
+    def __init__(self, spec: FilterSpec, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Distributed microstrip realization"))
+        self._spec = spec
+        self._substrates = list_substrates()
+        self._design: DistributedDesign | None = None
+
+        self._substrate = QComboBox()
+        for substrate in self._substrates:
+            self._substrate.addItem(
+                f"{substrate.name} - er {substrate.er:g}, "
+                f"h {substrate.h_mm:g} mm, tanD {substrate.tan_delta:g}"
+            )
+        self._angle = EngineeringLineEdit()
+        self._angle.setText("30")
+        self._z_min = EngineeringLineEdit()
+        self._z_min.setText("10")
+        self._z_max = EngineeringLineEdit()
+        self._z_max.setText("120")
+        self._confidence = ConfidenceBadge("distributed")
+        self._preview = QLabel()
+        self._preview.setWordWrap(True)
+        self._preview.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+
+        form = QFormLayout(self)
+        form.addRow(tr("Confidence"), self._confidence)
+        form.addRow(tr("Substrate"), self._substrate)
+        form.addRow(tr("Electrical length (deg)"), self._angle)
+        form.addRow(tr("Minimum Z0 (Ohm)"), self._z_min)
+        form.addRow(tr("Maximum Z0 (Ohm)"), self._z_max)
+        form.addRow(tr("Preview"), self._preview)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+        self._buttons = buttons
+
+        self._substrate.currentIndexChanged.connect(self._recompute)
+        for field in (self._angle, self._z_min, self._z_max):
+            field.editingFinished.connect(self._recompute)
+        self._recompute()
+
+    def selected_substrate(self) -> Substrate:
+        return self._substrates[self._substrate.currentIndex()]
+
+    def design(self) -> DistributedDesign | None:
+        return self._design
+
+    def accept(self) -> None:
+        if self._design is None:
+            return
+        super().accept()
+
+    def _recompute(self) -> None:
+        try:
+            design = design_distributed_lowpass(
+                self._spec,
+                self.selected_substrate(),
+                electrical_length_deg=float(self._angle.text().strip() or "0"),
+                z0_min_ohm=float(self._z_min.text().strip() or "0"),
+                z0_max_ohm=float(self._z_max.text().strip() or "0"),
+            )
+        except (DistributedSynthesisError, ValueError) as exc:
+            self._design = None
+            self._preview.setText(str(exc))
+            self._buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+            return
+        self._design = design
+        rows = [
+            f"{el.id}: Z0={el.z0_ohm:.4g} Ω, W={el.width_mm:.3g} mm, "
+            f"L={el.length_m * 1e3:.4g} mm, θ={el.angle_deg:.3g}°"
+            for el in design.circuit.elements
+            if isinstance(el, MicrostripLineElement)
+        ]
+        if design.warnings:
+            rows.append("")
+            rows.extend(f"Warning: {warning}" for warning in design.warnings)
+        self._preview.setText("\n".join(rows))
+        self._buttons.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
 
 
 class VnaTuningDialog(QDialog):
@@ -1974,8 +2002,6 @@ class VnaTuningDialog(QDialog):
         self._apply_button.setEnabled(True)
 
 
-
-
 class HfBandWizardDialog(QDialog):
     """Guided receive-band BPF design for an amateur HF allocation."""
 
@@ -2037,12 +2063,8 @@ class HfBandWizardDialog(QDialog):
         self._apply_button = QPushButton("Apply to project")
         self._apply_button.setEnabled(False)
         buttons = QDialogButtonBox()
-        buttons.addButton(
-            self._design_button, QDialogButtonBox.ButtonRole.ActionRole
-        )
-        buttons.addButton(
-            self._apply_button, QDialogButtonBox.ButtonRole.AcceptRole
-        )
+        buttons.addButton(self._design_button, QDialogButtonBox.ButtonRole.ActionRole)
+        buttons.addButton(self._apply_button, QDialogButtonBox.ButtonRole.AcceptRole)
         close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
         self._design_button.clicked.connect(self._run_design)
         self._apply_button.clicked.connect(self.accept)
@@ -2075,9 +2097,7 @@ class HfBandWizardDialog(QDialog):
                 z_source_ohm=parse_si(self._z_in.text().strip() or "0"),
                 z_load_ohm=parse_si(self._z_out.text().strip() or "0"),
                 max_insertion_loss_db=float(self._max_il.text().strip() or "0"),
-                min_stopband_attenuation_db=float(
-                    self._min_stop.text().strip() or "0"
-                ),
+                min_stopband_attenuation_db=float(self._min_stop.text().strip() or "0"),
                 stopband_guard=float(self._guard.text().strip() or "0") / 100.0,
                 max_order=self._max_order.value(),
             )

@@ -9,7 +9,7 @@ count or release changes.
 **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.13.0 planning.
 
-**Verification:** local suite **924 passed, 1 skipped**; coverage **83.07 %**.
+**Verification:** local suite **937 passed, 1 skipped**; coverage **82.88 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40408577611
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -23,7 +23,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - **Design** — filter-only workflow: Synthesize + Analyze, Band preset, Snap to
   E-series, Apply parasitics/Q, Monte-Carlo, Scale response, Optimize to limits,
   Component sensitivity, Parameter sweep, Check spec compliance, Tune to VNA,
-  Component submenu.
+  **Distributed microstrip realization**, Component submenu.
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
   calculator, **Transformer / balun / unun**, Microstrip line.
 - **File** — project/Touchstone import and exports: BOM, SPICE, LTspice, Qucs,
@@ -56,6 +56,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       apply → optional E24 snap; reuses normal BOM/VNA workflow.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
+- [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project
+      v2, BOM geometry, schematic, experimental LP synthesis (order ≤ 3) and CLI.
 
 ---
 
@@ -88,12 +90,18 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       high-flux curves or measurements; validate FT140/FT240 temperature rise. (M/L)
 - [ ] **Balun model depth:** full multi-line Guanella/Ruthroff, common-mode
       impedance in the differential 2-port and validated TLT export. (L)
-- [ ] **Distributed netlist:** integrate microstrip/stub elements into the
-      domain, ABCD/skrf, BOM and distributed synthesis. (L)
+- [x] **Distributed netlist v1:** line/stub elements are integrated into the
+      domain, ABCD/skrf, project v2, BOM and an experimental order-1–3 LP
+      synthesis. Full response coverage, higher orders, stub-only/Kuroda
+      topologies and EM remain future work. (L)
 - [x] **Installed-package regression:** CI now exercises Linux bundle/AppImage
       and the installed Windows app headlessly; see `docs/packaging.md`. (M)
 
 ### P2 — data / ergonomics
+
+- [ ] **Distributed synthesis depth:** higher-order/all-response distributed
+      design, stub-only/Kuroda topologies, dispersion/discontinuity models and
+      hardware validation. (L)
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)

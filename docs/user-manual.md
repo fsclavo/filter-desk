@@ -67,6 +67,7 @@ projects**. A good first path is:
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
+| Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
 | Compare a built filter with a VNA | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
 | Produce a BOM/build sheet | **File → Export → build sheet / BOM…** |
 
@@ -573,6 +574,11 @@ Most commands accept `--json` for machine-readable output.
   and open/short stub on a built-in substrate (`--substrate FR4` or overrides
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
+- **`distributed`** — experimental microstrip stepped-impedance low-pass
+  realization (Butterworth/Chebyshev-I, order ≤ 3):
+  `filterdesk distributed --family butterworth --response low_pass --order 3
+  --cutoff 100M --substrate FR4 --export-s2p out.s2p --export-build-sheet bom.csv`.
+  Use `--angle`, `--z0-min` and `--z0-max` to control the line geometry.
 - **`tune-vna`** — synthesize from a spec, then trim component values to a
   measured `.s2p`: `filterdesk tune-vna measured.s2p --family chebyshev_type_i
   --response low_pass --order 4 --cutoff 100M --ripple 0.1 --bound 0.2`.
@@ -832,9 +838,43 @@ input reactance of an open or short stub at a chosen electrical angle.
 Limitations: strip thickness is not included in `Z0`; conductor loss uses a
 surface-resistance/skin-depth approximation and dielectric loss the standard
 quasi-static formula. Discontinuities, radiation, dispersion and finite
-ground-plane effects are not modelled. These are line/stub calculators, not a
-full distributed-filter synthesis engine; the results are intended for
-first-pass sizing and should be verified with a 2-D/3-D field solver or VNA.
+ground-plane effects are not modelled. These are line/stub calculators; verify
+the layout with a 2-D/3-D field solver or VNA.
+
+### Distributed microstrip realization (experimental)
+
+**Design → Distributed microstrip realization…** converts the current
+low-pass specification into a cascade of microstrip lines. It is intended for
+PCB low-pass filters, not for arbitrary distributed networks.
+
+- Supported: **Butterworth** and **Chebyshev-I low-pass**, order **1–3**.
+- Choose substrate, requested electrical length and a `Z0` range. The tool
+  starts at the requested angle and adjusts it (up to 80°) to keep every line
+  inside the range; warnings report the adjustment and any very narrow/wide
+  traces.
+- Series inductors become high-impedance lines and shunt capacitors become
+  low-impedance lines. The preview lists `Z0`, trace width, length and angle.
+- Apply creates a normal circuit: it appears in the schematic, component table,
+  project, BOM and Touchstone export. The action is undoable.
+- The model is **experimental**: ideal TEM lines, no dispersion, step
+  discontinuities, radiation, coupling or fabrication tolerances. It is not a
+  hardware-validated engine. Verify the board with Touchstone/VNA.
+- SPICE/LTspice/Qucs export is intentionally rejected for distributed circuits
+  instead of emitting an approximate line model.
+
+On the command line:
+
+```bash
+filterdesk distributed --family butterworth --response low_pass --order 3 \
+  --cutoff 100M --substrate FR4 --json
+filterdesk distributed --family chebyshev_type_i --ripple 0.1 --response low_pass \
+  --order 3 --cutoff 100M --export-s2p out.s2p --export-build-sheet bom.csv
+```
+
+Manual line and stub elements are also part of the canonical netlist and both
+ABCD/skrf backends. Stubs are not produced by the v1 low-pass synthesis; series
+stubs, Kuroda transforms, coupled lines and higher-order synthesis remain future
+work.
 
 ### VNA-guided tuning
 
@@ -975,10 +1015,10 @@ statuses are:
 Important examples: LC synthesis and T1 are validated; ABCD↔scikit-rf and
 Touchstone I/O are cross-checked; ideal filter components are a separate
 `ideal` state (upgraded to `estimated` when parasitics are applied); ferrite
-loss/temperature, microstrip and toroid calculators are estimated; VNA tuning
-and Guanella/Ruthroff TLT are experimental; distributed filter synthesis is
-not evaluated. The build sheet includes an **Assumptions** section with the
-same model limits. The detailed test cases and tolerances are in
+loss/temperature, microstrip and toroid calculators are estimated; VNA tuning,
+Guanella/Ruthroff TLT and distributed microstrip synthesis are experimental. The
+build sheet includes an **Assumptions** section with the same model limits. The
+detailed test cases and tolerances are in
 [Validation matrix](validation-matrix.md).
 
 ## 16. Known limitations

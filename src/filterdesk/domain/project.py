@@ -17,19 +17,21 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
     Port,
     WindingSpec,
 )
-from filterdesk.domain.enums import ElementRole, TopologyId
+from filterdesk.domain.enums import ElementRole, MicrostripStubKind, TopologyId
 from filterdesk.domain.specs import (
     FilterSpec,
     filter_spec_from_mapping,
     filter_spec_to_mapping,
 )
 
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 
 
 def _opt_float(value: Any) -> float | None:
@@ -179,6 +181,23 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
             row["value_F"] = el.value_f
             row["esr_Ohm"] = el.esr_ohm
             row["esl_H"] = el.esl_h
+        elif isinstance(el, MicrostripLineElement):
+            row["z0_Ohm"] = el.z0_ohm
+            row["length_m"] = el.length_m
+            row["eeff"] = el.eeff
+            row["loss_db_per_m"] = el.loss_db_per_m
+            row["substrate"] = el.substrate
+            row["width_mm"] = el.width_mm
+            row["angle_deg"] = el.angle_deg
+        elif isinstance(el, MicrostripStubElement):
+            row["z0_Ohm"] = el.z0_ohm
+            row["length_m"] = el.length_m
+            row["eeff"] = el.eeff
+            row["loss_db_per_m"] = el.loss_db_per_m
+            row["stub_kind"] = el.stub_kind.value
+            row["substrate"] = el.substrate
+            row["width_mm"] = el.width_mm
+            row["angle_deg"] = el.angle_deg
         else:
             row["value_Ohm"] = el.value_ohm
         elements.append(row)
@@ -339,6 +358,41 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     g=g,
                 )
             )
+        elif etype == "microstrip_line":
+            elements.append(
+                MicrostripLineElement(
+                    id=str(row["id"]),
+                    z0_ohm=float(row["z0_Ohm"]),
+                    length_m=float(row["length_m"]),
+                    eeff=float(row["eeff"]),
+                    node_a=str(row["node_a"]),
+                    node_b=str(row["node_b"]),
+                    role=role,
+                    loss_db_per_m=float(row.get("loss_db_per_m", 0.0)),
+                    substrate=str(row.get("substrate", "")),
+                    width_mm=float(row.get("width_mm", 0.0)),
+                    angle_deg=float(row.get("angle_deg", 0.0)),
+                    g=g,
+                )
+            )
+        elif etype == "microstrip_stub":
+            elements.append(
+                MicrostripStubElement(
+                    id=str(row["id"]),
+                    z0_ohm=float(row["z0_Ohm"]),
+                    length_m=float(row["length_m"]),
+                    eeff=float(row["eeff"]),
+                    stub_kind=MicrostripStubKind(str(row.get("stub_kind", "open"))),
+                    node_a=str(row["node_a"]),
+                    node_b=str(row["node_b"]),
+                    role=role,
+                    loss_db_per_m=float(row.get("loss_db_per_m", 0.0)),
+                    substrate=str(row.get("substrate", "")),
+                    width_mm=float(row.get("width_mm", 0.0)),
+                    angle_deg=float(row.get("angle_deg", 0.0)),
+                    g=g,
+                )
+            )
         else:
             raise ValueError(f"unknown element type: {etype}")
     topo_raw = data.get("topology_id")
@@ -410,9 +464,7 @@ def project_to_mapping(project: Project) -> dict[str, Any]:
 def project_from_mapping(data: dict[str, Any]) -> Project:
     version = int(data.get("format_version", FORMAT_VERSION))
     if version > FORMAT_VERSION:
-        raise ValueError(
-            f"unsupported format_version {version} (max {FORMAT_VERSION})"
-        )
+        raise ValueError(f"unsupported format_version {version} (max {FORMAT_VERSION})")
     meta_raw = data.get("metadata") or {}
     meta = ProjectMetadata(
         title=str(meta_raw.get("title", "Untitled")),

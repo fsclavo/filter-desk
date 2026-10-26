@@ -17,10 +17,12 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
-from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.enums import ElementRole, MicrostripStubKind
 
 
 class AnalysisError(ValueError):
@@ -59,9 +61,7 @@ def _y_parallel_lc(
     return 1.0 / (1j * omega * l_h) + 1j * omega * c_f
 
 
-def transformer_abcd(
-    ratio: float, n_points: int
-) -> NDArray[np.complexfloating]:
+def transformer_abcd(ratio: float, n_points: int) -> NDArray[np.complexfloating]:
     """Ideal transformer ABCD, primary (ladder) : secondary (load) = ratio:1."""
     if ratio <= 0.0:
         raise AnalysisError("transformer ratio must be > 0")
@@ -134,6 +134,45 @@ def balun_abcd(
     if balun.shunt_c_f > 0.0:
         sections.append(_shunt_abcd(1j * omega * balun.shunt_c_f))
     return cascade_abcd(sections)
+
+
+def _propagation_constant(
+    frequency_hz: NDArray[np.floating],
+    eeff: float,
+    loss_db_per_m: float,
+) -> NDArray[np.complexfloating]:
+    if eeff <= 0.0:
+        raise AnalysisError("effective permittivity must be > 0")
+    alpha = loss_db_per_m / 8.686
+    beta = (
+        2.0
+        * np.pi
+        * np.asarray(frequency_hz, dtype=float)
+        / (math_sqrt(eeff) * 299_792_458.0)
+    )
+    return np.asarray(alpha + 1j * beta, dtype=np.complex128)
+
+
+def math_sqrt(value: float) -> float:
+    return float(np.sqrt(value))
+
+
+def _stub_input_impedance(
+    stub: MicrostripStubElement,
+    frequency_hz: NDArray[np.floating],
+) -> NDArray[np.complexfloating]:
+    gamma_l = (
+        _propagation_constant(frequency_hz, stub.eeff, stub.loss_db_per_m)
+        * stub.length_m
+    )
+    tanh = np.tanh(gamma_l)
+    if stub.stub_kind == MicrostripStubKind.OPEN:
+        if stub.length_m <= 0.0:
+            return np.full_like(tanh, 1e12, dtype=np.complex128)
+        z = stub.z0_ohm / np.where(np.abs(tanh) < 1e-15, 1e-15, tanh)
+    else:
+        z = stub.z0_ohm * tanh
+    return np.asarray(z, dtype=np.complex128)
 
 
 def _z_nonideal_inductor(
@@ -222,6 +261,20 @@ def _element_abcd(
         if el.role == ElementRole.SERIES:
             return _series_abcd(np.asarray(1.0 / y, dtype=np.complex128))
         return _shunt_abcd(y)
+    if isinstance(el, MicrostripLineElement):
+        return transmission_line_abcd(
+            el.z0_ohm,
+            el.length_m,
+            el.velocity_factor,
+            el.loss_db_per_m,
+            np.asarray(omega / (2.0 * np.pi), dtype=float),
+        )
+    if isinstance(el, MicrostripStubElement):
+        if el.role != ElementRole.SHUNT:
+            raise AnalysisError("microstrip stubs must be shunt elements")
+        z = _stub_input_impedance(el, np.asarray(omega / (2.0 * np.pi), dtype=float))
+        y = 1.0 / z
+        return _shunt_abcd(np.asarray(y, dtype=np.complex128))
     raise AnalysisError(f"unsupported element type: {type(el)!r}")
 
 
@@ -231,6 +284,8 @@ def element_impedance_ohm(el: Element, frequency_hz: float) -> complex:
     For series arms this is the series impedance; for shunt arms it is the shunt
     impedance (``1/Y``). Used by the power-stress estimate.
     """
+    if isinstance(el, (MicrostripLineElement, MicrostripStubElement)):
+        raise AnalysisError("distributed elements have no lumped arm impedance")
     omega = np.array([2.0 * np.pi * frequency_hz], dtype=float)
     abcd = _element_abcd(el, omega)[0]
     if el.role == ElementRole.SERIES:

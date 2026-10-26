@@ -3,6 +3,11 @@
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.synthesis.api import SynthesisResult, synthesize
+from filterdesk.synthesis.distributed import (
+    DistributedDesign,
+    DistributedSynthesisError,
+    design_distributed_lowpass,
+)
 from filterdesk.synthesis.order_estimate import (
     OrderEstimateError,
     OrderEstimateResult,
@@ -13,7 +18,10 @@ from filterdesk.synthesis.order_estimate import (
 __all__ = [
     "OrderEstimateError",
     "OrderEstimateResult",
+    "DistributedDesign",
+    "DistributedSynthesisError",
     "SynthesisResult",
+    "design_distributed_lowpass",
     "estimate_minimum_order",
     "supports_order_estimation",
     "synthesis_note",
@@ -23,10 +31,7 @@ __all__ = [
 
 def synthesis_note(spec: FilterSpec) -> str | None:
     """Human-readable caveat for a synthesized design, if any."""
-    if (
-        spec.family == ApproximationFamily.CHEBYSHEV_TYPE_I
-        and spec.order % 2 == 0
-    ):
+    if spec.family == ApproximationFamily.CHEBYSHEV_TYPE_I and spec.order % 2 == 0:
         return (
             "Even-order Chebyshev I uses the classical equal-ripple "
             "prototype with an ideal output transformer (ADR-017); it "

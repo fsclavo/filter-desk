@@ -32,6 +32,7 @@ Typical amateur-radio jobs:
 - **Output transformer, unun or balun** for an antenna or a matching network.
 - **Toroid and air-core coil** turns, wire gauge, DCR and saturation checks.
 - **Microstrip/stub** sizing for a PCB filter or matching section.
+- **Distributed low-pass** conversion to microstrip lines for a PCB build.
 - **VNA comparison and tuning** of a filter you already built.
 
 ## New to filter design? Start in five minutes
@@ -63,6 +64,7 @@ verify the real build.
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid/air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip, stub, quarter-wave | **Tools → Microstrip line…** |
+| Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
 | Compare or trim a built filter | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
 
 ## Glossary for newcomers
@@ -103,6 +105,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   output-boundary BOM insertion.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
   transformer, open/short stubs, substrate presets and first-order loss.
+- **Experimental distributed LP synthesis**: order 1–3 Butterworth/Chebyshev-I
+  low-pass conversion to microstrip lines, with BOM geometry and explicit
+  model limits.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
   measured S11/S21 magnitude with bounded least squares.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical

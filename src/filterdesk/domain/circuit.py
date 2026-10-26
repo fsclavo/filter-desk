@@ -6,7 +6,12 @@ import math
 from dataclasses import dataclass, field
 from typing import Literal
 
-from filterdesk.domain.enums import ElementRole, ElementType, TopologyId
+from filterdesk.domain.enums import (
+    ElementRole,
+    ElementType,
+    MicrostripStubKind,
+    TopologyId,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -291,9 +296,7 @@ class NonIdealInductor:
     @property
     def effective_parallel_capacitance_f(self) -> float:
         if self.srf_hz is not None and self.srf_hz > 0.0 and self.value_h > 0.0:
-            return 1.0 / (
-                (2.0 * math.pi * self.srf_hz) ** 2 * self.value_h
-            )
+            return 1.0 / ((2.0 * math.pi * self.srf_hz) ** 2 * self.value_h)
         return self.parallel_capacitance_f
 
     @property
@@ -319,9 +322,7 @@ class NonIdealInductor:
         capacitance = self.parallel_capacitance_f
         if capacitance <= 0.0:
             return None
-        return 1.0 / (
-            2.0 * math.pi * math.sqrt(self.value_h * capacitance)
-        )
+        return 1.0 / (2.0 * math.pi * math.sqrt(self.value_h * capacitance))
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,6 +352,92 @@ class NonIdealCapacitor:
         return 1.0 / (2.0 * math.pi * math.sqrt(self.esl_h * self.value_f))
 
 
+@dataclass(frozen=True, slots=True)
+class MicrostripLineElement:
+    """Ideal TEM microstrip line as a series ladder arm.
+
+    Electrical fields are authoritative for analysis; ``substrate``,
+    ``width_mm`` and ``angle_deg`` are descriptive/provenance fields used by the
+    BOM and schematic. Dispersion, discontinuities and radiation are not modeled.
+    """
+
+    id: str
+    z0_ohm: float
+    length_m: float
+    eeff: float
+    node_a: str
+    node_b: str
+    role: ElementRole = ElementRole.SERIES
+    loss_db_per_m: float = 0.0
+    substrate: str = ""
+    width_mm: float = 0.0
+    angle_deg: float = 0.0
+    g: float | None = None
+
+    @property
+    def element_type(self) -> ElementType:
+        return ElementType.MICROSTRIP_LINE
+
+    @property
+    def velocity_factor(self) -> float:
+        return 1.0 / math.sqrt(self.eeff)
+
+    def __post_init__(self) -> None:
+        if self.z0_ohm <= 0.0:
+            raise ValueError("microstrip line Z0 must be > 0")
+        if self.length_m < 0.0:
+            raise ValueError("microstrip line length must be >= 0")
+        if self.eeff <= 0.0:
+            raise ValueError("microstrip line eeff must be > 0")
+        if self.loss_db_per_m < 0.0:
+            raise ValueError("microstrip line loss must be >= 0")
+        if self.role != ElementRole.SERIES:
+            raise ValueError("microstrip line elements are series arms")
+        if self.width_mm < 0.0:
+            raise ValueError("microstrip width must be >= 0")
+
+
+@dataclass(frozen=True, slots=True)
+class MicrostripStubElement:
+    """Ideal TEM open/short shunt stub (microstrip or equivalent line)."""
+
+    id: str
+    z0_ohm: float
+    length_m: float
+    eeff: float
+    stub_kind: MicrostripStubKind
+    node_a: str
+    node_b: str
+    role: ElementRole = ElementRole.SHUNT
+    loss_db_per_m: float = 0.0
+    substrate: str = ""
+    width_mm: float = 0.0
+    angle_deg: float = 0.0
+    g: float | None = None
+
+    @property
+    def element_type(self) -> ElementType:
+        return ElementType.MICROSTRIP_STUB
+
+    @property
+    def velocity_factor(self) -> float:
+        return 1.0 / math.sqrt(self.eeff)
+
+    def __post_init__(self) -> None:
+        if self.z0_ohm <= 0.0:
+            raise ValueError("microstrip stub Z0 must be > 0")
+        if self.length_m < 0.0:
+            raise ValueError("microstrip stub length must be >= 0")
+        if self.eeff <= 0.0:
+            raise ValueError("microstrip stub eeff must be > 0")
+        if self.loss_db_per_m < 0.0:
+            raise ValueError("microstrip stub loss must be >= 0")
+        if self.role != ElementRole.SHUNT:
+            raise ValueError("microstrip stub elements are shunt arms")
+        if self.width_mm < 0.0:
+            raise ValueError("microstrip width must be >= 0")
+
+
 Element = (
     IdealResistor
     | IdealCapacitor
@@ -361,6 +448,8 @@ Element = (
     | IdealDualBruneLC
     | NonIdealInductor
     | NonIdealCapacitor
+    | MicrostripLineElement
+    | MicrostripStubElement
 )
 
 
@@ -384,6 +473,11 @@ class PhysicalComponent:
     esl_h: float = 0.0
     srf_hz: float | None = None
     winding: WindingSpec | None = None
+    substrate: str = ""
+    width_mm: float = 0.0
+    length_mm: float = 0.0
+    angle_deg: float = 0.0
+    stub_kind: str = ""
 
 
 def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
@@ -436,6 +530,37 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
                     "F",
                     esr_ohm=el.esr_ohm,
                     esl_h=el.esl_h,
+                )
+            )
+        elif isinstance(el, MicrostripLineElement):
+            rows.append(
+                PhysicalComponent(
+                    el.id,
+                    el.id,
+                    role,
+                    "microstrip_line",
+                    el.z0_ohm,
+                    "Ohm",
+                    substrate=el.substrate,
+                    width_mm=el.width_mm,
+                    length_mm=el.length_m * 1e3,
+                    angle_deg=el.angle_deg,
+                )
+            )
+        elif isinstance(el, MicrostripStubElement):
+            rows.append(
+                PhysicalComponent(
+                    el.id,
+                    el.id,
+                    role,
+                    "microstrip_stub",
+                    el.z0_ohm,
+                    "Ohm",
+                    substrate=el.substrate,
+                    width_mm=el.width_mm,
+                    length_mm=el.length_m * 1e3,
+                    angle_deg=el.angle_deg,
+                    stub_kind=el.stub_kind.value,
                 )
             )
         elif isinstance(el, IdealCapacitor):
@@ -558,6 +683,23 @@ class Circuit:
                 row["value_F"] = el.value_f
                 row["esr_Ohm"] = el.esr_ohm
                 row["esl_H"] = el.esl_h
+            elif isinstance(el, MicrostripLineElement):
+                row["z0_Ohm"] = el.z0_ohm
+                row["length_m"] = el.length_m
+                row["eeff"] = el.eeff
+                row["loss_db_per_m"] = el.loss_db_per_m
+                row["substrate"] = el.substrate
+                row["width_mm"] = el.width_mm
+                row["angle_deg"] = el.angle_deg
+            elif isinstance(el, MicrostripStubElement):
+                row["z0_Ohm"] = el.z0_ohm
+                row["length_m"] = el.length_m
+                row["eeff"] = el.eeff
+                row["loss_db_per_m"] = el.loss_db_per_m
+                row["stub_kind"] = el.stub_kind.value
+                row["substrate"] = el.substrate
+                row["width_mm"] = el.width_mm
+                row["angle_deg"] = el.angle_deg
             else:
                 row["value_Ohm"] = el.value_ohm
             rows.append(row)

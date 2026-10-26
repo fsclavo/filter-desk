@@ -50,6 +50,11 @@ class ElementRole(StrEnum):
     SHUNT = "shunt"
 
 
+class MicrostripStubKind(StrEnum):
+    OPEN = "open"
+    SHORT = "short"
+
+
 class ElementType(StrEnum):
     RESISTOR = "resistor"
     CAPACITOR = "capacitor"
@@ -63,3 +68,5 @@ class ElementType(StrEnum):
     # Lossy / parasitic-bearing parts (Phase 6, FR-P2)
     NONIDEAL_INDUCTOR = "nonideal_inductor"
     NONIDEAL_CAPACITOR = "nonideal_capacitor"
+    MICROSTRIP_LINE = "microstrip_line"
+    MICROSTRIP_STUB = "microstrip_stub"

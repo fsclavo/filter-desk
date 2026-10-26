@@ -36,10 +36,12 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
-from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.enums import ElementRole, MicrostripStubKind
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.i18n import tr
 
@@ -373,10 +375,15 @@ class SchematicPanel(QWidget):
         self._draw_shunt_symbol(group, el, x, y, pen)
 
         gy = y + 88
-        for half, dy in ((16.0, 0.0), (11.0, 5.0), (6.0, 10.0)):
-            gnd = QGraphicsLineItem(x - half, gy + dy, x + half, gy + dy)
-            gnd.setPen(pen)
-            self._scene.addItem(gnd)
+        is_open_stub = (
+            isinstance(el, MicrostripStubElement)
+            and el.stub_kind == MicrostripStubKind.OPEN
+        )
+        if not is_open_stub:
+            for half, dy in ((16.0, 0.0), (11.0, 5.0), (6.0, 10.0)):
+                gnd = QGraphicsLineItem(x - half, gy + dy, x + half, gy + dy)
+                gnd.setPen(pen)
+                self._scene.addItem(gnd)
 
         self._add_hit_area(group, x - 36, y + 8, 72, 78)
 
@@ -403,6 +410,10 @@ class SchematicPanel(QWidget):
             return f"{el.id}  Brune (+)"
         if isinstance(el, IdealDualBruneLC):
             return f"{el.id}  Brune (||)"
+        if isinstance(el, MicrostripLineElement):
+            return f"{el.id}  Z0={el.z0_ohm:.4g}Ω  {el.length_m * 1e3:.3g}mm"
+        if isinstance(el, MicrostripStubElement):
+            return f"{el.id}  {el.stub_kind.value} stub  Z0={el.z0_ohm:.4g}Ω"
         return str(getattr(el, "id", "?"))
 
     def _draw_series_symbol(
@@ -501,6 +512,17 @@ class SchematicPanel(QWidget):
             lead_r.setPen(pen)
             group.track(lead_l)
             group.track(lead_r)
+        elif isinstance(el, MicrostripLineElement):
+            for dy in (-4.0, 4.0):
+                rail = QGraphicsLineItem(left_end, y + dy, right_start, y + dy)
+                rail.setPen(pen)
+                group.track(rail)
+            lead_l = QGraphicsLineItem(left_end - 8, y, left_end, y)
+            lead_r = QGraphicsLineItem(right_start, y, right_start + 8, y)
+            lead_l.setPen(pen)
+            lead_r.setPen(pen)
+            group.track(lead_l)
+            group.track(lead_r)
         else:
             self._draw_coil(group, mid - 16, y, pen)
 
@@ -581,12 +603,22 @@ class SchematicPanel(QWidget):
             tail.setPen(pen)
             group.track(lead)
             group.track(tail)
+        elif isinstance(el, MicrostripStubElement):
+            lead = QGraphicsLineItem(x, y + 14, x, y + 72)
+            lead.setPen(pen)
+            group.track(lead)
+            if el.stub_kind == MicrostripStubKind.OPEN:
+                cap = QGraphicsLineItem(x - 10, y + 72, x + 10, y + 72)
+                cap.setPen(pen)
+                group.track(cap)
+            else:
+                short = QGraphicsLineItem(x - 10, y + 78, x + 10, y + 78)
+                short.setPen(pen)
+                group.track(short)
         else:
             self._draw_coil_vertical(group, x, y + 18, pen)
 
-    def _draw_coil(
-        self, group: ElementGroup, x: float, y: float, pen: QPen
-    ) -> None:
+    def _draw_coil(self, group: ElementGroup, x: float, y: float, pen: QPen) -> None:
         for i in range(4):
             line = QGraphicsLineItem(x + i * 8, y - 10, x + i * 8 + 8, y + 10)
             line.setPen(pen)

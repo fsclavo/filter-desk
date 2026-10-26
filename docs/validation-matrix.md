@@ -28,6 +28,22 @@ Checks per case:
 - Passivity: `|S11|² + |S21|² <= 1 + 1e-6`.
 - Asymmetric ports produce an output transformer.
 
+## Distributed microstrip v1
+
+`tests/unit/test_distributed.py` covers:
+
+- matched quarter-wave line ABCD against the analytic response;
+- open/short stub input impedance at 45°;
+- ABCD vs scikit-rf for a synthesized distributed circuit (`rtol=1e-7`);
+- project v2 round-trip and BOM geometry columns;
+- Butterworth order 3 vs the lumped response: passband `|ΔS21| <= 1 dB` and
+  stopband no more than 6 dB worse at `2 f_c`;
+- CLI JSON/Touchstone/BOM export.
+
+The v1 synthesis is limited to low-pass Butterworth/Chebyshev-I, order ≤ 3. It
+is marked **experimental**; ideal TEM, no dispersion/discontinuities/radiation,
+and no hardware validation yet.
+
 ## SPICE validation
 
 - **Independent MNA test:** parses the exported SPICE E/F transformer netlist and
@@ -46,10 +62,12 @@ outputs. Tolerances are recorded in each `expected_*.json`.
 
 ## Installed packages
 
-Release builds run the version and headless `synthesize` smoke tests in CI. A
-manual acceptance pass still checks the AppImage and Windows installer on a
-clean machine, including GUI startup, one synthesis, one Touchstone import and
-one BOM export.
+Release builds run the version and headless `synthesize` smoke tests in CI.
+The `package-acceptance-*` jobs now run the packaged `--self-test` (GUI
+construction, synthesis, Touchstone round-trip, BOM and project round-trip) for
+the Linux bundle/AppImage and the installed Windows app. A final visual check of
+the installer shortcut and main window on a physical Windows desktop remains a
+manual release step.
 
 ## VNA holdout
 
@@ -61,6 +79,7 @@ all components; phase/delay and calibration remain part of the fit.
 ## Gaps
 
 - High-flux ferrite loss and temperature rise need vendor/measurement data.
-- Distributed elements are not integrated in the netlist.
+- Distributed synthesis is limited to low-order LP and has no hardware
+  validation; stubs are manual elements, not a synthesized topology.
 - Guanella/Ruthroff TLT models remain behavioral.
 - LTspice/Qucs external checks are manual.

@@ -22,6 +22,8 @@ from filterdesk.domain.circuit import (
     IdealInductor,
     IdealParallelLC,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
@@ -35,6 +37,15 @@ def _base_element_id(ref: str) -> str:
         if ref.endswith(suffix):
             return ref[: -len(suffix)]
     return ref
+
+
+def _distributed_text(el: MicrostripLineElement | MicrostripStubElement) -> str:
+    kind = el.stub_kind.value if isinstance(el, MicrostripStubElement) else "line"
+    return (
+        f"{el.substrate or 'PCB'} {kind}  "
+        f"W={el.width_mm:.3g} mm  L={el.length_m * 1e3:.4g} mm  "
+        f"θ={el.angle_deg:.3g}°"
+    )
 
 
 def _parasitic_text(el: object) -> str:
@@ -74,13 +85,9 @@ class ComponentTablePanel(QWidget):
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
-        self._table.setSelectionBehavior(
-            QAbstractItemView.SelectionBehavior.SelectRows
-        )
+        self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self._table.setEditTriggers(
-            QAbstractItemView.EditTrigger.DoubleClicked
-        )
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
         self._table.cellChanged.connect(self._on_cell_changed)
         self._table.itemSelectionChanged.connect(self._on_selection_changed)
         layout = QVBoxLayout(self)
@@ -164,6 +171,20 @@ class ComponentTablePanel(QWidget):
                 value_text = format_engineering(el.value_h, "H", digits=6)
             elif isinstance(el, NonIdealCapacitor):
                 value_text = format_engineering(el.value_f, "F", digits=6)
+            elif isinstance(el, (MicrostripLineElement, MicrostripStubElement)):
+                value_text = format_engineering(el.z0_ohm, "Ohm", digits=6)
+                self._add_row(
+                    el.id,
+                    role_label(el.role),
+                    tr(el.element_type.value),
+                    value_text,
+                    _distributed_text(el),
+                    "",
+                    vpk,
+                    ipk,
+                    editable_value=False,
+                )
+                continue
             else:
                 value_text = format_engineering(el.value_ohm, "Ohm", digits=6)
             self._add_row(
@@ -231,6 +252,8 @@ class ComponentTablePanel(QWidget):
         tolerance: str = "",
         v_peak: str = "",
         i_peak: str = "",
+        *,
+        editable_value: bool = True,
     ) -> None:
         row = self._table.rowCount()
         self._table.insertRow(row)
@@ -241,6 +264,8 @@ class ComponentTablePanel(QWidget):
         type_item = QTableWidgetItem(etype)
         type_item.setFlags(type_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         val_item = QTableWidgetItem(value)
+        if not editable_value:
+            val_item.setFlags(val_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         par_item = QTableWidgetItem(parasitic)
         par_item.setFlags(par_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         tol_item = QTableWidgetItem(tolerance)
