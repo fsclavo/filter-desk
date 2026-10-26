@@ -51,7 +51,7 @@ phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days ·
 | B1.3 | **M-derived BP/BS** | Shipped in v0.5.5 via generic LP→BP/BS finite-zero transform (`test_m_derived_bp_smoke`); ADR-013 | `docs/phase5b/BPBS_FINITE_ZERO_STATUS.md` | **DONE (2026-10-15)** |
 | B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |
 | B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre via numeric prototype search (LP/HP); Constant-K/M-derived still unsupported | ADR-014 | **DONE (2026-10-15)** |
-| B1.6 | **Even-order elliptic** | Rejected: equal-R needs a transformer/unequal terminations; the |S21| fit violated Ap and n=2 failed. Odd orders only | ADR-013, ADR-014 | **Rejected (odd only)** |
+| B1.6 | **Even-order elliptic** | Rejected: equal-R needs a transformer/unequal terminations. A transformer-assisted numerical fit was evaluated (2026-10-26) and rejected (n=2 failed, n≥6 exceeded Ap, seed-sensitive). Exact support needs general Darlington/Cauer; odd orders only | ADR-013, ADR-014 | **Rejected (odd only)** |
 | B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; caps kept intentional (tables verified) — extension needs prototype-generation research | ADR-014 | **Decided (keep caps)** |
 
 ### B2. Analysis

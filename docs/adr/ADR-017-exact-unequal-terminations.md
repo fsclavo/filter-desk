@@ -30,7 +30,8 @@ Even-order Chebyshev I now uses its **classical** equal-ripple prototype and
 the output transformer (even for 50/50 ports), so its response and element
 values match textbook tables. Even-order elliptic remains rejected: its exact
 equal-R realization needs an unequal-R Cauer synthesis, which is a separate
-task.
+task. A transformer-assisted numerical fit was evaluated on 2026-10-26 and
+rejected (n=2 failed, n≥6 exceeded Ap, seed-sensitive).
 
 ## Consequences
 

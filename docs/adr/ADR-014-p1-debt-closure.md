@@ -58,6 +58,11 @@ ripple (audit 2026-10-25: ~0.97 dB with Ap=0.5 dB) and order 2 could fail
 outright, so even orders are now rejected with a clear validation error. Odd
 orders (3, 5, 7, …) remain exact against `scipy.signal.ellipap`.
 
+A transformer-assisted numerical fit was prototyped on 2026-10-26. It failed for
+n=2 and exceeded the requested ripple at n≥6, and was highly seed-sensitive, so
+it was rejected as non-robust. Exact even-order support requires a general
+Darlington/Cauer synthesis with unequal terminations.
+
 ## Consequences
 
 - Both analyzers support unequal terminations; ADR-011's skrf limitation is
