@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk import __version__
+from filterdesk.analysis.compliance import check_spec_compliance
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import set_element_parasitics
@@ -511,6 +512,9 @@ class MainWindow(QMainWindow):
         act_sweep = QAction(tr("Parameter s&weep…"), self)
         act_sweep.triggered.connect(self._run_design_sweep)
         design_menu.addAction(act_sweep)
+        act_compliance = QAction(tr("Check spec &compliance…"), self)
+        act_compliance.triggered.connect(self._run_compliance_check)
+        design_menu.addAction(act_compliance)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu(tr("&Component"))
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -826,6 +830,57 @@ class MainWindow(QMainWindow):
     def _on_mc_failed(self, message: str) -> None:
         QMessageBox.warning(self, tr("Monte-Carlo failed"), message)
         self._status.setText(tr("Monte-Carlo failed"))
+
+    def _run_compliance_check(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, tr("Spec compliance"), tr("Synthesize a circuit first.")
+            )
+            return
+        try:
+            report = check_spec_compliance(
+                self._session.spec, self._session.circuit
+            )
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, tr("Spec compliance"), _exc_text(exc))
+            return
+        result = "PASS" if report.ok else "FAIL"
+        lines = [tr("Spec compliance: {result}", result=result)]
+        if report.passband_ripple_db is not None:
+            lines.append(
+                tr(
+                    "Passband ripple: {value} dB",
+                    value=f"{report.passband_ripple_db:.3f}",
+                )
+            )
+        if report.stopband_attenuation_db is not None:
+            lines.append(
+                tr(
+                    "Stopband attenuation: {value} dB",
+                    value=f"{report.stopband_attenuation_db:.2f}",
+                )
+            )
+        if report.edge_loss_db:
+            lines.append(
+                tr(
+                    "Edge loss: {values}",
+                    values=", ".join(
+                        f"{value:.2f} dB" for value in report.edge_loss_db
+                    ),
+                )
+            )
+        for issue in report.issues:
+            lines.append(tr("Issue: {detail}", detail=issue))
+        for note in report.notes:
+            lines.append(tr("Note: {detail}", detail=note))
+        text = "\n".join(lines)
+        if report.ok:
+            QMessageBox.information(self, tr("Spec compliance"), text)
+        else:
+            QMessageBox.warning(self, tr("Spec compliance"), text)
+        self._status.setText(
+            tr("Spec compliance: {result}", result=result)
+        )
 
     def _run_band_preset(self) -> None:
         choice = BandPresetDialog.ask(self)

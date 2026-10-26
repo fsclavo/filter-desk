@@ -7,6 +7,7 @@ return loss and group-delay ripple). Bands are ``(low_hz, high_hz)`` tuples.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -14,6 +15,8 @@ from numpy.typing import NDArray
 
 from filterdesk.analysis.derived import group_delay_s, mag_db
 from filterdesk.analysis.types import AnalysisResult
+from filterdesk.domain.enums import FilterResponse
+from filterdesk.domain.specs import FilterSpec
 
 Band = tuple[float, float]
 
@@ -91,4 +94,36 @@ def band_metrics(
     )
 
 
-__all__ = ["Band", "BandMetrics", "BandMetricsError", "band_metrics"]
+def band_edges(spec: FilterSpec) -> tuple[float, float]:
+    """Passband/stopband edges for LP/HP/BP/BS specs (Hz)."""
+    if spec.response in (FilterResponse.BAND_PASS, FilterResponse.BAND_STOP):
+        assert spec.f_center_hz is not None and spec.bandwidth_hz is not None
+        f0 = spec.f_center_hz
+        bw = spec.bandwidth_hz
+        f_high = 0.5 * (bw + math.sqrt(bw * bw + 4.0 * f0 * f0))
+        return f0 * f0 / f_high, f_high
+    return spec.cutoff_hz, spec.cutoff_hz
+
+
+def default_bands(spec: FilterSpec) -> tuple[Band, Band]:
+    """Reasonable pass/stop evaluation bands derived from the base spec."""
+    low_edge, high_edge = band_edges(spec)
+    if spec.response == FilterResponse.LOW_PASS:
+        fc = spec.cutoff_hz
+        return (fc / 20.0, fc), (fc * 2.0, fc * 20.0)
+    if spec.response == FilterResponse.HIGH_PASS:
+        fc = spec.cutoff_hz
+        return (fc, fc * 20.0), (fc / 20.0, fc / 2.0)
+    if spec.response == FilterResponse.BAND_PASS:
+        return (low_edge, high_edge), (high_edge * 2.0, high_edge * 5.0)
+    return (low_edge / 5.0, low_edge / 2.0), (low_edge, high_edge)
+
+
+__all__ = [
+    "Band",
+    "BandMetrics",
+    "BandMetricsError",
+    "band_edges",
+    "band_metrics",
+    "default_bands",
+]

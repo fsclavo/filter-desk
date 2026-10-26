@@ -10,6 +10,10 @@ from pathlib import Path
 
 from filterdesk import __version__
 from filterdesk.analysis.adapters.abcd_ladder import AnalysisError
+from filterdesk.analysis.compliance import (
+    ComplianceResult,
+    check_spec_compliance,
+)
 from filterdesk.analysis.derived import (
     group_delay_s,
     insertion_loss_db,
@@ -150,6 +154,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON (spec + prototype + components)",
+    )
+    syn.add_argument(
+        "--check",
+        action="store_true",
+        help="Analyze the result and check it meets the requested specification",
     )
 
     ana = sub.add_parser(
@@ -297,6 +306,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--harmonics-f0",
         default=None,
         help="Fundamental frequency (Hz) for the harmonic readout, e.g. 7.1M",
+    )
+    ana.add_argument(
+        "--check",
+        action="store_true",
+        help="Check the analyzed response against the requested specification",
     )
     ana.add_argument(
         "--json",
@@ -922,6 +936,26 @@ def _print_synth_human(result: SynthesisResult) -> None:
             )
 
 
+def _print_compliance(report: ComplianceResult) -> None:
+    print(f"Spec compliance: {'PASS' if report.ok else 'FAIL'}")
+    if report.passband_ripple_db is not None:
+        print(f"  passband ripple: {report.passband_ripple_db:.3f} dB")
+    if report.stopband_attenuation_db is not None:
+        print(
+            "  stopband attenuation: "
+            f"{report.stopband_attenuation_db:.2f} dB"
+        )
+    if report.edge_loss_db:
+        print(
+            "  edge loss: "
+            + ", ".join(f"{value:.2f} dB" for value in report.edge_loss_db)
+        )
+    for issue in report.issues:
+        print(f"  issue: {issue}")
+    for note in report.notes:
+        print(f"  note: {note}")
+
+
 def _synth_to_json(result: SynthesisResult) -> dict[str, object]:
     components: list[dict[str, object]] = []
     for el in result.circuit.elements:
@@ -1439,10 +1473,18 @@ def main(argv: list[str] | None = None) -> int:
         except (SpecValidationError, OSError, json.JSONDecodeError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
+        compliance = (
+            check_spec_compliance(spec, result.circuit) if args.check else None
+        )
         if args.json:
-            print(json.dumps(_synth_to_json(result), indent=2))
+            payload = _synth_to_json(result)
+            if compliance is not None:
+                payload["compliance"] = compliance.to_mapping()
+            print(json.dumps(payload, indent=2))
         else:
             _print_synth_human(result)
+            if compliance is not None:
+                _print_compliance(compliance)
         return 0
 
     if args.command == "snap":
@@ -1778,6 +1820,10 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"Wrote {args.export_build_sheet}", file=sys.stderr)
 
+        compliance = (
+            check_spec_compliance(spec, synth.circuit) if args.check else None
+        )
+
         if args.json:
             n = analysis.frequency_hz.shape[0]
             idxs = sorted({0, n // 4, n // 2, 3 * n // 4, n - 1})
@@ -1803,6 +1849,8 @@ def main(argv: list[str] | None = None) -> int:
             note = synthesis_note(spec)
             if note is not None:
                 payload["note"] = note
+            if compliance is not None:
+                payload["compliance"] = compliance.to_mapping()
             if nonideal:
                 payload["nonideal"] = nonideal
             if stress is not None:
@@ -1825,6 +1873,8 @@ def main(argv: list[str] | None = None) -> int:
                 _print_stress(stress)
             if harmonics is not None:
                 _print_harmonics(harmonics)
+            if compliance is not None:
+                _print_compliance(compliance)
         return 0
 
     if args.command == "gui":
