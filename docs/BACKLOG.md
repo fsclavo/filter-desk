@@ -10,7 +10,7 @@ count or release changes.
 **Next:** v0.13.0 planning.
 
 **Verification:** local suite **937 passed, 1 skipped**; coverage **82.88 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40408577611
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
