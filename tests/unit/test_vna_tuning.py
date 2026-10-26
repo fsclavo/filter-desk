@@ -27,6 +27,7 @@ from filterdesk.domain.enums import (
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.io.touchstone import write_touchstone_s2p
 from filterdesk.services.vna_tuning import (
+    VnaBoundMode,
     VnaTuningCancelled,
     VnaTuningConfig,
     VnaTuningError,
@@ -64,6 +65,74 @@ def _measured(
             elements.append(el)
     perturbed = replace(circuit, elements=elements)
     return analyze_circuit(perturbed, SweepConfig(50e6, 150e6, 101))
+
+
+def _with_phase_delay(measured, delay_s: float, phase_deg: float):
+    omega = 2.0 * np.pi * np.asarray(measured.frequency_hz)
+    factor = np.exp(-1j * omega * delay_s + 1j * np.radians(phase_deg))
+    return replace(
+        measured,
+        s11=measured.s11 * factor,
+        s21=measured.s21 * factor,
+    )
+
+
+def test_phase_delay_fit_recovers_reference_plane() -> None:
+    circuit = _nominal()
+    measured = _with_phase_delay(_measured(circuit), 25e-9, 30.0)
+    result = fit_circuit_to_measurement(
+        circuit,
+        measured,
+        VnaTuningConfig(max_points=81, max_nfev=200, fit_phase=True),
+    )
+    assert result.delay_s == pytest.approx(25e-9, abs=1e-12)
+    assert result.phase_s21_deg == pytest.approx(30.0, abs=0.01)
+    assert result.phase_s11_deg == pytest.approx(30.0, abs=0.01)
+    assert result.final_rms_db < 1e-9
+    assert result.bound_mode is VnaBoundMode.LOCAL
+    assert result.n_starts == 1
+
+
+def test_phase_fit_improves_perturbed_measurement() -> None:
+    circuit = _nominal()
+    measured = _with_phase_delay(
+        _measured(circuit, scale_l=1.05, scale_c=0.96), 25e-9, 30.0
+    )
+    result = fit_circuit_to_measurement(
+        circuit,
+        measured,
+        VnaTuningConfig(max_points=81, max_nfev=200, fit_phase=True),
+    )
+    assert result.final_rms_db < result.initial_rms_db
+    assert result.delay_s == pytest.approx(25e-9, abs=1e-9)
+
+
+def test_wide_and_global_bound_modes() -> None:
+    circuit = _nominal()
+    measured = _measured(circuit, scale_l=1.5)
+    wide = fit_circuit_to_measurement(
+        circuit,
+        measured,
+        VnaTuningConfig(max_points=81, max_nfev=100, bound_mode="wide"),
+    )
+    assert wide.bound_mode is VnaBoundMode.WIDE
+    assert wide.final_rms_db < wide.initial_rms_db
+    # Wide allows values outside local ±20 %.
+    assert np.any(np.abs(wide.final_values / wide.initial_values - 1.0) > 0.2)
+
+    global_fit = fit_circuit_to_measurement(
+        circuit,
+        measured,
+        VnaTuningConfig(
+            max_points=81,
+            max_nfev=80,
+            bound_mode=VnaBoundMode.GLOBAL,
+            global_starts=3,
+        ),
+    )
+    assert global_fit.bound_mode is VnaBoundMode.GLOBAL
+    assert global_fit.n_starts == 3
+    assert global_fit.final_rms_db < global_fit.initial_rms_db
 
 
 def test_fit_identical_measurement_stays_near_zero() -> None:
@@ -149,6 +218,11 @@ def test_unknown_ref_and_empty_circuit_errors() -> None:
         ({"s11_weight": 0.0}, "weights"),
         ({"floor_db": 1.0}, "floor_db"),
         ({"f_min_hz": 2.0, "f_max_hz": 1.0}, "f_min_hz"),
+        ({"bound_mode": "nope"}, "bound_mode"),
+        ({"global_starts": 0}, "global_starts"),
+        ({"fit_phase": True, "phase_weight": 0.0}, "phase_weight"),
+        ({"fit_phase": True, "phase_min_db": 1.0}, "phase_min_db"),
+        ({"fit_phase": True, "max_delay_ns": 0.0}, "max_delay_ns"),
     ],
 )
 def test_config_validation(kwargs, message: str) -> None:
@@ -235,6 +309,42 @@ def test_cli_tune_vna_json_and_text(tmp_path, capsys) -> None:
     assert "VNA fit:" in out and "S21" in out
 
 
+def test_cli_tune_vna_phase_json(tmp_path, capsys) -> None:
+    circuit = _nominal()
+    measured = _with_phase_delay(_measured(circuit), 25e-9, 30.0)
+    path = tmp_path / "phased.s2p"
+    write_touchstone_s2p(measured, path)
+    assert (
+        main(
+            [
+                "tune-vna",
+                str(path),
+                "--family",
+                "chebyshev_type_i",
+                "--response",
+                "low_pass",
+                "--order",
+                "4",
+                "--cutoff",
+                "100M",
+                "--ripple",
+                "0.1",
+                "--fit-phase",
+                "--max-points",
+                "51",
+                "--max-nfev",
+                "120",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["delay_s"] == pytest.approx(25e-9, abs=1e-12)
+    assert payload["phase_s21_deg"] == pytest.approx(30.0, abs=0.01)
+    assert payload["bound_mode"] == "local"
+
+
 def test_cli_tune_vna_bad_file(tmp_path, capsys) -> None:
     path = tmp_path / "bad.s2p"
     path.write_text("not a touchstone\n", encoding="utf-8")
@@ -274,3 +384,20 @@ def test_vna_dialog_fit(qtbot) -> None:
     assert dialog.result_circuit() is not None
     assert dialog._apply_button.isEnabled()
     assert mag_db(np.asarray([1.0]))[0] == pytest.approx(0.0)
+
+
+def test_vna_dialog_phase_and_bound_mode(qtbot) -> None:
+    from filterdesk.gui.widgets import VnaTuningDialog
+
+    circuit = _nominal()
+    measured = _with_phase_delay(_measured(circuit), 25e-9, 30.0)
+    dialog = VnaTuningDialog(circuit, measured)
+    qtbot.addWidget(dialog)
+    dialog._fit_phase.setChecked(True)
+    dialog._bound_mode.setCurrentText("wide")
+    dialog._max_points.setValue(31)
+    dialog._run_fit()
+    result = dialog.current_result()
+    assert result is not None
+    assert result.bound_mode is VnaBoundMode.WIDE
+    assert result.delay_s == pytest.approx(25e-9, abs=1e-9)

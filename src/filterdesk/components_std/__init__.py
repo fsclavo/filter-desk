@@ -12,6 +12,12 @@ from filterdesk.components_std.attenuator import (
     AttenuatorKind,
     design_attenuator,
 )
+from filterdesk.components_std.balun import (
+    BalunDesign,
+    BalunError,
+    BalunKind,
+    design_balun,
+)
 from filterdesk.components_std.e_series import (
     ESeries,
     base_values,
@@ -77,6 +83,9 @@ __all__ = [
     "AttenuatorDesign",
     "AttenuatorError",
     "AttenuatorKind",
+    "BalunDesign",
+    "BalunError",
+    "BalunKind",
     "CORES",
     "ESeries",
     "MatchingDesign",
@@ -103,6 +112,7 @@ __all__ = [
     "base_values",
     "design_attenuator",
     "design_air_coil",
+    "design_balun",
     "design_matching",
     "design_microstrip",
     "design_quarter_wave_transformer",

@@ -73,12 +73,18 @@ def ltspice_asc(
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
 
-    ratio = circuit.output_transformer_ratio
-    has_transformer = ratio != 1.0
+    balun = circuit.output_balun
+    ratio = balun.turns_ratio if balun is not None else circuit.output_transformer_ratio
+    has_transformer = ratio != 1.0 or balun is not None
     load_net = (
         "0" if circuit.port_out.node == circuit.ground else circuit.port_out.node
     )
-    alias = {load_net: "T1_p"} if has_transformer else {}
+    if balun is not None:
+        alias = {load_net: "BAL1_p"}
+    elif has_transformer:
+        alias = {load_net: "T1_p"}
+    else:
+        alias = {}
 
     def net(name: str) -> str:
         if name == circuit.ground:
@@ -86,7 +92,10 @@ def ltspice_asc(
         return alias.get(name, name)
 
     in_net = net(circuit.port_in.node)
-    out_net = "T1_s" if has_transformer else load_net
+    if balun is not None:
+        out_net = "BAL1_sense"
+    else:
+        out_net = "T1_s" if has_transformer else load_net
 
     layout = _Layout()
     lines: list[str] = ["Version 4", "SHEET 1 1200 820"]
@@ -127,7 +136,22 @@ def ltspice_asc(
 
     lines.extend(layout.lines)
 
-    if has_transformer:
+    if balun is not None:
+        gain = _value(1.0 / ratio)
+        lines.append(
+            f"TEXT 96 704 Left 2 !E_BAL1 BAL1_s 0 BAL1_p 0 {gain}"
+        )
+        lines.append(
+            "TEXT 96 736 Left 2 !V_BAL1sense BAL1_s BAL1_sense 0"
+        )
+        lines.append(
+            f"TEXT 96 768 Left 2 !F_BAL1 BAL1_p 0 V_BAL1sense {gain}"
+        )
+        if balun.kind != "ideal":
+            lines.append(
+                "TEXT 96 800 Left 2 ;BAL1 leakage/core loss not exported"
+            )
+    elif has_transformer:
         gain = _value(1.0 / ratio)
         lines.append(
             f"TEXT 96 704 Left 2 !E_T1 {load_net} 0 T1_p 0 {gain}"

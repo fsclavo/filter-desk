@@ -48,9 +48,31 @@ def test_known_amidon_al_values() -> None:
         "FT37-43": 350.0,
         "FT50-43": 440.0,
         "FT82-43": 470.0,
+        "FT114-43": 510.0,
+        "FT140-43": 885.0,
+        "FT240-43": 1075.0,
+        "FT290-43": 1300.0,
+        "FT114-61": 80.0,
+        "FT140-61": 140.0,
+        "FT240-61": 170.0,
+        "FT140-52": 283.0,
+        "FT240-52": 325.0,
+        "FT240-31": 2053.0,
     }
     for name, al_nh in expected.items():
         assert find_core(name).al_nh == pytest.approx(al_nh)
+
+
+def test_large_hf_power_cores() -> None:
+    assert find_core("ft-240-43").name == "FT240-43"
+    ft140 = find_core("FT140-43")
+    ft240 = find_core("FT240-43")
+    assert ft140.ae_mm2 > find_core("FT82-43").ae_mm2
+    assert ft240.ae_mm2 > ft140.ae_mm2
+    assert ft240.id_mm > ft140.id_mm
+    assert find_core("FT240-31").material == "31"
+    assert find_core("FT240-52").bsat_t == pytest.approx(0.42)
+    assert find_core("FT240-61").bsat_t == pytest.approx(0.25)
 
 
 def test_turns_and_inductance_roundtrip() -> None:

@@ -127,7 +127,9 @@ def qucs_schematic(
         else:
             b.place_shunt(ctype, el.id, _value(value))
 
-    if circuit.output_transformer_ratio != 1.0:
+    if circuit.output_balun is not None:
+        b.place_transformer("BAL1", circuit.output_balun.turns_ratio)
+    elif circuit.output_transformer_ratio != 1.0:
         b.place_transformer("T1", circuit.output_transformer_ratio)
     b.components.append(f'<Port P2 1 {b.x} {_RAIL_Y} 4 -44 0 2 "2" 1 "analog" 0>')
 

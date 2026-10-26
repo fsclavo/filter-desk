@@ -87,10 +87,11 @@ def _core(
     )
 
 
-#: Common Amidon cores. AL from the Amidon datasheets (nH/N²); powder mixes
-#: 2/6/10 and ferrite 43. AL is specified with roughly ±20–25 % tolerance.
-#: Ferrite Bsat (0.295 T) is a room-temperature typical value; derate with
-#: temperature and DC bias.
+#: Common Amidon/Fair-Rite cores. AL from the vendor tables (nH/N²); powder
+#: mixes 2/6/10 and ferrite mixes 31/43/52/61. AL is specified with roughly
+#: ±20–25 % tolerance. Ferrite Bsat is a room-temperature typical value; derate
+#: with temperature and DC bias. Large 43/61 cores cover HF power transformers;
+#: 31 is aimed at low-HF common-mode chokes and 52 at wideband/high-power use.
 CORES: tuple[ToroidCore, ...] = (
     _core("T37-2", "2", "iron_powder", "red", 4.0, 9.53, 5.21, 3.25),
     _core("T50-2", "2", "iron_powder", "red", 4.9, 12.70, 7.70, 4.83),
@@ -108,6 +109,16 @@ CORES: tuple[ToroidCore, ...] = (
     _core("FT37-43", "43", "ferrite", "black", 350.0, 9.53, 4.75, 3.18, 0.295),
     _core("FT50-43", "43", "ferrite", "black", 440.0, 12.70, 7.14, 4.78, 0.295),
     _core("FT82-43", "43", "ferrite", "black", 470.0, 20.96, 13.21, 6.35, 0.295),
+    _core("FT114-43", "43", "ferrite", "black", 510.0, 29.01, 19.00, 7.49, 0.295),
+    _core("FT140-43", "43", "ferrite", "black", 885.0, 35.56, 22.86, 12.70, 0.295),
+    _core("FT240-43", "43", "ferrite", "black", 1075.0, 60.96, 35.56, 12.70, 0.295),
+    _core("FT290-43", "43", "ferrite", "black", 1300.0, 73.66, 38.86, 12.70, 0.295),
+    _core("FT114-61", "61", "ferrite", "gray", 80.0, 29.01, 19.00, 7.49, 0.250),
+    _core("FT140-61", "61", "ferrite", "gray", 140.0, 35.56, 22.86, 12.70, 0.250),
+    _core("FT240-61", "61", "ferrite", "gray", 170.0, 60.96, 35.56, 12.70, 0.250),
+    _core("FT140-52", "52", "ferrite", "gray", 283.0, 35.25, 22.60, 12.70, 0.420),
+    _core("FT240-52", "52", "ferrite", "gray", 325.0, 61.00, 35.55, 12.70, 0.420),
+    _core("FT240-31", "31", "ferrite", "gray/blue", 2053.0, 61.00, 35.55, 12.70, 0.360),
 )
 
 

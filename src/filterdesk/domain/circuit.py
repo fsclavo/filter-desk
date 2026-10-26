@@ -144,6 +144,53 @@ class WindingSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class BalunSpec:
+    """Boundary balun/unun model (first-order behavioral 2-port).
+
+    ``turns_ratio`` is primary:secondary (``Np/Ns``), so a 50 -> 200 ohm
+    transformer has ``turns_ratio = 0.5``. ``kind`` selects the model:
+    ``ideal``, ``unun``, ``guanella``, ``ruthroff`` or ``choke``. For TLT
+    kinds the line section uses ``z0_line_ohm``, ``length_m`` and
+    ``velocity_factor``; leakage, winding capacitance and core loss are
+    optional first-order parasitics.
+    """
+
+    kind: str = "ideal"
+    turns_ratio: float = 1.0
+    z_unbalanced_ohm: float = 0.0
+    z_balanced_ohm: float = 0.0
+    z0_line_ohm: float = 50.0
+    length_m: float = 0.0
+    velocity_factor: float = 1.0
+    loss_db_per_m: float = 0.0
+    leakage_h: float = 0.0
+    shunt_c_f: float = 0.0
+    core_loss_ohm: float | None = None
+    common_mode_impedance_ohm: float = 0.0
+    core: str = ""
+    turns: int | None = None
+    wire_awg: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.kind not in {"ideal", "unun", "guanella", "ruthroff", "choke"}:
+            raise ValueError(f"unknown balun kind {self.kind!r}")
+        if self.turns_ratio <= 0.0:
+            raise ValueError("balun turns_ratio must be > 0")
+        if self.z0_line_ohm <= 0.0:
+            raise ValueError("balun z0_line_ohm must be > 0")
+        if self.length_m < 0.0:
+            raise ValueError("balun length_m must be >= 0")
+        if self.velocity_factor <= 0.0:
+            raise ValueError("balun velocity_factor must be > 0")
+        if self.loss_db_per_m < 0.0:
+            raise ValueError("balun loss_db_per_m must be >= 0")
+        if self.leakage_h < 0.0 or self.shunt_c_f < 0.0:
+            raise ValueError("balun leakage/capacitance must be >= 0")
+        if self.core_loss_ohm is not None and self.core_loss_ohm <= 0.0:
+            raise ValueError("balun core_loss_ohm must be > 0")
+
+
+@dataclass(frozen=True, slots=True)
 class NonIdealInductor:
     """Inductor with losses, self-resonance and optional DC-bias derating.
 
@@ -373,6 +420,25 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
                 "",
             )
         )
+    if circuit.output_balun is not None:
+        balun = circuit.output_balun
+        rows.append(
+            PhysicalComponent(
+                "BAL1",
+                "BAL1",
+                "series",
+                "balun",
+                balun.turns_ratio,
+                "",
+                winding=WindingSpec(
+                    kind="balun",
+                    core=balun.core,
+                    material=balun.kind,
+                    turns=balun.turns,
+                    wire_awg=balun.wire_awg,
+                ),
+            )
+        )
     return rows
 
 
@@ -398,10 +464,16 @@ class Circuit:
     #: Ideal output transformer turns ratio Np/Ns (ladder side : load side).
     #: ``Zin_primary = ratio**2 * Z_load``; 1.0 means no transformer.
     output_transformer_ratio: float = 1.0
+    #: Optional modeled output balun/unun (mutually exclusive with T1).
+    output_balun: BalunSpec | None = None
 
     def __post_init__(self) -> None:
         if self.output_transformer_ratio <= 0.0:
             raise ValueError("output_transformer_ratio must be > 0")
+        if self.output_balun is not None and self.output_transformer_ratio != 1.0:
+            raise ValueError(
+                "output_balun and output_transformer_ratio cannot both be set"
+            )
 
     def ladder_elements(self) -> list[Element]:
         """Elements in ladder order (excludes terminations if ever present)."""
@@ -449,6 +521,17 @@ class Circuit:
                     "type": "transformer",
                     "g": None,
                     "turns_ratio": self.output_transformer_ratio,
+                }
+            )
+        if self.output_balun is not None:
+            rows.append(
+                {
+                    "ref": "BAL1",
+                    "role": "series",
+                    "type": "balun",
+                    "g": None,
+                    "turns_ratio": self.output_balun.turns_ratio,
+                    "kind": self.output_balun.kind,
                 }
             )
         return rows

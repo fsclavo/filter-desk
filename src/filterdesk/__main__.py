@@ -34,6 +34,8 @@ from filterdesk.components_std import (
     AirCoilError,
     AttenuatorError,
     AttenuatorKind,
+    BalunError,
+    BalunKind,
     ESeries,
     MatchingError,
     MatchingTopology,
@@ -47,6 +49,7 @@ from filterdesk.components_std import (
     TransformerKind,
     design_air_coil,
     design_attenuator,
+    design_balun,
     design_matching,
     design_microstrip,
     design_quarter_wave_transformer,
@@ -134,6 +137,7 @@ from filterdesk.services.design_sweep import (
 )
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.services.vna_tuning import (
+    VnaBoundMode,
     VnaTuningConfig,
     VnaTuningError,
     fit_circuit_to_measurement,
@@ -466,6 +470,36 @@ def build_parser() -> argparse.ArgumentParser:
         help="Wire current density (A/mm^2, default 4)",
     )
     tr.add_argument("--json", action="store_true", help="Emit JSON")
+
+    bal = sub.add_parser(
+        "balun",
+        help="Design a transformer-type or TLT balun/unun on a toroid",
+    )
+    bal.add_argument(
+        "--kind",
+        choices=[k.value for k in BalunKind],
+        default=BalunKind.UNUN.value,
+    )
+    bal.add_argument("--z-unbalanced", required=True, help="Unbalanced impedance")
+    bal.add_argument("--z-balanced", required=True, help="Balanced impedance")
+    bal.add_argument("--core", required=True, help="Built-in core name")
+    bal.add_argument("--f-min", default="3.5M", help="Lowest frequency")
+    bal.add_argument("--f-max", default="30M", help="Highest frequency")
+    bal.add_argument("--power", type=float, default=100.0, help="Power (W)")
+    bal.add_argument("--coupling", type=float, default=0.98, help="Coupling k")
+    bal.add_argument("--tan-delta", type=float, default=0.02, help="Core tan delta")
+    bal.add_argument(
+        "--winding-c", type=float, default=0.0, help="Winding capacitance (F)"
+    )
+    bal.add_argument("--line-z0", type=float, default=None, help="TLT line Z0")
+    bal.add_argument(
+        "--line-length", type=float, default=None, help="TLT line length (m)"
+    )
+    bal.add_argument("--vf", type=float, default=0.7, help="TLT velocity factor")
+    bal.add_argument(
+        "--line-loss", type=float, default=0.0, help="TLT loss (dB/m)"
+    )
+    bal.add_argument("--json", action="store_true", help="Emit JSON")
     ms = sub.add_parser("microstrip", help="Microstrip line calculator")
     ms.add_argument("--z0", required=True, help="Target characteristic impedance")
     ms.add_argument("--frequency", default="1G", help="Design frequency")
@@ -826,7 +860,19 @@ def build_parser() -> argparse.ArgumentParser:
     tune.add_argument("measured", type=Path, help="Measured Touchstone .s2p")
     _add_spec_args(tune)
     tune.add_argument(
-        "--bound", type=float, default=0.2, help="Relative trim bound (default 0.2)"
+        "--bound", type=float, default=0.2, help="Local trim bound (default 0.2)"
+    )
+    tune.add_argument(
+        "--bound-mode",
+        choices=[m.value for m in VnaBoundMode],
+        default=VnaBoundMode.LOCAL.value,
+        help="Component search box: local, wide or multi-start global",
+    )
+    tune.add_argument(
+        "--global-starts",
+        type=int,
+        default=6,
+        help="Multi-start count for --bound-mode global",
     )
     tune.add_argument(
         "--max-points", type=int, default=401, help="Measured points used in fit"
@@ -842,6 +888,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     tune.add_argument("--no-s11", action="store_true", help="Do not fit S11")
     tune.add_argument("--no-s21", action="store_true", help="Do not fit S21")
+    tune.add_argument(
+        "--fit-phase",
+        action="store_true",
+        help="Fit phase too (adds delay and phase offsets)",
+    )
+    tune.add_argument(
+        "--phase-weight", type=float, default=1.0, help="Phase residual weight"
+    )
+    tune.add_argument(
+        "--phase-min-db",
+        type=float,
+        default=-40.0,
+        help="Only fit phase where measured magnitude is above this",
+    )
+    tune.add_argument(
+        "--max-delay-ns",
+        type=float,
+        default=1000.0,
+        help="Maximum absolute reference-plane delay for phase fitting (ns)",
+    )
     tune.add_argument(
         "--json", action="store_true", help="Emit machine-readable JSON"
     )
@@ -2424,6 +2490,100 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 2
 
+    if args.command == "balun":
+        try:
+            bal_design = design_balun(
+                find_core(str(args.core)),
+                kind=BalunKind(str(args.kind)),
+                z_unbalanced_ohm=parse_si(str(args.z_unbalanced)),
+                z_balanced_ohm=parse_si(str(args.z_balanced)),
+                f_min_hz=parse_si(str(args.f_min)),
+                f_max_hz=parse_si(str(args.f_max)),
+                power_w=float(args.power),
+                coupling=float(args.coupling),
+                tan_delta=float(args.tan_delta),
+                winding_capacitance_f=float(args.winding_c),
+                line_z0_ohm=args.line_z0,
+                line_length_m=args.line_length,
+                velocity_factor=float(args.vf),
+                line_loss_db_per_m=float(args.line_loss),
+            )
+        except (BalunError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "kind": bal_design.kind.value,
+                        "core": bal_design.core.name,
+                        "z_unbalanced_ohm": bal_design.z_unbalanced_ohm,
+                        "z_balanced_ohm": bal_design.z_balanced_ohm,
+                        "turns_ratio": bal_design.actual_turns_ratio,
+                        "n_primary": bal_design.n_primary,
+                        "n_secondary": bal_design.n_secondary,
+                        "magnetizing_inductance_h": bal_design.magnetizing_inductance_h,
+                        "leakage_inductance_h": bal_design.leakage_inductance_h,
+                        "core_loss_ohm": bal_design.core_loss_ohm,
+                        "common_mode_impedance_ohm": (
+                            bal_design.common_mode_impedance_ohm
+                        ),
+                        "z0_line_ohm": bal_design.z0_line_ohm,
+                        "length_m": bal_design.length_m,
+                        "b_peak_t": bal_design.b_peak_t,
+                        "bsat_margin": bal_design.bsat_margin,
+                        "saturated": bal_design.saturated,
+                        "awg_primary": bal_design.awg_primary,
+                        "awg_secondary": bal_design.awg_secondary,
+                        "fit_awg": bal_design.fit.awg,
+                        "notes": list(bal_design.notes),
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        print(
+            f"{bal_design.kind.value}: {bal_design.z_unbalanced_ohm:g} -> "
+            f"{bal_design.z_balanced_ohm:g} Ohm on {bal_design.core.name}"
+        )
+        print(
+            f"  Turns: primary={bal_design.n_primary}, "
+            f"secondary={bal_design.n_secondary} "
+            f"(ratio {bal_design.actual_turns_ratio:.3f})"
+        )
+        lm_text = format_engineering(
+            bal_design.magnetizing_inductance_h, "H", digits=4
+        )
+        lk_text = format_engineering(
+            bal_design.leakage_inductance_h, "H", digits=4
+        )
+        print(f"  Lm = {lm_text}, Lk = {lk_text}")
+        if bal_design.core_loss_ohm is not None:
+            print(f"  Core loss Rp = {bal_design.core_loss_ohm:.4g} Ohm")
+        if bal_design.length_m:
+            print(
+                f"  TLT: Z0={bal_design.z0_line_ohm:.3g} Ohm, "
+                f"length={bal_design.length_m * 1000.0:.1f} mm, "
+                f"vf={bal_design.velocity_factor:g}"
+            )
+        if bal_design.common_mode_impedance_ohm:
+            print(
+                f"  Common-mode |Z| at fmin = "
+                f"{bal_design.common_mode_impedance_ohm:.4g} Ohm"
+            )
+        if bal_design.b_peak_t is not None:
+            btxt = f"{bal_design.b_peak_t * 1000.0:.1f} mT"
+            if bal_design.bsat_margin is not None:
+                btxt += f" (B/Bsat={bal_design.bsat_margin:.2f})"
+            print(f"  Bpk = {btxt}")
+        print(
+            f"  Wire: primary AWG {bal_design.awg_primary}, secondary AWG "
+            f"{bal_design.awg_secondary}; fit AWG {bal_design.fit.awg}"
+        )
+        for note in bal_design.notes:
+            print(f"  note: {note}")
+        return 0
+
     if args.command == "attenuator":
         try:
             design = design_attenuator(
@@ -2658,10 +2818,16 @@ def main(argv: list[str] | None = None) -> int:
             nominal = synthesize(spec)
             cfg = VnaTuningConfig(
                 bound_pct=float(args.bound),
+                bound_mode=VnaBoundMode(str(args.bound_mode)),
                 max_points=int(args.max_points),
                 max_nfev=int(args.max_nfev),
+                global_starts=int(args.global_starts),
                 fit_s11=not args.no_s11,
                 fit_s21=not args.no_s21,
+                fit_phase=bool(args.fit_phase),
+                phase_weight=float(args.phase_weight),
+                phase_min_db=float(args.phase_min_db),
+                max_delay_ns=float(args.max_delay_ns),
                 f_min_hz=parse_si(str(args.f_min)) if args.f_min else None,
                 f_max_hz=parse_si(str(args.f_max)) if args.f_max else None,
             )
@@ -2684,6 +2850,11 @@ def main(argv: list[str] | None = None) -> int:
                         "message": tuned.message,
                         "n_evaluations": tuned.n_evaluations,
                         "n_points": int(tuned.frequency_hz.size),
+                        "bound_mode": tuned.bound_mode.value,
+                        "n_starts": tuned.n_starts,
+                        "delay_s": tuned.delay_s,
+                        "phase_s11_deg": tuned.phase_s11_deg,
+                        "phase_s21_deg": tuned.phase_s21_deg,
                         "components": [
                             {"ref": ref, "initial": float(a), "final": float(b)}
                             for ref, a, b in zip(
@@ -2707,6 +2878,12 @@ def main(argv: list[str] | None = None) -> int:
             f"  S21 {tuned.initial_rms_s21_db:.3f} -> {tuned.final_rms_s21_db:.3f} dB, "
             f"S11 {tuned.initial_rms_s11_db:.3f} -> {tuned.final_rms_s11_db:.3f} dB"
         )
+        if tuned.delay_s is not None:
+            print(
+                f"  Phase model: delay {tuned.delay_s * 1e9:.3f} ns, "
+                f"S21 {tuned.phase_s21_deg or 0.0:+.2f} deg, "
+                f"S11 {tuned.phase_s11_deg or 0.0:+.2f} deg"
+            )
         for ref, initial, final in zip(
             tuned.refs, tuned.initial_values, tuned.final_values, strict=True
         ):

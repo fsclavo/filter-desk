@@ -82,6 +82,7 @@ from filterdesk.gui.settings import (
 from filterdesk.gui.theme import ThemeColors, ThemeMode, apply_theme
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
+    BalunDialog,
     BandPresetDialog,
     BuildSheetDialog,
     CoilCalculatorDialog,
@@ -534,6 +535,9 @@ class MainWindow(QMainWindow):
         act_transformer = QAction(tr("Trans&former / balun…"), self)
         act_transformer.triggered.connect(self._run_transformer)
         tools_menu.addAction(act_transformer)
+        act_balun = QAction(tr("&Balun / unun…"), self)
+        act_balun.triggered.connect(self._run_balun)
+        tools_menu.addAction(act_balun)
         act_microstrip = QAction(tr("&Microstrip line…"), self)
         act_microstrip.triggered.connect(self._run_microstrip)
         tools_menu.addAction(act_microstrip)
@@ -984,6 +988,33 @@ class MainWindow(QMainWindow):
 
     def _run_transformer(self) -> None:
         TransformerDialog(self).exec()
+
+    def _run_balun(self) -> None:
+        dialog = BalunDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, tr("Balun / unun"), tr("Synthesize a circuit first.")
+            )
+            return
+        if dialog.remove_requested():
+            new_circuit = replace(self._session.circuit, output_balun=None)
+            self._push_circuit_edit(new_circuit, tr("Remove output balun"))
+            self._run_analyze()
+            self._status.setText(tr("Removed output balun"))
+            return
+        balun = dialog.balun_spec()
+        if balun is None:
+            return
+        new_circuit = replace(
+            self._session.circuit,
+            output_balun=balun,
+            output_transformer_ratio=1.0,
+        )
+        self._push_circuit_edit(new_circuit, tr("Apply output balun"))
+        self._run_analyze()
+        self._status.setText(tr("Applied output balun ({kind})", kind=balun.kind))
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()

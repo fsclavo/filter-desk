@@ -279,6 +279,20 @@ class SchematicPanel(QWidget):
             transformer.setPos(x + 52, y - 100)
             self._scene.addItem(transformer)
 
+        if circuit.output_balun is not None:
+            balun = circuit.output_balun
+            balun_label = QGraphicsSimpleTextItem(
+                tr(
+                    "BAL1 {ratio}:1 ({kind})",
+                    ratio=f"{balun.turns_ratio:.4g}",
+                    kind=balun.kind,
+                )
+            )
+            balun_label.setBrush(brush)
+            balun_label.setFont(label_font)
+            balun_label.setPos(x + 52, y - 122)
+            self._scene.addItem(balun_label)
+
         bounds = self._scene.itemsBoundingRect()
         self._scene.setSceneRect(bounds.adjusted(-30, -24, 30, 24))
         self._fit_view()

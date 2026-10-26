@@ -289,6 +289,7 @@ specification edits require an explicit **Synthesize**.
 | **Matching network** | **Tools → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun** | **Tools → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
+| **Balun / unun** | **Tools → Balun / unun…** | ideal/unun/Guanella/Ruthroff/choke models, core/turns/wire, leakage/core loss, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
@@ -539,6 +540,9 @@ Most commands accept `--json` for machine-readable output.
   and open/short stub on a built-in substrate (`--substrate FR4` or overrides
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
+- **`balun`** — design an ideal/unun/Guanella/Ruthroff/choke balun on a core:
+  `filterdesk balun --kind guanella --z-unbalanced 50 --z-balanced 200
+  --core FT240-43 --f-min 3.5M --f-max 30M --power 100`.
 - **`tune-vna`** — synthesize from a spec, then trim component values to a
   measured `.s2p`: `filterdesk tune-vna measured.s2p --family chebyshev_type_i
   --response low_pass --order 4 --cutoff 100M --ripple 0.1 --bound 0.2`.
@@ -661,8 +665,9 @@ are included automatically.
 **Tools → Coil calculator…** has two tabs; both are also available from the CLI.
 
 **Toroid** (`filterdesk toroid`) computes windings from `L = AL * N^2`, with AL in
-nH/N². The built-in table covers common Amidon iron-powder cores (mixes 2, 6, 10)
-and ferrite 43; `--al`/`--od`/`--id`/`--height` accept a custom core. With a
+nH/N². The built-in table covers common Amidon/Fair-Rite iron-powder cores
+(mixes 2, 6, 10) and ferrite mixes 31/43/52/61, including the HF power sizes
+FT114/FT140/FT240/FT290; `--al`/`--od`/`--id`/`--height` accept a custom core. With a
 target inductance the turn count is rounded **up**, so the achieved L is at least
 the requested value. It also reports:
 
@@ -671,8 +676,11 @@ the requested value. It also reports:
 - peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores
   (Bsat is the room-temperature typical value; derate it with temperature).
 
-AL spread is typically ±20–25 %, `Ae` is derived geometrically from the catalog
-dimensions (coating ignored), and iron-powder cores do not show a Bsat check.
+AL spread is typically ±20–25 % (vendor test conditions differ), `Ae` is derived
+geometrically from the catalog dimensions (coating ignored), and iron-powder
+cores do not show a Bsat check. Mix 31 is intended for low-HF common-mode
+chokes, 43 for general HF power, 52 for wideband/high-power, and 61 for the
+higher HF bands.
 Treat the result as a starting point and verify against the core datasheet.
 
 **Air-core** (`filterdesk air-coil`) designs a single-layer, close-wound
@@ -702,6 +710,25 @@ This is an ideal-transformer model, not a Guanella/Ruthroff transmission-line
 transformer model: common-mode choking, leakage inductance and core loss are
 not simulated. Verify the winding layout, core loss and saturation against the
 core datasheet, especially for high power or wideband baluns.
+
+### Balun / unun
+
+**Tools → Balun / unun…** (`filterdesk balun`) designs a boundary balun/unun
+and can apply it to the circuit output. Kinds are `ideal`, `unun`, `guanella`,
+`ruthroff` and `choke`. The calculator reports turns, magnetizing inductance,
+leakage, a shunt core-loss resistance, line `Z0`/length for TLT kinds,
+common-mode impedance for chokes, peak flux/saturation margin and wire gauges.
+The resulting `BAL1` block is stored in the project, analyzed as a two-port
+(with an optional TEM line, leakage, winding capacitance and core loss), and
+appears in the component table and BOM with its core/turns/AWG.
+
+The model is **first-order and behavioral**: it is not a full multi-line
+Guanella/Ruthroff derivation, does not solve the winding geometry, and the
+differential two-port cannot represent a choke's common-mode stopband. Verify
+the real winding, common-mode impedance, core loss and temperature/DC-bias
+derating on hardware. SPICE/LTspice/Qucs exports represent the ideal transformer
+part; SPICE adds the scalar leakage/core-loss terms, but the TLT line section is
+not exported.
 
 ### Microstrip / distributed calculators
 
@@ -822,9 +849,11 @@ happens in the background and reports progress in the status bar.
 
 ## 15. Known limitations
 
-- **Lumped-element ladders only.** Transmission lines, stubs, and coupled
-  inductors are not implemented. Unequal ports use an ideal **output**
-  transformer; general mid-ladder transformers are not.
+- **Lumped-element ladders only.** Distributed line/stub calculators exist, but
+  transmission lines, stubs and coupled inductors are not ladder elements.
+  Unequal ports use an ideal **output** transformer or a boundary `BAL1`;
+  mid-ladder transformers are not implemented. The balun/TLT model is
+  behavioral, not a full Guanella/Ruthroff or EM simulation.
 - **Transformer exports**: the ideal `T1` is included in analysis, compliance,
   project files and the BOM. SPICE uses an exact E/F controlled-source model;
   LTspice `.asc` embeds the same directives; Qucs `.sch` uses a best-effort

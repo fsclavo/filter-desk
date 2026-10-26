@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import (
+    BalunSpec,
     Circuit,
     Element,
     IdealBruneLC,
@@ -70,6 +71,69 @@ def transformer_abcd(
     a[:, 1, 0] = 0.0
     a[:, 1, 1] = 1.0 / ratio
     return a
+
+
+def transmission_line_abcd(
+    z0_ohm: float,
+    length_m: float,
+    velocity_factor: float,
+    loss_db_per_m: float,
+    frequency_hz: NDArray[np.floating],
+) -> NDArray[np.complexfloating]:
+    """ABCD of a lossy TEM line (first-order, no dispersion)."""
+    if z0_ohm <= 0.0 or velocity_factor <= 0.0 or length_m < 0.0:
+        raise AnalysisError("invalid transmission-line parameters")
+    if loss_db_per_m < 0.0:
+        raise AnalysisError("line loss must be >= 0")
+    freq = np.asarray(frequency_hz, dtype=float)
+    alpha = loss_db_per_m / 8.686
+    beta = 2.0 * np.pi * freq / (velocity_factor * 299_792_458.0)
+    gamma_l = (alpha + 1j * beta) * length_m
+    cosh = np.cosh(gamma_l)
+    sinh = np.sinh(gamma_l)
+    a = np.zeros((freq.size, 2, 2), dtype=np.complex128)
+    a[:, 0, 0] = cosh
+    a[:, 0, 1] = z0_ohm * sinh
+    a[:, 1, 0] = sinh / z0_ohm
+    a[:, 1, 1] = cosh
+    return a
+
+
+def balun_abcd(
+    balun: BalunSpec, frequency_hz: NDArray[np.floating]
+) -> NDArray[np.complexfloating]:
+    """Behavioral ABCD of a boundary balun/unun.
+
+    The ideal transformer is followed by an optional TEM line, leakage,
+    winding capacitance and a shunt core-loss resistance. A real multi-line
+    Guanella/Ruthroff layout is not derived from the winding geometry; the
+    line section is a first-order delay/impedance model.
+    """
+    freq = np.asarray(frequency_hz, dtype=float)
+    omega = 2.0 * np.pi * freq
+    if balun.kind == "ideal":
+        return transformer_abcd(balun.turns_ratio, freq.size)
+    sections: list[NDArray[np.complexfloating]] = []
+    if balun.leakage_h > 0.0:
+        sections.append(_series_abcd(1j * omega * balun.leakage_h))
+    if balun.core_loss_ohm is not None and balun.core_loss_ohm > 0.0:
+        sections.append(
+            _shunt_abcd(np.full_like(omega, 1.0 / balun.core_loss_ohm, dtype=complex))
+        )
+    sections.append(transformer_abcd(balun.turns_ratio, freq.size))
+    if balun.length_m > 0.0:
+        sections.append(
+            transmission_line_abcd(
+                balun.z0_line_ohm,
+                balun.length_m,
+                balun.velocity_factor,
+                balun.loss_db_per_m,
+                freq,
+            )
+        )
+    if balun.shunt_c_f > 0.0:
+        sections.append(_shunt_abcd(1j * omega * balun.shunt_c_f))
+    return cascade_abcd(sections)
 
 
 def _z_nonideal_inductor(
@@ -252,6 +316,8 @@ class LadderABCDAnalyzer:
         ratio = circuit.output_transformer_ratio
         if ratio != 1.0:
             abcd = abcd @ transformer_abcd(ratio, freq.size)
+        if circuit.output_balun is not None:
+            abcd = abcd @ balun_abcd(circuit.output_balun, freq)
         zs = circuit.port_in.impedance_ohm
         zl = circuit.port_out.impedance_ohm
         s11, s21, s12, s22 = abcd_to_s(abcd, zs, zl)

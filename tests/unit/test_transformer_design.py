@@ -40,6 +40,26 @@ def test_unun_1_to_4_turns_flux_and_wire() -> None:
     assert not d.saturated
 
 
+def test_hf_power_cores_support_100w_designs() -> None:
+    for core_name, z_high, freq in (
+        ("FT140-43", 200.0, 3.5e6),
+        ("FT240-43", 450.0, 7e6),
+        ("FT240-61", 200.0, 28e6),
+        ("FT240-52", 200.0, 14e6),
+    ):
+        design = design_transformer(
+            find_core(core_name),
+            z_low_ohm=50.0,
+            z_high_ohm=z_high,
+            frequency_hz=freq,
+            power_w=100.0,
+        )
+        assert design.n_low >= 1 and design.n_high >= 1
+        assert design.fit.fits
+        assert design.bsat_margin is not None
+        assert design.bsat_margin > 1.0
+
+
 def test_unun_1_to_9_and_balun_note() -> None:
     core = find_core("FT82-43")
     d = design_transformer(

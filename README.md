@@ -29,6 +29,8 @@ image.
   derating, capacitor ESL/ESR, and parasitic capacitance.
 - **Transformer / unun / balun calculator**: turns, Lm, flux/saturation and wire
   gauges on the built-in toroid table.
+- **Balun / unun designer**: ideal, Guanella/Ruthroff and choke models with
+  core/wire, leakage/core loss and output-boundary BOM insertion.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
   transformer, open/short stubs, substrate presets and first-order loss.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the

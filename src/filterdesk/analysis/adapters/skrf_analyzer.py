@@ -10,6 +10,7 @@ from filterdesk.analysis.adapters.abcd_ladder import (
     AnalysisError,
     _element_abcd,
     abcd_to_s,
+    balun_abcd,
     transformer_abcd,
 )
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
@@ -69,6 +70,17 @@ class ScikitRFAnalyzer:
             s_t[:, 1, 1] = s22
             networks.append(
                 rf.Network(frequency=frequency, s=s_t, z0=z0_ref, name="T1")
+            )
+        if circuit.output_balun is not None:
+            b_abcd = balun_abcd(circuit.output_balun, np.asarray(freq_hz))
+            s11, s21, s12, s22 = abcd_to_s(b_abcd, z0_ref, z0_ref)
+            s_b = np.zeros((len(freq_hz), 2, 2), dtype=np.complex128)
+            s_b[:, 0, 0] = s11
+            s_b[:, 1, 0] = s21
+            s_b[:, 0, 1] = s12
+            s_b[:, 1, 1] = s22
+            networks.append(
+                rf.Network(frequency=frequency, s=s_b, z0=z0_ref, name="BAL1")
             )
 
         ntw = networks[0]

@@ -118,9 +118,12 @@ def spice_netlist(
     lines: list[str] = [f"* {title}"]
     in_net = nodes.net(circuit.port_in.node)
     load_net = nodes.net(circuit.port_out.node)
-    ratio = circuit.output_transformer_ratio
-    has_transformer = ratio != 1.0
-    if has_transformer:
+    balun = circuit.output_balun
+    ratio = balun.turns_ratio if balun is not None else circuit.output_transformer_ratio
+    has_transformer = ratio != 1.0 or balun is not None
+    if balun is not None:
+        nodes.alias[load_net] = "BAL1_p"
+    elif has_transformer:
         nodes.alias[load_net] = "T1_p"
 
     src_net = f"{source_name}_src"
@@ -134,7 +137,28 @@ def spice_netlist(
     for el in circuit.elements:
         lines.extend(_expand(el, nodes))
 
-    if has_transformer:
+    if balun is not None:
+        # Boundary balun/unun: ideal transformer plus optional series leakage,
+        # shunt core loss and winding capacitance. The TLT line section is not
+        # represented by this controlled-source export.
+        lines.append(f"* output balun BAL1 ({balun.kind}, {ratio:.6g}:1)")
+        control = "BAL1_p"
+        if balun.kind != "ideal" and balun.leakage_h > 0.0:
+            control = "BAL1_x"
+            lines.append(f"L_BAL1lk BAL1_p {control} {_fmt(balun.leakage_h)}")
+        if balun.kind != "ideal" and balun.core_loss_ohm is not None:
+            lines.append(f"R_BAL1core {control} 0 {_fmt(balun.core_loss_ohm)}")
+        lines.append(f"E_BAL1 BAL1_s 0 {control} 0 {_fmt(1.0 / ratio)}")
+        lines.append("V_BAL1sense BAL1_s BAL1_sense 0")
+        lines.append(
+            f"F_BAL1 {control} 0 V_BAL1sense {_fmt(1.0 / ratio)}"
+        )
+        out_net = "BAL1_sense"
+        if balun.kind != "ideal" and balun.shunt_c_f > 0.0:
+            lines.append(f"C_BAL1w {out_net} 0 {_fmt(balun.shunt_c_f)}")
+        if balun.kind in {"guanella", "ruthroff"}:
+            lines.append("* BAL1 TLT TEM line is not exported to SPICE")
+    elif has_transformer:
         # Ideal transformer (common ground) via VCVS + CCCS and a 0 V sense
         # source: V(load) = V(primary)/n and I(primary) = I(load)/n.
         lines.append(f"* ideal output transformer T1 ({ratio:.6g}:1)")

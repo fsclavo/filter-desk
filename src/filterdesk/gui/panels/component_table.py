@@ -184,6 +184,15 @@ class ComponentTablePanel(QWidget):
                 f"{circuit.output_transformer_ratio:.4g}:1",
                 tr("ideal"),
             )
+        if circuit.output_balun is not None:
+            balun = circuit.output_balun
+            self._add_row(
+                "BAL1",
+                role_label(ElementRole.SERIES),
+                tr("balun"),
+                f"{balun.turns_ratio:.4g}:1",
+                tr(balun.kind),
+            )
         self._updating = False
         self._block_sel = False
 

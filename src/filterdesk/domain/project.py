@@ -7,6 +7,7 @@ from typing import Any
 
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.domain.circuit import (
+    BalunSpec,
     Circuit,
     Element,
     IdealBruneLC,
@@ -83,6 +84,46 @@ class Project:
     format_version: int = FORMAT_VERSION
 
 
+def _balun_to_mapping(balun: BalunSpec) -> dict[str, object]:
+    return {
+        "kind": balun.kind,
+        "turns_ratio": balun.turns_ratio,
+        "z_unbalanced_ohm": balun.z_unbalanced_ohm,
+        "z_balanced_ohm": balun.z_balanced_ohm,
+        "z0_line_ohm": balun.z0_line_ohm,
+        "length_m": balun.length_m,
+        "velocity_factor": balun.velocity_factor,
+        "loss_db_per_m": balun.loss_db_per_m,
+        "leakage_h": balun.leakage_h,
+        "shunt_c_f": balun.shunt_c_f,
+        "core_loss_ohm": balun.core_loss_ohm,
+        "common_mode_impedance_ohm": balun.common_mode_impedance_ohm,
+        "core": balun.core,
+        "turns": balun.turns,
+        "wire_awg": balun.wire_awg,
+    }
+
+
+def _balun_from_mapping(data: dict[str, Any]) -> BalunSpec:
+    return BalunSpec(
+        kind=str(data.get("kind", "ideal")),
+        turns_ratio=float(data.get("turns_ratio", 1.0)),
+        z_unbalanced_ohm=float(data.get("z_unbalanced_ohm", 0.0)),
+        z_balanced_ohm=float(data.get("z_balanced_ohm", 0.0)),
+        z0_line_ohm=float(data.get("z0_line_ohm", 50.0)),
+        length_m=float(data.get("length_m", 0.0)),
+        velocity_factor=float(data.get("velocity_factor", 1.0)),
+        loss_db_per_m=float(data.get("loss_db_per_m", 0.0)),
+        leakage_h=float(data.get("leakage_h", 0.0)),
+        shunt_c_f=float(data.get("shunt_c_f", 0.0)),
+        core_loss_ohm=_opt_float(data.get("core_loss_ohm")),
+        common_mode_impedance_ohm=float(data.get("common_mode_impedance_ohm", 0.0)),
+        core=str(data.get("core", "")),
+        turns=_opt_int(data.get("turns")),
+        wire_awg=_opt_int(data.get("wire_awg")),
+    )
+
+
 def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
     elements: list[dict[str, Any]] = []
     for el in circuit.elements:
@@ -149,6 +190,11 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
         "elements": elements,
         "meta": circuit.meta,
         "output_transformer_ratio": circuit.output_transformer_ratio,
+        "output_balun": (
+            None
+            if circuit.output_balun is None
+            else _balun_to_mapping(circuit.output_balun)
+        ),
     }
 
 
@@ -305,6 +351,11 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
         topology_id=topology,
         meta=dict(data.get("meta") or {}),
         output_transformer_ratio=float(data.get("output_transformer_ratio", 1.0)),
+        output_balun=(
+            None
+            if data.get("output_balun") is None
+            else _balun_from_mapping(data["output_balun"])
+        ),
     )
 
 

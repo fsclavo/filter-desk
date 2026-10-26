@@ -31,6 +31,9 @@ from filterdesk.components_std import (
     AttenuatorDesign,
     AttenuatorError,
     AttenuatorKind,
+    BalunDesign,
+    BalunError,
+    BalunKind,
     ESeries,
     MatchingDesign,
     MatchingError,
@@ -38,6 +41,7 @@ from filterdesk.components_std import (
     SnapStrategy,
     design_air_coil,
     design_attenuator,
+    design_balun,
     design_matching,
     design_microstrip,
     design_toroid,
@@ -63,7 +67,12 @@ from filterdesk.components_std.transformer import (
     TransformerError,
     TransformerKind,
 )
-from filterdesk.domain.circuit import Circuit, IdealInductor, NonIdealInductor
+from filterdesk.domain.circuit import (
+    BalunSpec,
+    Circuit,
+    IdealInductor,
+    NonIdealInductor,
+)
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
@@ -77,6 +86,7 @@ from filterdesk.services.inductor_realization import (
     realize_from_toroid_design,
 )
 from filterdesk.services.vna_tuning import (
+    VnaBoundMode,
     VnaTuningConfig,
     VnaTuningError,
     VnaTuningResult,
@@ -1530,10 +1540,14 @@ class VnaTuningDialog(QDialog):
         self._max_points = QSpinBox()
         self._max_points.setRange(2, max(2, measured.frequency_hz.size))
         self._max_points.setValue(min(401, measured.frequency_hz.size))
+        self._bound_mode = QComboBox()
+        self._bound_mode.addItems([mode.value for mode in VnaBoundMode])
         self._fit_s11 = QCheckBox("Fit S11")
         self._fit_s11.setChecked(True)
         self._fit_s21 = QCheckBox("Fit S21")
         self._fit_s21.setChecked(True)
+        self._fit_phase = QCheckBox("Fit phase / auto delay")
+        self._fit_phase.setChecked(False)
 
         self._summary = QLabel("-")
         self._summary.setWordWrap(True)
@@ -1551,8 +1565,10 @@ class VnaTuningDialog(QDialog):
         form.addRow("Fit from", self._f_min)
         form.addRow("Fit to", self._f_max)
         form.addRow("Bound (%)", self._bound)
+        form.addRow("Search", self._bound_mode)
         form.addRow("Max points", self._max_points)
         form.addRow(self._fit_s11, self._fit_s21)
+        form.addRow(self._fit_phase)
         form.addRow("Result", self._summary)
         form.addRow("Details", self._details)
         form.addRow(self._table)
@@ -1582,9 +1598,11 @@ class VnaTuningDialog(QDialog):
             bound = float(self._bound.text().strip() or "0") / 100.0
             cfg = VnaTuningConfig(
                 bound_pct=bound,
+                bound_mode=VnaBoundMode(self._bound_mode.currentText()),
                 max_points=self._max_points.value(),
                 fit_s11=self._fit_s11.isChecked(),
                 fit_s21=self._fit_s21.isChecked(),
+                fit_phase=self._fit_phase.isChecked(),
                 f_min_hz=parse_si(self._f_min.text().strip() or "0"),
                 f_max_hz=parse_si(self._f_max.text().strip() or "0"),
             )
@@ -1606,13 +1624,20 @@ class VnaTuningDialog(QDialog):
             f"{result.initial_rms_db:.3f} -> {result.final_rms_db:.3f} dB RMS "
             f"({result.improvement_db:+.3f} dB, {result.n_evaluations} evaluations)"
         )
-        self._details.setText(
+        details = (
             f"S21 {result.initial_rms_s21_db:.3f} -> "
             f"{result.final_rms_s21_db:.3f} dB RMS; "
             f"S11 {result.initial_rms_s11_db:.3f} -> "
             f"{result.final_rms_s11_db:.3f} dB RMS; "
             f"{result.frequency_hz.size} points"
         )
+        if result.delay_s is not None:
+            details += (
+                f"; delay {result.delay_s * 1e9:.2f} ns"
+                f"; phase S21 {result.phase_s21_deg or 0.0:+.2f} deg"
+                f", S11 {result.phase_s11_deg or 0.0:+.2f} deg"
+            )
+        self._details.setText(details)
         self._table.setRowCount(len(result.refs))
         for row, (ref, initial, final) in enumerate(
             zip(result.refs, result.initial_values, result.final_values, strict=True)
@@ -1621,3 +1646,170 @@ class VnaTuningDialog(QDialog):
             self._table.setItem(row, 1, QTableWidgetItem(f"{initial:.6g}"))
             self._table.setItem(row, 2, QTableWidgetItem(f"{final:.6g}"))
         self._apply_button.setEnabled(True)
+
+
+class BalunDialog(QDialog):
+    """Balun/unun design and output-boundary insertion."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Balun / unun")
+        self._cores = list_cores()
+        self._design_value: BalunDesign | None = None
+        self._remove_requested = False
+
+        self._core = QComboBox()
+        for core in self._cores:
+            self._core.addItem(
+                f"{core.name} - mix {core.material}, AL {core.al_nh:g} nH/N^2"
+            )
+        self._kind = QComboBox()
+        self._kind.addItems([k.value for k in BalunKind])
+        self._kind.setCurrentText(BalunKind.UNUN.value)
+        for index, core in enumerate(self._cores):
+            if core.name == "FT140-43":
+                self._core.setCurrentIndex(index)
+                break
+        self._z_unbalanced = EngineeringLineEdit()
+        self._z_unbalanced.setText("50")
+        self._z_balanced = EngineeringLineEdit()
+        self._z_balanced.setText("200")
+        self._f_min = EngineeringLineEdit()
+        self._f_min.setText("3.5M")
+        self._f_max = EngineeringLineEdit()
+        self._f_max.setText("30M")
+        self._power = EngineeringLineEdit()
+        self._power.setText("100")
+        self._coupling = EngineeringLineEdit()
+        self._coupling.setText("98")
+        self._tan_delta = EngineeringLineEdit()
+        self._tan_delta.setText("2")
+        self._winding_c = EngineeringLineEdit()
+        self._winding_c.setText("0")
+
+        self._turns = QLabel("-")
+        self._inductances = QLabel("-")
+        self._model = QLabel("-")
+        self._flux = QLabel("-")
+        self._wire = QLabel("-")
+        self._notes = QLabel("-")
+        self._notes.setWordWrap(True)
+
+        form = QFormLayout(self)
+        form.addRow("Core", self._core)
+        form.addRow("Kind", self._kind)
+        form.addRow("Unbalanced Z (Ohm)", self._z_unbalanced)
+        form.addRow("Balanced Z (Ohm)", self._z_balanced)
+        form.addRow("Lowest frequency", self._f_min)
+        form.addRow("Highest frequency", self._f_max)
+        form.addRow("Power (W)", self._power)
+        form.addRow("Coupling (%)", self._coupling)
+        form.addRow("Core tan delta (%)", self._tan_delta)
+        form.addRow("Winding C (pF)", self._winding_c)
+        form.addRow("Turns", self._turns)
+        form.addRow("Inductances", self._inductances)
+        form.addRow("Model", self._model)
+        form.addRow("Peak flux", self._flux)
+        form.addRow("Wire", self._wire)
+        form.addRow("Notes", self._notes)
+
+        buttons = QDialogButtonBox()
+        apply_button = buttons.addButton(
+            "Apply as output balun", QDialogButtonBox.ButtonRole.AcceptRole
+        )
+        remove_button = buttons.addButton(
+            "Remove", QDialogButtonBox.ButtonRole.ActionRole
+        )
+        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        apply_button.clicked.connect(self.accept)
+        remove_button.clicked.connect(self._remove)
+        close.clicked.connect(self.reject)
+        form.addRow(buttons)
+
+        self._core.currentIndexChanged.connect(self._recompute)
+        self._kind.currentIndexChanged.connect(self._recompute)
+        for field in (
+            self._z_unbalanced,
+            self._z_balanced,
+            self._f_min,
+            self._f_max,
+            self._power,
+            self._coupling,
+            self._tan_delta,
+            self._winding_c,
+        ):
+            field.editingFinished.connect(self._recompute)
+        self._recompute()
+
+    def selected_core(self) -> ToroidCore:
+        return self._cores[self._core.currentIndex()]
+
+    def current_design(self) -> BalunDesign | None:
+        return self._design_value
+
+    def balun_spec(self) -> BalunSpec | None:
+        return None if self._design_value is None else self._design_value.to_spec()
+
+    def remove_requested(self) -> bool:
+        return self._remove_requested
+
+    def _remove(self) -> None:
+        self._remove_requested = True
+        self.accept()
+
+    def _recompute(self) -> None:
+        try:
+            design = design_balun(
+                self.selected_core(),
+                kind=BalunKind(self._kind.currentText()),
+                z_unbalanced_ohm=parse_si(self._z_unbalanced.text().strip() or "0"),
+                z_balanced_ohm=parse_si(self._z_balanced.text().strip() or "0"),
+                f_min_hz=parse_si(self._f_min.text().strip() or "0"),
+                f_max_hz=parse_si(self._f_max.text().strip() or "0"),
+                power_w=float(self._power.text().strip() or "0"),
+                coupling=float(self._coupling.text().strip() or "0") / 100.0,
+                tan_delta=float(self._tan_delta.text().strip() or "0") / 100.0,
+                winding_capacitance_f=parse_si(
+                    self._winding_c.text().strip() or "0"
+                )
+                * 1e-12,
+            )
+        except (BalunError, ValueError):
+            self._design_value = None
+            for label in (
+                self._turns,
+                self._inductances,
+                self._model,
+                self._flux,
+                self._wire,
+                self._notes,
+            ):
+                label.setText("-")
+            return
+        self._design_value = design
+        self._turns.setText(
+            f"{design.n_primary} : {design.n_secondary} "
+            f"(ratio {design.actual_turns_ratio:.4f})"
+        )
+        self._inductances.setText(
+            f"Lm {format_engineering(design.magnetizing_inductance_h, 'H', digits=4)}, "
+            f"Lk {format_engineering(design.leakage_inductance_h, 'H', digits=4)}"
+        )
+        model = f"Zp {design.z0_line_ohm:.3g} Ohm"
+        if design.length_m:
+            model += f", l {design.length_m * 1000.0:.1f} mm"
+        if design.core_loss_ohm is not None:
+            model += f", Rp {design.core_loss_ohm:.4g} Ohm"
+        self._model.setText(model)
+        if design.b_peak_t is None:
+            self._flux.setText("-")
+        else:
+            text = f"{design.b_peak_t * 1000.0:.1f} mT"
+            if design.bsat_margin is not None:
+                text += f" (B/Bsat {design.bsat_margin:.2f})"
+            self._flux.setText(text)
+        self._wire.setText(
+            f"primary AWG {design.awg_primary}, secondary AWG {design.awg_secondary}; "
+            f"fit AWG {design.fit.awg}"
+        )
+        self._notes.setText("; ".join(design.notes) if design.notes else "-")

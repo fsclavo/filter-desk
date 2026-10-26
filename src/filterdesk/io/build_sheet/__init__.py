@@ -214,14 +214,18 @@ def build_sheet_rows(
                 unit=comp.unit,
                 value_text=(
                     f"{comp.value:.4g}:1"
-                    if comp.kind == "transformer"
+                    if comp.kind in {"transformer", "balun"}
                     else format_engineering(comp.value, comp.unit, digits=6)
                 ),
                 tolerance_pct=tol.get(comp.ref),
                 parasitic=(
                     "ideal"
                     if comp.kind == "transformer"
-                    else _parasitic_text(comp)
+                    else (
+                        f"balun {comp.winding.material}"
+                        if comp.kind == "balun" and comp.winding is not None
+                        else _parasitic_text(comp)
+                    )
                 ),
                 v_peak_v=entry.v_peak_v if entry is not None else None,
                 i_peak_a=entry.i_peak_a if entry is not None else None,
