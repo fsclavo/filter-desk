@@ -4,9 +4,9 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.11.1 · **Released:**
-[v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
-**Next:** v0.12.0 planning.
+**Last verified:** 2026-10-26 · **App version:** 0.12.0 · **Release:**
+v0.12.0 pending · **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
+**Next:** v0.13.0 planning.
 
 **Verification:** local suite **920 passed, 1 skipped**; coverage **82.99 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40406642501
@@ -56,12 +56,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.11.1 release
+## 3. v0.12.0 release
 
-- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.11.1.
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
-- [x] Windows installer/ZIP, Linux tar.gz and AppImage released.
-- [x] CI and release workflow green.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Record the release URL and CI run above.
 
 ---
 

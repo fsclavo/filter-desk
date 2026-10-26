@@ -3,7 +3,7 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
-## Unreleased (after v0.11.1)
+## v0.12.0 — 2026-10-26
 
 ### Added
 
