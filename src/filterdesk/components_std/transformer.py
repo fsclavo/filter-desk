@@ -31,6 +31,11 @@ class TransformerKind(StrEnum):
     BALUN = "balun"
 
 
+class TransformerTopology(StrEnum):
+    AUTOTRANSFORMER = "autotransformer"
+    ISOLATED = "isolated"
+
+
 @dataclass(frozen=True, slots=True)
 class TransformerDesign:
     core: ToroidCore
@@ -53,6 +58,10 @@ class TransformerDesign:
     awg_high: int | None
     fit: WireFit
     notes: tuple[str, ...]
+    topology: TransformerTopology = TransformerTopology.AUTOTRANSFORMER
+    total_turns: int = 0
+    reactance_ratio: float = 0.0
+    hf_caution: bool = False
 
     @property
     def saturated(self) -> bool:
@@ -76,10 +85,19 @@ def design_transformer(
     frequency_hz: float,
     power_w: float,
     kind: TransformerKind | str = TransformerKind.UNUN,
+    topology: TransformerTopology | str = TransformerTopology.AUTOTRANSFORMER,
     reactance_factor: float = 4.0,
     current_density_a_mm2: float = 4.0,
+    turns_primary: int | None = None,
+    frequency_max_hz: float | None = None,
 ) -> TransformerDesign:
-    """Design a transformer-type unun/balun (ideal impedance transformation)."""
+    """Design a transformer-type unun/balun (ideal impedance transformation).
+
+    ``topology="autotransformer"`` uses one tapped winding: the input is across
+    ``n_low`` turns and the output across ``n_high`` turns, so the total is
+    ``n_high``. ``topology="isolated"`` uses two separate windings, total
+    ``n_low + n_high``. The default is the autotransformer.
+    """
     if z_low_ohm <= 0.0 or z_high_ohm <= 0.0:
         raise TransformerError("impedances must be > 0")
     if z_high_ohm < z_low_ohm:
@@ -92,15 +110,24 @@ def design_transformer(
         raise TransformerError("reactance factor / current density must be > 0")
     if core.ae_mm2 <= 0.0:
         raise TransformerError("core dimensions are required for a transformer")
+    if frequency_max_hz is not None and frequency_max_hz <= frequency_hz:
+        raise TransformerError("frequency_max_hz must be > frequency_hz")
+    if turns_primary is not None and turns_primary < 1:
+        raise TransformerError("turns_primary must be >= 1")
 
     kind_value = TransformerKind(str(kind))
+    topology_value = TransformerTopology(str(topology))
     ratio = z_high_ohm / z_low_ohm
     turns = math.sqrt(ratio)
     al_h = core.al_nh * 1e-9
     n_low_min = math.sqrt(
         reactance_factor * z_low_ohm / (2.0 * math.pi * frequency_hz * al_h)
     )
-    n_low = max(1, math.ceil(n_low_min - 1e-9))
+    n_low = (
+        turns_primary
+        if turns_primary is not None
+        else max(1, math.ceil(n_low_min - 1e-9))
+    )
     n_high = max(1, round(turns * n_low))
     actual_ratio = (n_high / n_low) ** 2
 
@@ -116,9 +143,37 @@ def design_transformer(
 
     awg_low = _awg_for_area(i_low / current_density_a_mm2)
     awg_high = _awg_for_area(i_high / current_density_a_mm2)
-    fit = wire_fit(core, n_low + n_high)
+    total_turns = (
+        n_high
+        if topology_value is TransformerTopology.AUTOTRANSFORMER
+        else n_low + n_high
+    )
+    fit = wire_fit(core, total_turns)
+    reactance_ratio = 2.0 * math.pi * frequency_hz * lm / z_low_ohm
+    hf_caution = (
+        frequency_max_hz is not None
+        and frequency_max_hz >= 20e6
+        and total_turns > 24
+    )
 
     notes: list[str] = []
+    if topology_value is TransformerTopology.AUTOTRANSFORMER:
+        notes.append(
+            "autotransformer: one tapped winding (input across primary, output "
+            "across total); no galvanic isolation"
+        )
+    else:
+        notes.append("isolated two-winding transformer")
+    if reactance_ratio < reactance_factor:
+        notes.append(
+            f"X_Lm/Z = {reactance_ratio:.2f} below target {reactance_factor:.2f}; "
+            "low-frequency response may suffer"
+        )
+    if hf_caution:
+        notes.append(
+            "many turns at HF: leakage/capacitance may degrade the high bands "
+            "(prefer fewer turns)"
+        )
     if n_high / n_low != turns:
         notes.append(
             f"rounded turns give impedance ratio {actual_ratio:.3f} "
@@ -156,12 +211,63 @@ def design_transformer(
         awg_high=awg_high,
         fit=fit,
         notes=tuple(notes),
+        topology=topology_value,
+        total_turns=total_turns,
+        reactance_ratio=reactance_ratio,
+        hf_caution=hf_caution,
     )
+
+
+def design_transformer_options(
+    core: ToroidCore,
+    *,
+    z_low_ohm: float,
+    z_high_ohm: float,
+    frequency_hz: float,
+    power_w: float,
+    kind: TransformerKind | str = TransformerKind.UNUN,
+    topology: TransformerTopology | str = TransformerTopology.AUTOTRANSFORMER,
+    reactance_factor: float = 4.0,
+    current_density_a_mm2: float = 4.0,
+    frequency_max_hz: float | None = None,
+) -> list[TransformerDesign]:
+    """Return compact / recommended / robust turns options for one ratio."""
+    base = design_transformer(
+        core,
+        z_low_ohm=z_low_ohm,
+        z_high_ohm=z_high_ohm,
+        frequency_hz=frequency_hz,
+        power_w=power_w,
+        kind=kind,
+        topology=topology,
+        reactance_factor=reactance_factor,
+        current_density_a_mm2=current_density_a_mm2,
+        frequency_max_hz=frequency_max_hz,
+    )
+    candidates = sorted({max(1, base.n_low - 1), base.n_low, base.n_low + 1})
+    return [
+        design_transformer(
+            core,
+            z_low_ohm=z_low_ohm,
+            z_high_ohm=z_high_ohm,
+            frequency_hz=frequency_hz,
+            power_w=power_w,
+            kind=kind,
+            topology=topology,
+            reactance_factor=reactance_factor,
+            current_density_a_mm2=current_density_a_mm2,
+            turns_primary=n_primary,
+            frequency_max_hz=frequency_max_hz,
+        )
+        for n_primary in candidates
+    ]
 
 
 __all__ = [
     "TransformerDesign",
     "TransformerError",
     "TransformerKind",
+    "TransformerTopology",
     "design_transformer",
+    "design_transformer_options",
 ]

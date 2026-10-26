@@ -74,7 +74,9 @@ from filterdesk.components_std.transformer import (
     TransformerDesign,
     TransformerError,
     TransformerKind,
+    TransformerTopology,
     design_transformer,
+    design_transformer_options,
 )
 
 __all__ = [
@@ -106,6 +108,7 @@ __all__ = [
     "TransformerDesign",
     "TransformerError",
     "TransformerKind",
+    "TransformerTopology",
     "ToroidError",
     "WireFit",
     "air_coil_inductance_h",
@@ -122,6 +125,7 @@ __all__ = [
     "microstrip_width_for_z0",
     "design_toroid",
     "design_transformer",
+    "design_transformer_options",
     "e_series_values",
     "find_core",
     "inductor_resistance_ohm_from_q",

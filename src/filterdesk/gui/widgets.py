@@ -45,7 +45,7 @@ from filterdesk.components_std import (
     design_matching,
     design_microstrip,
     design_toroid,
-    design_transformer,
+    design_transformer_options,
     inductor_resistance_ohm_from_q,
     list_cores,
     list_substrates,
@@ -66,6 +66,7 @@ from filterdesk.components_std.transformer import (
     TransformerDesign,
     TransformerError,
     TransformerKind,
+    TransformerTopology,
 )
 from filterdesk.domain.circuit import (
     BalunSpec,
@@ -1316,22 +1317,51 @@ class TransformerDialog(QDialog):
         self.setWindowTitle("Transformer / balun")
         self._cores = list_cores()
         self._design_value: TransformerDesign | None = None
+        self._options: list[TransformerDesign] = []
 
         self._core = QComboBox()
         for core in self._cores:
             self._core.addItem(
                 f"{core.name} - mix {core.material}, AL {core.al_nh:g} nH/N^2"
             )
+        for index, core in enumerate(self._cores):
+            if core.name == "FT140-43":
+                self._core.setCurrentIndex(index)
+                break
         self._kind = QComboBox()
         self._kind.addItems([k.value for k in TransformerKind])
+        self._kind.setCurrentText(TransformerKind.UNUN.value)
+        self._topology = QComboBox()
+        self._topology.addItems([t.value for t in TransformerTopology])
         self._z_low = EngineeringLineEdit()
         self._z_low.setText("50")
         self._z_high = EngineeringLineEdit()
         self._z_high.setText("200")
         self._frequency = EngineeringLineEdit()
         self._frequency.setText("3.5M")
+        self._frequency_max = EngineeringLineEdit()
+        self._frequency_max.setText("30M")
         self._power = EngineeringLineEdit()
         self._power.setText("10")
+
+        self._options_table = QTableWidget(0, 7)
+        self._options_table.setHorizontalHeaderLabels(
+            ["Turns", "Total", "Lm", "X/Z", "B/Bsat", "Fit", "HF"]
+        )
+        self._options_table.verticalHeader().setVisible(False)
+        self._options_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._options_table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._options_table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self._options_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._options_table.setMaximumHeight(140)
 
         self._turns = QLabel("-")
         self._lm = QLabel("-")
@@ -1344,10 +1374,13 @@ class TransformerDialog(QDialog):
         form = QFormLayout(self)
         form.addRow("Core", self._core)
         form.addRow("Kind", self._kind)
+        form.addRow("Topology", self._topology)
         form.addRow("Low-side Z (Ohm)", self._z_low)
         form.addRow("High-side Z (Ohm)", self._z_high)
         form.addRow("Lowest frequency", self._frequency)
+        form.addRow("Highest frequency", self._frequency_max)
         form.addRow("Power (W)", self._power)
+        form.addRow("Winding options", self._options_table)
         form.addRow("Turns", self._turns)
         form.addRow("Magnetizing L", self._lm)
         form.addRow("V / I", self._vi)
@@ -1362,8 +1395,16 @@ class TransformerDialog(QDialog):
 
         self._core.currentIndexChanged.connect(self._recompute)
         self._kind.currentIndexChanged.connect(self._recompute)
-        for field in (self._z_low, self._z_high, self._frequency, self._power):
+        self._topology.currentIndexChanged.connect(self._recompute)
+        for field in (
+            self._z_low,
+            self._z_high,
+            self._frequency,
+            self._frequency_max,
+            self._power,
+        ):
             field.editingFinished.connect(self._recompute)
+        self._options_table.itemSelectionChanged.connect(self._on_option_selected)
         self._recompute()
 
     def selected_core(self) -> ToroidCore:
@@ -1374,16 +1415,24 @@ class TransformerDialog(QDialog):
 
     def _recompute(self) -> None:
         try:
-            design = design_transformer(
+            options = design_transformer_options(
                 self.selected_core(),
                 z_low_ohm=parse_si(self._z_low.text().strip() or "0"),
                 z_high_ohm=parse_si(self._z_high.text().strip() or "0"),
                 frequency_hz=parse_si(self._frequency.text().strip() or "0"),
                 power_w=float(self._power.text().strip() or "0"),
                 kind=TransformerKind(self._kind.currentText()),
+                topology=TransformerTopology(self._topology.currentText()),
+                frequency_max_hz=(
+                    parse_si(self._frequency_max.text().strip() or "0")
+                    if self._frequency_max.text().strip()
+                    else None
+                ),
             )
         except (TransformerError, ValueError):
+            self._options = []
             self._design_value = None
+            self._options_table.setRowCount(0)
             for label in (
                 self._turns,
                 self._lm,
@@ -1394,10 +1443,57 @@ class TransformerDialog(QDialog):
             ):
                 label.setText("-")
             return
+        self._options = options
+        self._populate_options()
+        recommended = next(
+            (
+                index
+                for index, design in enumerate(options)
+                if design.reactance_ratio >= 4.0
+            ),
+            len(options) // 2,
+        )
+        self._options_table.blockSignals(True)
+        self._options_table.selectRow(recommended)
+        self._options_table.blockSignals(False)
+        self._show_design(options[recommended])
+
+    def _populate_options(self) -> None:
+        self._options_table.setRowCount(len(self._options))
+        for row, design in enumerate(self._options):
+            values = (
+                f"{design.n_low}:{design.n_high}",
+                str(design.total_turns),
+                format_engineering(
+                    design.magnetizing_inductance_h, "H", digits=3
+                ),
+                f"{design.reactance_ratio:.2f}",
+                (
+                    "-"
+                    if design.bsat_margin is None
+                    else f"{design.bsat_margin:.1f}"
+                ),
+                str(design.fit.awg) if design.fit.awg is not None else "n/f",
+                "caution" if design.hf_caution else "ok",
+            )
+            for col, value in enumerate(values):
+                self._options_table.setItem(row, col, QTableWidgetItem(value))
+
+    def _on_option_selected(self) -> None:
+        rows = self._options_table.selectionModel().selectedRows()
+        if not rows:
+            return
+        row = rows[0].row()
+        if 0 <= row < len(self._options):
+            self._show_design(self._options[row])
+
+    def _show_design(self, design: TransformerDesign) -> None:
         self._design_value = design
         self._turns.setText(
             f"{design.n_low} : {design.n_high} "
-            f"(Z ratio {design.actual_impedance_ratio:.3f})"
+            f"(total {design.total_turns}, "
+            f"Z ratio {design.actual_impedance_ratio:.3f}, "
+            f"X/Z {design.reactance_ratio:.2f})"
         )
         self._lm.setText(
             format_engineering(design.magnetizing_inductance_h, "H", digits=4)

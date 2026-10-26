@@ -702,9 +702,20 @@ transformers. Enter the low/high impedances, the lowest frequency, the power and
 a built-in core. The impedance ratio is `R_high/R_low`, the turns ratio is its
 square root, and the low-side turns are chosen so that
 `X_Lm = 2*pi*f_min*Lm >= 4*Z_low` (the factor is adjustable in the API/CLI).
-It reports the rounded turns, actual impedance ratio, magnetizing inductance,
-RMS voltages/currents, peak flux and Bsat margin, recommended AWG for each
-winding, and whether both windings fit in one layer.
+It reports the rounded turns, topology, total turns, actual impedance ratio,
+magnetizing inductance, `X_Lm/Z_low`, RMS voltages/currents, peak flux and Bsat
+margin, recommended AWG for each winding, and whether the winding fits in one
+layer.
+
+**Topology:** the default is an **autotransformer** (one tapped winding: input
+across `Np`, output across `Ns`, total `Ns`, no galvanic isolation). Select
+**isolated** for two separate windings (total `Np + Ns`). The winding-options
+table shows compact / recommended / robust candidates for the same ratio. For
+50 -> 2500 Ω these are typically **2:14**, **3:21** and **4:28**; all give 49:1,
+but they are not equivalent. More turns increase `Lm` and lower peak flux, but
+also add leakage and winding capacitance. At high HF (for example 28 MHz),
+prefer fewer turns: 4:28 is flagged as an HF caution when the highest frequency
+is ≥20 MHz. The warning is a turn-count heuristic, not a parasitic extraction.
 
 This is an ideal-transformer model, not a Guanella/Ruthroff transmission-line
 transformer model: common-mode choking, leakage inductance and core loss are

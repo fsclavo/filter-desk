@@ -47,6 +47,7 @@ from filterdesk.components_std import (
     ToroidError,
     TransformerError,
     TransformerKind,
+    TransformerTopology,
     design_air_coil,
     design_attenuator,
     design_balun,
@@ -56,6 +57,7 @@ from filterdesk.components_std import (
     design_stub,
     design_toroid,
     design_transformer,
+    design_transformer_options,
     find_core,
     find_substrate,
     list_cores,
@@ -458,10 +460,26 @@ def build_parser() -> argparse.ArgumentParser:
     tr.add_argument("--frequency", default="1M", help="Lowest frequency, e.g. 1M")
     tr.add_argument("--power", type=float, default=10.0, help="Power (W)")
     tr.add_argument(
+        "--topology",
+        choices=[t.value for t in TransformerTopology],
+        default=TransformerTopology.AUTOTRANSFORMER.value,
+        help="Autotransformer (tapped) or isolated two-winding",
+    )
+    tr.add_argument(
         "--reactance-factor",
         type=float,
         default=4.0,
         help="Minimum magnetizing reactance / Z_low (default 4)",
+    )
+    tr.add_argument(
+        "--f-max",
+        default=None,
+        help="Highest frequency for the HF many-turns warning",
+    )
+    tr.add_argument(
+        "--show-options",
+        action="store_true",
+        help="Include compact/recommended/robust turns options",
     )
     tr.add_argument(
         "--current-density",
@@ -2289,8 +2307,12 @@ def main(argv: list[str] | None = None) -> int:
                 frequency_hz=parse_si(str(args.frequency)),
                 power_w=float(args.power),
                 kind=TransformerKind(str(args.kind)),
+                topology=TransformerTopology(str(args.topology)),
                 reactance_factor=float(args.reactance_factor),
                 current_density_a_mm2=float(args.current_density),
+                frequency_max_hz=(
+                    parse_si(str(args.f_max)) if args.f_max else None
+                ),
             )
         except (TransformerError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -2300,6 +2322,7 @@ def main(argv: list[str] | None = None) -> int:
                 json.dumps(
                     {
                         "kind": tr_design.kind.value,
+                        "topology": tr_design.topology.value,
                         "core": tr_design.core.name,
                         "z_low_ohm": tr_design.z_low_ohm,
                         "z_high_ohm": tr_design.z_high_ohm,
@@ -2307,6 +2330,9 @@ def main(argv: list[str] | None = None) -> int:
                         "turns_ratio": tr_design.turns_ratio,
                         "n_low": tr_design.n_low,
                         "n_high": tr_design.n_high,
+                        "total_turns": tr_design.total_turns,
+                        "reactance_ratio": tr_design.reactance_ratio,
+                        "hf_caution": tr_design.hf_caution,
                         "actual_impedance_ratio": tr_design.actual_impedance_ratio,
                         "magnetizing_inductance_h": tr_design.magnetizing_inductance_h,
                         "v_low_rms": tr_design.v_low_rms,
@@ -2321,6 +2347,49 @@ def main(argv: list[str] | None = None) -> int:
                         "fit_awg": tr_design.fit.awg,
                         "fit_diameter_mm": tr_design.fit.diameter_mm,
                         "notes": list(tr_design.notes),
+                        **(
+                            {
+                                "options": [
+                                    {
+                                        "n_low": d.n_low,
+                                        "n_high": d.n_high,
+                                        "total_turns": d.total_turns,
+                                        "magnetizing_inductance_h": (
+                                            d.magnetizing_inductance_h
+                                        ),
+                                        "reactance_ratio": d.reactance_ratio,
+                                        "b_peak_t": d.b_peak_t,
+                                        "bsat_margin": d.bsat_margin,
+                                        "fit_awg": d.fit.awg,
+                                        "hf_caution": d.hf_caution,
+                                    }
+                                    for d in design_transformer_options(
+                                        core,
+                                        z_low_ohm=parse_si(str(args.z_low)),
+                                        z_high_ohm=parse_si(str(args.z_high)),
+                                        frequency_hz=parse_si(str(args.frequency)),
+                                        power_w=float(args.power),
+                                        kind=TransformerKind(str(args.kind)),
+                                        topology=TransformerTopology(
+                                            str(args.topology)
+                                        ),
+                                        reactance_factor=float(
+                                            args.reactance_factor
+                                        ),
+                                        current_density_a_mm2=float(
+                                            args.current_density
+                                        ),
+                                        frequency_max_hz=(
+                                            parse_si(str(args.f_max))
+                                            if args.f_max
+                                            else None
+                                        ),
+                                    )
+                                ]
+                            }
+                            if args.show_options
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -2331,9 +2400,14 @@ def main(argv: list[str] | None = None) -> int:
             f"{tr_design.z_high_ohm:g} Ohm on {tr_design.core.name}"
         )
         print(
+            f"  Topology: {tr_design.topology.value}, "
+            f"total turns {tr_design.total_turns}"
+        )
+        print(
             f"  Turns: low={tr_design.n_low}, high={tr_design.n_high} "
             f"(ratio {tr_design.n_high / tr_design.n_low:.3f}, "
-            f"Z ratio {tr_design.actual_impedance_ratio:.3f})"
+            f"Z ratio {tr_design.actual_impedance_ratio:.3f}, "
+            f"X_Lm/Z {tr_design.reactance_ratio:.2f})"
         )
         print(
             "  Lm (low side) = "
