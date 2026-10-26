@@ -19,6 +19,8 @@ scheme while the public CLI/GUI stabilizes.
   and topology; the circuit is untouched and the action is undoable.
 - HF receive-band BPF wizard: band/requirements → candidate order table →
   apply → optional E24 snap, reusing the normal BOM and measurement workflow.
+- Ham-radio onboarding in README/manual: five-minute path, common tasks,
+  glossary, Spanish introduction and discoverability/search terms.
 
 ## v0.11.1 — 2026-10-26
 

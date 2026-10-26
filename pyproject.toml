@@ -1,12 +1,12 @@
 [project]
 name = "filterdesk"
 version = "0.11.1"
-description = "Desktop application for passive lumped-element RF filter synthesis and analysis"
+description = "RF filter design, construction and measurement companion for radio amateurs and RF builders"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "FilterDesk contributors" }]
-keywords = ["rf", "filter", "synthesis", "microwave", "ham-radio"]
+keywords = ["rf", "filter", "synthesis", "microwave", "ham-radio", "amateur-radio", "homebrew", "toroid", "balun", "vna"]
 dependencies = [
     "numpy>=2.0",
     "scipy>=1.14",

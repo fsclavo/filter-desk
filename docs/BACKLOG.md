@@ -105,7 +105,15 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. Maintenance rule
+## 5. Ham-radio onboarding and discoverability
+
+- [x] README/manual onboarding sections for radio amateurs: first-five-minute
+      path, common tasks, glossary, Spanish introduction and natural search
+      terms.
+- [x] Package metadata description/keywords include amateur radio, homebrew,
+      toroid, balun and VNA.
+
+## 6. Maintenance rule
 
 Every change must update, in the same commit:
 

@@ -17,6 +17,75 @@ image.
 > An independent implementation of classical network-synthesis theory and
 > practical LC filter design.
 
+## Built for radio amateurs and RF builders
+
+FilterDesk is a workbench companion for **ham radio homebrew, repair, antenna
+projects and station filters**. It is not only a filter calculator: it helps you
+go from an amateur-band requirement to a schematic, real component values, a
+build sheet and a comparison with a VNA measurement.
+
+Typical amateur-radio jobs:
+
+- **Transmit low-pass filter** for an HF/VHF transmitter or QRP rig.
+- **Receive band-pass filter** for a noisy HF band or a contest receiver.
+- **AM/FM broadcast rejection** with a high-pass or band-stop filter.
+- **Output transformer, unun or balun** for an antenna or a matching network.
+- **Toroid and air-core coil** turns, wire gauge, DCR and saturation checks.
+- **Microstrip/stub** sizing for a PCB filter or matching section.
+- **VNA comparison and tuning** of a filter you already built.
+
+## New to filter design? Start in five minutes
+
+You do not need to know the synthesis mathematics first.
+
+1. Download the Windows installer or Linux AppImage from
+   [Releases](https://github.com/fsclavo/filter-desk/releases) and open FilterDesk.
+2. For a **receive filter**, use **Design → HF band filter wizard…**, choose the
+   band and required rejection, then press **Design**.
+3. For a quick **transmit low-pass**, use **Design → Band preset…**, choose the
+   band and **Transmit LPF**, then **Synthesize + Analyze**.
+4. Use **Design → Snap to E-series…** to turn ideal values into standard parts.
+5. Export the **build sheet/BOM** and compare against your measurement with the
+   Touchstone import and the measured overlay.
+
+The status strip and the **Help → Model confidence** window tell you which
+results are validated, estimated or experimental. Start with the model, then
+verify the real build.
+
+## Common amateur-radio tasks
+
+| Task | Start here |
+| --- | --- |
+| 40 m / 20 m receive band-pass | **Design → HF band filter wizard…** |
+| HF transmitter low-pass | **Design → Band preset… → Transmit LPF** |
+| AM broadcast high-pass (2–3 MHz) | **Design → Band preset…** or enter an HPF specification |
+| FM broadcast notch | **Design → Band preset… → Band-stop** |
+| 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
+| Toroid/air-core coil | **Tools → Coil calculator…** |
+| PCB microstrip, stub, quarter-wave | **Tools → Microstrip line…** |
+| Compare or trim a built filter | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
+
+## Glossary for newcomers
+
+- **Passband / stopband** — frequencies the filter should pass / reject.
+- **Cutoff** — the transition frequency; its exact definition is shown in the UI.
+- **S11 / S21** — input reflection and forward transmission (often shown in dB).
+- **VSWR / return loss** — how well the filter matches 50 Ω (or another system).
+- **E-series** — standard commercial component values (E6, E12, E24, …).
+- **Toroid** — a ring-shaped magnetic core used for inductors and transformers.
+- **Unun / balun** — unbalanced-to-unbalanced / balanced-to-unbalanced transformer.
+- **VNA** — vector network analyzer; a measurement instrument for S-parameters.
+
+## En español
+
+FilterDesk también está pensado para **radioaficionados**: sirve para diseñar
+filtros pasa-bajos, pasa-altos, pasa-banda y rechazo de banda, calcular
+transformadores, baluns/ununs, toroides y líneas microstrip, y comparar el
+resultado con mediciones de un VNA. La interfaz está disponible en español y el
+flujo recomendado para empezar es **Diseño → Asistente de filtro de banda HF**.
+Buscá también “calculadora de filtros para radioaficionados”, “filtro pasa-banda
+HF”, “calculadora de toroides” y “diseño de balun/unun”.
+
 ## Features
 
 - **Synthesis** of low-pass, high-pass, band-pass, and band-stop LC ladders.
@@ -123,6 +192,13 @@ uv run filterdesk analyze \
   --spec tests/golden/cheby1_hp_n7_0p01db_140mhz_50ohm/spec.json \
   --export-s2p milestone.s2p --export-csv traces.csv
 ```
+
+## Search terms
+
+People usually find FilterDesk while looking for a **ham radio filter
+calculator**, **HF band-pass filter designer**, **LC low-pass filter calculator**,
+**transmitter output filter**, **toroid calculator**, **balun/unun designer**,
+**microstrip calculator**, or a **VNA filter tuning** companion.
 
 ## Documentation
 

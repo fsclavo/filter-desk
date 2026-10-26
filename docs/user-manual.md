@@ -47,6 +47,34 @@ Typical uses:
 Everything is available both in the **GUI** and from the **command line**, so you
 can script designs and regression-test them.
 
+### Who this manual is for
+
+This manual assumes you want to design, build or measure a real filter. It does
+not assume a mathematics background. Each workflow starts from a practical
+requirement (band, rejection, impedance, power) and explains the result,
+including its model confidence and limitations.
+
+### If you are a radio amateur
+
+FilterDesk is aimed at **ham radio homebrew, repair, antenna and station
+projects**. A good first path is:
+
+| What you want | Where to start |
+| --- | --- |
+| Receive band-pass for 160–10 m | **Design → HF band filter wizard…** |
+| Transmit low-pass for an HF/VHF rig | **Design → Band preset… → Transmit LPF** |
+| Reject AM or FM broadcast | **Design → Band preset… → Band-stop**, or enter an HPF/BSF spec |
+| 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
+| Toroid or air-core coil | **Tools → Coil calculator…** |
+| PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
+| Compare a built filter with a VNA | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
+| Produce a BOM/build sheet | **File → Export → build sheet / BOM…** |
+
+You do not need to know the synthesis theory to begin: choose the band, use the
+wizard or preset, press **Synthesize + Analyze**, then inspect the response and
+the model status. The **Help → Model confidence** window explains what is
+validated, estimated or experimental.
+
 ---
 
 ## 2. Installing and launching
@@ -879,6 +907,22 @@ Numeric fields accept engineering notation: an SI prefix and an optional unit.
 
 Values are displayed in engineering form (e.g. `4.7 pF`, `140 MHz`), and plot
 axes use plain-decimal SI-prefixed ticks.
+
+### Glossary for newcomers
+
+- **Passband / stopband** — frequencies the filter should pass / reject.
+- **Cutoff / corner** — the transition frequency; the UI states whether it is
+  the −3 dB point, ripple edge or stopband edge.
+- **S11 / S21** — input reflection and forward transmission; dB values are
+  relative to the incident wave.
+- **VSWR / return loss** — measures of impedance match.
+- **E-series** — standard commercial component values (E6, E12, E24, …).
+- **Toroid** — a ring-shaped magnetic core for inductors and transformers.
+- **Unun / balun** — unbalanced-to-unbalanced / balanced-to-unbalanced
+  transformer.
+- **VNA** — vector network analyzer; measures S-parameters of a real circuit.
+- **Model confidence** — whether a result is validated, cross-checked,
+  estimated, experimental or not evaluated.
 
 ---
 
