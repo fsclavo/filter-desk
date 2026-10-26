@@ -1,190 +1,115 @@
 # FilterDesk — Master Backlog
 
-**Purpose:** single actionable list of every outstanding item so development can be
-resumed without re-reading the whole blueprint per phase.  
-**Scope:** (A) deferred items from completed phases 0–5b, (B) quality / CI debt,
-(C) roadmap phases 6–11.  
-**Status:** living document — check boxes as work lands.  
-**Date:** 2026-10-15 · **App version:** 0.6.4
+**Purpose:** single actionable list of outstanding work, current status and
+decisions. It is the first document to update when a feature, menu path, test
+count or release changes.  
+**Status:** living document.  
+**Last verified:** 2026-10-26 · **App version:** 0.10.2 · **Next release:** v0.11.0 (pending).  
+**Verification:** local suite 881 passed, 1 skipped; coverage 83.2 %. CI is
+re-checked after every push; update the run URL here when it changes.
 
-Legend: **P0** blocks correctness/CI · **P1** completes the value of finished
-phases · **P2** future roadmap. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
-
----
-
-## A. Quality / CI debt (P0) — **DONE (2026-10-15)**
-
-| ID | Task | Resolution |
-| --- | --- | --- |
-| Q1 | Make `mypy` (strict) green — **49 errors** | Fixed in `__main__.py`, `spec_panel.py`, `cauer_extract.py`, `component_table.py`, `pyqtgraph_patches.py`; mypy now clean (61 files) |
-| Q2 | `scipy` `import-untyped` | Added `scipy.*` to `[tool.mypy.overrides]` (matches existing skrf/Qt pattern) |
-| Q3 | Duplicate dev deps | Removed `[project.optional-dependencies].dev`; `[dependency-groups].dev` is now the single source |
-| Q4 | Reproducible builds | Added `uv.lock`; CI (`.github/workflows/test.yml`) and README now use `uv sync --frozen` / `uv run` |
-
-### Q1 breakdown — mypy error map
-
-| File | Errors | Cause |
-| --- | --- | --- |
-| `__main__.py` | 21 | `result` variable reused between `synthesize()` and `estimate-order`, so `SynthesisResult` is inferred where `OrderEstimateResult` is returned (lines 527–557) |
-| `gui/panels/spec_panel.py` | 14 | `FilterSpec(**dict[str, object])` unpacking (lines 373, 377) |
-| `synthesis/cauer_extract.py` | 5 | `float`/`float64` reassignment; `Any` returns (lines 66, 86, 97, 268) |
-| `synthesis/families/chebyshev_ii.py` | 1 (+2 notes) | missing `scipy` stubs |
-| `synthesis/families/elliptic.py` | 1 | missing `scipy` stubs |
-| `synthesis/order_estimate.py` | 1 | missing `scipy` stubs |
-| `gui/panels/component_table.py` | 4 | `str` assigned to `float`; `_add_row` arg type (lines 98–103) |
-| `gui/pyqtgraph_patches.py` | 2 | monkey-patch attr `_filterdesk_svg_qt6_patch` (lines 66, 72) |
-
-### A2 — Repo / process — **DONE (2026-10-15)**
-
-- [x] `git init` (branch `main`) + baseline commit `4a32d65`.
+Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
+**P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
 
 ---
 
-## B. Deferred from completed phases 0–5b (P1) — **closed (2026-10-15, ADR-014)**
+## 1. Current GUI map
 
-### B1. Synthesis / math
+- **Design** — filter-only workflow: Synthesize + Analyze, Band preset, Snap to
+  E-series, Apply parasitics/Q, Monte-Carlo, Scale response, Optimize to limits,
+  Component sensitivity, Parameter sweep, Check spec compliance, Tune to VNA,
+  Component submenu.
+- **Tools** — independent component/utility calculators: Matching network,
+  Attenuator pad, Coil calculator, **Transformer / balun / unun**, Microstrip
+  line.
+- **File** — project/Touchstone import and all exports (BOM, SPICE, LTspice,
+  Qucs, CSV, Smith chart).
 
-| ID | Item | Detail / limitation | Refs | Status |
-| --- | --- | --- | --- | --- |
-| B1.1 | **Even-order Chebyshev Type I** | Classical even-order g-values + ideal output transformer (ADR-017); exact textbook response/values, including 50/50. Modified equal-termination network retired. | ADR-017 | **DONE (2026-10-26)** |
-| B1.2 | **True asymmetric \(Z_S \neq Z_L\)** | Only geometric-mean scaling \(Z_0=\sqrt{Z_S Z_L}\); large ratios may not meet equiripple shape at both ports. Needs Norton / minimum-inductance / ratio tables | ADR-011, ADR-014 | **Decided (accepted)** |
-| B1.3 | **M-derived BP/BS** | Shipped in v0.5.5 via generic LP→BP/BS finite-zero transform (`test_m_derived_bp_smoke`); ADR-013 | `docs/phase5b/BPBS_FINITE_ZERO_STATUS.md` | **DONE (2026-10-15)** |
-| B1.4 | **Order estimation — BP/BS** | `estimate_minimum_order` takes band edges (BP/BS via scipy 2-element wp/ws); CLI `estimate-order --pass-band LO HI --stop-band LO HI`; GUI Estimate N still LP/HP-only | `docs/phase5b/ORDER_ESTIMATE_STATUS.md` | **DONE (2026-10-15)** |
-| B1.5 | **Order estimation — other families** | Bessel/Gaussian/Legendre via numeric prototype search (LP/HP); Constant-K/M-derived still unsupported | ADR-014 | **DONE (2026-10-15)** |
-| B1.6 | **Even-order elliptic** | Rejected: equal-R needs a transformer/unequal terminations. A transformer-assisted numerical fit was evaluated (2026-10-26) and rejected (n=2 failed, n≥6 exceeded Ap, seed-sensitive). Exact support needs general Darlington/Cauer; odd orders only | ADR-013, ADR-014 | **Rejected (odd only)** |
-| B1.7 | **Order cap by tables** | Bessel/Gaussian 1–10, Legendre 2–9; caps kept intentional (tables verified) — extension needs prototype-generation research | ADR-014 | **Decided (keep caps)** |
-
-### B2. Analysis
-
-| ID | Item | Detail | Refs |
-| --- | --- | --- | --- |
-| B2.1 | **skrf analyzer unequal-Z** | `ScikitRFAnalyzer` cascades at \(z_0=\sqrt{Z_S Z_L}\) then renormalizes to \([Z_S, Z_L]\); matches ABCD <1e-9 | ADR-014 · **DONE (2026-10-15)** |
-
-### B3. GUI / UX
-
-| ID | Item | Detail | Status |
-| --- | --- | --- | --- |
-| B3.1 | **Schematic topology editor** | Select an element, then **Design → Component**: edit value, convert L↔C (reactance-preserving), insert series/shunt L/C before/after, delete; right-click shortcut too; full undo/redo — `PHASE3_STATUS.md`, blueprint §23/§35 | **DONE (2026-10-15)** |
-| B3.2 | **Smith limit regions** | Constant-\|Γ\| limits (`s11_mag` / `s22_mag`) drawn on the Smith chart and evaluated in pass/fail | **DONE (2026-10-15)** |
-| B3.3 | **Optimizer ↔ limits wiring** | `optimization/` minimizes per-sample limit residuals (`LimitRegion[]`); CLI `optimize` + GUI **Design → Optimize to limits…** | **DONE (2026-10-15)** |
-
-### B4. Interop / IO
-
-| ID | Item | Detail | Status |
-| --- | --- | --- | --- |
-| B4.1 | **Touchstone reader (import)** | `io/touchstone/reader.py` (`TouchstoneData`/`read_touchstone`/`parse_touchstone`); HZ..GHZ, RI/MA/DB, `R z0`, comments, wrapped records, `.s1p`/`.sNp` port inference; GUI **File → Import Touchstone…** (worker + `DesignSession.set_measured`) and CLI `touchstone-info` — blueprint FR-I2, §27 | **DONE (2026-10-15)** |
-| B4.2 | **`services.compare`** | `services/compare.py` (`CompareResult`/`compare_results`): overlap-band align + S21/S11 dB RMS & max error; GUI dashed measured overlay on mag/VSWR/Smith with **View → Show measured overlay** toggle; CLI `compare SIM MEAS [--json]` | **DONE (2026-10-15)** |
-| B4.3 | **`plotting/protocol.py` `PlotBackend`** | Static-export abstraction materialized: `PlotBackend` protocol + `MatplotlibBackend` (via `get_plot_backend()`); CLI/GUI export route through it. Interactive GUI keeps PyQtGraph directly | **DONE (2026-10-15)** — ADR-014 |
+The former separate `Balun / unun` tool was removed; the transformer/balun/unun
+designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 ---
 
-## C. Roadmap — remaining phases (P2)
+## 2. Recently completed (unreleased since v0.10.2)
 
-### Phase 6 — Practical components (Q, ESR, parasitics, tolerances, E-series) — **DONE
-
-- [x] **E-series module** `components_std/e_series.py` (E6/E12/E24/E48/E96) + `snap.py` — FR-P1 (engine + CLI `snap`)
-- [x] Snap strategies: independent / L-only / C-only / preserve LC resonances — FR-P1
-- [x] **Non-ideal element layers** (composition, blueprint §22): `NonIdealInductor` (series R / Q@f, Cpar), `NonIdealCapacitor` (ESR, ESL) — FR-P2
-- [x] Extend ABCD analyzer for lossy/parasitic elements — FR-P2
-- [x] Apply parasitics end-to-end: `session.apply_nonideal`, CLI `analyze` flags, GUI **Design → Apply parasitics / Q…** (undo/redo) — FR-P2
-- [x] GUI: **Design → Snap to E-series…** dialog (series + strategy) with undo/redo — FR-P1
-- [x] GUI: non-ideal fields in component table (Parasitic column + per-part Edit parasitics / Q) — FR-P2
-- [x] Tolerances: Monte-Carlo / worst-case passband analysis — `montecarlo/` engine + stats + CLI `montecarlo` (FR-P3 core)
-- [x] Golden tests for finite-Q and E24-snapped cases — `tests/unit/test_phase6_golden.py` + `tests/golden/{cheby1_lp_n5_e24_snapped,butterworth_lp_n5_q100}`
-- [x] Manual library R / L / C (core RLC) in the schematic — **Design → Component → Insert** series/shunt R/L/C; R edits/tunes/optimizes/MC/SPICE. (jX deferred — no SPICE mapping.)
-
-### Phase 7 — Interactive tuning + optimization + limits — **DONE (2026-10-15)**
-
-- [x] `services/retune.py` — retune cutoff/center/bandwidth/Z + `scale_response` (redesign on tune) — FR-U2 core
-- [x] Per-part continuous tune (relative step per component, `nudge_value`; GUI Tune ±step + Ctrl+]/Ctrl+[) — FR-U2
-- [x] `optimization/` package: `objectives.py`, `constraints.py`, `solvers.py`, `variables.py` — FR-P4
-- [x] Solver: limit-residual least squares + Nelder–Mead + global (DE/dual annealing) — FR-P4
-- [x] Composable objectives (passband ripple / stopband attenuation / return loss) + limits — §20
-- [x] Wire optimizer to `LimitRegion[]` (B3.3) — CLI `optimize` + GUI **Design → Optimize to limits…**
-- [x] Background workers + debounce + cancel-stale for tune — NFR-4 (80 ms debounce + analyze-thread cancel)
-- [x] GUI **Design → Scale response…** action (undo/redo) — FR-U2
-- [x] GUI **Design → Optimize to limits…** action (undo/redo) — FR-P4
-- [x] GUI **Design → Component → Tune ±step / Set tune step…**, toolbar buttons + shortcuts — FR-U2
-- [x] Interactive marker-driven retune (bind to landmark, drag to redesign) — see §D
-
-### Phase 8 — Monte Carlo — **DONE (2026-10-15)**
-
-- [x] `montecarlo/` package: `engine.py` (`run_monte_carlo`), `stats.py` (`wilson_interval`) — FR-P3 core
-- [x] Uniform ±tol (then Normal) — FR-P3 core
-- [x] Envelopes, yield vs limits, percentiles — FR-P3 core
-- [x] Per-element tolerance/distribution (`ElementTolerance`, `MonteCarloConfig.overrides`; session + CLI `--element-tol` + GUI Set tolerance… / table Tol column)
-- [x] Performance: float32 trial buffer + `progress(done,total)`; 10k×512 ≈ 5 s (NFR-5) — GUI worker emits progress
-- [x] GUI: MC run dialog (`MonteCarloDialog`) + envelope overlay (View toggle)
-
-### Phase 9 — `.lct` file I/O (best-effort) — **ON HOLD (2026-10-16)**
-
-- [x] Collect ≥10 user-owned `.lct` samples (`tests/lct_roundtrip/corpus/private/`, gitignored) — **22 samples collected**
-- [x] Classification + differential analysis (see `LCT_INVESTIGATION_PLAN.md` "Findings")
-- [ ] `io/lct/{parser,exporter,model_mapper}.py` with `LctDocument` DTO ≠ domain
-- [ ] `CompatibilityReport` (mapped / dropped / approximated); `docs/lct_compatibility.md`
-- [ ] Semantic round-trip tests on redistributable corpus only
-- **On hold because:** no authoritative element-type/family legend and the reference tool cannot export an independent oracle (`.s2p`/response), so codes 5–8 and family/topology can't be validated. Format is known-good text (see findings); resume if a legend/oracle appears.
-- [ ] Go/no-go decision per plan table
-
-### Phase 10 — Broader export + measured S2P compare
-
-- [x] **LTspice/SPICE netlist export** — `io/spice` (`spice_netlist`/`write_spice_netlist`) + CLI `analyze --export-spice` + GUI **File → Export SPICE netlist…**
-- [x] **LTspice `.asc` schematic export** — `io/spice/ltspice_asc.py` (`ltspice_asc`/`write_ltspice_asc`, FLAG-based connectivity) + CLI `analyze --export-asc` + GUI **File → Export → LTspice (.asc)…**
-- [x] **Qucs `.sch` schematic export** — `io/qucs` (`qucs_schematic`/`write_qucs_schematic`, geometric wires) + CLI `analyze --export-qucs` + GUI **File → Export → Qucs (.sch)…** (best-effort)
-- [x] CSV / two-column DAT trace export — `io/csv_export` + CLI `analyze --export-csv` / `to-csv` + GUI **File → Export CSV…**
-- [x] Touchstone reader import + `.s1p` (B4.1 — `touchstone-info` CLI + GUI import)
-- [x] Measured-vs-simulated overlay UX (`services.compare`, B4.2)
-
-### Phase 11 — Packaging & Windows
-
-- [x] PyInstaller onedir build (`packaging/filterdesk.spec`) + smoke test (`FilterDesk --version`, CLI synth/analyze/MC) — validated locally
-- [x] Linux portable `tar.gz` + Windows onedir ZIP (`.github/workflows/release.yml`)
-- [x] Linux AppImage — best-effort job (`continue-on-error`) + `packaging/appimage/build_appimage.sh`
-- [x] glibc baseline documented — Ubuntu 22.04 / glibc 2.35 (`docs/packaging.md`)
-- [x] `release.yml` CI on tags `v*` + GitHub Release with artifacts
-- [x] Qt LGPL-3 compliance artifacts — `packaging/NOTICE-third-party.md` + `collect_qt_licenses.py` (LGPL/GPL texts into `licenses/`)
-
-### Phase 12 — Ham-radio tools (proposed)
-
-Ham-oriented helpers on top of the existing synthesis/analysis core. Order is the
-intended implementation sequence.
-
-- [x] **Power stress calculator** (S) — `analysis/stress.py` (`compute_stress`); GUI **TX Power** toolbar field + **Vpk/Ipk** columns in the component table + status-bar peak summary; CLI `analyze --power W`. *Assumes a matched (real `Z0`) source/load.*
-- [x] **Amateur band presets** (S) — `services/bands.py` (160 m–6 m + WARC); GUI **Design → Band preset…**; CLI `--band NAME [--band-kind lpf|hpf|bpf]` + `bands` listing. Chebyshev-I 0.1 dB, LP/HP order 5, BP order 4.
-- [x] **Transmit harmonic readout** (S) — `analysis/harmonics.py` (`compute_harmonics`); GUI **Harmonics** dock (table of |S21|/suppression per harmonic) + dotted harmonic lines on the magnitude plot (**View → Show harmonic markers**); CLI `analyze --harmonics [--harmonics-f0 F]`. Targets the PA output-LPF use case.
-- [x] **Resistive attenuator designer** (S) — `components_std/attenuator.py` (`design_attenuator`); GUI **Design → Attenuator pad…** (live values, inserts a T/Pi pad at the input via `circuit_edit.insert_resistive_pad`); CLI `attenuator --db D [--z0 Z] [--kind t|pi] [--json]`.
-- [x] **Matching networks L / Pi / T** (L) — `components_std/matching.py` (`design_matching`, complex load, low-pass solution; Pi/T via virtual resistance from Q, numeric-verified `Zin=Z0`); GUI **Design → Matching network…** (live values + optional "model the load" building source→network→(series X)→port R); CLI `match --z0 --rl --xl --f [--topology l|pi|t] [--q Q] [--json]`.
-- [x] **Rejection presets** (S) — `BandKind.BSF` + `REJECTION_PRESETS` (AM broadcast 530–1710 kHz, FM broadcast 88–108 MHz) in `services/bands.py`; GUI **Design → Band preset…** (now includes band-stop + broadcast bands); CLI `--band am|fm --band-kind bsf`.
-- [x] **Build sheet / BOM export** (M) — `io/build_sheet` (`write_build_sheet`): one row per physical part (compound elements expanded) with value, tolerance, parasitics, and peak V/I; `.csv` BOM plus printable `.md`/`.html` build sheets with the spec summary and notes. GUI **File → Export → build sheet / BOM…**; CLI `analyze --export-build-sheet PATH`.
-- [x] **Toroid turn calculator** (S) — `components_std/toroid.py` (`design_toroid`): `L = AL*N²` from a built-in Amidon table (powder 2/6/10 + ferrite 43) or custom AL; rounds turns up, picks the thickest single-layer AWG (85 % fill), estimates wire length and `B = L*I/(N*Ae)` / `B/Bsat`. GUI **Design → Coil calculator…** (Toroid tab); CLI `toroid --core|--al --inductance|--turns [--current] [--list] [--json]`. AL spread ±20–25 %, `Ae` geometric.
-- [x] **Air-core solenoid calculator** (S) — `components_std/air_coil.py` (`design_air_coil`): single-layer close-wound Wheeler (`L[uH]=a²N²/(9a+10b)`, `b=N·pitch`), turns up-rounding, coil length, wire length and DC resistance; flags short coils and does not model SRF/Q. GUI **Design → Coil calculator…** (Air-core tab, grade-1 enamelled wire by default, bare/custom build override); CLI `air-coil --diameter (--awg|--wire-mm) --inductance|--turns [--bare-wire|--enamel-mm] [--json]`.
-
-Cross-links: the toroid calculator is the natural input for per-part notes on the BOM
-sheet; distributed elements (coax stubs, λ/4 lines, transformers) remain deferred
-(ADR-007).
+- Exact unequal terminations via output transformer `T1` (ADR-017), including
+  SPICE/LTspice/Qucs export.
+- Classical even-order Chebyshev-I with output transformer; even elliptic
+  intentionally rejected (odd-only).
+- Post-synthesis spec compliance (API, CLI `--check`, GUI Design action).
+- MNA validation of the SPICE transformer model; ngspice test skips if absent.
+- Transformer-type unun/balun/power calculator; HF power cores and mixes
+  31/43/52/61.
+- Autotransformer/isolated topology; winding-options table 2:14 / 3:21 / 4:28
+  with Lm, X/Z, flux, wire fit and HF caution.
+- Microstrip line, quarter-wave transformer and stub calculators; substrate
+  presets and first-order loss.
+- VNA-guided tuning: magnitude by default, optional phase/delay, local/wide/
+  global bounds, synthetic tests.
+- Boundary `BAL1`: project model, ABCD/skrf analysis, BOM, exports and unified
+  designer.
+- Winding diagram: connection schematic + stylized toroid SVG, schedule, GUI
+  **Winding** tab and build-sheet sidecar.
+- CLI `transformer` unified (transformer/unun/balun model and options); the old
+  `balun` command was removed.
+- CI `gui-stability`: 15-min job, per-pass `timeout 300`,
+  `faulthandler_timeout`, `-vv --durations`, uploaded logs.
 
 ---
 
-## D. Cross-cutting / open questions (when relevant) — **closed (2026-10-16, ADR-015)**
+## 3. Open backlog
 
-- [x] **pytest-qt** — adopted for GUI interaction tests (`import-linter` + `pytest-qt` in dev deps)
-- [x] Interactive marker-driven retune — bind a marker to a landmark (`cutoff` / `f_center` / `bandwidth`) in the Markers dock and drag to redesign (single undo step)
-- [x] **Global optimizers + composable objectives** — `differential_evolution` / `dual_annealing` + `PassbandRipple` / `StopbandAttenuation` / `ReturnLoss` (never worse than nominal)
-- [x] **Project extension** — `.filterdesk.json` (plain JSON), no `.fdsk` container
-- [x] Native Rust/C acceleration — not pursued (ABCD path sufficient: 10k MC ≈ 5 s)
-- [x] Product naming — **FilterDesk** (binary `filterdesk`); no trademark registration planned
-- [x] Import-linter enforcement of layer rules in CI — 5 contracts in `pyproject.toml` + CI step
+### P0 — before calling v0.11.0
+
+- [ ] Bump `pyproject.toml` to **0.11.0**, add changelog/release notes, tag and
+      publish. (S)
+- [ ] Re-run and record the final CI run URL, test count and coverage in this
+      file. (S)
+- [ ] Verify the unified GUI paths and CLI examples in the user manual. (S)
+
+### P1 — correctness / validation
+
+- [ ] **Physical winding drawing:** current output is a connection schematic +
+      stylized toroid. A real wire-route drawing needs field validation,
+      especially for Guanella/Ruthroff crossover and choke wiring. (M/L)
+- [ ] **VNA hardware validation:** use the two available captures as holdout
+      data; add a documented calibration/reference-plane protocol and compare
+      phase/delay fits. (M)
+- [ ] **Balun model depth:** full multi-line Guanella/Ruthroff, common-mode
+      impedance in the differential 2-port, winding geometry, and validated
+      SPICE/LTspice/Qucs export of the TLT section. (L)
+- [ ] **Distributed netlist:** microstrip/stub/quarter-wave are calculators;
+      add transmission-line/stub elements to circuits, ABCD/skrf, BOM and
+      distributed synthesis. (L)
+- [ ] External SPICE validation: open the generated netlists in ngspice,
+      LTspice and Qucs; confirm Qucs `Tr` ratio orientation. (M)
+
+### P2 — data / ergonomics
+
+- [ ] More ferrite data: FT114/FT140-31 and further 52/61 sizes with verified
+      AL, μi, Bsat/temperature and optional Steinmetz/core-loss coefficients. (M)
+- [ ] Toroid/transformer GUI: persist the selected winding option in the
+      project/BOM notes and add per-option DCR/leakage estimates when the model
+      supports them. (M)
+- [ ] Add a compact text-only winding schedule to the Markdown/HTML BOM header
+      (currently the diagram is a sidecar SVG). (S)
+- [ ] Update historical phase/status documents only when they are used as
+      current references; do not treat them as the backlog. (S)
+
+### Parked by design
+
+- Even-order elliptic synthesis (would need general unequal-R Darlington/Cauer).
+- `.lct` import (no reliable oracle).
+- Mid-ladder transformers/baluns (current boundary insertion only).
+- Full EM/3-D or coupled-inductor modeling.
 
 ---
 
-## E. Suggested order to resume
+## 4. Maintenance rule
 
-1. **Q1–Q4** — green CI + reproducible lockfile (unblocks everything).
-2. **A2** — `git init` + baseline commit.
-3. **B1–B4** — close the cheap, high-value gaps (Touchstone reader, BP/BS &
-   family order-estimate, M-derived BP/BS, schematic editor).
-4. **Phase 6** — practical components (largest user-visible value next).
-5. Phases 7 → 11 in order.
+Every change must update, in the same commit:
 
-Each phase exit requires: docs update, golden expansion, risk review, no
-dependency-rule violations (blueprint §35).
+1. `docs/BACKLOG.md` — status/checkboxes and current menu/CLI paths.
+2. `docs/user-manual.md` — user-facing workflow and limitations.
+3. `README.md` — feature bullets if the user-visible feature set changes.
+4. Tests and i18n catalog when a string/menu/CLI action changes.

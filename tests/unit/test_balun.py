@@ -277,16 +277,16 @@ def test_balun_bom_and_cli(tmp_path, capsys) -> None:
     assert (
         main(
             [
-                "balun",
+                "transformer",
                 "--kind",
                 "guanella",
-                "--z-unbalanced",
+                "--z-low",
                 "50",
-                "--z-balanced",
+                "--z-high",
                 "200",
                 "--core",
                 "FT240-43",
-                "--f-min",
+                "--frequency",
                 "3.5M",
                 "--f-max",
                 "30M",
@@ -307,12 +307,12 @@ def test_balun_cli_error(capsys) -> None:
     assert (
         main(
             [
-                "balun",
+                "transformer",
                 "--kind",
                 "choke",
-                "--z-unbalanced",
+                "--z-low",
                 "50",
-                "--z-balanced",
+                "--z-high",
                 "200",
                 "--core",
                 "FT240-43",
@@ -381,6 +381,14 @@ def test_balun_dialog(qtbot) -> None:
     assert design.kind is BalunKind.UNUN
     spec = dialog.balun_spec()
     assert spec is not None
+    assert dialog.current_diagram() is not None
+    assert "<svg" in dialog.current_diagram().svg
+    dialog._topology.setCurrentText("isolated")
+    dialog._recompute()
+    diagram = dialog.current_diagram()
+    assert diagram is not None
+    assert "P " in diagram.svg and "S " in diagram.svg
+    dialog._topology.setCurrentText("autotransformer")
     dialog._kind.setCurrentText("guanella")
     dialog._recompute()
     design = dialog.current_design()

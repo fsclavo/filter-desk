@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from pathlib import Path
+
+from PySide6.QtCore import QByteArray, Qt
+from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -10,11 +13,13 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QSpinBox,
     QStackedWidget,
     QTableWidget,
@@ -39,6 +44,7 @@ from filterdesk.components_std import (
     MatchingError,
     MatchingTopology,
     SnapStrategy,
+    WindingDiagram,
     design_air_coil,
     design_attenuator,
     design_balun_options,
@@ -48,6 +54,7 @@ from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
     list_cores,
     list_substrates,
+    winding_diagram,
 )
 from filterdesk.components_std.air_coil import AirCoilDesign, awg_for_diameter_mm
 from filterdesk.components_std.microstrip import (
@@ -1315,6 +1322,7 @@ class TransformerDialog(QDialog):
         self._design_value: BalunDesign | None = None
         self._options: list[BalunDesign] = []
         self._remove_requested = False
+        self._diagram: WindingDiagram | None = None
 
         self._core = QComboBox()
         for core in self._cores:
@@ -1413,9 +1421,22 @@ class TransformerDialog(QDialog):
         model_form.addRow("TLT loss (dB/m)", self._line_loss)
         model_form.addRow("Notes", self._notes)
 
+        winding_tab = QWidget()
+        winding_layout = QVBoxLayout(winding_tab)
+        self._diagram_widget = QSvgWidget()
+        self._diagram_widget.setMinimumHeight(380)
+        self._diagram_schedule = QLabel("-")
+        self._diagram_schedule.setWordWrap(True)
+        self._diagram_export = QPushButton("Save diagram…")
+        self._diagram_export.clicked.connect(self._export_diagram)
+        winding_layout.addWidget(self._diagram_widget)
+        winding_layout.addWidget(self._diagram_schedule)
+        winding_layout.addWidget(self._diagram_export)
+
         tabs = QTabWidget()
         tabs.addTab(design_tab, "Design")
         tabs.addTab(model_tab, "Model")
+        tabs.addTab(winding_tab, "Winding")
 
         buttons = QDialogButtonBox()
         self._apply_button = buttons.addButton(
@@ -1463,8 +1484,24 @@ class TransformerDialog(QDialog):
     def balun_spec(self) -> BalunSpec | None:
         return None if self._design_value is None else self._design_value.to_spec()
 
+    def current_diagram(self) -> WindingDiagram | None:
+        return self._diagram
+
     def remove_requested(self) -> bool:
         return self._remove_requested
+
+    def _export_diagram(self) -> None:
+        if self._diagram is None:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save winding diagram",
+            "winding.svg",
+            "SVG (*.svg)",
+        )
+        if not path:
+            return
+        Path(path).write_text(self._diagram.svg, encoding="utf-8")
 
     def _remove(self) -> None:
         self._remove_requested = True
@@ -1504,6 +1541,9 @@ class TransformerDialog(QDialog):
             self._options = []
             self._design_value = None
             self._options_table.setRowCount(0)
+            self._diagram = None
+            self._diagram_widget.load(QByteArray())
+            self._diagram_schedule.setText("-")
             for label in (
                 self._turns,
                 self._inductances,
@@ -1592,6 +1632,21 @@ class TransformerDialog(QDialog):
             f"{design.awg_secondary}; fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
+        diagram = winding_diagram(
+            kind=design.kind.value,
+            topology=design.topology.value,
+            n_primary=design.n_primary,
+            n_secondary=design.n_secondary,
+            total_turns=design.total_turns,
+            core=design.core.name,
+            z_unbalanced_ohm=design.z_unbalanced_ohm,
+            z_balanced_ohm=design.z_balanced_ohm,
+            line_z0_ohm=design.z0_line_ohm,
+            line_length_m=design.length_m,
+        )
+        self._diagram = diagram
+        self._diagram_widget.load(QByteArray(diagram.svg.encode("utf-8")))
+        self._diagram_schedule.setText(" ".join(diagram.schedule))
 
 
 class MicrostripDialog(QDialog):

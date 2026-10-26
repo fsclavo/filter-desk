@@ -45,19 +45,16 @@ from filterdesk.components_std import (
     StubKind,
     Substrate,
     ToroidError,
-    TransformerError,
-    TransformerKind,
     TransformerTopology,
     design_air_coil,
     design_attenuator,
     design_balun,
+    design_balun_options,
     design_matching,
     design_microstrip,
     design_quarter_wave_transformer,
     design_stub,
     design_toroid,
-    design_transformer,
-    design_transformer_options,
     find_core,
     find_substrate,
     list_cores,
@@ -446,24 +443,56 @@ def build_parser() -> argparse.ArgumentParser:
 
     tr = sub.add_parser(
         "transformer",
-        help="Design a transformer-type unun / balun / power transformer",
+        help="Design a transformer, unun or balun (model + BOM)",
     )
     tr.add_argument(
         "--kind",
-        choices=[k.value for k in TransformerKind],
-        default=TransformerKind.UNUN.value,
-        help="Device kind (calculation is the same ideal transformer model)",
+        choices=[k.value for k in BalunKind],
+        default=BalunKind.UNUN.value,
+        help="Device kind",
     )
-    tr.add_argument("--z-low", required=True, help="Low-side impedance (ohm)")
-    tr.add_argument("--z-high", required=True, help="High-side impedance (ohm)")
-    tr.add_argument("--core", required=True, help="Built-in core name, e.g. FT50-43")
-    tr.add_argument("--frequency", default="1M", help="Lowest frequency, e.g. 1M")
-    tr.add_argument("--power", type=float, default=10.0, help="Power (W)")
     tr.add_argument(
         "--topology",
         choices=[t.value for t in TransformerTopology],
         default=TransformerTopology.AUTOTRANSFORMER.value,
         help="Autotransformer (tapped) or isolated two-winding",
+    )
+    tr.add_argument(
+        "--z-low", "--z-unbalanced", dest="z_low", required=True,
+        help="Low-side / unbalanced impedance (ohm)",
+    )
+    tr.add_argument(
+        "--z-high", "--z-balanced", dest="z_high", required=True,
+        help="High-side / balanced impedance (ohm)",
+    )
+    tr.add_argument("--core", required=True, help="Built-in core name, e.g. FT50-43")
+    tr.add_argument(
+        "--frequency", "--f-min", dest="frequency", default="1M",
+        help="Lowest frequency, e.g. 1M",
+    )
+    tr.add_argument(
+        "--f-max", default=None,
+        help="Highest frequency; default: 10 x f_min",
+    )
+    tr.add_argument("--power", type=float, default=10.0, help="Power (W)")
+    tr.add_argument(
+        "--coupling", type=float, default=0.98, help="Winding coupling k"
+    )
+    tr.add_argument(
+        "--tan-delta", type=float, default=0.02, help="Core loss tangent"
+    )
+    tr.add_argument(
+        "--winding-c", type=float, default=0.0, help="Winding capacitance (F)"
+    )
+    tr.add_argument(
+        "--line-z0", type=float, default=None, help="TLT line Z0 (ohm)"
+    )
+    tr.add_argument(
+        "--line-length", type=float, default=None, help="TLT length (m)"
+    )
+    tr.add_argument("--vf", type=float, default=0.7, help="TLT velocity factor")
+    tr.add_argument(
+        "--line-loss", type=float, default=0.0, help="TLT loss (dB/m)"
     )
     tr.add_argument(
         "--reactance-factor",
@@ -472,52 +501,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Minimum magnetizing reactance / Z_low (default 4)",
     )
     tr.add_argument(
-        "--f-max",
-        default=None,
-        help="Highest frequency for the HF many-turns warning",
+        "--current-density",
+        type=float,
+        default=4.0,
+        help="Wire current density (A/mm^2, default 4)",
     )
     tr.add_argument(
         "--show-options",
         action="store_true",
         help="Include compact/recommended/robust turns options",
     )
-    tr.add_argument(
-        "--current-density",
-        type=float,
-        default=4.0,
-        help="Wire current density (A/mm^2, default 4)",
-    )
     tr.add_argument("--json", action="store_true", help="Emit JSON")
 
-    bal = sub.add_parser(
-        "balun",
-        help="Design a transformer-type or TLT balun/unun on a toroid",
-    )
-    bal.add_argument(
-        "--kind",
-        choices=[k.value for k in BalunKind],
-        default=BalunKind.UNUN.value,
-    )
-    bal.add_argument("--z-unbalanced", required=True, help="Unbalanced impedance")
-    bal.add_argument("--z-balanced", required=True, help="Balanced impedance")
-    bal.add_argument("--core", required=True, help="Built-in core name")
-    bal.add_argument("--f-min", default="3.5M", help="Lowest frequency")
-    bal.add_argument("--f-max", default="30M", help="Highest frequency")
-    bal.add_argument("--power", type=float, default=100.0, help="Power (W)")
-    bal.add_argument("--coupling", type=float, default=0.98, help="Coupling k")
-    bal.add_argument("--tan-delta", type=float, default=0.02, help="Core tan delta")
-    bal.add_argument(
-        "--winding-c", type=float, default=0.0, help="Winding capacitance (F)"
-    )
-    bal.add_argument("--line-z0", type=float, default=None, help="TLT line Z0")
-    bal.add_argument(
-        "--line-length", type=float, default=None, help="TLT line length (m)"
-    )
-    bal.add_argument("--vf", type=float, default=0.7, help="TLT velocity factor")
-    bal.add_argument(
-        "--line-loss", type=float, default=0.0, help="TLT loss (dB/m)"
-    )
-    bal.add_argument("--json", action="store_true", help="Emit JSON")
     ms = sub.add_parser("microstrip", help="Microstrip line calculator")
     ms.add_argument("--z0", required=True, help="Target characteristic impedance")
     ms.add_argument("--frequency", default="1G", help="Design frequency")
@@ -2300,126 +2295,145 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "transformer":
         try:
             core = find_core(str(args.core))
-            tr_design = design_transformer(
+            f_min = parse_si(str(args.frequency))
+            f_max = (
+                parse_si(str(args.f_max)) if args.f_max else f_min * 10.0
+            )
+            tr_design = design_balun(
                 core,
-                z_low_ohm=parse_si(str(args.z_low)),
-                z_high_ohm=parse_si(str(args.z_high)),
-                frequency_hz=parse_si(str(args.frequency)),
+                kind=BalunKind(str(args.kind)),
+                z_unbalanced_ohm=parse_si(str(args.z_low)),
+                z_balanced_ohm=parse_si(str(args.z_high)),
+                f_min_hz=f_min,
+                f_max_hz=f_max,
                 power_w=float(args.power),
-                kind=TransformerKind(str(args.kind)),
                 topology=TransformerTopology(str(args.topology)),
+                coupling=float(args.coupling),
+                tan_delta=float(args.tan_delta),
+                winding_capacitance_f=float(args.winding_c),
+                line_z0_ohm=args.line_z0,
+                line_length_m=args.line_length,
+                velocity_factor=float(args.vf),
+                line_loss_db_per_m=float(args.line_loss),
                 reactance_factor=float(args.reactance_factor),
                 current_density_a_mm2=float(args.current_density),
-                frequency_max_hz=(
-                    parse_si(str(args.f_max)) if args.f_max else None
-                ),
             )
-        except (TransformerError, ValueError) as exc:
+        except (BalunError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-        if args.json:
-            print(
-                json.dumps(
-                    {
-                        "kind": tr_design.kind.value,
-                        "topology": tr_design.topology.value,
-                        "core": tr_design.core.name,
-                        "z_low_ohm": tr_design.z_low_ohm,
-                        "z_high_ohm": tr_design.z_high_ohm,
-                        "impedance_ratio": tr_design.impedance_ratio,
-                        "turns_ratio": tr_design.turns_ratio,
-                        "n_low": tr_design.n_low,
-                        "n_high": tr_design.n_high,
-                        "total_turns": tr_design.total_turns,
-                        "reactance_ratio": tr_design.reactance_ratio,
-                        "hf_caution": tr_design.hf_caution,
-                        "actual_impedance_ratio": tr_design.actual_impedance_ratio,
-                        "magnetizing_inductance_h": tr_design.magnetizing_inductance_h,
-                        "v_low_rms": tr_design.v_low_rms,
-                        "v_high_rms": tr_design.v_high_rms,
-                        "i_low_rms_a": tr_design.i_low_rms_a,
-                        "i_high_rms_a": tr_design.i_high_rms_a,
-                        "b_peak_t": tr_design.b_peak_t,
-                        "bsat_margin": tr_design.bsat_margin,
-                        "saturated": tr_design.saturated,
-                        "awg_low": tr_design.awg_low,
-                        "awg_high": tr_design.awg_high,
-                        "fit_awg": tr_design.fit.awg,
-                        "fit_diameter_mm": tr_design.fit.diameter_mm,
-                        "notes": list(tr_design.notes),
-                        **(
-                            {
-                                "options": [
-                                    {
-                                        "n_low": d.n_low,
-                                        "n_high": d.n_high,
-                                        "total_turns": d.total_turns,
-                                        "magnetizing_inductance_h": (
-                                            d.magnetizing_inductance_h
-                                        ),
-                                        "reactance_ratio": d.reactance_ratio,
-                                        "b_peak_t": d.b_peak_t,
-                                        "bsat_margin": d.bsat_margin,
-                                        "fit_awg": d.fit.awg,
-                                        "hf_caution": d.hf_caution,
-                                    }
-                                    for d in design_transformer_options(
-                                        core,
-                                        z_low_ohm=parse_si(str(args.z_low)),
-                                        z_high_ohm=parse_si(str(args.z_high)),
-                                        frequency_hz=parse_si(str(args.frequency)),
-                                        power_w=float(args.power),
-                                        kind=TransformerKind(str(args.kind)),
-                                        topology=TransformerTopology(
-                                            str(args.topology)
-                                        ),
-                                        reactance_factor=float(
-                                            args.reactance_factor
-                                        ),
-                                        current_density_a_mm2=float(
-                                            args.current_density
-                                        ),
-                                        frequency_max_hz=(
-                                            parse_si(str(args.f_max))
-                                            if args.f_max
-                                            else None
-                                        ),
-                                    )
-                                ]
-                            }
-                            if args.show_options
-                            else {}
-                        ),
-                    },
-                    indent=2,
-                )
+        options = (
+            design_balun_options(
+                core,
+                kind=BalunKind(str(args.kind)),
+                z_unbalanced_ohm=parse_si(str(args.z_low)),
+                z_balanced_ohm=parse_si(str(args.z_high)),
+                f_min_hz=f_min,
+                f_max_hz=f_max,
+                power_w=float(args.power),
+                topology=TransformerTopology(str(args.topology)),
+                coupling=float(args.coupling),
+                tan_delta=float(args.tan_delta),
+                winding_capacitance_f=float(args.winding_c),
+                line_z0_ohm=args.line_z0,
+                line_length_m=args.line_length,
+                velocity_factor=float(args.vf),
+                line_loss_db_per_m=float(args.line_loss),
+                reactance_factor=float(args.reactance_factor),
+                current_density_a_mm2=float(args.current_density),
             )
+            if args.show_options
+            else []
+        )
+        if args.json:
+            payload = {
+                "kind": tr_design.kind.value,
+                "topology": tr_design.topology.value,
+                "core": tr_design.core.name,
+                "z_low_ohm": tr_design.z_unbalanced_ohm,
+                "z_high_ohm": tr_design.z_balanced_ohm,
+                "z_unbalanced_ohm": tr_design.z_unbalanced_ohm,
+                "z_balanced_ohm": tr_design.z_balanced_ohm,
+                "impedance_ratio": tr_design.impedance_ratio,
+                "turns_ratio": tr_design.actual_turns_ratio,
+                "n_low": tr_design.n_primary,
+                "n_high": tr_design.n_secondary,
+                "n_primary": tr_design.n_primary,
+                "n_secondary": tr_design.n_secondary,
+                "total_turns": tr_design.total_turns,
+                "reactance_ratio": tr_design.reactance_ratio,
+                "hf_caution": tr_design.hf_caution,
+                "magnetizing_inductance_h": tr_design.magnetizing_inductance_h,
+                "leakage_inductance_h": tr_design.leakage_inductance_h,
+                "core_loss_ohm": tr_design.core_loss_ohm,
+                "common_mode_impedance_ohm": tr_design.common_mode_impedance_ohm,
+                "z0_line_ohm": tr_design.z0_line_ohm,
+                "length_m": tr_design.length_m,
+                "v_low_rms": tr_design.v_unbalanced_rms,
+                "v_high_rms": tr_design.v_balanced_rms,
+                "i_low_rms_a": tr_design.i_unbalanced_rms_a,
+                "i_high_rms_a": tr_design.i_balanced_rms_a,
+                "b_peak_t": tr_design.b_peak_t,
+                "bsat_margin": tr_design.bsat_margin,
+                "saturated": tr_design.saturated,
+                "awg_low": tr_design.awg_primary,
+                "awg_high": tr_design.awg_secondary,
+                "awg_primary": tr_design.awg_primary,
+                "awg_secondary": tr_design.awg_secondary,
+                "fit_awg": tr_design.fit.awg,
+                "fit_diameter_mm": tr_design.fit.diameter_mm,
+                "notes": list(tr_design.notes),
+                "options": [
+                    {
+                        "n_low": d.n_primary,
+                        "n_high": d.n_secondary,
+                        "n_primary": d.n_primary,
+                        "n_secondary": d.n_secondary,
+                        "total_turns": d.total_turns,
+                        "magnetizing_inductance_h": d.magnetizing_inductance_h,
+                        "leakage_inductance_h": d.leakage_inductance_h,
+                        "reactance_ratio": d.reactance_ratio,
+                        "b_peak_t": d.b_peak_t,
+                        "bsat_margin": d.bsat_margin,
+                        "fit_awg": d.fit.awg,
+                        "hf_caution": d.hf_caution,
+                    }
+                    for d in options
+                ]
+                if args.show_options
+                else [],
+            }
+            print(json.dumps(payload, indent=2))
             return 0
         print(
-            f"{tr_design.kind.value}: {tr_design.z_low_ohm:g} -> "
-            f"{tr_design.z_high_ohm:g} Ohm on {tr_design.core.name}"
+            f"{tr_design.kind.value}: {tr_design.z_unbalanced_ohm:g} -> "
+            f"{tr_design.z_balanced_ohm:g} Ohm on {tr_design.core.name}"
         )
         print(
             f"  Topology: {tr_design.topology.value}, "
             f"total turns {tr_design.total_turns}"
         )
         print(
-            f"  Turns: low={tr_design.n_low}, high={tr_design.n_high} "
-            f"(ratio {tr_design.n_high / tr_design.n_low:.3f}, "
-            f"Z ratio {tr_design.actual_impedance_ratio:.3f}, "
+            f"  Turns: low={tr_design.n_primary}, high={tr_design.n_secondary} "
+            f"(ratio {tr_design.actual_turns_ratio:.3f}, "
+            f"Z ratio {tr_design.impedance_ratio:.3f}, "
             f"X_Lm/Z {tr_design.reactance_ratio:.2f})"
         )
         print(
             "  Lm (low side) = "
             f"{format_engineering(tr_design.magnetizing_inductance_h, 'H', digits=4)}"
         )
+        if tr_design.core_loss_ohm is not None:
+            lk = format_engineering(
+                tr_design.leakage_inductance_h, "H", digits=4
+            )
+            print(f"  Lk = {lk}, Rp = {tr_design.core_loss_ohm:.4g} Ohm")
         print(
-            f"  V low/high = {tr_design.v_low_rms:.3g} / "
-            f"{tr_design.v_high_rms:.3g} Vrms"
+            f"  V low/high = {tr_design.v_unbalanced_rms:.3g} / "
+            f"{tr_design.v_balanced_rms:.3g} Vrms"
         )
         print(
-            f"  I low/high = {tr_design.i_low_rms_a:.3g} / "
-            f"{tr_design.i_high_rms_a:.3g} Arms"
+            f"  I low/high = {tr_design.i_unbalanced_rms_a:.3g} / "
+            f"{tr_design.i_balanced_rms_a:.3g} Arms"
         )
         if tr_design.b_peak_t is not None:
             b_txt = f"{tr_design.b_peak_t * 1000.0:.1f} mT"
@@ -2427,8 +2441,9 @@ def main(argv: list[str] | None = None) -> int:
                 b_txt += f" (B/Bsat={tr_design.bsat_margin:.2f})"
             print(f"  Bpk = {b_txt}")
         print(
-            f"  Wire: low AWG {tr_design.awg_low}, high AWG {tr_design.awg_high}; "
-            f"single-layer fit AWG {tr_design.fit.awg}"
+            f"  Wire: low AWG {tr_design.awg_primary}, high AWG "
+            f"{tr_design.awg_secondary}; single-layer fit AWG "
+            f"{tr_design.fit.awg}"
         )
         for note in tr_design.notes:
             print(f"  note: {note}")
@@ -2563,100 +2578,6 @@ def main(argv: list[str] | None = None) -> int:
         except (MicrostripError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-
-    if args.command == "balun":
-        try:
-            bal_design = design_balun(
-                find_core(str(args.core)),
-                kind=BalunKind(str(args.kind)),
-                z_unbalanced_ohm=parse_si(str(args.z_unbalanced)),
-                z_balanced_ohm=parse_si(str(args.z_balanced)),
-                f_min_hz=parse_si(str(args.f_min)),
-                f_max_hz=parse_si(str(args.f_max)),
-                power_w=float(args.power),
-                coupling=float(args.coupling),
-                tan_delta=float(args.tan_delta),
-                winding_capacitance_f=float(args.winding_c),
-                line_z0_ohm=args.line_z0,
-                line_length_m=args.line_length,
-                velocity_factor=float(args.vf),
-                line_loss_db_per_m=float(args.line_loss),
-            )
-        except (BalunError, ValueError) as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 2
-        if args.json:
-            print(
-                json.dumps(
-                    {
-                        "kind": bal_design.kind.value,
-                        "core": bal_design.core.name,
-                        "z_unbalanced_ohm": bal_design.z_unbalanced_ohm,
-                        "z_balanced_ohm": bal_design.z_balanced_ohm,
-                        "turns_ratio": bal_design.actual_turns_ratio,
-                        "n_primary": bal_design.n_primary,
-                        "n_secondary": bal_design.n_secondary,
-                        "magnetizing_inductance_h": bal_design.magnetizing_inductance_h,
-                        "leakage_inductance_h": bal_design.leakage_inductance_h,
-                        "core_loss_ohm": bal_design.core_loss_ohm,
-                        "common_mode_impedance_ohm": (
-                            bal_design.common_mode_impedance_ohm
-                        ),
-                        "z0_line_ohm": bal_design.z0_line_ohm,
-                        "length_m": bal_design.length_m,
-                        "b_peak_t": bal_design.b_peak_t,
-                        "bsat_margin": bal_design.bsat_margin,
-                        "saturated": bal_design.saturated,
-                        "awg_primary": bal_design.awg_primary,
-                        "awg_secondary": bal_design.awg_secondary,
-                        "fit_awg": bal_design.fit.awg,
-                        "notes": list(bal_design.notes),
-                    },
-                    indent=2,
-                )
-            )
-            return 0
-        print(
-            f"{bal_design.kind.value}: {bal_design.z_unbalanced_ohm:g} -> "
-            f"{bal_design.z_balanced_ohm:g} Ohm on {bal_design.core.name}"
-        )
-        print(
-            f"  Turns: primary={bal_design.n_primary}, "
-            f"secondary={bal_design.n_secondary} "
-            f"(ratio {bal_design.actual_turns_ratio:.3f})"
-        )
-        lm_text = format_engineering(
-            bal_design.magnetizing_inductance_h, "H", digits=4
-        )
-        lk_text = format_engineering(
-            bal_design.leakage_inductance_h, "H", digits=4
-        )
-        print(f"  Lm = {lm_text}, Lk = {lk_text}")
-        if bal_design.core_loss_ohm is not None:
-            print(f"  Core loss Rp = {bal_design.core_loss_ohm:.4g} Ohm")
-        if bal_design.length_m:
-            print(
-                f"  TLT: Z0={bal_design.z0_line_ohm:.3g} Ohm, "
-                f"length={bal_design.length_m * 1000.0:.1f} mm, "
-                f"vf={bal_design.velocity_factor:g}"
-            )
-        if bal_design.common_mode_impedance_ohm:
-            print(
-                f"  Common-mode |Z| at fmin = "
-                f"{bal_design.common_mode_impedance_ohm:.4g} Ohm"
-            )
-        if bal_design.b_peak_t is not None:
-            btxt = f"{bal_design.b_peak_t * 1000.0:.1f} mT"
-            if bal_design.bsat_margin is not None:
-                btxt += f" (B/Bsat={bal_design.bsat_margin:.2f})"
-            print(f"  Bpk = {btxt}")
-        print(
-            f"  Wire: primary AWG {bal_design.awg_primary}, secondary AWG "
-            f"{bal_design.awg_secondary}; fit AWG {bal_design.fit.awg}"
-        )
-        for note in bal_design.notes:
-            print(f"  note: {note}")
-        return 0
 
     if args.command == "attenuator":
         try:

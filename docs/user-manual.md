@@ -530,18 +530,15 @@ Most commands accept `--json` for machine-readable output.
   filterdesk toroid --core T50-2 --inductance 1u --current 1
   filterdesk toroid --core FT50-43 --turns 5 --current 0.5 --json
   ```
-- **`transformer`** — transformer-type unun / balun / power transformer on a
-  built-in toroid core: `filterdesk transformer --z-low 50 --z-high 200
-  --core FT50-43 --frequency 3.5M --power 10`. The low-impedance winding is
-  sized for `X_Lm >= 4 * Z_low` at the lowest frequency; the tool reports turns,
-  Lm, V/I, peak flux versus Bsat, wire gauges and single-layer fit.
+- **`transformer`** — unified transformer / unun / balun designer on a built-in
+  toroid core: `filterdesk transformer --kind guanella --z-low 50 --z-high 200
+  --core FT240-43 --frequency 3.5M --f-max 30M --power 100`. It reports
+  topology/options, turns, Lm/Lk/Rp, V/I, flux versus Bsat, wire gauges and
+  single-layer fit; use `--show-options` for 2:14/3:21/4:28-style alternatives.
 - **`microstrip` / `qwt` / `stub`** — microstrip line, quarter-wave transformer,
   and open/short stub on a built-in substrate (`--substrate FR4` or overrides
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
-- **`balun`** — design an ideal/unun/Guanella/Ruthroff/choke balun on a core:
-  `filterdesk balun --kind guanella --z-unbalanced 50 --z-balanced 200
-  --core FT240-43 --f-min 3.5M --f-max 30M --power 100`.
 - **`tune-vna`** — synthesize from a spec, then trim component values to a
   measured `.s2p`: `filterdesk tune-vna measured.s2p --family chebyshev_type_i
   --response low_pass --order 4 --cutoff 100M --ripple 0.1 --bound 0.2`.
@@ -710,6 +707,10 @@ previously split across two tools.
   Select **isolated** for two separate windings (total `Np + Ns`).
 - **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
   capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
+- **Winding:** a **Winding** tab shows a connection schematic plus a stylized
+  toroid drawing, the tap/polarity and a text winding schedule. The **Save
+  diagram…** button writes SVG. Build-sheet exports automatically write a
+  `<name>_winding.svg` sidecar and reference/embed it.
 - **Apply:** inserts the result as `BAL1` at the circuit output. It appears in
   the project, component table and BOM with core/turns/AWG.
 
