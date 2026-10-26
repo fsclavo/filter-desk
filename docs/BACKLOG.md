@@ -4,10 +4,11 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.11.1 · **Release v0.11.1:** pending · **Previous:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0).  
+**Last verified:** 2026-10-26 · **App version:** 0.11.1 · **Released:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) · **Next:** planning v0.12.0.  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
-https://github.com/fsclavo/filter-desk/actions/runs/40369935124 (re-check after
-every push and update this URL).
+https://github.com/fsclavo/filter-desk/actions/runs/40374221107. Release:
+https://github.com/fsclavo/filter-desk/actions/runs/40375006934. Re-check after
+every push/release and update these URLs.
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
