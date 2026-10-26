@@ -4,9 +4,9 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Release:** v0.11.0 (tag/release pending).  
+**Last verified:** 2026-10-26 · **App version:** 0.11.0 · **Release:** [v0.11.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0) (published).  
 **Verification:** local suite 882 passed, 1 skipped; coverage 83.1 %. CI green:
-https://github.com/fsclavo/filter-desk/actions/runs/40338889725 (re-check after
+https://github.com/fsclavo/filter-desk/actions/runs/40343341656 (re-check after
 every push and update this URL).
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
@@ -73,8 +73,10 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__`, add `CHANGELOG.md`, tag
       and publish v0.11.0. (S)
-- [ ] Re-run the release workflow and record its asset URL in this file. (S)
-- [ ] Verify the unified GUI paths and CLI examples in the user manual. (S)
+- [x] Release workflow built Linux/Windows/AppImage assets and published
+      https://github.com/fsclavo/filter-desk/releases/tag/v0.11.0. (S)
+- [ ] Verify the unified GUI paths and CLI examples in the user manual against a
+      fresh installed bundle. (S)
 
 ### P1 — correctness / validation
 
