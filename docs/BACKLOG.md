@@ -35,8 +35,11 @@ designer is now one dialog with **Design**, **Model** and **Winding** tabs.
 
 - [x] Flags table: wider stretched column, word wrap, full tooltip and a visible
       legend for `LF`, `SAT`, `FIT`, `HF`, `THERMAL`.
+- [x] Kind-specific connection schematics: Guanella (parallel input / series
+      output), Ruthroff (transformer+line crossover) and choke (bifilar CMC) no
+      longer reuse the autotransformer tap drawing.
 - [ ] Decide whether to cut **v0.11.1** with this UI fix (it is not in the
-      v0.11.0 release assets).
+      v0.11.0 release assets); also includes the kind-specific TLT diagrams.
 
 ## 3. v0.11.0 feature set
 

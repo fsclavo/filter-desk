@@ -711,7 +711,10 @@ previously split across two tools.
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.
 - **Winding:** a **Winding** tab shows only the **electrical connection**
-  schematic, tap/polarity and a text winding schedule. The **Save diagram…**
+  schematic, tap/polarity and a text winding schedule. The schematic is
+  kind-specific: Guanella shows parallel-input/series-output lines, Ruthroff
+  shows its transformer+line crossover, and a choke shows a bifilar
+  common-mode choke; they are not drawn as the same autotransformer. The **Save diagram…**
   button writes SVG. Build-sheet exports automatically write a
   `<name>_winding.svg` sidecar and reference/embed it. A physical toroid drawing
   is intentionally not shown: a stylized one can be misleading about wire route

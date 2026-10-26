@@ -51,6 +51,7 @@ def _schematic(
     ns: int,
     z_unbal: float,
     z_bal: float,
+    line_z0: float,
 ) -> list[str]:
     parts: list[str] = [
         '<rect x="30" y="40" width="390" height="330" rx="12" '
@@ -58,7 +59,93 @@ def _schematic(
         '<text x="225" y="68" text-anchor="middle" font-size="16" '
         'font-family="sans-serif" fill="#111">Electrical connection</text>',
     ]
-    if topology == "autotransformer":
+    if kind == "guanella":
+        ratio = max(1, round(ns / max(np, 1)))
+        parts += [
+            f'<text x="225" y="94" text-anchor="middle" font-size="13" '
+            f'font-family="sans-serif" fill="#444">Guanella TLT: '
+            f'{ratio} line(s), input parallel / output series</text>',
+            '<line x1="75" y1="270" x2="75" y2="120" stroke="#111" stroke-width="2"/>',
+            '<line x1="375" y1="270" x2="375" y2="120" stroke="#111" stroke-width="2"/>',
+            '<line x1="75" y1="270" x2="375" y2="270" stroke="#1565c0" stroke-width="2"/>',
+            '<circle cx="75" cy="270" r="5" fill="#111"/>',
+            '<circle cx="375" cy="120" r="5" fill="#111"/>',
+            f'<text x="75" y="295" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">IN {z_unbal:g}Ω</text>',
+            f'<text x="375" y="105" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">OUT {z_bal:g}Ω</text>',
+        ]
+        count = max(1, min(ratio, 4))
+        for i in range(count):
+            y = 140 + i * 38
+            parts += [
+                f'<rect x="120" y="{y - 13}" width="210" height="26" rx="6" '
+                'fill="#f5f5f5" stroke="#1565c0" stroke-width="1.5"/>',
+                f'<text x="225" y="{y + 5}" text-anchor="middle" font-size="11" '
+                f'font-family="sans-serif" fill="#111">TL{i + 1} Z0 '
+                f'{line_z0:g}Ω</text>',
+                f'<line x1="75" y1="{y}" x2="120" y2="{y}" stroke="#1565c0" '
+                'stroke-width="2"/>',
+                f'<line x1="330" y1="{y}" x2="375" y2="{y}" stroke="#1565c0" '
+                'stroke-width="2"/>',
+            ]
+        parts.append(
+            '<text x="225" y="330" text-anchor="middle" font-size="11" '
+            'font-family="sans-serif" fill="#555">input bus left, series '
+            'output bus right</text>'
+        )
+    elif kind == "ruthroff":
+        parts += [
+            '<text x="225" y="94" text-anchor="middle" font-size="13" '
+            'font-family="sans-serif" fill="#444">Ruthroff TLT: transformer '
+            '+ transmission line</text>',
+            '<rect x="65" y="125" width="120" height="110" rx="8" '
+            'fill="#f5f5f5" stroke="#1565c0" stroke-width="2"/>',
+            '<text x="125" y="165" text-anchor="middle" font-size="12" '
+            'font-family="sans-serif" fill="#111">1:2</text>',
+            '<text x="125" y="185" text-anchor="middle" font-size="11" '
+            'font-family="sans-serif" fill="#111">transformer</text>',
+            '<rect x="265" y="145" width="120" height="70" rx="8" '
+            'fill="#f5f5f5" stroke="#c62828" stroke-width="2"/>',
+            f'<text x="325" y="175" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">TL Z0 {line_z0:g}Ω</text>',
+            '<line x1="65" y1="175" x2="35" y2="175" stroke="#111" stroke-width="2"/>',
+            '<line x1="185" y1="175" x2="265" y2="175" stroke="#c62828" stroke-width="2"/>',
+            '<line x1="385" y1="175" x2="415" y2="175" stroke="#111" stroke-width="2"/>',
+            '<line x1="185" y1="215" x2="265" y2="215" stroke="#1565c0" stroke-width="2"/>',
+            '<circle cx="35" cy="175" r="5" fill="#111"/>',
+            '<circle cx="415" cy="175" r="5" fill="#111"/>',
+            f'<text x="35" y="200" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">IN {z_unbal:g}Ω</text>',
+            f'<text x="415" y="160" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">OUT {z_bal:g}Ω</text>',
+            '<text x="225" y="300" text-anchor="middle" font-size="11" '
+            'font-family="sans-serif" fill="#555">verify the Ruthroff '
+            'crossover/polarity for the chosen build</text>',
+        ]
+    elif kind == "choke":
+        parts += [
+            '<text x="225" y="94" text-anchor="middle" font-size="13" '
+            'font-family="sans-serif" fill="#444">Choke (bifilar common-mode)'
+            '</text>',
+            '<line x1="70" y1="170" x2="135" y2="170" stroke="#1565c0" stroke-width="3"/>',
+            '<line x1="70" y1="230" x2="135" y2="230" stroke="#c62828" stroke-width="3"/>',
+            '<line x1="135" y1="170" x2="325" y2="170" stroke="#1565c0" stroke-width="3"/>',
+            '<line x1="135" y1="230" x2="325" y2="230" stroke="#c62828" stroke-width="3"/>',
+            '<line x1="325" y1="170" x2="390" y2="170" stroke="#1565c0" stroke-width="3"/>',
+            '<line x1="325" y1="230" x2="390" y2="230" stroke="#c62828" stroke-width="3"/>',
+            '<circle cx="230" cy="200" r="38" fill="none" stroke="#555" stroke-width="2"/>',
+            '<text x="230" y="205" text-anchor="middle" font-size="11" '
+            'font-family="sans-serif" fill="#555">CMC</text>',
+            f'<text x="70" y="155" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">IN {z_unbal:g}Ω</text>',
+            f'<text x="390" y="155" text-anchor="middle" font-size="12" '
+            f'font-family="sans-serif" fill="#111">OUT {z_bal:g}Ω</text>',
+            '<text x="225" y="300" text-anchor="middle" font-size="11" '
+            'font-family="sans-serif" fill="#555">differential pass-through; '
+            'common-mode impedance is not shown</text>',
+        ]
+    elif topology == "autotransformer":
         parts.append(_coil(220, 300, 120, ns, "#1565c0"))
         tap_y = 300 - (300 - 120) * (np / max(ns, 1))
         parts += [
@@ -80,7 +167,7 @@ def _schematic(
             f'<text x="242" y="220" font-size="12" font-family="sans-serif" '
             f'fill="#1565c0">{ns}T total</text>',
         ]
-    elif topology == "isolated":
+    else:
         parts += [
             _coil(175, 300, 130, np, "#1565c0"),
             _coil(285, 300, 100, ns, "#c62828"),
@@ -97,29 +184,7 @@ def _schematic(
             '<text x="230" y="220" text-anchor="middle" font-size="12" '
             'font-family="sans-serif" fill="#111">dots = polarity</text>',
         ]
-    else:
-        parts += [
-            '<rect x="115" y="120" width="220" height="100" rx="10" '
-            'fill="#f5f5f5" stroke="#444" stroke-width="2"/>',
-            f'<text x="225" y="158" text-anchor="middle" font-size="15" '
-            f'font-family="sans-serif" fill="#111">{_esc(kind.upper())}</text>',
-            f'<text x="225" y="182" text-anchor="middle" font-size="12" '
-            f'font-family="sans-serif" fill="#444">{np}T : {ns}T</text>',
-            f'<text x="225" y="204" text-anchor="middle" font-size="12" '
-            f'font-family="sans-serif" fill="#444">{z_unbal:g}Ω ↔ {z_bal:g}Ω</text>',
-            '<line x1="115" y1="170" x2="55" y2="170" stroke="#111" stroke-width="2"/>',
-            '<line x1="335" y1="170" x2="395" y2="170" stroke="#111" stroke-width="2"/>',
-            '<text x="55" y="155" text-anchor="middle" font-size="12" '
-            'font-family="sans-serif" fill="#111">IN</text>',
-            '<text x="395" y="155" text-anchor="middle" font-size="12" '
-            'font-family="sans-serif" fill="#111">OUT</text>',
-            '<text x="225" y="270" text-anchor="middle" font-size="12" '
-            'font-family="sans-serif" fill="#444">TLT / choke connection '
-            '(behavioral; not a full crossover drawing)</text>',
-        ]
     return parts
-
-
 
 
 def winding_diagram(
@@ -148,11 +213,39 @@ def winding_diagram(
         '<rect width="460" height="420" fill="#ffffff"/>',
         f'<text x="230" y="25" text-anchor="middle" font-size="18" '
         f'font-family="sans-serif" fill="#111">{_esc(title)}</text>',
-        *_schematic(kind, topology, n_primary, n_secondary, z_unbalanced_ohm, z_balanced_ohm),
+        *_schematic(
+            kind,
+            topology,
+            n_primary,
+            n_secondary,
+            z_unbalanced_ohm,
+            z_balanced_ohm,
+            line_z0_ohm,
+        ),
         '</svg>',
     ]
     schedule: list[str] = []
-    if topology == "autotransformer":
+    if kind == "guanella":
+        ratio = max(1, round(n_secondary / max(n_primary, 1)))
+        schedule += [
+            f"Guanella TLT: {ratio} transmission line(s), Z0 {line_z0_ohm:g} Ω.",
+            "Connect the line inputs in parallel and the line outputs in series.",
+            f"Input {z_unbalanced_ohm:g} Ω / output {z_balanced_ohm:g} Ω; "
+            "follow the validated crossover layout.",
+        ]
+    elif kind == "ruthroff":
+        schedule += [
+            f"Ruthroff TLT: transformer + transmission line, Z0 {line_z0_ohm:g} Ω.",
+            "Use the Ruthroff crossover/polarity for the actual build; this is "
+            "not the Guanella parallel/series connection.",
+        ]
+    elif kind == "choke":
+        schedule += [
+            f"1:1 bifilar common-mode choke: {n_primary} turns per wire.",
+            "The differential signal passes through; the common-mode impedance "
+            "is not represented in the differential 2-port.",
+        ]
+    elif topology == "autotransformer":
         schedule += [
             f"Autotransformer: wind {total} turns on {core or 'the core'}.",
             f"Count from the start and bring out a tap at turn {n_primary}.",

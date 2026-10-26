@@ -83,6 +83,50 @@ def test_spec_diagram_and_build_sheet(tmp_path: Path) -> None:
     assert "<svg" in html
 
 
+@pytest.mark.parametrize("kind", ["guanella", "ruthroff", "choke"])
+def test_tlt_kinds_are_not_autotransformer_drawings(kind: str) -> None:
+    diagram = winding_diagram(
+        kind=kind,
+        topology="autotransformer",
+        n_primary=3,
+        n_secondary=6,
+        total_turns=6,
+        core="FT240-43",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=200.0,
+        line_z0_ohm=100.0,
+        line_length_m=0.5,
+    )
+    ET.fromstring(diagram.svg)
+    assert "TAP" not in diagram.svg
+    assert "Autotransformer" not in " ".join(diagram.schedule)
+    assert kind.capitalize() in diagram.svg or kind.upper() in diagram.svg
+    if kind == "guanella":
+        assert "parallel" in " ".join(diagram.schedule)
+    if kind == "ruthroff":
+        assert "crossover" in " ".join(diagram.schedule)
+    if kind == "choke":
+        assert "bifilar" in " ".join(diagram.schedule)
+
+
+def test_guanella_and_ruthroff_connect_differently() -> None:
+    common = dict(
+        topology="autotransformer",
+        n_primary=3,
+        n_secondary=6,
+        total_turns=6,
+        core="FT240-43",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=200.0,
+        line_z0_ohm=100.0,
+        line_length_m=0.5,
+    )
+    guanella = winding_diagram(kind="guanella", **common)
+    ruthroff = winding_diagram(kind="ruthroff", **common)
+    assert guanella.svg != ruthroff.svg
+    assert "Guanella" in guanella.svg and "Ruthroff" in ruthroff.svg
+
+
 def test_invalid_turns_rejected() -> None:
     with pytest.raises(ValueError, match="turns"):
         winding_diagram(
