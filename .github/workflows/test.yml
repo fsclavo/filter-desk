@@ -98,7 +98,7 @@ jobs:
         run: |
           set -o pipefail
           timeout 300 uv run --frozen pytest -vv --durations=20 \
-            --faulthandler-timeout=60 \
+            -o faulthandler_timeout=60 \
             tests/unit/test_gui_smoke.py \
             tests/unit/test_gui_qtbot.py \
             tests/unit/test_gui_selectors.py \
@@ -114,7 +114,7 @@ jobs:
         run: |
           set -o pipefail
           timeout 300 uv run --frozen pytest -vv --durations=20 \
-            --faulthandler-timeout=60 \
+            -o faulthandler_timeout=60 \
             tests/unit/test_gui_smoke.py \
             tests/unit/test_gui_qtbot.py \
             tests/unit/test_gui_selectors.py \
@@ -130,7 +130,7 @@ jobs:
         run: |
           set -o pipefail
           timeout 300 uv run --frozen pytest -vv --durations=20 \
-            --faulthandler-timeout=60 \
+            -o faulthandler_timeout=60 \
             tests/unit/test_gui_smoke.py \
             tests/unit/test_gui_qtbot.py \
             tests/unit/test_gui_selectors.py \
