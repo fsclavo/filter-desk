@@ -737,6 +737,13 @@ sinusoidal load and low-flux μ'' data, so mismatch, DC bias, duty cycle,
 mounting and ambient temperature can make the real part much worse. For example,
 100 W on an FT140-43 is flagged; use a larger core or measure the actual rise.
 
+Ferrite material data for mixes 31/43/52/61 includes initial permeability,
+saturation flux, Curie temperature and Fair-Rite complex-permeability points
+(μ'/μ''). Core loss is calculated from those points; the project does not claim
+fitted Steinmetz coefficients, because the complex-permeability model is used
+instead. Some 31-size AL values (FT114/FT140) are scaled from the μi ratio and
+must be confirmed against the actual core batch.
+
 The model is **first-order and behavioral**: the TLT section is a single TEM
 line, not a full multi-line Guanella/Ruthoff derivation or an EM simulation;
 the differential two-port cannot represent a choke's common-mode stopband.
