@@ -248,6 +248,13 @@ _ES.update(
         "&Coil calculator…": "Calculadora de &bobinas…",
         "Trans&former / balun…": "Transformador / &balun…",
         "&Microstrip line…": "Línea &microstrip…",
+        "Tune to &VNA measurement…": "Ajustar a medición del &VNA…",
+        "Tune to VNA measurement": "Ajustar a medición del VNA",
+        "VNA tuning": "Ajuste por VNA",
+        "Applied VNA-guided tuning": "Ajuste guiado por VNA aplicado",
+        "Import a measured Touchstone file first (File → Import).": (
+            "Importa primero un archivo Touchstone medido (Archivo → Importar)."
+        ),
         "Sna&p to E-series…": "Ajustar a serie &E…",
         "Apply &parasitics / Q…": "Aplicar &parásitos / Q…",
         "&Monte-Carlo tolerances…": "Tolerancias &Monte-Carlo…",

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
+import numpy as np
+from numpy.typing import NDArray
+
 from filterdesk.analysis.adapters import LadderABCDAnalyzer, ScikitRFAnalyzer
 from filterdesk.analysis.adapters.abcd_ladder import AnalysisError
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
@@ -24,3 +29,14 @@ def analyze_circuit(
     backend: str = "abcd",
 ) -> AnalysisResult:
     return get_analyzer(backend).analyze(circuit, sweep)
+
+
+def analyze_at_frequencies(
+    circuit: Circuit,
+    frequency_hz: Sequence[float] | NDArray[np.floating],
+    *,
+    backend: str = "abcd",
+) -> AnalysisResult:
+    return get_analyzer(backend).analyze_at_frequencies(
+        circuit, np.asarray(frequency_hz, dtype=float)
+    )

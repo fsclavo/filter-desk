@@ -290,6 +290,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun** | **Design → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
 | **Microstrip line** | **Design → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
+| **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -538,6 +539,9 @@ Most commands accept `--json` for machine-readable output.
   and open/short stub on a built-in substrate (`--substrate FR4` or overrides
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
+- **`tune-vna`** — synthesize from a spec, then trim component values to a
+  measured `.s2p`: `filterdesk tune-vna measured.s2p --family chebyshev_type_i
+  --response low_pass --order 4 --cutoff 100M --ripple 0.1 --bound 0.2`.
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
   `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
   `--turns`. Wire is enamelled grade 1 by default (`--bare-wire` or
@@ -716,6 +720,23 @@ quasi-static formula. Discontinuities, radiation, dispersion and finite
 ground-plane effects are not modelled. These are line/stub calculators, not a
 full distributed-filter synthesis engine; the results are intended for
 first-pass sizing and should be verified with a 2-D/3-D field solver or VNA.
+
+### VNA-guided tuning
+
+Import a measured 2-port Touchstone file (**File → Import → Touchstone…**),
+synthesize/analyze the nominal design, then use **Design → Tune to VNA
+measurement…** (`filterdesk tune-vna`). The dialog fits the circuit's L/C/R
+values to the measured **magnitude** of S21 and/or S11 over the overlap band.
+The fit is a bounded local trim (`±20 %` by default) around the current values;
+it reports initial/final RMS error in dB, the per-component changes, and can
+apply the tuned circuit as one undoable edit.
+
+The phase is deliberately not used: cable delay and reference-plane offset are
+usually not calibrated out of an uncalibrated VNA measurement. Deep stopband
+points are floored at −80 dB to avoid fitting noise. The fit can be restricted
+to one subset by selecting refs in the API; the GUI tunes all components. Use a
+calibrated measurement, a sensible fit band, and verify the result against the
+expected component tolerances before committing to hardware.
 
 It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
 drops for very short coils (`length/diameter < 0.2`, flagged in the result).

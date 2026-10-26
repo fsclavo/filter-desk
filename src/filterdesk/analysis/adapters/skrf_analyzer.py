@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import skrf as rf
+from numpy.typing import NDArray
 
 from filterdesk.analysis.adapters.abcd_ladder import (
     AnalysisError,
@@ -26,9 +27,18 @@ class ScikitRFAnalyzer:
     name = "scikit_rf"
 
     def analyze(self, circuit: Circuit, sweep: SweepConfig) -> AnalysisResult:
+        return self.analyze_at_frequencies(circuit, sweep.frequencies_hz())
+
+    def analyze_at_frequencies(
+        self, circuit: Circuit, frequency_hz: NDArray[np.floating] | list[float]
+    ) -> AnalysisResult:
         if not circuit.elements:
             raise AnalysisError("circuit has no elements")
-        freq_hz = sweep.frequencies_hz()
+        freq_hz = np.asarray(frequency_hz, dtype=float)
+        if freq_hz.ndim != 1 or freq_hz.size < 1:
+            raise AnalysisError("frequency array must be 1-D and non-empty")
+        if not np.all(np.isfinite(freq_hz)) or np.any(freq_hz <= 0.0):
+            raise AnalysisError("frequencies must be finite and > 0")
         zs = circuit.port_in.impedance_ohm
         zl = circuit.port_out.impedance_ohm
         z0_ref = float(np.sqrt(zs * zl))

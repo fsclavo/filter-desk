@@ -234,9 +234,18 @@ class LadderABCDAnalyzer:
     name = "ladder_abcd"
 
     def analyze(self, circuit: Circuit, sweep: SweepConfig) -> AnalysisResult:
+        return self.analyze_at_frequencies(circuit, sweep.frequencies_hz())
+
+    def analyze_at_frequencies(
+        self, circuit: Circuit, frequency_hz: NDArray[np.floating] | list[float]
+    ) -> AnalysisResult:
         if not circuit.elements:
             raise AnalysisError("circuit has no elements")
-        freq = sweep.frequencies_hz()
+        freq = np.asarray(frequency_hz, dtype=float)
+        if freq.ndim != 1 or freq.size < 1:
+            raise AnalysisError("frequency array must be 1-D and non-empty")
+        if not np.all(np.isfinite(freq)) or np.any(freq <= 0.0):
+            raise AnalysisError("frequencies must be finite and > 0")
         omega = 2.0 * np.pi * freq
         sections = [_element_abcd(el, omega) for el in circuit.elements]
         abcd = cascade_abcd(sections)

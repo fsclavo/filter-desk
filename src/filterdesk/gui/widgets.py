@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -23,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.analysis.sensitivity import SensitivityReport
+from filterdesk.analysis.types import AnalysisResult
 from filterdesk.components_std import (
     AirCoilError,
     AttenuatorDesign,
@@ -60,7 +63,7 @@ from filterdesk.components_std.transformer import (
     TransformerError,
     TransformerKind,
 )
-from filterdesk.domain.circuit import IdealInductor, NonIdealInductor
+from filterdesk.domain.circuit import Circuit, IdealInductor, NonIdealInductor
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
@@ -72,6 +75,12 @@ from filterdesk.services.inductor_realization import (
     InductorRealizationError,
     realize_from_air_design,
     realize_from_toroid_design,
+)
+from filterdesk.services.vna_tuning import (
+    VnaTuningConfig,
+    VnaTuningError,
+    VnaTuningResult,
+    fit_circuit_to_measurement,
 )
 
 
@@ -1494,3 +1503,121 @@ class MicrostripDialog(QDialog):
             )
         else:
             self._length_result.setText("-")
+
+
+class VnaTuningDialog(QDialog):
+    """Trim circuit values to a measured VNA magnitude response."""
+
+    def __init__(
+        self,
+        circuit: Circuit,
+        measured: AnalysisResult,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Tune to VNA measurement")
+        self._circuit = circuit
+        self._measured = measured
+        self._result: VnaTuningResult | None = None
+
+        freq = measured.frequency_hz
+        self._f_min = EngineeringLineEdit()
+        self._f_min.setText(f"{float(freq.min()):.6g}")
+        self._f_max = EngineeringLineEdit()
+        self._f_max.setText(f"{float(freq.max()):.6g}")
+        self._bound = EngineeringLineEdit()
+        self._bound.setText("20")
+        self._max_points = QSpinBox()
+        self._max_points.setRange(2, max(2, measured.frequency_hz.size))
+        self._max_points.setValue(min(401, measured.frequency_hz.size))
+        self._fit_s11 = QCheckBox("Fit S11")
+        self._fit_s11.setChecked(True)
+        self._fit_s21 = QCheckBox("Fit S21")
+        self._fit_s21.setChecked(True)
+
+        self._summary = QLabel("-")
+        self._summary.setWordWrap(True)
+        self._details = QLabel("-")
+        self._details.setWordWrap(True)
+        self._table = QTableWidget(0, 3)
+        self._table.setHorizontalHeaderLabels(["Component", "Initial", "Final"])
+        self._table.verticalHeader().setVisible(False)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+
+        form = QFormLayout(self)
+        form.addRow("Measured", QLabel(measured.backend or "VNA"))
+        form.addRow("Fit from", self._f_min)
+        form.addRow("Fit to", self._f_max)
+        form.addRow("Bound (%)", self._bound)
+        form.addRow("Max points", self._max_points)
+        form.addRow(self._fit_s11, self._fit_s21)
+        form.addRow("Result", self._summary)
+        form.addRow("Details", self._details)
+        form.addRow(self._table)
+
+        buttons = QDialogButtonBox()
+        self._run_button = buttons.addButton(
+            "Run fit", QDialogButtonBox.ButtonRole.ActionRole
+        )
+        self._apply_button = buttons.addButton(
+            "Apply", QDialogButtonBox.ButtonRole.AcceptRole
+        )
+        self._apply_button.setEnabled(False)
+        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        self._run_button.clicked.connect(self._run_fit)
+        self._apply_button.clicked.connect(self.accept)
+        close.clicked.connect(self.reject)
+        form.addRow(buttons)
+
+    def current_result(self) -> VnaTuningResult | None:
+        return self._result
+
+    def result_circuit(self) -> Circuit | None:
+        return None if self._result is None else self._result.circuit
+
+    def _run_fit(self) -> None:
+        try:
+            bound = float(self._bound.text().strip() or "0") / 100.0
+            cfg = VnaTuningConfig(
+                bound_pct=bound,
+                max_points=self._max_points.value(),
+                fit_s11=self._fit_s11.isChecked(),
+                fit_s21=self._fit_s21.isChecked(),
+                f_min_hz=parse_si(self._f_min.text().strip() or "0"),
+                f_max_hz=parse_si(self._f_max.text().strip() or "0"),
+            )
+        except (VnaTuningError, ValueError) as exc:
+            QMessageBox.warning(self, "VNA tuning", str(exc))
+            return
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            result = fit_circuit_to_measurement(self._circuit, self._measured, cfg)
+        except (VnaTuningError, ValueError) as exc:
+            self._result = None
+            self._apply_button.setEnabled(False)
+            QMessageBox.warning(self, "VNA tuning", str(exc))
+            return
+        finally:
+            QApplication.restoreOverrideCursor()
+        self._result = result
+        self._summary.setText(
+            f"{result.initial_rms_db:.3f} -> {result.final_rms_db:.3f} dB RMS "
+            f"({result.improvement_db:+.3f} dB, {result.n_evaluations} evaluations)"
+        )
+        self._details.setText(
+            f"S21 {result.initial_rms_s21_db:.3f} -> "
+            f"{result.final_rms_s21_db:.3f} dB RMS; "
+            f"S11 {result.initial_rms_s11_db:.3f} -> "
+            f"{result.final_rms_s11_db:.3f} dB RMS; "
+            f"{result.frequency_hz.size} points"
+        )
+        self._table.setRowCount(len(result.refs))
+        for row, (ref, initial, final) in enumerate(
+            zip(result.refs, result.initial_values, result.final_values, strict=True)
+        ):
+            self._table.setItem(row, 0, QTableWidgetItem(ref))
+            self._table.setItem(row, 1, QTableWidgetItem(f"{initial:.6g}"))
+            self._table.setItem(row, 2, QTableWidgetItem(f"{final:.6g}"))
+        self._apply_button.setEnabled(True)

@@ -18,6 +18,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QDialog,
     QDockWidget,
     QDoubleSpinBox,
     QFileDialog,
@@ -96,6 +97,7 @@ from filterdesk.gui.widgets import (
     SensitivityDialog,
     SnapDialog,
     TransformerDialog,
+    VnaTuningDialog,
 )
 from filterdesk.gui.workers import (
     start_analyze_thread,
@@ -523,6 +525,9 @@ class MainWindow(QMainWindow):
         act_compliance = QAction(tr("Check spec &compliance…"), self)
         act_compliance.triggered.connect(self._run_compliance_check)
         design_menu.addAction(act_compliance)
+        act_vna = QAction(tr("Tune to &VNA measurement…"), self)
+        act_vna.triggered.connect(self._run_vna_tuning)
+        design_menu.addAction(act_vna)
         design_menu.addSeparator()
         self._component_menu = design_menu.addMenu(tr("&Component"))
         self._component_menu.aboutToShow.connect(self._populate_component_menu)
@@ -976,6 +981,30 @@ class MainWindow(QMainWindow):
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()
+
+    def _run_vna_tuning(self) -> None:
+        if self._session.circuit is None:
+            QMessageBox.information(
+                self, tr("VNA tuning"), tr("Synthesize a circuit first.")
+            )
+            return
+        measured = self._session.measured
+        if measured is None:
+            QMessageBox.information(
+                self,
+                tr("VNA tuning"),
+                tr("Import a measured Touchstone file first (File → Import)."),
+            )
+            return
+        dialog = VnaTuningDialog(self._session.circuit, measured, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        tuned = dialog.result_circuit()
+        if tuned is None:
+            return
+        self._push_circuit_edit(tuned, tr("Tune to VNA measurement"))
+        self._run_analyze()
+        self._status.setText(tr("Applied VNA-guided tuning"))
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:

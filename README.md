@@ -31,6 +31,8 @@ image.
   gauges on the built-in toroid table.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
   transformer, open/short stubs, substrate presets and first-order loss.
+- **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
+  measured S11/S21 magnitude with bounded least squares.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.

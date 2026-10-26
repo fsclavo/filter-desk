@@ -133,6 +133,11 @@ from filterdesk.services.design_sweep import (
     run_design_sweep,
 )
 from filterdesk.services.session import default_sweep_for_spec
+from filterdesk.services.vna_tuning import (
+    VnaTuningConfig,
+    VnaTuningError,
+    fit_circuit_to_measurement,
+)
 from filterdesk.synthesis import synthesis_note, synthesize
 from filterdesk.synthesis.api import SynthesisResult
 from filterdesk.synthesis.order_estimate import (
@@ -812,6 +817,33 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
+    )
+
+    tune = sub.add_parser(
+        "tune-vna",
+        help="Synthesize a design and trim L/C values to a measured .s2p",
+    )
+    tune.add_argument("measured", type=Path, help="Measured Touchstone .s2p")
+    _add_spec_args(tune)
+    tune.add_argument(
+        "--bound", type=float, default=0.2, help="Relative trim bound (default 0.2)"
+    )
+    tune.add_argument(
+        "--max-points", type=int, default=401, help="Measured points used in fit"
+    )
+    tune.add_argument(
+        "--max-nfev", type=int, default=200, help="Maximum function evaluations"
+    )
+    tune.add_argument(
+        "--f-min", default=None, help="Fit band start (default: measured start)"
+    )
+    tune.add_argument(
+        "--f-max", default=None, help="Fit band stop (default: measured stop)"
+    )
+    tune.add_argument("--no-s11", action="store_true", help="Do not fit S11")
+    tune.add_argument("--no-s21", action="store_true", help="Do not fit S21")
+    tune.add_argument(
+        "--json", action="store_true", help="Emit machine-readable JSON"
     )
     return parser
 
@@ -2616,6 +2648,70 @@ def main(argv: list[str] | None = None) -> int:
             print(data.summary())
             if data.source:
                 print(f"source: {data.source}")
+        return 0
+
+    if args.command == "tune-vna":
+        try:
+            spec = _spec_from_cli(args)
+            data = read_touchstone(args.measured)
+            measured = data.to_analysis_result()
+            nominal = synthesize(spec)
+            cfg = VnaTuningConfig(
+                bound_pct=float(args.bound),
+                max_points=int(args.max_points),
+                max_nfev=int(args.max_nfev),
+                fit_s11=not args.no_s11,
+                fit_s21=not args.no_s21,
+                f_min_hz=parse_si(str(args.f_min)) if args.f_min else None,
+                f_max_hz=parse_si(str(args.f_max)) if args.f_max else None,
+            )
+            tuned = fit_circuit_to_measurement(nominal.circuit, measured, cfg)
+        except (VnaTuningError, TouchstoneError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "initial_rms_db": tuned.initial_rms_db,
+                        "final_rms_db": tuned.final_rms_db,
+                        "improvement_db": tuned.improvement_db,
+                        "initial_rms_s11_db": tuned.initial_rms_s11_db,
+                        "final_rms_s11_db": tuned.final_rms_s11_db,
+                        "initial_rms_s21_db": tuned.initial_rms_s21_db,
+                        "final_rms_s21_db": tuned.final_rms_s21_db,
+                        "success": tuned.success,
+                        "message": tuned.message,
+                        "n_evaluations": tuned.n_evaluations,
+                        "n_points": int(tuned.frequency_hz.size),
+                        "components": [
+                            {"ref": ref, "initial": float(a), "final": float(b)}
+                            for ref, a, b in zip(
+                                tuned.refs,
+                                tuned.initial_values,
+                                tuned.final_values,
+                                strict=True,
+                            )
+                        ],
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        print(
+            f"VNA fit: {tuned.initial_rms_db:.3f} -> {tuned.final_rms_db:.3f} dB RMS "
+            f"({tuned.improvement_db:+.3f} dB, {tuned.n_evaluations} evaluations, "
+            f"{tuned.frequency_hz.size} points)"
+        )
+        print(
+            f"  S21 {tuned.initial_rms_s21_db:.3f} -> {tuned.final_rms_s21_db:.3f} dB, "
+            f"S11 {tuned.initial_rms_s11_db:.3f} -> {tuned.final_rms_s11_db:.3f} dB"
+        )
+        for ref, initial, final in zip(
+            tuned.refs, tuned.initial_values, tuned.final_values, strict=True
+        ):
+            pct = (final / initial - 1.0) * 100.0
+            print(f"  {ref}: {initial:.6g} -> {final:.6g} ({pct:+.2f}%)")
         return 0
 
     if args.command == "to-csv":
