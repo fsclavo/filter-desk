@@ -269,6 +269,7 @@ _ES.update(
         "About &Qt": "Acerca de &Qt",
         "&GitHub repository": "Repositorio de &GitHub",
         "&User manual": "Manual de &usuario",
+        "Model &confidence…": "&Confianza de modelos…",
         "Set tune &step…": "Definir &paso de ajuste…",
         "Set &tolerance…": "Definir &tolerancia…",
         # Toolbar / status ---------------------------------------------------

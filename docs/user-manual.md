@@ -20,8 +20,9 @@ want to *design filters*, not for people reading the source code.
 12. [Approximation families reference](#12-approximation-families-reference)
 13. [Units and notation](#13-units-and-notation)
 14. [Troubleshooting and FAQ](#14-troubleshooting-and-faq)
-15. [Known limitations](#15-known-limitations)
-16. [License](#16-license)
+15. [Model confidence and limitations](#15-model-confidence-and-limitations)
+16. [Known limitations](#16-known-limitations)
+17. [License](#17-license)
 
 ---
 
@@ -867,7 +868,25 @@ happens in the background and reports progress in the status bar.
 
 ---
 
-## 15. Known limitations
+## 15. Model confidence and limitations
+
+**Help → Model confidence…** shows the status of each model. The statuses are:
+
+| Status | Meaning |
+| --- | --- |
+| **validated** | Reference/golden cases or an independent solver agree. |
+| **cross-checked** | Compared against a second backend or import/export round-trip. |
+| **estimated** | First-order/approximate model; assumptions are documented. |
+| **experimental** | Useful workflow, but not yet validated on hardware. |
+| **not evaluated** | Calculator or interface exists, but it is not a validated model. |
+
+Important examples: LC synthesis and T1 are validated; ABCD↔scikit-rf and
+Touchstone I/O are cross-checked; ferrite loss/temperature, microstrip and
+toroid calculators are estimated; VNA tuning and Guanella/Ruthroff TLT are
+experimental; distributed filter synthesis is not evaluated. The build sheet
+includes an **Assumptions** section with the same model limits.
+
+## 16. Known limitations
 
 - **Lumped-element ladders only.** Distributed line/stub calculators exist, but
   transmission lines, stubs and coupled inductors are not ladder elements.
@@ -896,7 +915,7 @@ happens in the background and reports progress in the status bar.
 
 ---
 
-## 16. License
+## 17. License
 
 FilterDesk is licensed under **Apache-2.0**. See [`../LICENSE`](../LICENSE) and
 [`../NOTICE`](../NOTICE). The GUI dynamically links Qt via PySide6 (LGPL-3.0).

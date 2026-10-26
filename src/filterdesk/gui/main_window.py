@@ -85,6 +85,7 @@ from filterdesk.gui.widgets import (
     BandPresetDialog,
     BuildSheetDialog,
     CoilCalculatorDialog,
+    ConfidenceDialog,
     DesignSweepDialog,
     DesignSweepResultDialog,
     EngineeringLineEdit,
@@ -552,6 +553,9 @@ class MainWindow(QMainWindow):
         act_docs = QAction(tr("&User manual"), self)
         act_docs.triggered.connect(self._open_docs)
         help_menu.addAction(act_docs)
+        act_confidence = QAction(tr("Model &confidence…"), self)
+        act_confidence.triggered.connect(self._show_confidence)
+        help_menu.addAction(act_confidence)
 
     def _load_session_into_ui(self) -> None:
         # Populating the widgets emits ``spec_changed``; keep the session's
@@ -1883,6 +1887,9 @@ class MainWindow(QMainWindow):
 
     def _open_docs(self) -> None:
         QDesktopServices.openUrl(QUrl(_DOCS_URL))
+
+    def _show_confidence(self) -> None:
+        ConfidenceDialog(self).exec()
 
     def _save_project(self) -> None:
         if self._session.path:

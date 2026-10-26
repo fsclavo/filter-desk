@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased (after v0.11.1)
+
+### Added
+
+- Central model-confidence registry with GUI badges, a Help → Model confidence
+  inventory and an Assumptions section in Markdown/HTML build sheets.
+
 ## v0.11.1 — 2026-10-26
 
 ### Fixed

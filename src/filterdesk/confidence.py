@@ -1,0 +1,195 @@
+"""Model-confidence registry and build-sheet assumptions.
+
+The registry makes the difference between validated, cross-checked, estimated,
+experimental and not-evaluated behaviour explicit. It is intentionally central:
+the GUI, manual and build sheets should not invent their own confidence labels.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+
+from filterdesk.domain.circuit import Circuit, NonIdealCapacitor, NonIdealInductor
+
+
+class ConfidenceLevel(StrEnum):
+    VALIDATED = "validated"
+    CROSS_CHECKED = "cross-checked"
+    ESTIMATED = "estimated"
+    EXPERIMENTAL = "experimental"
+    NOT_EVALUATED = "not evaluated"
+
+
+@dataclass(frozen=True, slots=True)
+class ConfidenceItem:
+    key: str
+    area: str
+    level: ConfidenceLevel
+    evidence: str
+    limits: str
+
+
+ITEMS: tuple[ConfidenceItem, ...] = (
+    ConfidenceItem(
+        "synthesis",
+        "Lumped LC synthesis",
+        ConfidenceLevel.VALIDATED,
+        "Golden component/metric cases and classical prototype checks.",
+        "Even-order elliptic is rejected; order caps apply to some families.",
+    ),
+    ConfidenceItem(
+        "abcd",
+        "ABCD ladder analysis",
+        ConfidenceLevel.CROSS_CHECKED,
+        "Cross-checked against scikit-rf and analytic circuits.",
+        "Ideal ladders unless parasitics are applied; no distributed elements.",
+    ),
+    ConfidenceItem(
+        "skrf",
+        "scikit-rf backend",
+        ConfidenceLevel.CROSS_CHECKED,
+        "Differential tests against the ABCD backend.",
+        "Adapter backend, not the canonical domain model.",
+    ),
+    ConfidenceItem(
+        "t1",
+        "Output transformer T1",
+        ConfidenceLevel.VALIDATED,
+        "SPICE netlist validated with an independent MNA solver.",
+        "LTspice/Qucs exports have not been verified in those tools.",
+    ),
+    ConfidenceItem(
+        "chebyshev_even",
+        "Even-order Chebyshev I",
+        ConfidenceLevel.VALIDATED,
+        "Classical g-values and output-transformer golden case.",
+        "Uses an ideal output transformer; not a general unequal-R synthesis.",
+    ),
+    ConfidenceItem(
+        "compliance",
+        "Spec compliance",
+        ConfidenceLevel.CROSS_CHECKED,
+        "Exact band-edge evaluation and independent validation tests.",
+        "Approximation notes are reported for non-classical cases.",
+    ),
+    ConfidenceItem(
+        "optimization",
+        "Limits optimization",
+        ConfidenceLevel.ESTIMATED,
+        "Deterministic/global solvers with bounded component values.",
+        "Solution quality depends on limits, bounds and topology.",
+    ),
+    ConfidenceItem(
+        "montecarlo",
+        "Monte-Carlo tolerances",
+        ConfidenceLevel.ESTIMATED,
+        "Random tolerance trials with a reported envelope.",
+        "Component distributions and parasitics must be supplied.",
+    ),
+    ConfidenceItem(
+        "vna",
+        "VNA-guided tuning",
+        ConfidenceLevel.EXPERIMENTAL,
+        "Synthetic phase/delay regressions; real captures are holdout only.",
+        "Magnitude alone may not identify all components; calibration and "
+        "reference plane matter.",
+    ),
+    ConfidenceItem(
+        "thermal",
+        "Ferrite core loss / temperature",
+        ConfidenceLevel.ESTIMATED,
+        "Fair-Rite complex-permeability data plus copper loss and natural convection.",
+        "Low-flux μ'' data, matched sine assumption, no high-flux curves or "
+        "thermal simulation.",
+    ),
+    ConfidenceItem(
+        "balun_tlt",
+        "Guanella/Ruthroff TLT",
+        ConfidenceLevel.EXPERIMENTAL,
+        "First-order transformer + TEM-line model.",
+        "No full multi-line/EM model; common mode is not in the differential 2-port.",
+    ),
+    ConfidenceItem(
+        "microstrip",
+        "Microstrip/stub calculators",
+        ConfidenceLevel.ESTIMATED,
+        "Hammerstad-Jensen quasi-static synthesis and first-order loss.",
+        "No thickness in Z0, discontinuities, radiation, dispersion or field "
+        "solver.",
+    ),
+    ConfidenceItem(
+        "toroid",
+        "Toroid/air-coil calculators",
+        ConfidenceLevel.ESTIMATED,
+        "Catalog AL/dimensions, wire-fit and flux checks.",
+        "AL batch spread, core loss and thermal derating require verification.",
+    ),
+    ConfidenceItem(
+        "touchstone",
+        "Touchstone import/export",
+        ConfidenceLevel.CROSS_CHECKED,
+        "Parser/writer round-trip and compare tests.",
+        "Reference-plane and calibration metadata are not inferred.",
+    ),
+    ConfidenceItem(
+        "spice_export",
+        "SPICE/LTspice/Qucs export",
+        ConfidenceLevel.CROSS_CHECKED,
+        "SPICE/MNA validation and syntax tests.",
+        "LTspice/Qucs require a manual external check; TLT line export is partial.",
+    ),
+    ConfidenceItem(
+        "distributed",
+        "Distributed circuit synthesis",
+        ConfidenceLevel.NOT_EVALUATED,
+        "Calculators exist, but no netlist/domain elements yet.",
+        "Not available for filter synthesis; do not treat calculators as a full model.",
+    ),
+)
+
+_BY_KEY = {item.key: item for item in ITEMS}
+
+
+def confidence_for(key: str) -> ConfidenceItem:
+    try:
+        return _BY_KEY[key]
+    except KeyError:
+        raise KeyError(f"unknown confidence key: {key}") from None
+
+
+def assumptions_for_circuit(circuit: Circuit) -> tuple[str, ...]:
+    """User-facing assumptions for a build sheet/project export."""
+    assumptions = [
+        "ABCD analysis assumes ideal R/L/C elements unless parasitics are applied.",
+        "The BOM value is the current project value; the nearest E-series value "
+        "is a snap suggestion, not a purchasing commitment.",
+    ]
+    if circuit.output_transformer_ratio != 1.0:
+        assumptions.append(
+            "T1 is an ideal output transformer; its SPICE model is validated by MNA."
+        )
+    if circuit.output_balun is not None:
+        balun = circuit.output_balun
+        assumptions.append(
+            f"BAL1 is a {balun.kind} model ({balun.topology}); TLT/common-mode "
+            "behaviour is approximate."
+        )
+    if any(
+        isinstance(el, (NonIdealInductor, NonIdealCapacitor))
+        for el in circuit.elements
+    ):
+        assumptions.append(
+            "Parasitic values are user/model estimates unless measured data is "
+            "supplied."
+        )
+    return tuple(assumptions)
+
+
+__all__ = [
+    "ConfidenceItem",
+    "ConfidenceLevel",
+    "ITEMS",
+    "assumptions_for_circuit",
+    "confidence_for",
+]

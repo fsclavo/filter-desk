@@ -64,6 +64,7 @@ from filterdesk.components_std.toroid import (
 from filterdesk.components_std.transformer import (
     TransformerTopology,
 )
+from filterdesk.confidence import ITEMS, ConfidenceItem, confidence_for
 from filterdesk.domain.circuit import (
     BalunSpec,
     Circuit,
@@ -97,6 +98,76 @@ class EngineeringLineEdit(QLineEdit):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setPlaceholderText(tr("e.g. 140M, 50, 10n"))
+
+
+_CONFIDENCE_COLORS: dict[str, str] = {
+    "validated": "#1b5e20",
+    "cross-checked": "#0d47a1",
+    "estimated": "#8a4b00",
+    "experimental": "#8e1b1b",
+    "not evaluated": "#555555",
+}
+
+
+class ConfidenceBadge(QLabel):
+    """Small, consistent model-confidence label with an explanatory tooltip."""
+
+    def __init__(self, key: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._item: ConfidenceItem | None = None
+        self.set_key(key)
+
+    @property
+    def item(self) -> ConfidenceItem | None:
+        return self._item
+
+    def set_key(self, key: str) -> None:
+        item = confidence_for(key)
+        self._item = item
+        color = _CONFIDENCE_COLORS[item.level.value]
+        self.setText(f"Model: {item.level.value}")
+        self.setStyleSheet(
+            f"QLabel {{ color: white; background: {color}; padding: 2px 7px; "
+            "border-radius: 4px; }"
+        )
+        self.setToolTip(
+            f"{item.area}\n"
+            f"Evidence: {item.evidence}\n"
+            f"Limits: {item.limits}"
+        )
+
+
+class ConfidenceDialog(QDialog):
+    """Read-only inventory of what is validated, estimated or experimental."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Model confidence")
+        self.resize(820, 460)
+        table = QTableWidget(len(ITEMS), 4)
+        table.setHorizontalHeaderLabels(["Area", "Status", "Evidence", "Limits"])
+        table.verticalHeader().setVisible(False)
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setWordWrap(True)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        for row, item in enumerate(ITEMS):
+            table.setItem(row, 0, QTableWidgetItem(item.area))
+            table.setItem(row, 1, QTableWidgetItem(item.level.value))
+            table.setItem(row, 2, QTableWidgetItem(item.evidence))
+            table.setItem(row, 3, QTableWidgetItem(item.limits))
+        table.resizeRowsToContents()
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            QLabel(
+                "Model status is explicit: validated / cross-checked / estimated / "
+                "experimental / not evaluated. Estimates are not guarantees."
+            )
+        )
+        layout.addWidget(table)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        layout.addWidget(buttons)
 
 
 _STRATEGY_LABELS: dict[SnapStrategy, str] = {
@@ -1427,6 +1498,8 @@ class TransformerDialog(QDialog):
         model_form.addRow("TLT length (m, blank=auto)", self._line_length)
         model_form.addRow("TLT velocity factor", self._vf)
         model_form.addRow("TLT loss (dB/m)", self._line_loss)
+        self._confidence = ConfidenceBadge("thermal")
+        model_form.addRow("Confidence", self._confidence)
         model_form.addRow("Notes", self._notes)
 
         tabs = QTabWidget()
@@ -1646,8 +1719,10 @@ class MicrostripDialog(QDialog):
         self._lambda = QLabel("-")
         self._loss = QLabel("-")
         self._length_result = QLabel("-")
+        self._confidence = ConfidenceBadge("microstrip")
 
         form = QFormLayout(self)
+        form.addRow("Confidence", self._confidence)
         form.addRow("Substrate", self._substrate)
         form.addRow("Z0 (Ohm)", self._z0)
         form.addRow("Frequency", self._frequency)

@@ -20,6 +20,7 @@ from pathlib import Path
 
 from filterdesk.analysis.stress import StressReport
 from filterdesk.components_std import ESeries, nearest_e_series
+from filterdesk.confidence import assumptions_for_circuit
 from filterdesk.domain.circuit import (
     Circuit,
     PhysicalComponent,
@@ -392,6 +393,7 @@ def render_build_sheet_markdown(
     power_w: float = 0.0,
     title: str = "",
     notes: Sequence[str] = (),
+    assumptions: Sequence[str] = (),
 ) -> str:
     """Render a Markdown build sheet (spec summary + BOM + notes)."""
     lines: list[str] = [f"# {title.strip() or 'Filter build sheet'}"]
@@ -410,6 +412,10 @@ def render_build_sheet_markdown(
     ]
     lines += ["| " + " | ".join(_table_cells(row)) + " |" for row in rows]
 
+    if assumptions:
+        lines += ["", "## Assumptions", ""]
+        lines += [f"- {item}" for item in assumptions]
+
     if notes:
         lines += ["", "## Notes", ""]
         lines += [f"- {note}" for note in notes]
@@ -425,6 +431,7 @@ def render_build_sheet_html(
     power_w: float = 0.0,
     title: str = "",
     notes: Sequence[str] = (),
+    assumptions: Sequence[str] = (),
 ) -> str:
     """Render a printable HTML build sheet (no external assets)."""
     heading = html.escape(title.strip() or "Filter build sheet")
@@ -464,6 +471,12 @@ def render_build_sheet_html(
         parts.append("</tr>")
     parts.append("</table>")
 
+    if assumptions:
+        parts.append("<h2>Assumptions</h2>")
+        parts.append("<ul>")
+        parts += [f"<li>{html.escape(item)}</li>" for item in assumptions]
+        parts.append("</ul>")
+
     if notes:
         parts.append("<h2>Notes</h2>")
         parts.append("<ul>")
@@ -487,6 +500,7 @@ def write_build_sheet(
     series: ESeries | None = None,
     group: bool = False,
     columns: Sequence[str] | None = None,
+    assumptions: Sequence[str] | None = None,
 ) -> Path:
     """Write a build sheet, choosing the format from the file extension.
 
@@ -502,6 +516,11 @@ def write_build_sheet(
         series=series,
         group=group,
     )
+    assumption_items = (
+        assumptions_for_circuit(circuit)
+        if assumptions is None
+        else tuple(assumptions)
+    )
     suffix = target.suffix.lower()
     if suffix == ".csv":
         text = render_bom_csv(rows, columns=columns)
@@ -512,6 +531,7 @@ def write_build_sheet(
             power_w=power_w,
             title=title,
             notes=notes,
+            assumptions=assumption_items,
         )
     elif suffix in {".html", ".htm"}:
         text = render_build_sheet_html(
@@ -520,6 +540,7 @@ def write_build_sheet(
             power_w=power_w,
             title=title,
             notes=notes,
+            assumptions=assumption_items,
         )
     else:
         raise BuildSheetError(

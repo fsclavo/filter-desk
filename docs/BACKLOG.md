@@ -44,7 +44,7 @@ designer is now one dialog with **Design** and **Model** tabs.
 - [ ] Decide whether to cut **v0.11.1** with this UI fix (it is not in the
       v0.11.0 release assets); also includes the kind-specific TLT diagrams.
 
-## 3. v0.11.0 feature set
+## 4. v0.11.0 feature set
 
 - Exact unequal terminations via output transformer `T1` (ADR-017), including
   SPICE/LTspice/Qucs export.
@@ -79,7 +79,7 @@ designer is now one dialog with **Design** and **Model** tabs.
 
 ---
 
-## 4. Open backlog
+## 5. Open backlog
 
 ### P0 — before calling v0.11.0
 
@@ -128,7 +128,7 @@ designer is now one dialog with **Design** and **Model** tabs.
 
 ---
 
-## 5. Maintenance rule
+## 6. Maintenance rule
 
 Every change must update, in the same commit:
 
