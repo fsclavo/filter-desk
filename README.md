@@ -29,6 +29,8 @@ image.
   derating, capacitor ESL/ESR, and parasitic capacitance.
 - **Transformer / unun / balun calculator**: turns, Lm, flux/saturation and wire
   gauges on the built-in toroid table.
+- **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
+  transformer, open/short stubs, substrate presets and first-order loss.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.

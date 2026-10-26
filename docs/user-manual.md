@@ -289,6 +289,7 @@ specification edits require an explicit **Synthesize**.
 | **Matching network** | **Design → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
 | **Coil calculator** | **Design → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun** | **Design → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
+| **Microstrip line** | **Design → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
 | **Snap to E-series** | **Design → Snap to E-series…** | picks series (E6–E96) and strategy |
@@ -533,6 +534,10 @@ Most commands accept `--json` for machine-readable output.
   --core FT50-43 --frequency 3.5M --power 10`. The low-impedance winding is
   sized for `X_Lm >= 4 * Z_low` at the lowest frequency; the tool reports turns,
   Lm, V/I, peak flux versus Bsat, wire gauges and single-layer fit.
+- **`microstrip` / `qwt` / `stub`** — microstrip line, quarter-wave transformer,
+  and open/short stub on a built-in substrate (`--substrate FR4` or overrides
+  `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
+  `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
 - **`air-coil`** — single-layer close-wound air-core solenoid (Wheeler). Requires
   `--diameter mm` and either `--awg` or `--wire-mm`; use `--inductance` or
   `--turns`. Wire is enamelled grade 1 by default (`--bare-wire` or
@@ -693,6 +698,24 @@ This is an ideal-transformer model, not a Guanella/Ruthroff transmission-line
 transformer model: common-mode choking, leakage inductance and core loss are
 not simulated. Verify the winding layout, core loss and saturation against the
 core datasheet, especially for high power or wideband baluns.
+
+### Microstrip / distributed calculators
+
+**Design → Microstrip line…** (`filterdesk microstrip`) synthesizes a
+microstrip width from a target `Z0`, substrate (`FR4`, `RO4350B`, `RO4003C`,
+`PTFE`, `Alumina`, `Air`) and frequency, using the Hammerstad-Jensen
+quasi-static model. It reports `eeff`, guided wavelength, quarter-wave length,
+and first-order conductor/dielectric loss (`dB/m` and for an optional length).
+`filterdesk qwt` sizes a quarter-wave transformer
+(`Z0 = sqrt(Z_low*Z_high)`), and `filterdesk stub` gives the width, length and
+input reactance of an open or short stub at a chosen electrical angle.
+
+Limitations: strip thickness is not included in `Z0`; conductor loss uses a
+surface-resistance/skin-depth approximation and dielectric loss the standard
+quasi-static formula. Discontinuities, radiation, dispersion and finite
+ground-plane effects are not modelled. These are line/stub calculators, not a
+full distributed-filter synthesis engine; the results are intended for
+first-pass sizing and should be verified with a 2-D/3-D field solver or VNA.
 
 It does **not** model self-capacitance/SRF, AC resistance or Q, and accuracy
 drops for very short coils (`length/diameter < 0.2`, flagged in the result).

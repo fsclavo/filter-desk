@@ -88,6 +88,7 @@ from filterdesk.gui.widgets import (
     DesignSweepResultDialog,
     EngineeringLineEdit,
     MatchingDialog,
+    MicrostripDialog,
     MonteCarloDialog,
     NonIdealDialog,
     OptimizeDialog,
@@ -495,6 +496,9 @@ class MainWindow(QMainWindow):
         act_transformer = QAction(tr("Trans&former / balun…"), self)
         act_transformer.triggered.connect(self._run_transformer)
         design_menu.addAction(act_transformer)
+        act_microstrip = QAction(tr("&Microstrip line…"), self)
+        act_microstrip.triggered.connect(self._run_microstrip)
+        design_menu.addAction(act_microstrip)
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
         design_menu.addAction(act_snap)
@@ -969,6 +973,9 @@ class MainWindow(QMainWindow):
 
     def _run_transformer(self) -> None:
         TransformerDialog(self).exec()
+
+    def _run_microstrip(self) -> None:
+        MicrostripDialog(self).exec()
 
     def _run_matching(self) -> None:
         if self._session.circuit is None:

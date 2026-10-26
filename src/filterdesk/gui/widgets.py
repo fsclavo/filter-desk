@@ -36,12 +36,19 @@ from filterdesk.components_std import (
     design_air_coil,
     design_attenuator,
     design_matching,
+    design_microstrip,
     design_toroid,
     design_transformer,
     inductor_resistance_ohm_from_q,
     list_cores,
+    list_substrates,
 )
 from filterdesk.components_std.air_coil import AirCoilDesign, awg_for_diameter_mm
+from filterdesk.components_std.microstrip import (
+    MicrostripError,
+    MicrostripLine,
+    Substrate,
+)
 from filterdesk.components_std.toroid import (
     ToroidCore,
     ToroidDesign,
@@ -1392,3 +1399,98 @@ class TransformerDialog(QDialog):
             f"fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
+
+
+class MicrostripDialog(QDialog):
+    """Microstrip line calculator (Hammerstad-Jensen, first-order losses)."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Microstrip line")
+        self._substrates = list_substrates()
+        self._line_value: MicrostripLine | None = None
+
+        self._substrate = QComboBox()
+        for substrate in self._substrates:
+            self._substrate.addItem(
+                f"{substrate.name} - er {substrate.er:g}, "
+                f"h {substrate.h_mm:g} mm, tanD {substrate.tan_delta:g}"
+            )
+        self._z0 = EngineeringLineEdit()
+        self._z0.setText("50")
+        self._frequency = EngineeringLineEdit()
+        self._frequency.setText("1G")
+        self._length = EngineeringLineEdit()
+        self._length.setText("0")
+
+        self._width = QLabel("-")
+        self._eeff = QLabel("-")
+        self._lambda = QLabel("-")
+        self._loss = QLabel("-")
+        self._length_result = QLabel("-")
+
+        form = QFormLayout(self)
+        form.addRow("Substrate", self._substrate)
+        form.addRow("Z0 (Ohm)", self._z0)
+        form.addRow("Frequency", self._frequency)
+        form.addRow("Length (m, optional)", self._length)
+        form.addRow("Width", self._width)
+        form.addRow("Effective er", self._eeff)
+        form.addRow("Wavelength", self._lambda)
+        form.addRow("Loss", self._loss)
+        form.addRow("Length result", self._length_result)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
+
+        self._substrate.currentIndexChanged.connect(self._recompute)
+        for field in (self._z0, self._frequency, self._length):
+            field.editingFinished.connect(self._recompute)
+        self._recompute()
+
+    def selected_substrate(self) -> Substrate:
+        return self._substrates[self._substrate.currentIndex()]
+
+    def current_line(self) -> MicrostripLine | None:
+        return self._line_value
+
+    def _recompute(self) -> None:
+        try:
+            line = design_microstrip(
+                parse_si(self._z0.text().strip() or "0"),
+                self.selected_substrate(),
+                parse_si(self._frequency.text().strip() or "0"),
+                length_m=parse_si(self._length.text().strip() or "0"),
+            )
+        except (MicrostripError, ValueError):
+            self._line_value = None
+            for label in (
+                self._width,
+                self._eeff,
+                self._lambda,
+                self._loss,
+                self._length_result,
+            ):
+                label.setText("-")
+            return
+        self._line_value = line
+        self._width.setText(f"{line.width_mm:.3f} mm")
+        self._eeff.setText(f"{line.eeff:.4f}")
+        self._lambda.setText(
+            f"{line.wavelength_m * 1000.0:.2f} mm "
+            f"(lambda/4 {line.quarter_wave_m * 1000.0:.2f} mm)"
+        )
+        self._loss.setText(
+            f"{line.loss_db_per_m:.3f} dB/m "
+            f"(cond {line.conductor_loss_db_per_m:.3f}, "
+            f"diel {line.dielectric_loss_db_per_m:.3f})"
+        )
+        if line.length_m:
+            self._length_result.setText(
+                f"{line.electrical_length_deg():.1f} deg, "
+                f"loss {line.loss_db():.4f} dB"
+            )
+        else:
+            self._length_result.setText("-")

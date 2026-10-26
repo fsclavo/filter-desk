@@ -37,17 +37,24 @@ from filterdesk.components_std import (
     ESeries,
     MatchingError,
     MatchingTopology,
+    MicrostripError,
     SnapReport,
     SnapStrategy,
+    StubKind,
+    Substrate,
     ToroidError,
     TransformerError,
     TransformerKind,
     design_air_coil,
     design_attenuator,
     design_matching,
+    design_microstrip,
+    design_quarter_wave_transformer,
+    design_stub,
     design_toroid,
     design_transformer,
     find_core,
+    find_substrate,
     list_cores,
     make_custom_core,
     nonidealize_circuit,
@@ -454,6 +461,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Wire current density (A/mm^2, default 4)",
     )
     tr.add_argument("--json", action="store_true", help="Emit JSON")
+    ms = sub.add_parser("microstrip", help="Microstrip line calculator")
+    ms.add_argument("--z0", required=True, help="Target characteristic impedance")
+    ms.add_argument("--frequency", default="1G", help="Design frequency")
+    ms.add_argument("--length", default="0", help="Physical line length (m)")
+    _add_microstrip_substrate(ms)
+    ms.add_argument("--json", action="store_true", help="Emit JSON")
+
+    qwt = sub.add_parser(
+        "qwt", help="Microstrip quarter-wave transformer calculator"
+    )
+    qwt.add_argument("--z-low", required=True, help="Low impedance")
+    qwt.add_argument("--z-high", required=True, help="High impedance")
+    qwt.add_argument("--frequency", default="1G", help="Center frequency")
+    _add_microstrip_substrate(qwt)
+    qwt.add_argument("--json", action="store_true", help="Emit JSON")
+
+    stub = sub.add_parser("stub", help="Microstrip open/short stub calculator")
+    stub.add_argument("--z0", required=True, help="Stub characteristic impedance")
+    stub.add_argument(
+        "--angle", type=float, default=90.0, help="Electrical angle (deg)"
+    )
+    stub.add_argument("--kind", choices=["open", "short"], default="open")
+    stub.add_argument("--frequency", default="1G", help="Design frequency")
+    _add_microstrip_substrate(stub)
+    stub.add_argument("--json", action="store_true", help="Emit JSON")
+
 
     snap = sub.add_parser(
         "snap",
@@ -1491,6 +1524,40 @@ def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
     return kwargs
 
 
+def _add_microstrip_substrate(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--substrate", default="FR4", help="Built-in substrate")
+    parser.add_argument("--er", type=float, default=None, help="Override er")
+    parser.add_argument("--h", type=float, default=None, help="Substrate height (mm)")
+    parser.add_argument(
+        "--tan-delta", type=float, default=None, help="Override loss tangent"
+    )
+    parser.add_argument(
+        "--t", type=float, default=None, help="Copper thickness (mm)"
+    )
+    parser.add_argument(
+        "--roughness", type=float, default=None, help="Copper roughness (um rms)"
+    )
+
+
+def _microstrip_substrate(args: argparse.Namespace) -> Substrate:
+    base = find_substrate(str(args.substrate))
+    if all(
+        value is None
+        for value in (args.er, args.h, args.tan_delta, args.t, args.roughness)
+    ):
+        return base
+    return Substrate(
+        name=base.name,
+        er=base.er if args.er is None else float(args.er),
+        h_mm=base.h_mm if args.h is None else float(args.h),
+        tan_delta=base.tan_delta if args.tan_delta is None else float(args.tan_delta),
+        t_mm=base.t_mm if args.t is None else float(args.t),
+        roughness_um=base.roughness_um
+        if args.roughness is None
+        else float(args.roughness),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     explicit = argv is not None
     arg_list = list(sys.argv[1:] if argv is None else argv)
@@ -2194,6 +2261,136 @@ def main(argv: list[str] | None = None) -> int:
         for note in tr_design.notes:
             print(f"  note: {note}")
         return 0
+
+    if args.command in {"microstrip", "qwt", "stub"}:
+        try:
+            substrate = _microstrip_substrate(args)
+            frequency = parse_si(str(args.frequency))
+            if args.command == "microstrip":
+                line = design_microstrip(
+                    parse_si(str(args.z0)),
+                    substrate,
+                    frequency,
+                    length_m=parse_si(str(args.length)),
+                )
+                payload = {
+                    "kind": "microstrip",
+                    "substrate": substrate.name,
+                    "er": substrate.er,
+                    "h_mm": substrate.h_mm,
+                    "tan_delta": substrate.tan_delta,
+                    "z0_ohm": line.z0_ohm,
+                    "width_mm": line.width_mm,
+                    "eeff": line.eeff,
+                    "wavelength_m": line.wavelength_m,
+                    "quarter_wave_m": line.quarter_wave_m,
+                    "length_m": line.length_m,
+                    "length_deg": line.electrical_length_deg(),
+                    "conductor_loss_db_per_m": line.conductor_loss_db_per_m,
+                    "dielectric_loss_db_per_m": line.dielectric_loss_db_per_m,
+                    "loss_db_per_m": line.loss_db_per_m,
+                    "loss_db": line.loss_db(),
+                }
+                if args.json:
+                    print(json.dumps(payload, indent=2))
+                    return 0
+                print(
+                    f"Microstrip on {substrate.name} "
+                    f"(er={substrate.er:g}, h={substrate.h_mm:g} mm)"
+                )
+                print(
+                    f"  Z0 = {line.z0_ohm:.2f} Ohm -> W = {line.width_mm:.3f} mm, "
+                    f"eeff = {line.eeff:.3f}"
+                )
+                print(
+                    f"  lambda_g = {line.wavelength_m * 1000.0:.2f} mm, "
+                    f"lambda_g/4 = {line.quarter_wave_m * 1000.0:.2f} mm"
+                )
+                print(
+                    f"  Loss = {line.loss_db_per_m:.3f} dB/m "
+                    f"(conductor {line.conductor_loss_db_per_m:.3f} + "
+                    f"dielectric {line.dielectric_loss_db_per_m:.3f})"
+                )
+                if line.length_m:
+                    print(
+                        f"  Length {line.length_m * 1000.0:.2f} mm = "
+                        f"{line.electrical_length_deg():.1f} deg, "
+                        f"loss {line.loss_db():.4f} dB"
+                    )
+                return 0
+            if args.command == "qwt":
+                qwt_design = design_quarter_wave_transformer(
+                    parse_si(str(args.z_low)),
+                    parse_si(str(args.z_high)),
+                    substrate,
+                    frequency,
+                )
+                payload = {
+                    "kind": "quarter_wave_transformer",
+                    "substrate": substrate.name,
+                    "z_low_ohm": qwt_design.z_low_ohm,
+                    "z_high_ohm": qwt_design.z_high_ohm,
+                    "z0_ohm": qwt_design.z0_ohm,
+                    "width_mm": qwt_design.line.width_mm,
+                    "length_m": qwt_design.line.length_m,
+                    "eeff": qwt_design.line.eeff,
+                    "loss_db": qwt_design.line.loss_db(),
+                }
+                if args.json:
+                    print(json.dumps(payload, indent=2))
+                    return 0
+                print(
+                    f"Quarter-wave transformer {qwt_design.z_low_ohm:g} -> "
+                    f"{qwt_design.z_high_ohm:g} Ohm on {substrate.name}"
+                )
+                print(
+                    f"  Z0 = {qwt_design.z0_ohm:.2f} Ohm -> "
+                    f"W = {qwt_design.line.width_mm:.3f} mm, "
+                    f"length = {qwt_design.line.length_m * 1000.0:.2f} mm"
+                )
+                print(f"  Loss = {qwt_design.line.loss_db():.4f} dB")
+                return 0
+            stub_design = design_stub(
+                parse_si(str(args.z0)),
+                float(args.angle),
+                substrate,
+                frequency,
+                kind=StubKind(str(args.kind)),
+            )
+            zin = stub_design.input_impedance_ohm()
+            payload = {
+                "kind": "stub",
+                "stub_kind": stub_design.kind.value,
+                "substrate": substrate.name,
+                "z0_ohm": stub_design.line.z0_ohm,
+                "angle_deg": stub_design.angle_deg,
+                "width_mm": stub_design.line.width_mm,
+                "length_m": stub_design.line.length_m,
+                "eeff": stub_design.line.eeff,
+                "zin_real_ohm": zin.real,
+                "zin_imag_ohm": zin.imag,
+                "loss_db": stub_design.line.loss_db(),
+            }
+            if args.json:
+                print(json.dumps(payload, indent=2))
+                return 0
+            print(
+                f"{stub_design.kind.value.capitalize()} stub "
+                f"{stub_design.angle_deg:g} deg, Z0 = {stub_design.line.z0_ohm:.2f} "
+                f"Ohm on {substrate.name}"
+            )
+            print(
+                f"  W = {stub_design.line.width_mm:.3f} mm, "
+                f"length = {stub_design.line.length_m * 1000.0:.2f} mm"
+            )
+            print(
+                f"  Zin = {zin.real:.3f} "
+                f"{zin.imag:+.3f}j Ohm, loss = {stub_design.line.loss_db():.4f} dB"
+            )
+            return 0
+        except (MicrostripError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
 
     if args.command == "attenuator":
         try:
