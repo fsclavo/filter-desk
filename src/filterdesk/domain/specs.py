@@ -246,7 +246,7 @@ def default_cutoff_definition(family: ApproximationFamily) -> CutoffDefinition:
 
 
 def geometric_mean_z0(z_source_ohm: float, z_load_ohm: float) -> float:
-    """Reactive scaling impedance (ADR-011)."""
+    """Legacy geometric-mean impedance (ADR-011; superseded by ADR-017)."""
     return float((z_source_ohm * z_load_ohm) ** 0.5)
 
 

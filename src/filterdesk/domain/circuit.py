@@ -362,6 +362,17 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
             rows.append(
                 PhysicalComponent(el.id, el.id, role, "resistor", el.value_ohm, "Ohm")
             )
+    if circuit.output_transformer_ratio != 1.0:
+        rows.append(
+            PhysicalComponent(
+                "T1",
+                "T1",
+                "series",
+                "transformer",
+                circuit.output_transformer_ratio,
+                "",
+            )
+        )
     return rows
 
 
@@ -384,6 +395,13 @@ class Circuit:
     ground: str = "gnd"
     topology_id: TopologyId | None = None
     meta: dict[str, object] = field(default_factory=dict)
+    #: Ideal output transformer turns ratio Np/Ns (ladder side : load side).
+    #: ``Zin_primary = ratio**2 * Z_load``; 1.0 means no transformer.
+    output_transformer_ratio: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.output_transformer_ratio <= 0.0:
+            raise ValueError("output_transformer_ratio must be > 0")
 
     def ladder_elements(self) -> list[Element]:
         """Elements in ladder order (excludes terminations if ever present)."""
@@ -423,6 +441,16 @@ class Circuit:
             else:
                 row["value_Ohm"] = el.value_ohm
             rows.append(row)
+        if self.output_transformer_ratio != 1.0:
+            rows.append(
+                {
+                    "ref": "T1",
+                    "role": "series",
+                    "type": "transformer",
+                    "g": None,
+                    "turns_ratio": self.output_transformer_ratio,
+                }
+            )
         return rows
 
 

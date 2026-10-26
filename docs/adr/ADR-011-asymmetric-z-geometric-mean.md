@@ -1,5 +1,8 @@
 # ADR-011: Asymmetric source/load impedance
 
+> **Status:** Superseded for realization by ADR-017 (exact output transformer).
+> The analysis formulas for unequal ports remain valid.
+
 - **Status:** Accepted
 - **Date:** 2026-09-30
 - **Phase:** 4

@@ -212,9 +212,17 @@ def build_sheet_rows(
                 kind=comp.kind,
                 value=comp.value,
                 unit=comp.unit,
-                value_text=format_engineering(comp.value, comp.unit, digits=6),
+                value_text=(
+                    f"{comp.value:.4g}:1"
+                    if comp.kind == "transformer"
+                    else format_engineering(comp.value, comp.unit, digits=6)
+                ),
                 tolerance_pct=tol.get(comp.ref),
-                parasitic=_parasitic_text(comp),
+                parasitic=(
+                    "ideal"
+                    if comp.kind == "transformer"
+                    else _parasitic_text(comp)
+                ),
                 v_peak_v=entry.v_peak_v if entry is not None else None,
                 i_peak_a=entry.i_peak_a if entry is not None else None,
                 series=series_tag,

@@ -597,6 +597,9 @@ _ES.update(
             "Ajustado a {series} ({strategy}) — cambio máx. {delta:.2f}%"
         ),
         "Synthesize a circuit first.": "Sintetice un circuito primero.",
+        "transformer": "transformador",
+        "T1 {ratio}:1 (ideal)": "T1 {ratio}:1 (ideal)",
+        "ideal": "ideal",
         "Check spec &compliance…": "Verificar &cumplimiento…",
         "Spec compliance": "Cumplimiento de especificación",
         "Spec compliance: {result}": "Cumplimiento de especificación: {result}",

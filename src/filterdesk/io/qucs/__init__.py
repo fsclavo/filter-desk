@@ -83,6 +83,10 @@ def qucs_schematic(
     """Return a Qucs ``.sch`` schematic for ``circuit`` (best-effort)."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
+    if circuit.output_transformer_ratio != 1.0:
+        raise SpiceExportError(
+            "ideal output transformer export is not implemented yet"
+        )
     del title, z0_ohm  # reserved for a future simulation block; API symmetry
 
     b = _Builder()

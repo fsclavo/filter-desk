@@ -148,6 +148,7 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
         },
         "elements": elements,
         "meta": circuit.meta,
+        "output_transformer_ratio": circuit.output_transformer_ratio,
     }
 
 
@@ -303,6 +304,7 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
         ground=str(data.get("ground", "gnd")),
         topology_id=topology,
         meta=dict(data.get("meta") or {}),
+        output_transformer_ratio=float(data.get("output_transformer_ratio", 1.0)),
     )
 
 

@@ -267,6 +267,18 @@ class SchematicPanel(QWidget):
         load.setPos(x + 52, y - 78)
         self._scene.addItem(load)
 
+        if circuit.output_transformer_ratio != 1.0:
+            transformer = QGraphicsSimpleTextItem(
+                tr(
+                    "T1 {ratio}:1 (ideal)",
+                    ratio=f"{circuit.output_transformer_ratio:.4g}",
+                )
+            )
+            transformer.setBrush(brush)
+            transformer.setFont(label_font)
+            transformer.setPos(x + 52, y - 100)
+            self._scene.addItem(transformer)
+
         bounds = self._scene.itemsBoundingRect()
         self._scene.setSceneRect(bounds.adjusted(-30, -24, 30, 24))
         self._fit_view()

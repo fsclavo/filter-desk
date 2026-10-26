@@ -126,9 +126,10 @@ labels it explicitly:
 frequency** and a **bandwidth**; internally the geometric center is used, so the
 low/high edges satisfy `f_low · f_high = f_center²`.
 
-**Impedances.** Source and load impedances may differ. FilterDesk scales the
-reactive elements by the geometric mean `√(Zs · Zl)` (see
-[Known limitations](#15-known-limitations)).
+**Impedances.** Source and load impedances may differ. The ladder is designed
+for `Zs` and an **ideal output transformer** `T1` (`n = √(Zs/Zl)`) matches the
+load, so the response is the exact equal-termination prototype response. See
+[Known limitations](#15-known-limitations) for exports and even-order elliptic.
 
 **Non-ideal parts.** Ideal inductors/capacitors can be converted to *non-ideal*
 models that carry DCR/Q, parasitic parallel capacitance, ESR, and ESL.
@@ -755,13 +756,15 @@ happens in the background and reports progress in the status bar.
 
 ## 15. Known limitations
 
-- **Lumped-element ladders only.** Transmission lines, stubs, impedance
-  transformers, and coupled inductors are not implemented.
-- **Asymmetric impedances** are handled by geometric-mean scaling
-  (`√(Zs·Zl)`), an approximation; strongly unequal ports introduce error.
-- **Even-order elliptic** is rejected (it needs a transformer or unequal
-  terminations); **even-order Chebyshev I** uses a modified equal-termination
-  prototype (see §12).
+- **Lumped-element ladders only.** Transmission lines, stubs, and coupled
+  inductors are not implemented. Unequal ports use an ideal **output**
+  transformer; general mid-ladder transformers are not.
+- **Transformer exports**: the ideal `T1` is included in analysis, compliance,
+  project files and the BOM, but SPICE/LTspice/Qucs export raises a clear error
+  when the ratio differs from 1.0 (not implemented yet).
+- **Even-order elliptic** is rejected (it needs an unequal-R Cauer synthesis);
+  **even-order Chebyshev I** uses a modified equal-termination prototype (see
+  §12).
 - **Order caps** apply to some families (Bessel/Gaussian 1–10, Legendre 2–9).
 - **Real-inductor model is approximate**: `dc_skin` is a simple `sqrt(f)` law, DC
   bias uses a core-agnostic `1/(1+(I/Isat)²)` derating, and air-core coils do not

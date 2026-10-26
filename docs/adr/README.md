@@ -18,3 +18,5 @@
 | [014](ADR-014-p1-debt-closure.md) | P1 debt closure (skrf unequal Z, order estimate, PlotBackend) | Accepted |
 | [015](ADR-015-cross-cutting-decisions.md) | Cross-cutting decisions (layers, file extension, pytest-qt) | Accepted |
 | [016](ADR-016-inductor-model.md) | Real inductor model (Q(f), SRF, DC bias, winding) | Accepted |
+
+- [ADR-017](ADR-017-exact-unequal-terminations.md) — exact unequal terminations via output transformer

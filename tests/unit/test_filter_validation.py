@@ -348,7 +348,7 @@ def test_order_estimation_matches_scipy(
     assert ours == int(ref)
 
 
-def test_asymmetric_z_element_scaling_uses_geometric_mean() -> None:
+def test_asymmetric_z_uses_exact_output_transformer() -> None:
     spec_eq = FilterSpec(
         family=Fam.BUTTERWORTH,
         response=Resp.LOW_PASS,
@@ -371,14 +371,19 @@ def test_asymmetric_z_element_scaling_uses_geometric_mean() -> None:
     )
     eq = synthesize(spec_eq).circuit
     asym = synthesize(spec_asym).circuit
-    z0_eq = math.sqrt(50.0 * 50.0)
-    z0_asym = math.sqrt(50.0 * 75.0)
+    # The ladder is designed for the source impedance; only the output
+    # transformer changes, so element values are identical.
+    assert asym.output_transformer_ratio == pytest.approx(
+        math.sqrt(50.0 / 75.0)
+    )
     for a, b in zip(eq.elements, asym.elements, strict=True):
-        ratio = z0_asym / z0_eq
+        assert type(a) is type(b)
         if hasattr(a, "value_h") and hasattr(b, "value_h"):
-            assert b.value_h == pytest.approx(a.value_h * ratio, rel=1e-12)
+            assert b.value_h == pytest.approx(a.value_h, rel=1e-12)
         if hasattr(a, "value_f") and hasattr(b, "value_f"):
-            assert b.value_f == pytest.approx(a.value_f / ratio, rel=1e-12)
+            assert b.value_f == pytest.approx(a.value_f, rel=1e-12)
+    f = np.logspace(np.log10(1e4), np.log10(1e7), 64)
+    assert np.max(np.abs(np.abs(_s21(asym, f)) - np.abs(_s21(eq, f)))) < 1e-12
 
 
 def test_synthesis_note_only_for_even_chebyshev1() -> None:

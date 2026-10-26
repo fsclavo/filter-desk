@@ -19,7 +19,7 @@ from filterdesk.domain.circuit import (
 )
 from filterdesk.domain.enums import ElementRole, FilterResponse, TopologyId
 from filterdesk.domain.prototype import NormalizedArm, Prototype
-from filterdesk.domain.specs import FilterSpec, SpecValidationError, geometric_mean_z0
+from filterdesk.domain.specs import FilterSpec, SpecValidationError
 from filterdesk.synthesis.cauer_extract import dual_arms, lp_arms_to_hp
 
 
@@ -335,7 +335,15 @@ def realize_ladder(spec: FilterSpec, prototype: Prototype) -> Circuit:
     # Cauer/image prototypes encode structural order in arms; FilterSpec.order is
     # the family parameter (sections / approx order), which may differ from arm count.
 
-    z0 = geometric_mean_z0(spec.z_source_ohm, spec.z_load_ohm)
+    # Design the ladder for the source impedance and transform the actual load
+    # at the output with an ideal transformer. This is exact for equal-R
+    # prototypes (versus the old geometric-mean approximation).
+    z0 = spec.z_source_ohm
+    transformer_ratio = (
+        1.0
+        if abs(z0 - spec.z_load_ohm) <= 1e-12 * max(z0, spec.z_load_ohm)
+        else math.sqrt(z0 / spec.z_load_ohm)
+    )
     is_resonator = spec.response in (
         FilterResponse.BAND_PASS,
         FilterResponse.BAND_STOP,
@@ -349,7 +357,9 @@ def realize_ladder(spec: FilterSpec, prototype: Prototype) -> Circuit:
         bandwidth = 2.0 * math.pi * spec.bandwidth_hz
 
     if prototype.arms is not None:
-        return _realize_from_arms(spec, prototype, z0, omega_c, omega0, bandwidth)
+        return _realize_from_arms(
+            spec, prototype, z0, omega_c, omega0, bandwidth, transformer_ratio
+        )
 
     kinds = arm_kinds_for_topology(spec.topology_id, spec.order)
     section_g = prototype.section_g
@@ -425,7 +435,9 @@ def realize_ladder(spec: FilterSpec, prototype: Prototype) -> Circuit:
                 )
 
     out_node = nodes_path[-1] if num_series > 0 else current_node
-    return _circuit(spec, elements, out_node, z0, is_resonator)
+    return _circuit(
+        spec, elements, out_node, z0, is_resonator, transformer_ratio
+    )
 
 
 def _realize_from_arms(
@@ -435,6 +447,7 @@ def _realize_from_arms(
     omega_c: float,
     omega0: float,
     bandwidth: float,
+    transformer_ratio: float = 1.0,
 ) -> Circuit:
     arms = _prepare_cauer_arms(spec, prototype)
     is_resonator = spec.response in (
@@ -490,7 +503,9 @@ def _realize_from_arms(
         )
 
     out_node = nodes_path[-1] if num_series > 0 else current_node
-    return _circuit(spec, elements, out_node, z0, is_resonator)
+    return _circuit(
+        spec, elements, out_node, z0, is_resonator, transformer_ratio
+    )
 
 
 def _circuit(
@@ -499,6 +514,7 @@ def _circuit(
     out_node: str,
     z0: float,
     is_resonator: bool,
+    transformer_ratio: float = 1.0,
 ) -> Circuit:
     meta: dict[str, object] = {
         "family": spec.family.value,
@@ -506,6 +522,7 @@ def _circuit(
         "order": spec.order,
         "cutoff_definition": spec.cutoff_definition.value,
         "z0_scale_ohm": z0,
+        "output_transformer_ratio": transformer_ratio,
     }
     if is_resonator:
         meta["f_center_hz"] = spec.f_center_hz
@@ -524,4 +541,5 @@ def _circuit(
         ground="gnd",
         topology_id=spec.topology_id,
         meta=meta,
+        output_transformer_ratio=transformer_ratio,
     )

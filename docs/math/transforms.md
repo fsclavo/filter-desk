@@ -86,7 +86,7 @@ Ports retain \(Z_S\) and \(Z_L\). See ADR-011 for limitations.
 
 ## 5. Implementation checklist
 
-- [x] `synthesis/realize/ladder.py` LP/HP/BP/BS + geometric-mean Z
+- [x] `synthesis/realize/ladder.py` LP/HP/BP/BS + exact output transformer (ADR-017)
 - [x] Resonator elements `IdealSeriesLC` / `IdealParallelLC`
-- [x] Unit / golden tests for BP/BS and asymmetric Z
+- [x] Unit / golden tests for BP/BS and asymmetric Z (exact transformer)
 - [x] ADR-010 / ADR-011

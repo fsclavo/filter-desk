@@ -25,6 +25,7 @@ from filterdesk.domain.circuit import (
     NonIdealCapacitor,
     NonIdealInductor,
 )
+from filterdesk.domain.enums import ElementRole
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import role_label, tr
 
@@ -175,6 +176,14 @@ class ComponentTablePanel(QWidget):
                 vpk,
                 ipk,
             )
+        if circuit.output_transformer_ratio != 1.0:
+            self._add_row(
+                "T1",
+                role_label(ElementRole.SERIES),
+                tr("transformer"),
+                f"{circuit.output_transformer_ratio:.4g}:1",
+                tr("ideal"),
+            )
         self._updating = False
         self._block_sel = False
 
@@ -247,6 +256,8 @@ class ComponentTablePanel(QWidget):
         val_item = self._table.item(row, 3)
         type_item = self._table.item(row, 2)
         if ref_item is None or val_item is None or type_item is None:
+            return
+        if ref_item.text() == "T1":
             return
         try:
             value = parse_si(val_item.text())

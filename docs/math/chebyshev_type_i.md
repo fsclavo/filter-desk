@@ -140,8 +140,7 @@ per-arm rules.
   but the reflection zero at \(\Omega=0\) means the network is determined numerically
   (continued fraction below \(n\!\approx\!12\), least-squares fit above) rather than
   by closed-form \(g\)-values.
-- Unequal terminations for even orders still use the geometric-mean \(Z_0=\sqrt{Z_S Z_L}\)
-  approximation (ADR-011); no transformer synthesis (deferred).
+- Unequal ports use the exact output transformer (ADR-017). Even-order Chebyshev I still uses the modified equal-termination network, so its stopband differs from classical tables.
 - Do **not** use SciPy digital `cheby1` as a substitute for analog prototype g-values without proving equivalence of normalization.
 
 ## 9. Validation strategy

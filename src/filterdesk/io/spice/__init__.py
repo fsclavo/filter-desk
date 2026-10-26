@@ -111,6 +111,10 @@ def spice_netlist(
     """Return an LTspice-compatible SPICE netlist for ``circuit``."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
+    if circuit.output_transformer_ratio != 1.0:
+        raise SpiceExportError(
+            "ideal output transformer export is not implemented yet"
+        )
     nodes = _Nodes(circuit)
     lines: list[str] = [f"* {title}"]
     in_net = nodes.net(circuit.port_in.node)

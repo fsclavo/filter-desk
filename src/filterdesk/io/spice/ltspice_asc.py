@@ -72,6 +72,10 @@ def ltspice_asc(
     """Return an LTspice ``.asc`` schematic for ``circuit``."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
+    if circuit.output_transformer_ratio != 1.0:
+        raise SpiceExportError(
+            "ideal output transformer export is not implemented yet"
+        )
 
     def net(name: str) -> str:
         return "0" if name == circuit.ground else name

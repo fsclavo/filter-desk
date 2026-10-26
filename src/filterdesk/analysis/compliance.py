@@ -19,6 +19,7 @@ from filterdesk.analysis.adapters.abcd_ladder import (
     _element_abcd,
     abcd_to_s,
     cascade_abcd,
+    transformer_abcd,
 )
 from filterdesk.analysis.derived import mag_db
 from filterdesk.analysis.metrics import band_edges
@@ -65,6 +66,10 @@ def _s21_db_at(circuit: Circuit, frequencies: np.ndarray) -> np.ndarray:
     """Exact |S21| (dB) at arbitrary frequencies (no grid interpolation)."""
     omega = 2.0 * math.pi * np.asarray(frequencies, dtype=float)
     abcd = cascade_abcd([_element_abcd(el, omega) for el in circuit.elements])
+    if circuit.output_transformer_ratio != 1.0:
+        abcd = abcd @ transformer_abcd(
+            circuit.output_transformer_ratio, omega.size
+        )
     s21 = abcd_to_s(
         abcd,
         circuit.port_in.impedance_ohm,
@@ -163,8 +168,9 @@ def check_spec_compliance(
 
     if spec.z_source_ohm != spec.z_load_ohm:
         notes.append(
-            "Unequal terminations use geometric-mean scaling (ADR-011); the "
-            "response is not a simultaneous conjugate match at both ports."
+            "Unequal terminations use an ideal output transformer (ladder "
+            "designed for the source impedance); the response matches the "
+            "equal-termination prototype exactly."
         )
     if spec.family == ApproximationFamily.CHEBYSHEV_TYPE_I and spec.order % 2 == 0:
         notes.append(

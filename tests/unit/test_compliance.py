@@ -125,7 +125,7 @@ def test_notes_for_documented_approximations() -> None:
 
     asym = _spec(Fam.BUTTERWORTH, 3, Resp.LOW_PASS, zl=75.0)
     report = check_spec_compliance(asym, synthesize(asym).circuit, points=1200)
-    assert any("geometric-mean" in note for note in report.notes)
+    assert any("ideal output transformer" in note for note in report.notes)
 
     image = _spec(Fam.CONSTANT_K, 3, Resp.LOW_PASS)
     report = check_spec_compliance(image, synthesize(image).circuit, points=1200)

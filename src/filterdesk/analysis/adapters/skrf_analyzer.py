@@ -9,6 +9,7 @@ from filterdesk.analysis.adapters.abcd_ladder import (
     AnalysisError,
     _element_abcd,
     abcd_to_s,
+    transformer_abcd,
 )
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import Circuit
@@ -45,6 +46,19 @@ class ScikitRFAnalyzer:
             s[:, 1, 1] = s22
             networks.append(
                 rf.Network(frequency=frequency, s=s, z0=z0_ref, name=el.id)
+            )
+
+        ratio = circuit.output_transformer_ratio
+        if ratio != 1.0:
+            t_abcd = transformer_abcd(ratio, len(freq_hz))
+            s11, s21, s12, s22 = abcd_to_s(t_abcd, z0_ref, z0_ref)
+            s_t = np.zeros((len(freq_hz), 2, 2), dtype=np.complex128)
+            s_t[:, 0, 0] = s11
+            s_t[:, 1, 0] = s21
+            s_t[:, 0, 1] = s12
+            s_t[:, 1, 1] = s22
+            networks.append(
+                rf.Network(frequency=frequency, s=s_t, z0=z0_ref, name="T1")
             )
 
         ntw = networks[0]

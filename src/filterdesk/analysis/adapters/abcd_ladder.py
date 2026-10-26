@@ -58,6 +58,20 @@ def _y_parallel_lc(
     return 1.0 / (1j * omega * l_h) + 1j * omega * c_f
 
 
+def transformer_abcd(
+    ratio: float, n_points: int
+) -> NDArray[np.complexfloating]:
+    """Ideal transformer ABCD, primary (ladder) : secondary (load) = ratio:1."""
+    if ratio <= 0.0:
+        raise AnalysisError("transformer ratio must be > 0")
+    a = np.zeros((n_points, 2, 2), dtype=np.complex128)
+    a[:, 0, 0] = ratio
+    a[:, 0, 1] = 0.0
+    a[:, 1, 0] = 0.0
+    a[:, 1, 1] = 1.0 / ratio
+    return a
+
+
 def _z_nonideal_inductor(
     omega: NDArray[np.floating],
     el: NonIdealInductor,
@@ -226,6 +240,9 @@ class LadderABCDAnalyzer:
         omega = 2.0 * np.pi * freq
         sections = [_element_abcd(el, omega) for el in circuit.elements]
         abcd = cascade_abcd(sections)
+        ratio = circuit.output_transformer_ratio
+        if ratio != 1.0:
+            abcd = abcd @ transformer_abcd(ratio, freq.size)
         zs = circuit.port_in.impedance_ohm
         zl = circuit.port_out.impedance_ohm
         s11, s21, s12, s22 = abcd_to_s(abcd, zs, zl)

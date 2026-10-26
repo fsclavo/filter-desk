@@ -54,7 +54,10 @@ def test_asymmetric_z_accepted() -> None:
     result = synthesize(spec)
     assert result.circuit.port_in.impedance_ohm == 50.0
     assert result.circuit.port_out.impedance_ohm == 75.0
-    assert abs(float(result.circuit.meta["z0_scale_ohm"]) - math.sqrt(50 * 75)) < 1e-9
+    assert float(result.circuit.meta["z0_scale_ohm"]) == pytest.approx(50.0)
+    assert result.circuit.output_transformer_ratio == pytest.approx(
+        math.sqrt(50.0 / 75.0)
+    )
 
 
 def test_asymmetric_lp_passband_near_0db() -> None:
