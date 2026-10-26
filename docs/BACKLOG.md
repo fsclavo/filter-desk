@@ -9,7 +9,7 @@ count or release changes.
 **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.13.0 planning.
 
-**Verification:** local suite **923 passed, 1 skipped**; coverage **83.03 %**.
+**Verification:** local suite **924 passed, 1 skipped**; coverage **83.07 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40408577611
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -72,8 +72,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ### P0 — release quality
 
-- [ ] **Clean-machine package acceptance:** AppImage and Windows installer,
-      including GUI launch, synthesize, Touchstone import and BOM export. (S)
+- [x] **Clean-machine package acceptance:** AppImage and Windows installer run a
+      headless `--self-test` on clean CI runners (GUI construction, synthesize,
+      Touchstone import/export, BOM, project round-trip). Physical-desktop
+      visual check remains the only manual residue. (S)
 - [ ] **LTspice/Qucs external validation:** open representative netlists/schematics
       and confirm syntax, transformer ratio orientation and node mapping. (M)
 - [ ] **VNA holdout (hardware):** run the two real captures through the new
@@ -88,8 +90,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       impedance in the differential 2-port and validated TLT export. (L)
 - [ ] **Distributed netlist:** integrate microstrip/stub elements into the
       domain, ABCD/skrf, BOM and distributed synthesis. (L)
-- [ ] **Installed-package regression:** automate the release checklist where the
-      platform permits (AppImage headless, Windows smoke). (M)
+- [x] **Installed-package regression:** CI now exercises Linux bundle/AppImage
+      and the installed Windows app headlessly; see `docs/packaging.md`. (M)
 
 ### P2 — data / ergonomics
 

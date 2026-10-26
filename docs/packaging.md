@@ -92,6 +92,34 @@ needs `dist/FilterDesk/` to exist first. The desktop entry and icon live in
 `packaging/appimage/`. Verified locally: the produced AppImage runs `--version`
 and launches the GUI.
 
+## Package acceptance
+
+Every packaged artifact supports a headless acceptance command:
+
+```bash
+QT_QPA_PLATFORM=offscreen ./FilterDesk --self-test
+```
+
+It constructs the Qt main window, synthesizes and analyzes a reference filter,
+writes and re-reads a Touchstone `.s2p`, exports a BOM CSV, and round-trips a
+native project in a temporary directory. The command exits non-zero on failure.
+
+CI runs the acceptance pass on clean GitHub runners:
+
+- **`package-acceptance-linux`** builds the onedir bundle, runs `--self-test`
+  with a temporary `HOME`/XDG tree, builds the AppImage, and repeats the test via
+  `--appimage-extract-and-run` (no FUSE required).
+- **`package-acceptance-windows`** builds the bundle, runs `--self-test`, builds
+  the NSIS installer, installs it silently, checks the installed executable,
+  uninstaller and desktop shortcut, runs the installed app's `--self-test`, and
+  uninstalls it again.
+
+The jobs run for `workflow_dispatch` and pushes to `main`; release tags still use
+the normal `release.yml` jobs. This covers startup, GUI construction, synthesis,
+Touchstone import/export and BOM export. A final visual check of the installer
+shortcut and main window on a physical Windows desktop remains a manual release
+step.
+
 ## CI quality gates
 
 `.github/workflows/test.yml` runs on every push / pull request:

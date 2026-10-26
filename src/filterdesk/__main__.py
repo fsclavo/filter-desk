@@ -165,6 +165,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="version",
         version=f"filterdesk {__version__}",
     )
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     sub = parser.add_subparsers(dest="command")
 
     syn = sub.add_parser(
@@ -400,9 +405,7 @@ def build_parser() -> argparse.ArgumentParser:
     tor.add_argument("--id", default=None, help="Custom core inner diameter (mm)")
     tor.add_argument("--height", default=None, help="Custom core height (mm)")
     tor.add_argument("--bsat", type=float, default=None, help="Custom core Bsat (T)")
-    tor.add_argument(
-        "--inductance", default=None, help="Target inductance, e.g. 1u"
-    )
+    tor.add_argument("--inductance", default=None, help="Target inductance, e.g. 1u")
     tor.add_argument(
         "--turns", type=int, default=None, help="Turn count (instead of a target L)"
     )
@@ -419,15 +422,11 @@ def build_parser() -> argparse.ArgumentParser:
         "air-coil",
         help="Single-layer air-core solenoid calculator",
     )
-    air.add_argument(
-        "--inductance", default=None, help="Target inductance, e.g. 1u"
-    )
+    air.add_argument("--inductance", default=None, help="Target inductance, e.g. 1u")
     air.add_argument(
         "--turns", type=int, default=None, help="Turn count (instead of a target L)"
     )
-    air.add_argument(
-        "--diameter", required=True, help="Coil diameter (mm)"
-    )
+    air.add_argument("--diameter", required=True, help="Coil diameter (mm)")
     wire = air.add_mutually_exclusive_group()
     wire.add_argument("--awg", type=int, default=None, help="Wire gauge (AWG 8-40)")
     wire.add_argument(
@@ -462,42 +461,42 @@ def build_parser() -> argparse.ArgumentParser:
         help="Autotransformer (tapped) or isolated two-winding",
     )
     tr.add_argument(
-        "--z-low", "--z-unbalanced", dest="z_low", required=True,
+        "--z-low",
+        "--z-unbalanced",
+        dest="z_low",
+        required=True,
         help="Low-side / unbalanced impedance (ohm)",
     )
     tr.add_argument(
-        "--z-high", "--z-balanced", dest="z_high", required=True,
+        "--z-high",
+        "--z-balanced",
+        dest="z_high",
+        required=True,
         help="High-side / balanced impedance (ohm)",
     )
     tr.add_argument("--core", required=True, help="Built-in core name, e.g. FT50-43")
     tr.add_argument(
-        "--frequency", "--f-min", dest="frequency", default="1M",
+        "--frequency",
+        "--f-min",
+        dest="frequency",
+        default="1M",
         help="Lowest frequency, e.g. 1M",
     )
     tr.add_argument(
-        "--f-max", default=None,
+        "--f-max",
+        default=None,
         help="Highest frequency; default: 10 x f_min",
     )
     tr.add_argument("--power", type=float, default=10.0, help="Power (W)")
-    tr.add_argument(
-        "--coupling", type=float, default=0.98, help="Winding coupling k"
-    )
-    tr.add_argument(
-        "--tan-delta", type=float, default=0.02, help="Core loss tangent"
-    )
+    tr.add_argument("--coupling", type=float, default=0.98, help="Winding coupling k")
+    tr.add_argument("--tan-delta", type=float, default=0.02, help="Core loss tangent")
     tr.add_argument(
         "--winding-c", type=float, default=0.0, help="Winding capacitance (F)"
     )
-    tr.add_argument(
-        "--line-z0", type=float, default=None, help="TLT line Z0 (ohm)"
-    )
-    tr.add_argument(
-        "--line-length", type=float, default=None, help="TLT length (m)"
-    )
+    tr.add_argument("--line-z0", type=float, default=None, help="TLT line Z0 (ohm)")
+    tr.add_argument("--line-length", type=float, default=None, help="TLT length (m)")
     tr.add_argument("--vf", type=float, default=0.7, help="TLT velocity factor")
-    tr.add_argument(
-        "--line-loss", type=float, default=0.0, help="TLT loss (dB/m)"
-    )
+    tr.add_argument("--line-loss", type=float, default=0.0, help="TLT loss (dB/m)")
     tr.add_argument(
         "--reactance-factor",
         type=float,
@@ -524,9 +523,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_microstrip_substrate(ms)
     ms.add_argument("--json", action="store_true", help="Emit JSON")
 
-    qwt = sub.add_parser(
-        "qwt", help="Microstrip quarter-wave transformer calculator"
-    )
+    qwt = sub.add_parser("qwt", help="Microstrip quarter-wave transformer calculator")
     qwt.add_argument("--z-low", required=True, help="Low impedance")
     qwt.add_argument("--z-high", required=True, help="High impedance")
     qwt.add_argument("--frequency", default="1G", help="Center frequency")
@@ -542,7 +539,6 @@ def build_parser() -> argparse.ArgumentParser:
     stub.add_argument("--frequency", default="1G", help="Design frequency")
     _add_microstrip_substrate(stub)
     stub.add_argument("--json", action="store_true", help="Emit JSON")
-
 
     snap = sub.add_parser(
         "snap",
@@ -937,9 +933,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=1000.0,
         help="Maximum absolute reference-plane delay for phase fitting (ns)",
     )
-    tune.add_argument(
-        "--json", action="store_true", help="Emit machine-readable JSON"
-    )
+    tune.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     return parser
 
 
@@ -1133,10 +1127,7 @@ def _print_compliance(report: ComplianceResult) -> None:
     if report.passband_ripple_db is not None:
         print(f"  passband ripple: {report.passband_ripple_db:.3f} dB")
     if report.stopband_attenuation_db is not None:
-        print(
-            "  stopband attenuation: "
-            f"{report.stopband_attenuation_db:.2f} dB"
-        )
+        print(f"  stopband attenuation: {report.stopband_attenuation_db:.2f} dB")
     if report.edge_loss_db:
         print(
             "  edge loss: "
@@ -1191,11 +1182,7 @@ def _synth_to_json(result: SynthesisResult) -> dict[str, object]:
         proto_obj["arms"] = [
             {
                 "kind": a.kind,
-                **(
-                    {"value": a.value}
-                    if a.value is not None
-                    else {"L": a.L, "C": a.C}
-                ),
+                **({"value": a.value} if a.value is not None else {"L": a.L, "C": a.C}),
             }
             for a in result.prototype.arms
         ]
@@ -1436,9 +1423,7 @@ def _optimize_to_json(result: OptimizationResult) -> dict[str, object]:
 
 
 def _print_sensitivity_human(report: SensitivityReport) -> None:
-    print(
-        f"Component sensitivity (+1% step, backend {report.backend}):"
-    )
+    print(f"Component sensitivity (+1% step, backend {report.backend}):")
     print(
         f"  {'Ref':8s} {'Value':>12s} {'d|S21|dB/%':>12s} {'RMS':>9s} "
         f"{'Worst f':>11s}  Dir"
@@ -1498,9 +1483,7 @@ def _sweep_row_json(row: DesignSweepRow) -> dict[str, object]:
             metrics.stopband_attenuation_db if metrics else None
         ),
         "min_return_loss_db": metrics.min_return_loss_db if metrics else None,
-        "group_delay_ripple_s": (
-            metrics.group_delay_ripple_s if metrics else None
-        ),
+        "group_delay_ripple_s": (metrics.group_delay_ripple_s if metrics else None),
         "note": row.note,
     }
 
@@ -1570,9 +1553,7 @@ def _write_sweep_csv(rows: list[DesignSweepRow], path: Path) -> None:
                         None if metrics is None else metrics.passband_ripple_db
                     ),
                     _fmt_metric(
-                        None
-                        if metrics is None
-                        else metrics.stopband_attenuation_db
+                        None if metrics is None else metrics.stopband_attenuation_db
                     ),
                     _fmt_metric(
                         None if metrics is None else metrics.min_return_loss_db
@@ -1601,16 +1582,12 @@ def _objectives_from_cli(entries: list[str]) -> list[Objective]:
                 )
             elif kind == "returnloss" and len(parts) == 4:
                 out.append(
-                    ReturnLoss(
-                        parse_si(parts[1]), parse_si(parts[2]), float(parts[3])
-                    )
+                    ReturnLoss(parse_si(parts[1]), parse_si(parts[2]), float(parts[3]))
                 )
             else:
                 raise SpecValidationError(f"invalid --objective {entry!r}")
         except (ValueError, IndexError) as exc:
-            raise SpecValidationError(
-                f"invalid --objective {entry!r}: {exc}"
-            ) from exc
+            raise SpecValidationError(f"invalid --objective {entry!r}: {exc}") from exc
     return out
 
 
@@ -1643,9 +1620,7 @@ def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
     if getattr(args, "inductor_srf", None) is not None:
         kwargs["inductor_srf_hz"] = parse_si(str(args.inductor_srf))
     if getattr(args, "inductor_dc_current", None) is not None:
-        kwargs["inductor_dc_current_a"] = parse_si(
-            str(args.inductor_dc_current)
-        )
+        kwargs["inductor_dc_current_a"] = parse_si(str(args.inductor_dc_current))
     if getattr(args, "inductor_i_sat", None) is not None:
         kwargs["inductor_i_sat_a"] = parse_si(str(args.inductor_i_sat))
     return kwargs
@@ -1658,9 +1633,7 @@ def _add_microstrip_substrate(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--tan-delta", type=float, default=None, help="Override loss tangent"
     )
-    parser.add_argument(
-        "--t", type=float, default=None, help="Copper thickness (mm)"
-    )
+    parser.add_argument("--t", type=float, default=None, help="Copper thickness (mm)")
     parser.add_argument(
         "--roughness", type=float, default=None, help="Copper roughness (um rms)"
     )
@@ -1691,6 +1664,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(arg_list)
 
+    if args.self_test:
+        from filterdesk.package_self_test import run_package_self_test
+
+        return run_package_self_test()
+
     if args.command == "synthesize":
         try:
             spec = _spec_from_cli(args)
@@ -1699,9 +1677,7 @@ def main(argv: list[str] | None = None) -> int:
         except (SpecValidationError, OSError, json.JSONDecodeError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-        compliance = (
-            check_spec_compliance(spec, result.circuit) if args.check else None
-        )
+        compliance = check_spec_compliance(spec, result.circuit) if args.check else None
         if args.json:
             payload = _synth_to_json(result)
             if compliance is not None:
@@ -1923,9 +1899,7 @@ def main(argv: list[str] | None = None) -> int:
                     ),
                 )
             sweep = _default_sweep(spec, args)
-            analysis = analyze_circuit(
-                synth.circuit, sweep, backend=str(args.backend)
-            )
+            analysis = analyze_circuit(synth.circuit, sweep, backend=str(args.backend))
         except (
             SpecValidationError,
             AnalysisError,
@@ -1977,8 +1951,7 @@ def main(argv: list[str] | None = None) -> int:
                 analysis,
                 args.export_smith,
                 title=(
-                    f"Smith — {spec.family.value} "
-                    f"n={spec.order} {spec.response.value}"
+                    f"Smith — {spec.family.value} n={spec.order} {spec.response.value}"
                 ),
             )
             print(f"Wrote {args.export_smith}", file=sys.stderr)
@@ -1998,9 +1971,7 @@ def main(argv: list[str] | None = None) -> int:
             write_spice_netlist(
                 synth.circuit,
                 args.export_spice,
-                title=(
-                    f"{spec.family.value} n={spec.order} {spec.response.value}"
-                ),
+                title=(f"{spec.family.value} n={spec.order} {spec.response.value}"),
                 ac=sweep,
             )
             print(f"Wrote {args.export_spice}", file=sys.stderr)
@@ -2046,9 +2017,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"Wrote {args.export_build_sheet}", file=sys.stderr)
 
-        compliance = (
-            check_spec_compliance(spec, synth.circuit) if args.check else None
-        )
+        compliance = check_spec_compliance(spec, synth.circuit) if args.check else None
 
         if args.json:
             n = analysis.frequency_hz.shape[0]
@@ -2198,8 +2167,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         print(
-            f"{core.name}  ({core.kind}, mix {core.material}, "
-            f"AL={core.al_nh:g} nH/N^2)"
+            f"{core.name}  ({core.kind}, mix {core.material}, AL={core.al_nh:g} nH/N^2)"
         )
         if toroid.target_inductance_h is not None:
             print(
@@ -2207,9 +2175,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"{format_engineering(toroid.target_inductance_h, 'H', digits=4)}"
             )
         print(f"  Turns: {toroid.turns_exact:.2f} -> {toroid.turns}")
-        print(
-            f"  L = {format_engineering(toroid.inductance_h, 'H', digits=6)}"
-        )
+        print(f"  L = {format_engineering(toroid.inductance_h, 'H', digits=6)}")
         if toroid.wire.fits:
             print(
                 f"  Wire: AWG {toroid.wire.awg} "
@@ -2295,9 +2261,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"  Closest below: {air_design.turns_below} -> "
                 f"{format_engineering(air_design.inductance_below_h, 'H', digits=6)}"
             )
-        print(
-            f"  L = {format_engineering(air_design.inductance_h, 'H', digits=6)}"
-        )
+        print(f"  L = {format_engineering(air_design.inductance_h, 'H', digits=6)}")
         short = " (short coil: formula less accurate)" if air_design.short_coil else ""
         print(
             f"  Coil length = {air_design.length_mm:.2f} mm "
@@ -2312,9 +2276,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             core = find_core(str(args.core))
             f_min = parse_si(str(args.frequency))
-            f_max = (
-                parse_si(str(args.f_max)) if args.f_max else f_min * 10.0
-            )
+            f_max = parse_si(str(args.f_max)) if args.f_max else f_min * 10.0
             tr_design = design_balun(
                 core,
                 kind=BalunKind(str(args.kind)),
@@ -2453,9 +2415,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{format_engineering(tr_design.magnetizing_inductance_h, 'H', digits=4)}"
         )
         if tr_design.core_loss_ohm is not None:
-            lk = format_engineering(
-                tr_design.leakage_inductance_h, "H", digits=4
-            )
+            lk = format_engineering(tr_design.leakage_inductance_h, "H", digits=4)
             print(f"  Lk = {lk}, Rp = {tr_design.core_loss_ohm:.4g} Ohm")
         print(
             f"  V low/high = {tr_design.v_unbalanced_rms:.3g} / "
@@ -2794,20 +2754,13 @@ def main(argv: list[str] | None = None) -> int:
                     f"{format_engineering(estimate.f_stop_high_hz or 0.0, 'Hz')}"
                 )
             else:
-                print(
-                    "f_pass:        "
-                    f"{format_engineering(estimate.f_pass_hz, 'Hz')}"
-                )
-                print(
-                    "f_stop:        "
-                    f"{format_engineering(estimate.f_stop_hz, 'Hz')}"
-                )
+                print(f"f_pass:        {format_engineering(estimate.f_pass_hz, 'Hz')}")
+                print(f"f_stop:        {format_engineering(estimate.f_stop_hz, 'Hz')}")
             print(f"Ap:            {estimate.passband_attenuation_db:g} dB")
             print(f"As:            {estimate.stopband_attenuation_db:g} dB")
             print(f"Ωs ratio:      {estimate.omega_ratio:.6g}")
             print(
-                "Natural f:     "
-                f"{format_engineering(estimate.natural_freq_hz, 'Hz')}"
+                f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
         return 0

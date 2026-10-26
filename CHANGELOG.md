@@ -5,6 +5,12 @@ scheme while the public CLI/GUI stabilizes.
 
 ## Unreleased
 
+### Added
+
+- Packaged-artifact `--self-test` plus Linux/Windows clean-runner acceptance
+  jobs covering GUI construction, synthesis, Touchstone round-trip, BOM export
+  and project round-trip.
+
 ### Fixed
 
 - Smith chart and response plots no longer show `S11 meas` / `S22 meas` legend
