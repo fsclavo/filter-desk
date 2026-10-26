@@ -46,6 +46,8 @@ image.
 - **Optimization** against limit regions (passband/stopband masks).
 - **Component sensitivity** analysis that ranks parts by their effect and
   suggests a tuning direction.
+- **Spec-from-circuit update**: manually re-target cutoff/center/bandwidth from
+  the measured/analyzed response without silently changing the circuit.
 - **Design parameter sweeps** (order, family, frequency, ripple…) into a
   comparison table, with one-click load of a chosen variant.
 - **Interactive tuning**: tune components, retune by dragging markers, and scale

@@ -8,7 +8,7 @@ count or release changes.
 [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.12.0 planning.
 
-**Verification:** local suite **901 passed, 1 skipped**; coverage **83.21 %**.
+**Verification:** local suite **906 passed, 1 skipped**; coverage **82.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40388699415
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40375006934
 
@@ -48,6 +48,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       `docs/validation-matrix.md`.
 - [x] VNA measurement metadata sidecar, CLI holdout evaluation, fit-quality notes
       and `docs/vna-measurement-protocol.md`. Real captures remain P0.
+- [x] Manual **Update spec from circuit** action: derives cutoff/center/bandwidth
+      from the response while preserving family/order/topology; circuit untouched,
+      undoable, with explicit preview.
 
 ---
 

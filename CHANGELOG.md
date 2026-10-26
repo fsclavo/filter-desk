@@ -14,6 +14,9 @@ scheme while the public CLI/GUI stabilizes.
   `docs/validation-matrix.md`.
 - VNA measurement metadata sidecars, CLI holdout evaluation, fit-quality notes
   and a reproducible measurement protocol.
+- Manual **Update spec from circuit** action: derives the target cutoff (or
+  center/bandwidth) from the analyzed response while preserving family, order
+  and topology; the circuit is untouched and the action is undoable.
 
 ## v0.11.1 — 2026-10-26
 

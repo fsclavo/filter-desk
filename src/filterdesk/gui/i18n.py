@@ -244,6 +244,23 @@ _ES.update(
         "&Tools": "&Herramientas",
         "&Synthesize + Analyze": "&Sintetizar + analizar",
         "&Band preset…": "&Preset de banda…",
+        "Update spec from &circuit…": "Actualizar spec desde el &circuito…",
+        "Update spec from circuit": "Actualizar spec desde el circuito",
+        "Analyze a circuit first.": "Analiza primero un circuito.",
+        "Cutoff": "Corte",
+        "Center": "Centro",
+        "Bandwidth": "Ancho de banda",
+        "{change}\n\nDerived from {criterion}. "
+        "Family, order, topology, ripple and stopband parameters stay "
+        "unchanged. The circuit is not modified; Synthesize would create "
+        "a new ideal circuit.": (
+            "{change}\n\nDerivado de {criterion}. "
+            "Familia, orden, topología, ripple y stopband no cambian. "
+            "El circuito no se modifica; Synthesize crearía un circuito ideal nuevo."
+        ),
+        "Updated target spec from circuit response": (
+            "Spec actualizado desde la respuesta del circuito"
+        ),
         "&Attenuator pad…": "&Atenuador…",
         "Matching &network…": "Red de &adaptación…",
         "&Coil calculator…": "Calculadora de &bobinas…",

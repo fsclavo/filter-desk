@@ -116,6 +116,34 @@ class SynthesizeCommand(QUndoCommand):
             self._on_applied()
 
 
+class SetSpecCommand(QUndoCommand):
+    """Change only the design target; the current circuit stays untouched."""
+
+    def __init__(
+        self,
+        session: DesignSession,
+        new_spec: FilterSpec,
+        *,
+        text: str | None = None,
+        on_applied: Callable[[], None] | None = None,
+    ) -> None:
+        super().__init__(text or tr("Update spec from circuit"))
+        self._session = session
+        self._new = deepcopy(new_spec)
+        self._old = deepcopy(session.spec)
+        self._on_applied = on_applied
+
+    def redo(self) -> None:
+        self._session.set_spec(deepcopy(self._new))
+        if self._on_applied is not None:
+            self._on_applied()
+
+    def undo(self) -> None:
+        self._session.set_spec(deepcopy(self._old))
+        if self._on_applied is not None:
+            self._on_applied()
+
+
 class SnapCommand(QUndoCommand):
     """Snap all component values to an E-series (whole-circuit snapshot)."""
 

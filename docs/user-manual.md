@@ -285,6 +285,7 @@ specification edits require an explicit **Synthesize**.
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
 | **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, sets sweep) |
+| **Update spec from circuit** | **Design → Update spec from circuit…** | derive cutoff/center and bandwidth from the current analyzed response; family, order and topology are kept, and the circuit is not changed |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Tools → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
@@ -658,6 +659,18 @@ row with a combined reference list and a quantity.
 
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.
+
+### Updating the target spec from the circuit
+
+If you edit component values manually, the project can intentionally have a
+target specification that no longer matches the actual response. **Design →
+Update spec from circuit…** derives a new target cutoff (or center/bandwidth
+for BP/BS) from the current analyzed response. It uses the family's criterion:
+ripple edge for Chebyshev I/elliptic, stopband edge for Chebyshev II, otherwise
+−3 dB. Family, order, topology, ripple and stopband parameters are retained;
+the circuit is not re-synthesized. The action is undoable. This changes the
+**target**, not the circuit: pressing Synthesize afterwards creates a new ideal
+circuit from the updated target.
 
 ### Coil calculator
 

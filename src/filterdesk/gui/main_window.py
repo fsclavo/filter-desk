@@ -50,7 +50,7 @@ from filterdesk.domain.circuit import (
     NonIdealCapacitor,
     NonIdealInductor,
 )
-from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.enums import ElementRole, FilterResponse
 from filterdesk.domain.naming import default_filename, default_stem
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.specs import FilterSpec
@@ -62,6 +62,7 @@ from filterdesk.gui.commands import (
     SetElementValueCommand,
     SetLimitsCommand,
     SetMarkersCommand,
+    SetSpecCommand,
     SnapCommand,
     SynthesizeCommand,
 )
@@ -129,6 +130,7 @@ from filterdesk.services.design_sweep import (
 )
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import DEFAULT_TITLE, DesignSession
+from filterdesk.services.spec_update import SpecUpdateError, update_spec_from_response
 
 
 def _exc_text(exc: BaseException) -> str:
@@ -488,6 +490,9 @@ class MainWindow(QMainWindow):
         act_band = QAction(tr("&Band preset…"), self)
         act_band.triggered.connect(self._run_band_preset)
         design_menu.addAction(act_band)
+        act_update_spec = QAction(tr("Update spec from &circuit…"), self)
+        act_update_spec.triggered.connect(self._run_update_spec_from_circuit)
+        design_menu.addAction(act_update_spec)
         design_menu.addSeparator()
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
@@ -1244,6 +1249,70 @@ class MainWindow(QMainWindow):
         self._plots.set_confidence_items(
             () if circuit is None else filter_confidence_items(circuit)
         )
+
+    def _run_update_spec_from_circuit(self) -> None:
+        circuit = self._session.circuit
+        analysis = self._session.analysis
+        if circuit is None or analysis is None:
+            QMessageBox.information(
+                self,
+                tr("Update spec from circuit"),
+                tr("Analyze a circuit first."),
+            )
+            return
+        try:
+            update = update_spec_from_response(
+                self._session.spec, circuit, analysis
+            )
+        except (SpecUpdateError, ValueError) as exc:
+            QMessageBox.warning(
+                self, tr("Update spec from circuit"), _exc_text(exc)
+            )
+            return
+        old = update.old_spec
+        new = update.new_spec
+        if old.response in (FilterResponse.LOW_PASS, FilterResponse.HIGH_PASS):
+            change = (
+                f"{tr('Cutoff')}: {format_engineering(old.cutoff_hz, 'Hz')} -> "
+                f"{format_engineering(new.cutoff_hz, 'Hz')}"
+            )
+        else:
+            old_center = format_engineering(old.f_center_hz or 0.0, "Hz")
+            new_center = format_engineering(new.f_center_hz or 0.0, "Hz")
+            change = (
+                f"{tr('Center')}: {old_center} -> {new_center}; "
+                f"{tr('Bandwidth')}: "
+                f"{format_engineering(old.bandwidth_hz or 0.0, 'Hz')} -> "
+                f"{format_engineering(new.bandwidth_hz or 0.0, 'Hz')}"
+            )
+        answer = QMessageBox.question(
+            self,
+            tr("Update spec from circuit"),
+            tr(
+                "{change}\n\nDerived from {criterion}. "
+                "Family, order, topology, ripple and stopband parameters stay "
+                "unchanged. The circuit is not modified; Synthesize would create "
+                "a new ideal circuit.",
+                change=change,
+                criterion=update.criterion,
+            ),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self._undo.push(
+            SetSpecCommand(
+                self._session,
+                new,
+                on_applied=self._after_spec_update,
+            )
+        )
+        self._status.setText(tr("Updated target spec from circuit response"))
+
+    def _after_spec_update(self) -> None:
+        self._spec.set_spec(self._session.spec)
+        self._update_title()
 
     def _run_analyze(self) -> None:
         if self._session.circuit is None:
