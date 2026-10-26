@@ -760,8 +760,9 @@ happens in the background and reports progress in the status bar.
   inductors are not implemented. Unequal ports use an ideal **output**
   transformer; general mid-ladder transformers are not.
 - **Transformer exports**: the ideal `T1` is included in analysis, compliance,
-  project files and the BOM, but SPICE/LTspice/Qucs export raises a clear error
-  when the ratio differs from 1.0 (not implemented yet).
+  project files, the BOM and the SPICE netlist (E/F controlled-source model).
+  LTspice `.asc` and Qucs `.sch` still raise a clear error when the ratio differs
+  from 1.0.
 - **Even-order elliptic** is rejected (it needs an unequal-R Cauer synthesis);
   **even-order Chebyshev I** uses a modified equal-termination prototype (see
   §12).

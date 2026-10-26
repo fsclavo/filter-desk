@@ -39,9 +39,12 @@ class _Nodes:
     def __init__(self, circuit: Circuit) -> None:
         self._ground = circuit.ground
         self._counter = 0
+        self.alias: dict[str, str] = {}
 
     def net(self, name: str) -> str:
-        return "0" if name == self._ground else name
+        if name == self._ground:
+            return "0"
+        return self.alias.get(name, name)
 
     def fresh(self) -> str:
         self._counter += 1
@@ -111,14 +114,14 @@ def spice_netlist(
     """Return an LTspice-compatible SPICE netlist for ``circuit``."""
     if not circuit.elements:
         raise SpiceExportError("circuit has no elements")
-    if circuit.output_transformer_ratio != 1.0:
-        raise SpiceExportError(
-            "ideal output transformer export is not implemented yet"
-        )
     nodes = _Nodes(circuit)
     lines: list[str] = [f"* {title}"]
     in_net = nodes.net(circuit.port_in.node)
-    out_net = nodes.net(circuit.port_out.node)
+    load_net = nodes.net(circuit.port_out.node)
+    ratio = circuit.output_transformer_ratio
+    has_transformer = ratio != 1.0
+    if has_transformer:
+        nodes.alias[load_net] = "T1_p"
 
     src_net = f"{source_name}_src"
     zs = circuit.port_in.impedance_ohm
@@ -130,6 +133,17 @@ def spice_netlist(
 
     for el in circuit.elements:
         lines.extend(_expand(el, nodes))
+
+    if has_transformer:
+        # Ideal transformer (common ground) via VCVS + CCCS and a 0 V sense
+        # source: V(load) = V(primary)/n and I(primary) = I(load)/n.
+        lines.append(f"* ideal output transformer T1 ({ratio:.6g}:1)")
+        lines.append(f"E_T1 {load_net} 0 T1_p 0 {_fmt(1.0 / ratio)}")
+        lines.append(f"V_T1sense {load_net} T1_s 0")
+        lines.append(f"F_T1 T1_p 0 V_T1sense {_fmt(1.0 / ratio)}")
+        out_net = "T1_s"
+    else:
+        out_net = load_net
 
     zl = circuit.port_out.impedance_ohm
     if zl > 0.0:

@@ -38,5 +38,6 @@ separate task.
   constant-K, m-derived).
 - No change for \(Z_S=Z_L\) (ratio 1.0).
 - Project JSON is backward compatible (missing field defaults to 1.0).
-- SPICE/LTspice/Qucs export of the ideal transformer is **not implemented yet**;
-  those exporters raise a clear error when the ratio differs from 1.0.
+- The SPICE netlist exports the transformer exactly with a VCVS/CCCS pair and a
+  0 V current-sense source. LTspice `.asc` and Qucs `.sch` still raise a clear
+  error when the ratio differs from 1.0.

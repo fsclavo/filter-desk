@@ -105,10 +105,13 @@ def test_transformer_persists_and_is_in_bom(tmp_path) -> None:
     assert "0.8165:1" in md_path.read_text(encoding="utf-8")
 
 
-def test_transformer_exports_fail_clearly() -> None:
+def test_transformer_spice_export_and_limits() -> None:
     circuit = synthesize(_spec(50.0, 75.0)).circuit
-    with pytest.raises(SpiceExportError, match="transformer"):
-        spice_netlist(circuit)
+    net = spice_netlist(circuit)
+    assert "E_T1 out 0 T1_p" in net
+    assert "V_T1sense out T1_s" in net
+    assert "F_T1 T1_p 0 V_T1sense" in net
+    assert "Rload T1_s 0 75" in net
     with pytest.raises(SpiceExportError, match="transformer"):
         ltspice_asc(circuit)
     with pytest.raises(SpiceExportError, match="transformer"):
@@ -137,3 +140,33 @@ def test_component_table_shows_transformer() -> None:
     assert ("T1", "transformer") in rows
     panel.close()
     assert app is not None
+
+
+def test_cli_exports_transformer_spice(tmp_path) -> None:
+    from filterdesk.__main__ import main
+
+    out = tmp_path / "asym.cir"
+    code = main(
+        [
+            "analyze",
+            "--family",
+            "butterworth",
+            "--response",
+            "low_pass",
+            "--order",
+            "3",
+            "--cutoff",
+            "100M",
+            "--zs",
+            "50",
+            "--zl",
+            "75",
+            "--points",
+            "16",
+            "--export-spice",
+            str(out),
+        ]
+    )
+    assert code == 0
+    text = out.read_text(encoding="utf-8")
+    assert "E_T1" in text and "F_T1" in text
