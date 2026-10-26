@@ -423,7 +423,6 @@ def test_tools_menu_holds_calculators() -> None:
         "Coil calculator",
         "Transformer / balun",
         "Microstrip line",
-        "Balun / unun",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)

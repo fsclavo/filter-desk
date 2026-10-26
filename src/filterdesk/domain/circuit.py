@@ -156,7 +156,9 @@ class BalunSpec:
     """
 
     kind: str = "ideal"
+    topology: str = "autotransformer"
     turns_ratio: float = 1.0
+    total_turns: int = 0
     z_unbalanced_ohm: float = 0.0
     z_balanced_ohm: float = 0.0
     z0_line_ohm: float = 50.0
@@ -174,6 +176,8 @@ class BalunSpec:
     def __post_init__(self) -> None:
         if self.kind not in {"ideal", "unun", "guanella", "ruthroff", "choke"}:
             raise ValueError(f"unknown balun kind {self.kind!r}")
+        if self.topology not in {"autotransformer", "isolated"}:
+            raise ValueError(f"unknown balun topology {self.topology!r}")
         if self.turns_ratio <= 0.0:
             raise ValueError("balun turns_ratio must be > 0")
         if self.z0_line_ohm <= 0.0:

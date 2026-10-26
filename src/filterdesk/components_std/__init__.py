@@ -17,6 +17,7 @@ from filterdesk.components_std.balun import (
     BalunError,
     BalunKind,
     design_balun,
+    design_balun_options,
 )
 from filterdesk.components_std.e_series import (
     ESeries,
@@ -116,6 +117,7 @@ __all__ = [
     "design_attenuator",
     "design_air_coil",
     "design_balun",
+    "design_balun_options",
     "design_matching",
     "design_microstrip",
     "design_quarter_wave_transformer",

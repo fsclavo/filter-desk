@@ -82,7 +82,6 @@ from filterdesk.gui.settings import (
 from filterdesk.gui.theme import ThemeColors, ThemeMode, apply_theme
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
-    BalunDialog,
     BandPresetDialog,
     BuildSheetDialog,
     CoilCalculatorDialog,
@@ -532,12 +531,9 @@ class MainWindow(QMainWindow):
         act_coil = QAction(tr("&Coil calculator…"), self)
         act_coil.triggered.connect(self._run_coil_calculator)
         tools_menu.addAction(act_coil)
-        act_transformer = QAction(tr("Trans&former / balun…"), self)
+        act_transformer = QAction(tr("Trans&former / balun / unun…"), self)
         act_transformer.triggered.connect(self._run_transformer)
         tools_menu.addAction(act_transformer)
-        act_balun = QAction(tr("&Balun / unun…"), self)
-        act_balun.triggered.connect(self._run_balun)
-        tools_menu.addAction(act_balun)
         act_microstrip = QAction(tr("&Microstrip line…"), self)
         act_microstrip.triggered.connect(self._run_microstrip)
         tools_menu.addAction(act_microstrip)
@@ -987,15 +983,14 @@ class MainWindow(QMainWindow):
         self._run_analyze()
 
     def _run_transformer(self) -> None:
-        TransformerDialog(self).exec()
-
-    def _run_balun(self) -> None:
-        dialog = BalunDialog(self)
+        dialog = TransformerDialog(self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         if self._session.circuit is None:
             QMessageBox.information(
-                self, tr("Balun / unun"), tr("Synthesize a circuit first.")
+                self,
+                tr("Transformer / balun / unun"),
+                tr("Synthesize a circuit first."),
             )
             return
         if dialog.remove_requested():

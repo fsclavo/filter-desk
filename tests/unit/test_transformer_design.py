@@ -223,7 +223,7 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
     assert dialog._topology.currentText() == "autotransformer"
     assert len(dialog._options) == 3
     assert dialog.current_design() is not None
-    assert dialog.current_design().n_low == 3
+    assert dialog.current_design().n_primary == 3
     assert dialog._options_table.rowCount() == 3
     dialog._options_table.selectRow(2)
     design = dialog.current_design()

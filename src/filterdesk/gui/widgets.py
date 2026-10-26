@@ -41,11 +41,10 @@ from filterdesk.components_std import (
     SnapStrategy,
     design_air_coil,
     design_attenuator,
-    design_balun,
+    design_balun_options,
     design_matching,
     design_microstrip,
     design_toroid,
-    design_transformer_options,
     inductor_resistance_ohm_from_q,
     list_cores,
     list_substrates,
@@ -63,9 +62,6 @@ from filterdesk.components_std.toroid import (
     awg_diameter_mm,
 )
 from filterdesk.components_std.transformer import (
-    TransformerDesign,
-    TransformerError,
-    TransformerKind,
     TransformerTopology,
 )
 from filterdesk.domain.circuit import (
@@ -1310,14 +1306,15 @@ class DesignSweepResultDialog(QDialog):
 
 
 class TransformerDialog(QDialog):
-    """Transformer-type unun / balun / power transformer calculator."""
+    """Unified transformer / balun / unun designer and boundary inserter."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Transformer / balun")
+        self.setWindowTitle("Transformer / balun / unun")
         self._cores = list_cores()
-        self._design_value: TransformerDesign | None = None
-        self._options: list[TransformerDesign] = []
+        self._design_value: BalunDesign | None = None
+        self._options: list[BalunDesign] = []
+        self._remove_requested = False
 
         self._core = QComboBox()
         for core in self._cores:
@@ -1329,8 +1326,8 @@ class TransformerDialog(QDialog):
                 self._core.setCurrentIndex(index)
                 break
         self._kind = QComboBox()
-        self._kind.addItems([k.value for k in TransformerKind])
-        self._kind.setCurrentText(TransformerKind.UNUN.value)
+        self._kind.addItems([k.value for k in BalunKind])
+        self._kind.setCurrentText(BalunKind.UNUN.value)
         self._topology = QComboBox()
         self._topology.addItems([t.value for t in TransformerTopology])
         self._z_low = EngineeringLineEdit()
@@ -1364,34 +1361,77 @@ class TransformerDialog(QDialog):
         self._options_table.setMaximumHeight(140)
 
         self._turns = QLabel("-")
-        self._lm = QLabel("-")
+        self._inductances = QLabel("-")
+        self._model = QLabel("-")
         self._vi = QLabel("-")
         self._flux = QLabel("-")
         self._wire = QLabel("-")
         self._notes = QLabel("-")
         self._notes.setWordWrap(True)
 
-        form = QFormLayout(self)
-        form.addRow("Core", self._core)
-        form.addRow("Kind", self._kind)
-        form.addRow("Topology", self._topology)
-        form.addRow("Low-side Z (Ohm)", self._z_low)
-        form.addRow("High-side Z (Ohm)", self._z_high)
-        form.addRow("Lowest frequency", self._frequency)
-        form.addRow("Highest frequency", self._frequency_max)
-        form.addRow("Power (W)", self._power)
-        form.addRow("Winding options", self._options_table)
-        form.addRow("Turns", self._turns)
-        form.addRow("Magnetizing L", self._lm)
-        form.addRow("V / I", self._vi)
-        form.addRow("Peak flux", self._flux)
-        form.addRow("Wire", self._wire)
-        form.addRow("Notes", self._notes)
+        self._coupling = EngineeringLineEdit()
+        self._coupling.setText("98")
+        self._tan_delta = EngineeringLineEdit()
+        self._tan_delta.setText("2")
+        self._winding_c = EngineeringLineEdit()
+        self._winding_c.setText("0")
+        self._line_z0 = EngineeringLineEdit()
+        self._line_z0.setText("")
+        self._line_length = EngineeringLineEdit()
+        self._line_length.setText("")
+        self._vf = EngineeringLineEdit()
+        self._vf.setText("0.7")
+        self._line_loss = EngineeringLineEdit()
+        self._line_loss.setText("0")
 
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        buttons.rejected.connect(self.reject)
-        buttons.accepted.connect(self.accept)
-        form.addRow(buttons)
+        design_tab = QWidget()
+        design_form = QFormLayout(design_tab)
+        design_form.addRow("Core", self._core)
+        design_form.addRow("Kind", self._kind)
+        design_form.addRow("Topology", self._topology)
+        design_form.addRow("Low-side Z (Ohm)", self._z_low)
+        design_form.addRow("High-side Z (Ohm)", self._z_high)
+        design_form.addRow("Lowest frequency", self._frequency)
+        design_form.addRow("Highest frequency", self._frequency_max)
+        design_form.addRow("Power (W)", self._power)
+        design_form.addRow("Winding options", self._options_table)
+        design_form.addRow("Turns", self._turns)
+        design_form.addRow("Inductances", self._inductances)
+        design_form.addRow("V / I", self._vi)
+        design_form.addRow("Peak flux", self._flux)
+        design_form.addRow("Wire", self._wire)
+
+        model_tab = QWidget()
+        model_form = QFormLayout(model_tab)
+        model_form.addRow("Model", self._model)
+        model_form.addRow("Coupling (%)", self._coupling)
+        model_form.addRow("Core tan delta (%)", self._tan_delta)
+        model_form.addRow("Winding C (pF)", self._winding_c)
+        model_form.addRow("TLT line Z0 (Ohm)", self._line_z0)
+        model_form.addRow("TLT length (m, blank=auto)", self._line_length)
+        model_form.addRow("TLT velocity factor", self._vf)
+        model_form.addRow("TLT loss (dB/m)", self._line_loss)
+        model_form.addRow("Notes", self._notes)
+
+        tabs = QTabWidget()
+        tabs.addTab(design_tab, "Design")
+        tabs.addTab(model_tab, "Model")
+
+        buttons = QDialogButtonBox()
+        self._apply_button = buttons.addButton(
+            "Apply as output balun", QDialogButtonBox.ButtonRole.AcceptRole
+        )
+        self._remove_button = buttons.addButton(
+            "Remove", QDialogButtonBox.ButtonRole.ActionRole
+        )
+        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        self._apply_button.clicked.connect(self.accept)
+        self._remove_button.clicked.connect(self._remove)
+        close.clicked.connect(self.reject)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(tabs)
+        layout.addWidget(buttons)
 
         self._core.currentIndexChanged.connect(self._recompute)
         self._kind.currentIndexChanged.connect(self._recompute)
@@ -1402,6 +1442,13 @@ class TransformerDialog(QDialog):
             self._frequency,
             self._frequency_max,
             self._power,
+            self._coupling,
+            self._tan_delta,
+            self._winding_c,
+            self._line_z0,
+            self._line_length,
+            self._vf,
+            self._line_loss,
         ):
             field.editingFinished.connect(self._recompute)
         self._options_table.itemSelectionChanged.connect(self._on_option_selected)
@@ -1410,32 +1457,57 @@ class TransformerDialog(QDialog):
     def selected_core(self) -> ToroidCore:
         return self._cores[self._core.currentIndex()]
 
-    def current_design(self) -> TransformerDesign | None:
+    def current_design(self) -> BalunDesign | None:
         return self._design_value
+
+    def balun_spec(self) -> BalunSpec | None:
+        return None if self._design_value is None else self._design_value.to_spec()
+
+    def remove_requested(self) -> bool:
+        return self._remove_requested
+
+    def _remove(self) -> None:
+        self._remove_requested = True
+        self.accept()
 
     def _recompute(self) -> None:
         try:
-            options = design_transformer_options(
+            options = design_balun_options(
                 self.selected_core(),
-                z_low_ohm=parse_si(self._z_low.text().strip() or "0"),
-                z_high_ohm=parse_si(self._z_high.text().strip() or "0"),
-                frequency_hz=parse_si(self._frequency.text().strip() or "0"),
+                kind=BalunKind(self._kind.currentText()),
+                z_unbalanced_ohm=parse_si(self._z_low.text().strip() or "0"),
+                z_balanced_ohm=parse_si(self._z_high.text().strip() or "0"),
+                f_min_hz=parse_si(self._frequency.text().strip() or "0"),
+                f_max_hz=parse_si(self._frequency_max.text().strip() or "0"),
                 power_w=float(self._power.text().strip() or "0"),
-                kind=TransformerKind(self._kind.currentText()),
                 topology=TransformerTopology(self._topology.currentText()),
-                frequency_max_hz=(
-                    parse_si(self._frequency_max.text().strip() or "0")
-                    if self._frequency_max.text().strip()
+                coupling=float(self._coupling.text().strip() or "0") / 100.0,
+                tan_delta=float(self._tan_delta.text().strip() or "0") / 100.0,
+                winding_capacitance_f=parse_si(
+                    self._winding_c.text().strip() or "0"
+                )
+                * 1e-12,
+                line_z0_ohm=(
+                    parse_si(self._line_z0.text().strip())
+                    if self._line_z0.text().strip()
                     else None
                 ),
+                line_length_m=(
+                    parse_si(self._line_length.text().strip())
+                    if self._line_length.text().strip()
+                    else None
+                ),
+                velocity_factor=float(self._vf.text().strip() or "0"),
+                line_loss_db_per_m=float(self._line_loss.text().strip() or "0"),
             )
-        except (TransformerError, ValueError):
+        except (BalunError, ValueError):
             self._options = []
             self._design_value = None
             self._options_table.setRowCount(0)
             for label in (
                 self._turns,
-                self._lm,
+                self._inductances,
+                self._model,
                 self._vi,
                 self._flux,
                 self._wire,
@@ -1462,7 +1534,7 @@ class TransformerDialog(QDialog):
         self._options_table.setRowCount(len(self._options))
         for row, design in enumerate(self._options):
             values = (
-                f"{design.n_low}:{design.n_high}",
+                f"{design.n_primary}:{design.n_secondary}",
                 str(design.total_turns),
                 format_engineering(
                     design.magnetizing_inductance_h, "H", digits=3
@@ -1487,20 +1559,26 @@ class TransformerDialog(QDialog):
         if 0 <= row < len(self._options):
             self._show_design(self._options[row])
 
-    def _show_design(self, design: TransformerDesign) -> None:
+    def _show_design(self, design: BalunDesign) -> None:
         self._design_value = design
         self._turns.setText(
-            f"{design.n_low} : {design.n_high} "
+            f"{design.n_primary} : {design.n_secondary} "
             f"(total {design.total_turns}, "
-            f"Z ratio {design.actual_impedance_ratio:.3f}, "
+            f"Z ratio {design.impedance_ratio:.3f}, "
             f"X/Z {design.reactance_ratio:.2f})"
         )
-        self._lm.setText(
-            format_engineering(design.magnetizing_inductance_h, "H", digits=4)
-        )
+        lm = format_engineering(design.magnetizing_inductance_h, "H", digits=4)
+        lk = format_engineering(design.leakage_inductance_h, "H", digits=4)
+        self._inductances.setText(f"Lm {lm}, Lk {lk}")
+        model = f"{design.kind.value}, Zline {design.z0_line_ohm:.3g} Ohm"
+        if design.length_m:
+            model += f", l {design.length_m * 1000.0:.1f} mm"
+        if design.core_loss_ohm is not None:
+            model += f", Rp {design.core_loss_ohm:.4g} Ohm"
+        self._model.setText(model)
         self._vi.setText(
-            f"{design.v_low_rms:.3g}/{design.v_high_rms:.3g} Vrms, "
-            f"{design.i_low_rms_a:.3g}/{design.i_high_rms_a:.3g} Arms"
+            f"{design.v_unbalanced_rms:.3g}/{design.v_balanced_rms:.3g} Vrms, "
+            f"{design.i_unbalanced_rms_a:.3g}/{design.i_balanced_rms_a:.3g} Arms"
         )
         if design.b_peak_t is None:
             self._flux.setText("-")
@@ -1510,8 +1588,8 @@ class TransformerDialog(QDialog):
                 text += f" (B/Bsat {design.bsat_margin:.2f})"
             self._flux.setText(text)
         self._wire.setText(
-            f"low AWG {design.awg_low}, high AWG {design.awg_high}; "
-            f"fit AWG {design.fit.awg}"
+            f"primary AWG {design.awg_primary}, secondary AWG "
+            f"{design.awg_secondary}; fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
 
@@ -1744,168 +1822,3 @@ class VnaTuningDialog(QDialog):
         self._apply_button.setEnabled(True)
 
 
-class BalunDialog(QDialog):
-    """Balun/unun design and output-boundary insertion."""
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle("Balun / unun")
-        self._cores = list_cores()
-        self._design_value: BalunDesign | None = None
-        self._remove_requested = False
-
-        self._core = QComboBox()
-        for core in self._cores:
-            self._core.addItem(
-                f"{core.name} - mix {core.material}, AL {core.al_nh:g} nH/N^2"
-            )
-        self._kind = QComboBox()
-        self._kind.addItems([k.value for k in BalunKind])
-        self._kind.setCurrentText(BalunKind.UNUN.value)
-        for index, core in enumerate(self._cores):
-            if core.name == "FT140-43":
-                self._core.setCurrentIndex(index)
-                break
-        self._z_unbalanced = EngineeringLineEdit()
-        self._z_unbalanced.setText("50")
-        self._z_balanced = EngineeringLineEdit()
-        self._z_balanced.setText("200")
-        self._f_min = EngineeringLineEdit()
-        self._f_min.setText("3.5M")
-        self._f_max = EngineeringLineEdit()
-        self._f_max.setText("30M")
-        self._power = EngineeringLineEdit()
-        self._power.setText("100")
-        self._coupling = EngineeringLineEdit()
-        self._coupling.setText("98")
-        self._tan_delta = EngineeringLineEdit()
-        self._tan_delta.setText("2")
-        self._winding_c = EngineeringLineEdit()
-        self._winding_c.setText("0")
-
-        self._turns = QLabel("-")
-        self._inductances = QLabel("-")
-        self._model = QLabel("-")
-        self._flux = QLabel("-")
-        self._wire = QLabel("-")
-        self._notes = QLabel("-")
-        self._notes.setWordWrap(True)
-
-        form = QFormLayout(self)
-        form.addRow("Core", self._core)
-        form.addRow("Kind", self._kind)
-        form.addRow("Unbalanced Z (Ohm)", self._z_unbalanced)
-        form.addRow("Balanced Z (Ohm)", self._z_balanced)
-        form.addRow("Lowest frequency", self._f_min)
-        form.addRow("Highest frequency", self._f_max)
-        form.addRow("Power (W)", self._power)
-        form.addRow("Coupling (%)", self._coupling)
-        form.addRow("Core tan delta (%)", self._tan_delta)
-        form.addRow("Winding C (pF)", self._winding_c)
-        form.addRow("Turns", self._turns)
-        form.addRow("Inductances", self._inductances)
-        form.addRow("Model", self._model)
-        form.addRow("Peak flux", self._flux)
-        form.addRow("Wire", self._wire)
-        form.addRow("Notes", self._notes)
-
-        buttons = QDialogButtonBox()
-        apply_button = buttons.addButton(
-            "Apply as output balun", QDialogButtonBox.ButtonRole.AcceptRole
-        )
-        remove_button = buttons.addButton(
-            "Remove", QDialogButtonBox.ButtonRole.ActionRole
-        )
-        close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
-        apply_button.clicked.connect(self.accept)
-        remove_button.clicked.connect(self._remove)
-        close.clicked.connect(self.reject)
-        form.addRow(buttons)
-
-        self._core.currentIndexChanged.connect(self._recompute)
-        self._kind.currentIndexChanged.connect(self._recompute)
-        for field in (
-            self._z_unbalanced,
-            self._z_balanced,
-            self._f_min,
-            self._f_max,
-            self._power,
-            self._coupling,
-            self._tan_delta,
-            self._winding_c,
-        ):
-            field.editingFinished.connect(self._recompute)
-        self._recompute()
-
-    def selected_core(self) -> ToroidCore:
-        return self._cores[self._core.currentIndex()]
-
-    def current_design(self) -> BalunDesign | None:
-        return self._design_value
-
-    def balun_spec(self) -> BalunSpec | None:
-        return None if self._design_value is None else self._design_value.to_spec()
-
-    def remove_requested(self) -> bool:
-        return self._remove_requested
-
-    def _remove(self) -> None:
-        self._remove_requested = True
-        self.accept()
-
-    def _recompute(self) -> None:
-        try:
-            design = design_balun(
-                self.selected_core(),
-                kind=BalunKind(self._kind.currentText()),
-                z_unbalanced_ohm=parse_si(self._z_unbalanced.text().strip() or "0"),
-                z_balanced_ohm=parse_si(self._z_balanced.text().strip() or "0"),
-                f_min_hz=parse_si(self._f_min.text().strip() or "0"),
-                f_max_hz=parse_si(self._f_max.text().strip() or "0"),
-                power_w=float(self._power.text().strip() or "0"),
-                coupling=float(self._coupling.text().strip() or "0") / 100.0,
-                tan_delta=float(self._tan_delta.text().strip() or "0") / 100.0,
-                winding_capacitance_f=parse_si(
-                    self._winding_c.text().strip() or "0"
-                )
-                * 1e-12,
-            )
-        except (BalunError, ValueError):
-            self._design_value = None
-            for label in (
-                self._turns,
-                self._inductances,
-                self._model,
-                self._flux,
-                self._wire,
-                self._notes,
-            ):
-                label.setText("-")
-            return
-        self._design_value = design
-        self._turns.setText(
-            f"{design.n_primary} : {design.n_secondary} "
-            f"(ratio {design.actual_turns_ratio:.4f})"
-        )
-        self._inductances.setText(
-            f"Lm {format_engineering(design.magnetizing_inductance_h, 'H', digits=4)}, "
-            f"Lk {format_engineering(design.leakage_inductance_h, 'H', digits=4)}"
-        )
-        model = f"Zp {design.z0_line_ohm:.3g} Ohm"
-        if design.length_m:
-            model += f", l {design.length_m * 1000.0:.1f} mm"
-        if design.core_loss_ohm is not None:
-            model += f", Rp {design.core_loss_ohm:.4g} Ohm"
-        self._model.setText(model)
-        if design.b_peak_t is None:
-            self._flux.setText("-")
-        else:
-            text = f"{design.b_peak_t * 1000.0:.1f} mT"
-            if design.bsat_margin is not None:
-                text += f" (B/Bsat {design.bsat_margin:.2f})"
-            self._flux.setText(text)
-        self._wire.setText(
-            f"primary AWG {design.awg_primary}, secondary AWG {design.awg_secondary}; "
-            f"fit AWG {design.fit.awg}"
-        )
-        self._notes.setText("; ".join(design.notes) if design.notes else "-")

@@ -288,8 +288,7 @@ specification edits require an explicit **Synthesize**.
 | **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
 | **Matching network** | **Tools → Matching network…** | L/Pi/T match from Z0 to a complex load; optionally models the load |
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
-| **Transformer / balun** | **Tools → Transformer / balun…** | transformer-type unun/balun: turns, Lm, flux/saturation, wire gauges and single-layer fit on a core |
-| **Balun / unun** | **Tools → Balun / unun…** | ideal/unun/Guanella/Ruthroff/choke models, core/turns/wire, leakage/core loss, output-boundary insertion and BOM |
+| **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
@@ -696,50 +695,36 @@ the target is also shown, because air-core turn steps are coarse.
 
 ### Transformer / balun / unun
 
-**Tools → Transformer / balun…** (`filterdesk transformer`) is an ideal
-transformer calculator for transformer-type ununs, baluns and power
-transformers. Enter the low/high impedances, the lowest frequency, the power and
-a built-in core. The impedance ratio is `R_high/R_low`, the turns ratio is its
-square root, and the low-side turns are chosen so that
-`X_Lm = 2*pi*f_min*Lm >= 4*Z_low` (the factor is adjustable in the API/CLI).
-It reports the rounded turns, topology, total turns, actual impedance ratio,
-magnetizing inductance, `X_Lm/Z_low`, RMS voltages/currents, peak flux and Bsat
-margin, recommended AWG for each winding, and whether the winding fits in one
-layer.
+**Tools → Transformer / balun / unun…** is the single designer for
+transformer-type ununs, baluns and power transformers. It combines the turns
+calculator, the electrical model and the output-boundary insertion that were
+previously split across two tools.
 
-**Topology:** the default is an **autotransformer** (one tapped winding: input
-across `Np`, output across `Ns`, total `Ns`, no galvanic isolation). Select
-**isolated** for two separate windings (total `Np + Ns`). The winding-options
-table shows compact / recommended / robust candidates for the same ratio. For
-50 -> 2500 Ω these are typically **2:14**, **3:21** and **4:28**; all give 49:1,
-but they are not equivalent. More turns increase `Lm` and lower peak flux, but
-also add leakage and winding capacitance. At high HF (for example 28 MHz),
-prefer fewer turns: 4:28 is flagged as an HF caution when the highest frequency
-is ≥20 MHz. The warning is a turn-count heuristic, not a parasitic extraction.
+- **Design:** core, kind (`ideal`, `unun`, `guanella`, `ruthroff`, `choke`),
+  topology, low/high impedance, lowest/highest frequency and power. The
+  winding-options table shows compact / recommended / robust candidates for the
+  same ratio. For 50 -> 2500 Ω these are typically **2:14**, **3:21** and
+  **4:28**; all give 49:1, but they are not equivalent.
+- **Topology:** the default is an **autotransformer** (one tapped winding:
+  input across `Np`, output across `Ns`, total `Ns`, no galvanic isolation).
+  Select **isolated** for two separate windings (total `Np + Ns`).
+- **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
+  capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
+- **Apply:** inserts the result as `BAL1` at the circuit output. It appears in
+  the project, component table and BOM with core/turns/AWG.
 
-This is an ideal-transformer model, not a Guanella/Ruthroff transmission-line
-transformer model: common-mode choking, leakage inductance and core loss are
-not simulated. Verify the winding layout, core loss and saturation against the
-core datasheet, especially for high power or wideband baluns.
+More turns increase `Lm` and lower peak flux, but also add leakage and winding
+capacitance. At high HF (for example 28 MHz), prefer fewer turns: 4:28 is
+flagged as an HF caution when the highest frequency is ≥20 MHz. The warning is
+a turn-count heuristic, not a parasitic extraction.
 
-### Balun / unun
-
-**Tools → Balun / unun…** (`filterdesk balun`) designs a boundary balun/unun
-and can apply it to the circuit output. Kinds are `ideal`, `unun`, `guanella`,
-`ruthroff` and `choke`. The calculator reports turns, magnetizing inductance,
-leakage, a shunt core-loss resistance, line `Z0`/length for TLT kinds,
-common-mode impedance for chokes, peak flux/saturation margin and wire gauges.
-The resulting `BAL1` block is stored in the project, analyzed as a two-port
-(with an optional TEM line, leakage, winding capacitance and core loss), and
-appears in the component table and BOM with its core/turns/AWG.
-
-The model is **first-order and behavioral**: it is not a full multi-line
-Guanella/Ruthroff derivation, does not solve the winding geometry, and the
-differential two-port cannot represent a choke's common-mode stopband. Verify
-the real winding, common-mode impedance, core loss and temperature/DC-bias
-derating on hardware. SPICE/LTspice/Qucs exports represent the ideal transformer
-part; SPICE adds the scalar leakage/core-loss terms, but the TLT line section is
-not exported.
+The model is **first-order and behavioral**: the TLT section is a single TEM
+line, not a full multi-line Guanella/Ruthoff derivation or an EM simulation;
+the differential two-port cannot represent a choke's common-mode stopband.
+Verify the real winding, common-mode impedance, core loss and
+temperature/DC-bias derating on hardware. SPICE/LTspice/Qucs exports represent
+the ideal transformer part; SPICE adds the scalar leakage/core-loss terms, but
+the TLT line section is not exported.
 
 ### Microstrip / distributed calculators
 

@@ -20,6 +20,7 @@ from filterdesk.components_std.toroid import (
     awg_diameter_mm,
     wire_fit,
 )
+from filterdesk.components_std.transformer import TransformerTopology
 from filterdesk.domain.circuit import BalunSpec
 
 _C0 = 299_792_458.0
@@ -66,15 +67,26 @@ class BalunDesign:
     awg_secondary: int | None
     fit: WireFit
     notes: tuple[str, ...]
+    topology: TransformerTopology = TransformerTopology.AUTOTRANSFORMER
+    total_turns: int = 0
+    reactance_ratio: float = 0.0
+    hf_caution: bool = False
 
     @property
     def saturated(self) -> bool:
         return self.bsat_margin is not None and self.bsat_margin < 1.0
 
+    @property
+    def impedance_ratio(self) -> float:
+        """Balanced / unbalanced impedance ratio (e.g. 4.0 for a 1:4 unun)."""
+        return (self.n_secondary / self.n_primary) ** 2
+
     def to_spec(self) -> BalunSpec:
         return BalunSpec(
             kind=self.kind.value,
+            topology=self.topology.value,
             turns_ratio=self.actual_turns_ratio,
+            total_turns=self.total_turns,
             z_unbalanced_ohm=self.z_unbalanced_ohm,
             z_balanced_ohm=self.z_balanced_ohm,
             z0_line_ohm=self.z0_line_ohm,
@@ -117,9 +129,12 @@ def design_balun(
     line_loss_db_per_m: float = 0.0,
     reactance_factor: float = 4.0,
     current_density_a_mm2: float = 4.0,
+    topology: TransformerTopology | str = TransformerTopology.AUTOTRANSFORMER,
+    turns_primary: int | None = None,
 ) -> BalunDesign:
     """Design a transformer-type or TLT balun/unun on a toroid core."""
     kind_value = BalunKind(str(kind))
+    topology_value = TransformerTopology(str(topology))
     for name, value in (
         ("z_unbalanced_ohm", z_unbalanced_ohm),
         ("z_balanced_ohm", z_balanced_ohm),
@@ -147,13 +162,19 @@ def design_balun(
         raise BalunError("a choke balun requires equal impedances")
     if core.ae_mm2 <= 0.0:
         raise BalunError("core dimensions are required")
+    if turns_primary is not None and turns_primary < 1:
+        raise BalunError("turns_primary must be >= 1")
 
     turns = math.sqrt(z_unbalanced_ohm / z_balanced_ohm)
     al_h = core.al_nh * 1e-9
     n_primary_min = math.sqrt(
         reactance_factor * z_unbalanced_ohm / (2.0 * math.pi * f_min_hz * al_h)
     )
-    n_primary = max(1, math.ceil(n_primary_min - 1e-9))
+    n_primary = (
+        turns_primary
+        if turns_primary is not None
+        else max(1, math.ceil(n_primary_min - 1e-9))
+    )
     n_secondary = max(1, round(n_primary / turns))
     actual_turns = n_primary / n_secondary
     lm = al_h * n_primary * n_primary
@@ -193,9 +214,33 @@ def design_balun(
     bsat_margin = core.bsat_t / b_peak if core.bsat_t is not None else None
     awg_primary = _awg_for_area(i_unbalanced / current_density_a_mm2)
     awg_secondary = _awg_for_area(i_balanced / current_density_a_mm2)
-    fit = wire_fit(core, n_primary + n_secondary)
+    total_turns = (
+        n_secondary
+        if topology_value is TransformerTopology.AUTOTRANSFORMER
+        else n_primary + n_secondary
+    )
+    fit = wire_fit(core, total_turns)
+    reactance_ratio = 2.0 * math.pi * f_min_hz * lm / z_unbalanced_ohm
+    hf_caution = f_max_hz >= 20e6 and total_turns > 24
 
     notes: list[str] = []
+    if topology_value is TransformerTopology.AUTOTRANSFORMER:
+        notes.append(
+            "autotransformer: one tapped winding (input across primary, output "
+            "across total); no galvanic isolation"
+        )
+    else:
+        notes.append("isolated two-winding transformer")
+    if reactance_ratio < reactance_factor:
+        notes.append(
+            f"X_Lm/Z = {reactance_ratio:.2f} below target {reactance_factor:.2f}; "
+            "low-frequency response may suffer"
+        )
+    if hf_caution:
+        notes.append(
+            "many turns at HF: leakage/capacitance may degrade the high bands "
+            "(prefer fewer turns)"
+        )
     if abs(actual_turns - turns) > 1e-12:
         notes.append(
             f"rounded turns give ratio {actual_turns:.3f} (target {turns:.3f})"
@@ -247,7 +292,85 @@ def design_balun(
         awg_secondary=awg_secondary,
         fit=fit,
         notes=tuple(notes),
+        topology=topology_value,
+        total_turns=total_turns,
+        reactance_ratio=reactance_ratio,
+        hf_caution=hf_caution,
     )
 
 
-__all__ = ["BalunDesign", "BalunError", "BalunKind", "design_balun"]
+def design_balun_options(
+    core: ToroidCore,
+    *,
+    kind: BalunKind | str,
+    z_unbalanced_ohm: float,
+    z_balanced_ohm: float,
+    f_min_hz: float,
+    f_max_hz: float,
+    power_w: float,
+    topology: TransformerTopology | str = TransformerTopology.AUTOTRANSFORMER,
+    coupling: float = 0.98,
+    tan_delta: float = 0.02,
+    winding_capacitance_f: float = 0.0,
+    line_z0_ohm: float | None = None,
+    line_length_m: float | None = None,
+    velocity_factor: float = 0.7,
+    line_loss_db_per_m: float = 0.0,
+    reactance_factor: float = 4.0,
+    current_density_a_mm2: float = 4.0,
+) -> list[BalunDesign]:
+    """Return compact / recommended / robust turns options for one ratio."""
+    base = design_balun(
+        core,
+        kind=kind,
+        z_unbalanced_ohm=z_unbalanced_ohm,
+        z_balanced_ohm=z_balanced_ohm,
+        f_min_hz=f_min_hz,
+        f_max_hz=f_max_hz,
+        power_w=power_w,
+        topology=topology,
+        coupling=coupling,
+        tan_delta=tan_delta,
+        winding_capacitance_f=winding_capacitance_f,
+        line_z0_ohm=line_z0_ohm,
+        line_length_m=line_length_m,
+        velocity_factor=velocity_factor,
+        line_loss_db_per_m=line_loss_db_per_m,
+        reactance_factor=reactance_factor,
+        current_density_a_mm2=current_density_a_mm2,
+    )
+    candidates = sorted(
+        {max(1, base.n_primary - 1), base.n_primary, base.n_primary + 1}
+    )
+    return [
+        design_balun(
+            core,
+            kind=kind,
+            z_unbalanced_ohm=z_unbalanced_ohm,
+            z_balanced_ohm=z_balanced_ohm,
+            f_min_hz=f_min_hz,
+            f_max_hz=f_max_hz,
+            power_w=power_w,
+            topology=topology,
+            coupling=coupling,
+            tan_delta=tan_delta,
+            winding_capacitance_f=winding_capacitance_f,
+            line_z0_ohm=line_z0_ohm,
+            line_length_m=line_length_m,
+            velocity_factor=velocity_factor,
+            line_loss_db_per_m=line_loss_db_per_m,
+            reactance_factor=reactance_factor,
+            current_density_a_mm2=current_density_a_mm2,
+            turns_primary=n_primary,
+        )
+        for n_primary in candidates
+    ]
+
+
+__all__ = [
+    "BalunDesign",
+    "BalunError",
+    "BalunKind",
+    "design_balun",
+    "design_balun_options",
+]

@@ -87,7 +87,9 @@ class Project:
 def _balun_to_mapping(balun: BalunSpec) -> dict[str, object]:
     return {
         "kind": balun.kind,
+        "topology": balun.topology,
         "turns_ratio": balun.turns_ratio,
+        "total_turns": balun.total_turns,
         "z_unbalanced_ohm": balun.z_unbalanced_ohm,
         "z_balanced_ohm": balun.z_balanced_ohm,
         "z0_line_ohm": balun.z0_line_ohm,
@@ -107,7 +109,9 @@ def _balun_to_mapping(balun: BalunSpec) -> dict[str, object]:
 def _balun_from_mapping(data: dict[str, Any]) -> BalunSpec:
     return BalunSpec(
         kind=str(data.get("kind", "ideal")),
+        topology=str(data.get("topology", "autotransformer")),
         turns_ratio=float(data.get("turns_ratio", 1.0)),
+        total_turns=_opt_int(data.get("total_turns")) or 0,
         z_unbalanced_ohm=float(data.get("z_unbalanced_ohm", 0.0)),
         z_balanced_ohm=float(data.get("z_balanced_ohm", 0.0)),
         z0_line_ohm=float(data.get("z0_line_ohm", 50.0)),

@@ -19,6 +19,7 @@ from filterdesk.components_std import (
     BalunError,
     BalunKind,
     design_balun,
+    design_balun_options,
     find_core,
 )
 from filterdesk.domain.circuit import BalunSpec, Circuit, IdealResistor, Port
@@ -57,6 +58,37 @@ def test_guanella_design_1_to_4() -> None:
     assert spec.kind == "guanella"
     assert spec.turns_ratio == pytest.approx(0.5)
     assert spec.core == "FT240-43"
+
+
+def test_balun_topology_and_winding_options() -> None:
+    auto = design_balun_options(
+        _core(),
+        kind="unun",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=2500.0,
+        f_min_hz=7e6,
+        f_max_hz=28e6,
+        power_w=100.0,
+        topology="autotransformer",
+    )
+    assert [(d.n_primary, d.n_secondary, d.total_turns) for d in auto] == [
+        (2, 14, 14),
+        (3, 21, 21),
+        (4, 28, 28),
+    ]
+    assert auto[2].hf_caution
+    isolated = design_balun_options(
+        _core(),
+        kind="unun",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=2500.0,
+        f_min_hz=7e6,
+        f_max_hz=28e6,
+        power_w=100.0,
+        topology="isolated",
+    )
+    assert [d.total_turns for d in isolated] == [16, 24, 32]
+    assert isolated[0].to_spec().topology == "isolated"
 
 
 def test_choke_requires_equal_impedances() -> None:
@@ -142,6 +174,8 @@ def test_balun_in_ladder_and_project_roundtrip() -> None:
     assert restored.output_balun.kind == "unun"
     assert restored.output_balun.turns_ratio == pytest.approx(balun.turns_ratio)
     assert restored.output_balun.core == "FT240-43"
+    assert restored.output_balun.topology == "autotransformer"
+    assert restored.output_balun.total_turns == balun.total_turns
 
     result = LadderABCDAnalyzer().analyze(circuit, SweepConfig(1e6, 100e6, 16))
     reference = LadderABCDAnalyzer().analyze(
@@ -289,10 +323,58 @@ def test_balun_cli_error(capsys) -> None:
     assert "error:" in capsys.readouterr().err
 
 
-def test_balun_dialog(qtbot) -> None:
-    from filterdesk.gui.widgets import BalunDialog
+def test_main_window_applies_and_removes_balun(monkeypatch) -> None:
+    from PySide6.QtWidgets import QApplication, QDialog
 
-    dialog = BalunDialog()
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    class ApplyDialog:
+        def __init__(self, parent=None) -> None:
+            del parent
+
+        def exec(self):
+            return QDialog.DialogCode.Accepted
+
+        def remove_requested(self) -> bool:
+            return False
+
+        def balun_spec(self) -> BalunSpec:
+            return BalunSpec(
+                kind="unun",
+                topology="autotransformer",
+                turns_ratio=0.5,
+                total_turns=8,
+                core="FT140-43",
+                turns=4,
+                wire_awg=21,
+            )
+
+    class RemoveDialog(ApplyDialog):
+        def remove_requested(self) -> bool:
+            return True
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    monkeypatch.setattr(mw, "TransformerDialog", ApplyDialog)
+    window._run_transformer()
+    assert session.circuit is not None
+    assert session.circuit.output_balun is not None
+    assert session.circuit.output_balun.total_turns == 8
+    monkeypatch.setattr(mw, "TransformerDialog", RemoveDialog)
+    window._run_transformer()
+    assert session.circuit.output_balun is None
+    window.close()
+    assert app is not None
+
+
+def test_balun_dialog(qtbot) -> None:
+    from filterdesk.gui.widgets import TransformerDialog
+
+    dialog = TransformerDialog()
     qtbot.addWidget(dialog)
     design = dialog.current_design()
     assert design is not None
