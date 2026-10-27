@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -10,6 +11,13 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 pytest.importorskip("PySide6")
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason=(
+        "visual regression is a Linux offscreen baseline; Windows uses package smoke"
+    ),
+)
 
 
 def _schematic_circuit() -> object:
@@ -31,7 +39,6 @@ def test_schematic_geometry_labels_and_render() -> None:
     panel = SchematicPanel()
     panel.resize(900, 300)
     panel.set_circuit(circuit)  # type: ignore[arg-type]
-    panel.show()
     app.processEvents()
 
     ids = {element.id for element in circuit.elements}  # type: ignore[attr-defined]
