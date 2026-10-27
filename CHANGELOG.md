@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.20.0 — 2026-10-27
+
+### Added
+
+- Mixed-mode 3-port boundary model (`Sdd`, `Scc`, zero symmetric cross-mode)
+  with GUI table and CLI JSON.
+- Guanella TLT SPICE test netlist (parallel/series `T` lines, center-node
+  choke) validated against `Sdd21` with ngspice.
+
 ## v0.19.0 — 2026-10-27
 
 ### QA

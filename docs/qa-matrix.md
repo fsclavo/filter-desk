@@ -13,7 +13,7 @@ limit. It complements the model-confidence registry and the validation matrix.
 | ABCD vs scikit-rf | `test_validation_matrix.py`, `test_distributed.py`, `test_balun.py` | `rtol=1e-8` for lumped; distributed has its own tolerances |
 | SPICE/MNA | Independent MNA parser, ngspice CI, transformer and distributed line tests | LTspice/Qucs external opening is still manual |
 | Stress | Analytic series-resistor, BPF 100 W, finite-Q, T1, distributed, edge cases | Linear frequency-domain model; no thermal/nonlinear stress |
-| Balun/TLT | Guanella multi-line, Ruthroff 1:4, choke CM sweep, DCR/option persistence | No full mixed-mode 3/4-port or EM model |
+| Balun/TLT | Guanella multi-line, Ruthroff 1:4, mixed-mode 3-port, choke CM sweep, DCR/option persistence, Guanella SPICE/ngspice | Block-diagonal mixed-mode; no asymmetric 4-port/EM or Ruthroff SPICE |
 | Microstrip/stub/calculators | Unit tests and boundary cases | First-order models; no field solver |
 | Distributed LP | Analytic order 1–3; gated numerical order 4–5 | LP only, no dispersion/discontinuities/hardware |
 | Monte Carlo/optimization | Unit/property tests | Model-limited by the underlying circuit |

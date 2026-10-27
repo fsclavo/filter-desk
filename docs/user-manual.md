@@ -795,9 +795,11 @@ previously split across two tools.
   Integer 1:N² Guanella ratios use an explicit **N-line parallel/series**
   network; 1:4/4:1 Ruthroff uses an equal-delay bootstrap network. Non-integer
   Guanella and other Ruthroff ratios use the first-order transformer + TEM-line
-  model. For chokes the Model tab shows a five-point **common-mode sweep**
-  (`|Zcm|` and series-choke attenuation) and the CLI JSON includes the same
-  `common_mode_sweep`. It is not part of the differential 2-port.
+  model. The Model tab shows a five-point **mixed-mode** table (`Sdd21` and
+  `|Scc|`) and, for chokes, a five-point common-mode sweep. The CLI JSON includes
+  `mixed_mode` and `common_mode_sweep`. These are block-diagonal boundary
+  estimates: cross-mode terms are zero, and they are not a full asymmetric
+  4-port/EM model.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.
@@ -883,8 +885,10 @@ PCB low-pass filters, not for arbitrary distributed networks.
   discontinuities, radiation, coupling or fabrication tolerances. It is not a
   hardware-validated engine. Verify the board with Touchstone/VNA.
 - **SPICE netlist** export now represents series lines and shunt stubs with
-  ideal lossless `T` elements (open/short stub terminated). LTspice `.asc` and
-  Qucs `.sch` still reject distributed circuits. Loss, dispersion,
+  ideal lossless `T` elements (open/short stub terminated). Integer-ratio
+  Guanella TLTs export as parallel/series `T` lines with an optional center-node
+  `Lcm`; the differential response is validated with ngspice. LTspice `.asc`,
+  Qucs `.sch` and Ruthroff TLT export remain unsupported. Loss, dispersion,
   discontinuities and radiation are not in the exported model.
 
 On the command line:

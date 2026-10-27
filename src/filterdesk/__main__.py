@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from filterdesk.analysis.harmonics import (
     HarmonicReport,
     compute_harmonics,
 )
+from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
@@ -98,7 +100,11 @@ from filterdesk.io.csv_export import (
     export_csv,
 )
 from filterdesk.io.qucs import write_qucs_schematic
-from filterdesk.io.spice import write_ltspice_asc, write_spice_netlist
+from filterdesk.io.spice import (
+    write_ltspice_asc,
+    write_spice_netlist,
+    write_tlt_spice_netlist,
+)
 from filterdesk.io.touchstone import (
     TouchstoneError,
     read_touchstone,
@@ -520,6 +526,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-options",
         action="store_true",
         help="Include compact/recommended/robust turns options",
+    )
+    tr.add_argument(
+        "--export-spice",
+        type=Path,
+        default=None,
+        help="Write a Guanella TLT SPICE test netlist to this path",
     )
     tr.add_argument("--json", action="store_true", help="Emit JSON")
 
@@ -2441,13 +2453,34 @@ def main(argv: list[str] | None = None) -> int:
             if args.show_options
             else []
         )
+        tr_freqs = [f_min * (f_max / f_min) ** (index / 4.0) for index in range(5)]
         cm_report = None
         if tr_design.kind is BalunKind.CHOKE:
             try:
-                freqs = [f_min * (f_max / f_min) ** (index / 4.0) for index in range(5)]
-                cm_report = common_mode_sweep(tr_design.to_spec(), freqs)
+                cm_report = common_mode_sweep(tr_design.to_spec(), tr_freqs)
             except CommonModeError:
                 cm_report = None
+        mm_report = None
+        try:
+            mm_report = mixed_mode_balun(tr_design.to_spec(), tr_freqs)
+        except MixedModeError:
+            mm_report = None
+        if args.export_spice is not None:
+            try:
+                write_tlt_spice_netlist(
+                    tr_design.to_spec(),
+                    args.export_spice,
+                    ac=SweepConfig(
+                        f_start_hz=f_min,
+                        f_stop_hz=f_max,
+                        n_points=101,
+                        spacing=SweepSpacing.LOGARITHMIC,
+                    ),
+                )
+                print(f"Wrote {args.export_spice}", file=sys.stderr)
+            except Exception as exc:  # noqa: BLE001
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
         if args.json:
             payload = {
                 "kind": tr_design.kind.value,
@@ -2493,6 +2526,24 @@ def main(argv: list[str] | None = None) -> int:
                             "attenuation_db": point.attenuation_db,
                         }
                         for point in cm_report.points
+                    ]
+                ),
+                "mixed_mode": (
+                    []
+                    if mm_report is None
+                    else [
+                        {
+                            "frequency_hz": float(freq),
+                            "sdd21_db": 20.0
+                            * math.log10(max(abs(complex(s21)), 1e-15)),
+                            "scc": abs(complex(scc)),
+                        }
+                        for freq, s21, scc in zip(
+                            mm_report.frequency_hz,
+                            mm_report.sdd[:, 1, 0],
+                            mm_report.scc,
+                            strict=True,
+                        )
                     ]
                 ),
                 "z0_line_ohm": tr_design.z0_line_ohm,

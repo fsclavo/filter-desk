@@ -135,12 +135,12 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "balun_tlt",
         "Guanella/Ruthroff TLT",
         ConfidenceLevel.EXPERIMENTAL,
-        "Integer 1:N² Guanella ratios use an explicit N-line "
-        "parallel/series network; 1:4 Ruthroff uses an equal-delay bootstrap "
-        "ABCD; other TLTs use a transformer + TEM line.",
-        "Non-integer Guanella and non-1:4 Ruthroff ratios remain first-order. "
-        "Choke common-mode impedance/attenuation is a separate frequency sweep, "
-        "not a mixed-mode 3/4-port model; no EM model.",
+        "Integer 1:N² Guanella ratios use an explicit N-line network; 1:4 "
+        "Ruthroff uses a bootstrap ABCD; mixed-mode is a block-diagonal 3-port "
+        "boundary model.",
+        "Cross-mode terms are zero by symmetry. Common-mode is a choke/center-tap "
+        "estimate, not a full asymmetric 4-port/EM model; Ruthroff SPICE export "
+        "is not implemented.",
     ),
     ConfidenceItem(
         "microstrip",

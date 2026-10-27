@@ -97,3 +97,6 @@ def test_cli_transformer_common_mode_json(capsys: pytest.CaptureFixture[str]) ->
     sweep = payload["common_mode_sweep"]
     assert len(sweep) == 5
     assert sweep[0]["attenuation_db"] < sweep[-1]["attenuation_db"]
+    mixed = payload["mixed_mode"]
+    assert len(mixed) == 5
+    assert all("sdd21_db" in point and "scc" in point for point in mixed)

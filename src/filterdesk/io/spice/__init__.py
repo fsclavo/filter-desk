@@ -12,6 +12,7 @@ from pathlib import Path
 
 from filterdesk.analysis.types import SweepConfig
 from filterdesk.domain.circuit import (
+    BalunSpec,
     Circuit,
     Element,
     IdealBruneLC,
@@ -202,6 +203,61 @@ def spice_netlist(
     return "\n".join(lines) + "\n"
 
 
+def tlt_spice_netlist(
+    balun: BalunSpec,
+    *,
+    title: str = "FilterDesk Guanella TLT",
+    ac: SweepConfig | None = None,
+) -> str:
+    """Return a 3-port Guanella test netlist (input + differential output).
+
+    The N lines are parallel at the input and series at the output. A common-mode
+    choke inductance/core-loss shunt is placed at the output center node when
+    available. Lossless ``T`` elements are used; conductor/dielectric loss is
+    not represented.
+    """
+    lines = balun.guanella_line_count
+    if balun.kind != "guanella" or lines is None:
+        raise SpiceExportError(
+            "TLT SPICE export currently supports integer-ratio Guanella only"
+        )
+    if lines < 1:
+        raise SpiceExportError("Guanella TLT must have at least one line")
+    delay_s = balun.length_m / (balun.velocity_factor * 299_792_458.0)
+    out_nodes = ["outm", *[f"mid{i}" for i in range(1, lines)], "outp"]
+    net: list[str] = [f"* {title}", f"* {lines}-line Guanella, differential output"]
+    net.append("V1 in_src 0 AC 1")
+    net.append(f"RV1s in_src in {_fmt(balun.z_unbalanced_ohm)}")
+    for index in range(lines):
+        net.append(
+            f"TL{index + 1} in 0 {out_nodes[index]} {out_nodes[index + 1]} "
+            f"Z0={_fmt(balun.z0_line_ohm)} TD={delay_s:.12g}"
+        )
+    center = out_nodes[lines // 2]
+    if balun.magnetizing_inductance_h > 0.0:
+        net.append(f"Lcm {center} 0 {_fmt(balun.magnetizing_inductance_h)}")
+    if balun.core_loss_ohm is not None and balun.core_loss_ohm > 0.0:
+        net.append(f"Rcm {center} 0 {_fmt(balun.core_loss_ohm)}")
+    net.append(f"Rload outp outm {_fmt(balun.z_balanced_ohm)}")
+    if ac is not None:
+        net.append(f".ac dec {ac.n_points} {_fmt(ac.f_start_hz)} {_fmt(ac.f_stop_hz)}")
+        net.append(".print ac v(outp) v(outm)")
+    net.append(".end")
+    return "\n".join(net) + "\n"
+
+
+def write_tlt_spice_netlist(
+    balun: BalunSpec,
+    path: Path | str,
+    *,
+    title: str = "FilterDesk Guanella TLT",
+    ac: SweepConfig | None = None,
+) -> Path:
+    out = Path(path)
+    out.write_text(tlt_spice_netlist(balun, title=title, ac=ac), encoding="utf-8")
+    return out
+
+
 def write_spice_netlist(
     circuit: Circuit,
     path: Path | str,
@@ -230,6 +286,8 @@ __all__ = [
     "SpiceExportError",
     "ltspice_asc",
     "spice_netlist",
+    "tlt_spice_netlist",
     "write_ltspice_asc",
     "write_spice_netlist",
+    "write_tlt_spice_netlist",
 ]

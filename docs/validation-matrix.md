@@ -58,10 +58,12 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 - choke common-mode impedance/attenuation and a five-point frequency sweep;
 - exact open/short/resonant arm edge cases without NaN or divide warnings;
 - winding option/DCR persistence and BOM propagation;
-- non-1:4 limitations.
+- non-1:4 limitations;
+- mixed-mode 3-port blocks and Guanella SPICE export against ngspice.
 
-Guanella multi-line is still experimental; Ruthroff and common-mode behavior
-are not full multi-line/EM models.
+Guanella multi-line is still experimental; the mixed-mode model is
+block-diagonal, and Ruthroff/common-mode are not full asymmetric 4-port/EM
+models.
 
 ## Independent numerical oracle
 

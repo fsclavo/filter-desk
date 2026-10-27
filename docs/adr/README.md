@@ -26,3 +26,4 @@
 - [ADR-021](ADR-021-guanella-multiline.md) — explicit multi-line Guanella and 1:4 Ruthroff models
 - [ADR-022](ADR-022-choke-common-mode-sweep.md) — choke common-mode frequency sweep
 - [ADR-023](ADR-023-winding-dcr-and-option.md) — winding DCR estimate and persisted option
+- [ADR-024](ADR-024-mixed-mode-tlt.md) — mixed-mode 3-port model and Guanella SPICE export

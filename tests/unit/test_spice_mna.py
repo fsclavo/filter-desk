@@ -15,8 +15,9 @@ import numpy as np
 import pytest
 
 from filterdesk.analysis.adapters.abcd_ladder import LadderABCDAnalyzer
+from filterdesk.analysis.mixed_mode import mixed_mode_balun
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
-from filterdesk.domain.circuit import Circuit, MicrostripLineElement, Port
+from filterdesk.domain.circuit import BalunSpec, Circuit, MicrostripLineElement, Port
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
@@ -24,7 +25,7 @@ from filterdesk.domain.enums import (
     TopologyId,
 )
 from filterdesk.domain.specs import FilterSpec
-from filterdesk.io.spice import spice_netlist
+from filterdesk.io.spice import spice_netlist, tlt_spice_netlist
 from filterdesk.synthesis import synthesize
 
 FREQS = np.array([1e6, 10e6, 50e6, 100e6, 200e6, 1e9])
@@ -264,3 +265,43 @@ def test_spice_transformer_model_with_ngspice(tmp_path) -> None:
         # v(T1_s) is the load voltage; S21 = 2*sqrt(zs/zl)*Vload/Vsource.
         got = 2.0 * np.sqrt(50.0 / 75.0) * vload
         assert abs(got - expected) < 1e-4
+
+
+def test_guanella_tlt_spice_matches_mixed_mode(tmp_path) -> None:
+    if shutil.which("ngspice") is None:
+        pytest.skip("ngspice is not installed")
+    balun = BalunSpec(
+        kind="guanella",
+        turns_ratio=0.5,
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=200.0,
+        z0_line_ohm=100.0,
+        length_m=0.05,
+        velocity_factor=0.7,
+        magnetizing_inductance_h=1e-5,
+    )
+    net = tlt_spice_netlist(
+        balun, ac=SweepConfig(1e6, 100e6, 21, SweepSpacing.LOGARITHMIC)
+    )
+    path = tmp_path / "tlt.cir"
+    path.write_text(net, encoding="utf-8")
+    output = subprocess.run(
+        ["ngspice", "-b", str(path)], check=True, capture_output=True, text=True
+    )
+    samples: list[tuple[float, complex, complex]] = []
+    for line in output.stdout.splitlines():
+        parts = line.split()
+        if len(parts) >= 7 and parts[0].isdigit():
+            samples.append(
+                (
+                    float(parts[1]),
+                    complex(float(parts[2].rstrip(",")), float(parts[3])),
+                    complex(float(parts[4].rstrip(",")), float(parts[5])),
+                )
+            )
+    assert len(samples) > 5
+    freqs = np.asarray([sample[0] for sample in samples])
+    mixed = mixed_mode_balun(balun, freqs)
+    for index, (_freq, vp, vm) in enumerate(samples):
+        expected = mixed.sdd[index, 1, 0]
+        assert abs((vp - vm) - expected) < 5e-5

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -27,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
+from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.components_std import (
@@ -1517,7 +1520,17 @@ class TransformerDialog(QDialog):
         self._cm_table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
+        self._mm_table = QTableWidget(0, 3)
+        self._mm_table.setHorizontalHeaderLabels(
+            [tr("Frequency"), "Sdd21 (dB)", "|Scc|"]
+        )
+        self._mm_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._mm_table.setMaximumHeight(130)
+        self._mm_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self._confidence = ConfidenceBadge("thermal")
+        model_form.addRow("Mixed-mode (3-port)", self._mm_table)
         model_form.addRow("Common-mode sweep", self._cm_table)
         model_form.addRow("Confidence", self._confidence)
         model_form.addRow("Notes", self._notes)
@@ -1727,6 +1740,36 @@ class TransformerDialog(QDialog):
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
         self._show_common_mode(design)
+        self._show_mixed_mode(design)
+
+    def _show_mixed_mode(self, design: BalunDesign) -> None:
+        self._mm_table.setRowCount(0)
+        try:
+            f_min = parse_si(self._frequency.text().strip() or "0")
+            f_max = parse_si(self._frequency_max.text().strip() or "0")
+            if f_min <= 0.0 or f_max <= f_min:
+                return
+            freqs = [f_min * (f_max / f_min) ** (index / 4.0) for index in range(5)]
+            report = mixed_mode_balun(design.to_spec(), freqs)
+        except (MixedModeError, ValueError):
+            return
+        for index, freq in enumerate(report.frequency_hz):
+            row = self._mm_table.rowCount()
+            self._mm_table.insertRow(row)
+            self._mm_table.setItem(
+                row,
+                0,
+                QTableWidgetItem(format_engineering(float(freq), "Hz", digits=5)),
+            )
+            sdd21 = report.sdd[index, 1, 0]
+            self._mm_table.setItem(
+                row,
+                1,
+                QTableWidgetItem(f"{20.0 * math.log10(max(abs(sdd21), 1e-15)):.2f}"),
+            )
+            self._mm_table.setItem(
+                row, 2, QTableWidgetItem(f"{abs(report.scc[index]):.4f}")
+            )
 
     def _show_common_mode(self, design: BalunDesign) -> None:
         self._cm_table.setRowCount(0)
