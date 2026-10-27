@@ -270,7 +270,7 @@ def compute_stress(
             lumped_models[element.id] = (impedance, admittance, open_circuit)
 
     try:
-        voltages = np.linalg.solve(matrix, injections)
+        voltages = np.asarray(np.linalg.solve(matrix, injections), dtype=np.complex128)
     except np.linalg.LinAlgError as exc:
         raise StressError("stress nodal matrix is singular") from exc
 

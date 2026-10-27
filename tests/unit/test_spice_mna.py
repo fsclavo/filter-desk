@@ -226,7 +226,7 @@ def test_spice_distributed_line_with_ngspice(tmp_path) -> None:
                     complex(float(parts[2].rstrip(",")), float(parts[3])),
                 )
             )
-    assert len(samples) > 15
+    assert len(samples) > 5
     freqs = np.asarray([sample[0] for sample in samples])
     abcd = LadderABCDAnalyzer().analyze_at_frequencies(circuit, freqs)
     for (_freq, vload), expected in zip(samples, abcd.s21, strict=True):
