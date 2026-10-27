@@ -4,10 +4,10 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.12.0 · **Released:**
+**Last verified:** 2026-10-26 · **App version:** 0.13.0 · **Release:** prepared,
+not published · **Previous:**
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
-**Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
-**Next:** v0.13.0 planning.
+**Next:** v0.14.0 planning.
 
 **Verification:** local suite **943 passed, 1 skipped**; coverage **82.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
