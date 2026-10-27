@@ -197,6 +197,8 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
             row["substrate"] = el.substrate
             row["width_mm"] = el.width_mm
             row["angle_deg"] = el.angle_deg
+            row["er"] = el.er
+            row["height_mm"] = el.height_mm
         elif isinstance(el, MicrostripStubElement):
             row["z0_Ohm"] = el.z0_ohm
             row["length_m"] = el.length_m
@@ -206,6 +208,8 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
             row["substrate"] = el.substrate
             row["width_mm"] = el.width_mm
             row["angle_deg"] = el.angle_deg
+            row["er"] = el.er
+            row["height_mm"] = el.height_mm
         else:
             row["value_Ohm"] = el.value_ohm
         elements.append(row)
@@ -380,6 +384,8 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     substrate=str(row.get("substrate", "")),
                     width_mm=float(row.get("width_mm", 0.0)),
                     angle_deg=float(row.get("angle_deg", 0.0)),
+                    er=float(row.get("er", 1.0)),
+                    height_mm=float(row.get("height_mm", 0.0)),
                     g=g,
                 )
             )
@@ -398,6 +404,8 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     substrate=str(row.get("substrate", "")),
                     width_mm=float(row.get("width_mm", 0.0)),
                     angle_deg=float(row.get("angle_deg", 0.0)),
+                    er=float(row.get("er", 1.0)),
+                    height_mm=float(row.get("height_mm", 0.0)),
                     g=g,
                 )
             )

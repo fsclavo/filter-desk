@@ -858,9 +858,10 @@ input reactance of an open or short stub at a chosen electrical angle.
 
 Limitations: strip thickness is not included in `Z0`; conductor loss uses a
 surface-resistance/skin-depth approximation and dielectric loss the standard
-quasi-static formula. Discontinuities, radiation, dispersion and finite
-ground-plane effects are not modelled. These are line/stub calculators; verify
-the layout with a 2-D/3-D field solver or VNA.
+quasi-static formula. The distributed **analysis** applies Kirschning-Jansen
+dispersion when substrate geometry is stored, but the standalone calculators
+report quasi-static values. Discontinuities, radiation and finite-ground-plane
+effects are not modelled. Verify the layout with a 2-D/3-D field solver or VNA.
 
 ### Distributed microstrip realization (experimental)
 
@@ -881,8 +882,9 @@ PCB low-pass filters, not for arbitrary distributed networks.
   low-impedance lines. The preview lists `Z0`, trace width, length and angle.
 - Apply creates a normal circuit: it appears in the schematic, component table,
   project, BOM and Touchstone export. The action is undoable.
-- The model is **experimental**: ideal TEM lines, no dispersion, step
-  discontinuities, radiation, coupling or fabrication tolerances. It is not a
+- The model is **experimental**: lines use Kirschning-Jansen dispersion when
+  substrate `er`/height/width are available, but step discontinuities,
+  radiation, coupling and fabrication tolerances are not modeled. It is not a
   hardware-validated engine. Verify the board with Touchstone/VNA.
 - **SPICE netlist** export now represents series lines and shunt stubs with
   ideal lossless `T` elements (open/short stub terminated). Integer-ratio

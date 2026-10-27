@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.21.0 — 2026-10-27
+
+### Added
+
+- Microstrip line/stub analysis now uses Kirschning-Jansen frequency dispersion
+  (`eeff(f)`, `Z0(f)`) when substrate `er`/height/width are available.
+- Distributed synthesis records substrate data and evaluates high-order fits with
+  dispersion enabled.
+
 ## v0.20.0 — 2026-10-27
 
 ### Added

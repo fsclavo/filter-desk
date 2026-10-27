@@ -398,6 +398,8 @@ class MicrostripLineElement:
     substrate: str = ""
     width_mm: float = 0.0
     angle_deg: float = 0.0
+    er: float = 1.0
+    height_mm: float = 0.0
     g: float | None = None
 
     @property
@@ -421,6 +423,8 @@ class MicrostripLineElement:
             raise ValueError("microstrip line elements are series arms")
         if self.width_mm < 0.0:
             raise ValueError("microstrip width must be >= 0")
+        if self.er < 1.0 or self.height_mm < 0.0:
+            raise ValueError("microstrip substrate data is invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -439,6 +443,8 @@ class MicrostripStubElement:
     substrate: str = ""
     width_mm: float = 0.0
     angle_deg: float = 0.0
+    er: float = 1.0
+    height_mm: float = 0.0
     g: float | None = None
 
     @property
@@ -462,6 +468,8 @@ class MicrostripStubElement:
             raise ValueError("microstrip stub elements are shunt arms")
         if self.width_mm < 0.0:
             raise ValueError("microstrip width must be >= 0")
+        if self.er < 1.0 or self.height_mm < 0.0:
+            raise ValueError("microstrip substrate data is invalid")
 
 
 Element = (

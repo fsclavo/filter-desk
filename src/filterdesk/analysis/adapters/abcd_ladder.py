@@ -7,6 +7,7 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
+from filterdesk.analysis.microstrip_dispersion import dispersion_eeff_z0
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import (
     BalunSpec,
@@ -249,36 +250,69 @@ def balun_abcd(
 
 def _propagation_constant(
     frequency_hz: NDArray[np.floating],
-    eeff: float,
+    eeff: NDArray[np.floating] | float,
     loss_db_per_m: float,
 ) -> NDArray[np.complexfloating]:
-    if eeff <= 0.0:
+    if np.any(np.asarray(eeff) <= 0.0):
         raise AnalysisError("effective permittivity must be > 0")
     alpha = loss_db_per_m / 8.686
     beta = (
         2.0
         * np.pi
         * np.asarray(frequency_hz, dtype=float)
-        / (np.sqrt(eeff) * 299_792_458.0)
+        * np.sqrt(eeff)
+        / 299_792_458.0
     )
     return np.asarray(alpha + 1j * beta, dtype=np.complex128)
+
+
+def _microstrip_properties(
+    element: MicrostripLineElement | MicrostripStubElement,
+    frequency_hz: NDArray[np.floating],
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    return dispersion_eeff_z0(
+        frequency_hz,
+        z0_ohm=element.z0_ohm,
+        eeff_static=element.eeff,
+        er=element.er,
+        height_mm=element.height_mm,
+        width_mm=element.width_mm,
+    )
+
+
+def _microstrip_line_abcd(
+    line: MicrostripLineElement,
+    frequency_hz: NDArray[np.floating],
+) -> NDArray[np.complexfloating]:
+    eeff, z0 = _microstrip_properties(line, frequency_hz)
+    gamma_l = (
+        _propagation_constant(frequency_hz, eeff, line.loss_db_per_m) * line.length_m
+    )
+    cosh = np.cosh(gamma_l)
+    sinh = np.sinh(gamma_l)
+    out = np.zeros((frequency_hz.size, 2, 2), dtype=np.complex128)
+    out[:, 0, 0] = cosh
+    out[:, 0, 1] = z0 * sinh
+    out[:, 1, 0] = sinh / z0
+    out[:, 1, 1] = cosh
+    return out
 
 
 def _stub_input_impedance(
     stub: MicrostripStubElement,
     frequency_hz: NDArray[np.floating],
 ) -> NDArray[np.complexfloating]:
+    eeff, z0 = _microstrip_properties(stub, frequency_hz)
     gamma_l = (
-        _propagation_constant(frequency_hz, stub.eeff, stub.loss_db_per_m)
-        * stub.length_m
+        _propagation_constant(frequency_hz, eeff, stub.loss_db_per_m) * stub.length_m
     )
     tanh = np.tanh(gamma_l)
     if stub.stub_kind == MicrostripStubKind.OPEN:
         if stub.length_m <= 0.0:
             return np.full_like(tanh, 1e12, dtype=np.complex128)
-        z = stub.z0_ohm / np.where(np.abs(tanh) < 1e-15, 1e-15, tanh)
+        z = z0 / np.where(np.abs(tanh) < 1e-15, 1e-15, tanh)
     else:
-        z = stub.z0_ohm * tanh
+        z = z0 * tanh
     return np.asarray(z, dtype=np.complex128)
 
 
@@ -379,13 +413,7 @@ def _element_abcd_impl(
             return _series_abcd(np.asarray(1.0 / y, dtype=np.complex128))
         return _shunt_abcd(y)
     if isinstance(el, MicrostripLineElement):
-        return transmission_line_abcd(
-            el.z0_ohm,
-            el.length_m,
-            el.velocity_factor,
-            el.loss_db_per_m,
-            np.asarray(omega / (2.0 * np.pi), dtype=float),
-        )
+        return _microstrip_line_abcd(el, np.asarray(omega / (2.0 * np.pi), dtype=float))
     if isinstance(el, MicrostripStubElement):
         if el.role != ElementRole.SHUNT:
             raise AnalysisError("microstrip stubs must be shunt elements")
