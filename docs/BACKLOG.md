@@ -10,7 +10,7 @@ not published · **Previous:**
 **Next:** v0.14.0 planning.
 
 **Verification:** local suite **946 passed, 2 skipped** (ngspice unavailable locally); coverage **82.93 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40490137920
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
