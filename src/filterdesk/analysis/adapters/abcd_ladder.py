@@ -31,7 +31,35 @@ class AnalysisError(ValueError):
     """Circuit cannot be analyzed by this backend."""
 
 
+#: Finite stand-ins for singular arms (exact resonance / open / short).
+_OPEN_IMPEDANCE = 1e18
+_SHORT_ADMITTANCE = 1e18
+
+
+def _finite_series_impedance(
+    z: NDArray[np.complexfloating],
+) -> NDArray[np.complexfloating]:
+    values = np.asarray(z, dtype=np.complex128)
+    bad = ~np.isfinite(values)
+    if np.any(bad):
+        values = values.copy()
+        values[bad] = _OPEN_IMPEDANCE
+    return values
+
+
+def _finite_shunt_admittance(
+    y: NDArray[np.complexfloating],
+) -> NDArray[np.complexfloating]:
+    values = np.asarray(y, dtype=np.complex128)
+    bad = ~np.isfinite(values)
+    if np.any(bad):
+        values = values.copy()
+        values[bad] = _SHORT_ADMITTANCE
+    return values
+
+
 def _series_abcd(z: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
+    z = _finite_series_impedance(z)
     n = z.shape[0]
     a = np.zeros((n, 2, 2), dtype=np.complex128)
     a[:, 0, 0] = 1.0
@@ -42,6 +70,7 @@ def _series_abcd(z: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
 
 
 def _shunt_abcd(y: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
+    y = _finite_shunt_admittance(y)
     n = y.shape[0]
     a = np.zeros((n, 2, 2), dtype=np.complex128)
     a[:, 0, 0] = 1.0
@@ -287,6 +316,16 @@ def _z_nonideal_capacitor(
 
 
 def _element_abcd(
+    el: Element, omega: NDArray[np.floating]
+) -> NDArray[np.complexfloating]:
+    # Singular points (exact resonance, open/short arms) are clamped to finite
+    # stand-ins by _series_abcd/_shunt_abcd; ignore the intermediate numpy
+    # divide/invalid warnings on the way there.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return _element_abcd_impl(el, omega)
+
+
+def _element_abcd_impl(
     el: Element, omega: NDArray[np.floating]
 ) -> NDArray[np.complexfloating]:
     if isinstance(el, IdealResistor):

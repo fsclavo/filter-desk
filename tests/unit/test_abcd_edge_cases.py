@@ -5,14 +5,18 @@ from __future__ import annotations
 import math
 import warnings
 
+import numpy as np
 import pytest
 
 from filterdesk.analysis.adapters.abcd_ladder import element_impedance_ohm
+from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import compute_stress
+from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.domain.circuit import (
     Circuit,
     IdealInductor,
     IdealParallelLC,
+    IdealSeriesLC,
     Port,
 )
 from filterdesk.domain.enums import ElementRole
@@ -59,3 +63,38 @@ def test_stress_with_open_shunt_is_finite() -> None:
     for entry in report.entries:
         assert math.isfinite(entry.v_peak_v)
         assert math.isfinite(entry.i_peak_a)
+
+
+def _series_circuit(element: object) -> Circuit:
+    port_in, port_out = _ports()
+    return Circuit(elements=[element], port_in=port_in, port_out=port_out)  # type: ignore[list-item]
+
+
+def test_series_open_resonator_has_open_response_without_nan() -> None:
+    circuit = _series_circuit(
+        IdealParallelLC("X1", _L, _C, "in", "out", ElementRole.SERIES)
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = analyze_circuit(
+            circuit, SweepConfig(_F0, 2.0 * _F0, 2, SweepSpacing.LINEAR)
+        )
+    assert not np.isnan(result.s11).any()
+    assert not np.isnan(result.s21).any()
+    assert abs(result.s21[0]) < 1e-6
+    assert abs(result.s11[0]) > 0.999999
+
+
+def test_series_short_resonator_passes_without_nan() -> None:
+    circuit = _series_circuit(
+        IdealSeriesLC("X1", _L, _C, "in", "out", ElementRole.SERIES)
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = analyze_circuit(
+            circuit, SweepConfig(_F0, 2.0 * _F0, 2, SweepSpacing.LINEAR)
+        )
+    assert not np.isnan(result.s11).any()
+    assert not np.isnan(result.s21).any()
+    assert abs(result.s21[0]) > 0.999999
+    assert abs(result.s11[0]) < 1e-6
