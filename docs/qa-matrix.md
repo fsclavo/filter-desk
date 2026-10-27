@@ -30,6 +30,10 @@ limit. It complements the model-confidence registry and the validation matrix.
 | BOM/Markdown/HTML | `test_build_sheet.py` content/structure | No browser print layout snapshot |
 | Packaged GUI | `--self-test` and package-acceptance jobs | Headless startup; physical Windows visual check remains manual |
 
+The visual-render checks use a Linux offscreen baseline. They are skipped on
+Windows because Qt image/font rasterization differs; Windows coverage uses the
+packaged `--self-test` and package-acceptance jobs instead.
+
 ## Known QA gaps
 
 - No image-diff/SSIM visual regression yet; diagram QA is structural/semantic.
