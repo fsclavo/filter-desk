@@ -291,7 +291,7 @@ def test_guanella_tlt_spice_matches_mixed_mode(tmp_path) -> None:
     samples: list[tuple[float, complex, complex]] = []
     for line in output.stdout.splitlines():
         parts = line.split()
-        if len(parts) >= 7 and parts[0].isdigit():
+        if len(parts) >= 6 and parts[0].isdigit():
             samples.append(
                 (
                     float(parts[1]),
