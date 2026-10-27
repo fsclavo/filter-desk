@@ -10,6 +10,9 @@ scheme while the public CLI/GUI stabilizes.
 - Distributed LP v3: order 4–5 Butterworth/Chebyshev-I designs use a bounded
   numerical fit and a strict response gate; rejected fits return an explicit
   error instead of a questionable design.
+- Guanella TLTs with integer 1:N² ratios now use an explicit N-line
+  parallel-input/series-output network instead of a fixed transformer + line;
+  Ruthroff and non-integer ratios remain first-order.
 
 ## v0.13.0 — 2026-10-27
 

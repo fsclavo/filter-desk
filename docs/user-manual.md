@@ -792,6 +792,10 @@ previously split across two tools.
   Select **isolated** for two separate windings (total `Np + Ns`).
 - **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
   capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
+  Integer 1:N² Guanella ratios use an explicit **N-line parallel/series**
+  network; Ruthroff and non-integer ratios use the first-order transformer +
+  TEM-line model. Common-mode impedance is reported for chokes but is not in the
+  differential 2-port.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.

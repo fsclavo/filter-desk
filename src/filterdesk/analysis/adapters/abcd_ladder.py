@@ -99,15 +99,49 @@ def transmission_line_abcd(
     return a
 
 
+def _guanella_abcd(
+    balun: BalunSpec, frequency_hz: NDArray[np.floating]
+) -> NDArray[np.complexfloating] | None:
+    """ABCD of an N-line Guanella TLT (parallel input, series output)."""
+    lines = balun.guanella_line_count
+    if lines is None:
+        return None
+    line = transmission_line_abcd(
+        balun.z0_line_ohm,
+        balun.length_m,
+        balun.velocity_factor,
+        balun.loss_db_per_m,
+        frequency_hz,
+    )
+    a = line[:, 0, 0]
+    b = line[:, 0, 1]
+    c = line[:, 1, 0]
+    d = line[:, 1, 1]
+    out = np.zeros_like(line)
+    if balun.turns_ratio <= 1.0:
+        # N lines in parallel at the low side, series at the high side.
+        out[:, 0, 0] = a / lines
+        out[:, 0, 1] = b
+        out[:, 1, 0] = c
+        out[:, 1, 1] = d * lines
+    else:
+        # Reverse the step-up network for a high-to-low transformation.
+        out[:, 0, 0] = d * lines
+        out[:, 0, 1] = -b
+        out[:, 1, 0] = -c
+        out[:, 1, 1] = a / lines
+    return out
+
+
 def balun_abcd(
     balun: BalunSpec, frequency_hz: NDArray[np.floating]
 ) -> NDArray[np.complexfloating]:
-    """Behavioral ABCD of a boundary balun/unun.
+    """Behavioral/multi-line ABCD of a boundary balun/unun.
 
-    The ideal transformer is followed by an optional TEM line, leakage,
-    winding capacitance and a shunt core-loss resistance. A real multi-line
-    Guanella/Ruthroff layout is not derived from the winding geometry; the
-    line section is a first-order delay/impedance model.
+    Guanella baluns with an integer 1:N² ratio use an explicit N-line
+    parallel-input/series-output network. Other kinds keep the first-order
+    transformer + TEM-line model. Leakage, core loss and winding capacitance
+    are applied as boundary elements.
     """
     freq = np.asarray(frequency_hz, dtype=float)
     omega = 2.0 * np.pi * freq
@@ -120,17 +154,21 @@ def balun_abcd(
         sections.append(
             _shunt_abcd(np.full_like(omega, 1.0 / balun.core_loss_ohm, dtype=complex))
         )
-    sections.append(transformer_abcd(balun.turns_ratio, freq.size))
-    if balun.length_m > 0.0:
-        sections.append(
-            transmission_line_abcd(
-                balun.z0_line_ohm,
-                balun.length_m,
-                balun.velocity_factor,
-                balun.loss_db_per_m,
-                freq,
+    guanella = _guanella_abcd(balun, freq) if balun.kind == "guanella" else None
+    if guanella is not None:
+        sections.append(guanella)
+    else:
+        sections.append(transformer_abcd(balun.turns_ratio, freq.size))
+        if balun.length_m > 0.0:
+            sections.append(
+                transmission_line_abcd(
+                    balun.z0_line_ohm,
+                    balun.length_m,
+                    balun.velocity_factor,
+                    balun.loss_db_per_m,
+                    freq,
+                )
             )
-        )
     if balun.shunt_c_f > 0.0:
         sections.append(_shunt_abcd(1j * omega * balun.shunt_c_f))
     return cascade_abcd(sections)

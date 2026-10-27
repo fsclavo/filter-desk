@@ -215,6 +215,20 @@ class BalunSpec:
     def ratio_text(self) -> str:
         return f"{self.turns_text} turns / {self.impedance_text} Z"
 
+    @property
+    def guanella_line_count(self) -> int | None:
+        """Integer number of parallel/series lines for a Guanella TLT, if any."""
+        if self.kind != "guanella":
+            return None
+        ratio = self.turns_ratio
+        lines = round(1.0 / ratio) if ratio < 1.0 else round(ratio)
+        if lines < 1:
+            return None
+        expected = 1.0 / lines if ratio < 1.0 else float(lines)
+        if abs(ratio - expected) > 1e-6 * max(1.0, abs(ratio)):
+            return None
+        return int(lines)
+
     def __post_init__(self) -> None:
         if self.kind not in {"ideal", "unun", "guanella", "ruthroff", "choke"}:
             raise ValueError(f"unknown balun kind {self.kind!r}")

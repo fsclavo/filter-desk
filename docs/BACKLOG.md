@@ -10,7 +10,7 @@ count or release changes.
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
 **Next:** v0.14.0 planning.
 
-**Verification:** local suite **951 passed, 2 skipped** (ngspice unavailable locally); coverage **82.99 %**.
+**Verification:** local suite **954 passed, 2 skipped** (ngspice unavailable locally); coverage **82.99 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40516044059
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40508031922
 
@@ -105,8 +105,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 - [ ] **High-flux thermal validation:** replace low-flux μ'' estimates with vendor
       high-flux curves or measurements; validate FT140/FT240 temperature rise. (M/L)
-- [ ] **Balun model depth:** full multi-line Guanella/Ruthroff, common-mode
-      impedance in the differential 2-port and validated TLT export. (L)
+- [x] **Guanella multi-line:** integer 1:N² Guanella ratios now use an explicit
+      N-line parallel/series network.
+- [ ] **Ruthroff/common-mode depth:** Ruthroff multi-line model, common-mode
+      response in the differential 2-port and validated TLT export. (L)
 - [x] **Distributed netlist v1:** line/stub elements are integrated into the
       domain, ABCD/skrf, project v2, BOM and an experimental order-1–3 LP
       synthesis. Full response coverage, higher orders, stub-only/Kuroda
@@ -121,6 +123,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       `.asc`/Qucs remain unsupported.
 - [x] **Distributed LP orders 4–5:** bounded numerical fit with strict
       passband/stopband gates (post-v0.13.0, in `Unreleased`).
+- [x] **Guanella multi-line model:** integer 1:N² ratios use an explicit N-line
+      parallel/series network (post-v0.13.0, in `Unreleased`).
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, dispersion/discontinuity models and hardware
       validation. (L)

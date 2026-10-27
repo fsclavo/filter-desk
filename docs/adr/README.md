@@ -23,3 +23,4 @@
 - [ADR-018](ADR-018-distributed-microstrip-v1.md) — distributed microstrip elements and v1 LP synthesis
 - [ADR-019](ADR-019-distributed-spice-export.md) — SPICE netlist export for distributed lines/stubs
 - [ADR-020](ADR-020-distributed-lp-numerical-fit.md) — gated numerical fit for distributed LP orders 4–5
+- [ADR-021](ADR-021-guanella-multiline.md) — explicit multi-line Guanella model

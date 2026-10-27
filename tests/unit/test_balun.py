@@ -12,6 +12,8 @@ from filterdesk.analysis.adapters.abcd_ladder import (
     LadderABCDAnalyzer,
     abcd_to_s,
     balun_abcd,
+    transformer_abcd,
+    transmission_line_abcd,
 )
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import SweepConfig
@@ -53,7 +55,7 @@ def test_guanella_design_1_to_4() -> None:
     assert design.length_m > 0.0
     assert design.bsat_margin is not None and design.bsat_margin > 1.0
     assert design.fit.fits
-    assert any("behavioral" in note for note in design.notes)
+    assert any("Guanella 2-line" in note for note in design.notes)
     spec = design.to_spec()
     assert spec.kind == "guanella"
     assert spec.turns_ratio == pytest.approx(0.5)
@@ -180,6 +182,35 @@ def test_ideal_balun_abcd_matches_impedance_ratio() -> None:
     assert np.allclose(np.abs(s21), 1.0, atol=1e-12)
 
 
+def test_guanella_line_count_and_zero_length_transformer() -> None:
+    for ratio, lines in ((1.0, 1), (0.5, 2), (1 / 3, 3), (2.0, 2)):
+        spec = BalunSpec(kind="guanella", turns_ratio=ratio)
+        assert spec.guanella_line_count == lines
+        freq = np.array([1e6, 10e6, 100e6])
+        expected = transformer_abcd(ratio, freq.size)
+        assert np.allclose(balun_abcd(spec, freq), expected, atol=1e-12)
+    assert BalunSpec(kind="guanella", turns_ratio=0.6).guanella_line_count is None
+    assert BalunSpec(kind="unun", turns_ratio=0.5).guanella_line_count is None
+
+
+def test_guanella_multiline_network_matches_parallel_series_formula() -> None:
+    spec = BalunSpec(
+        kind="guanella",
+        turns_ratio=0.5,
+        z0_line_ohm=100.0,
+        length_m=0.05,
+        velocity_factor=0.7,
+    )
+    freq = np.array([1e6, 10e6, 50e6])
+    line = transmission_line_abcd(100.0, 0.05, 0.7, 0.0, freq)
+    expected = np.zeros_like(line)
+    expected[:, 0, 0] = line[:, 0, 0] / 2.0
+    expected[:, 0, 1] = line[:, 0, 1]
+    expected[:, 1, 0] = line[:, 1, 0]
+    expected[:, 1, 1] = line[:, 1, 1] * 2.0
+    assert np.allclose(balun_abcd(spec, freq), expected, rtol=1e-12, atol=1e-15)
+
+
 def _circuit(balun: BalunSpec | None = None) -> Circuit:
     return Circuit(
         elements=[IdealResistor("R1", 0.0, "in", "out")],
@@ -241,6 +272,33 @@ def test_skrf_and_abcd_include_balun() -> None:
     skrf = analyze_circuit(circuit, sweep, backend="skrf")
     assert np.allclose(abcd.s21, skrf.s21, rtol=1e-9, atol=1e-12)
     assert np.allclose(abcd.s11, skrf.s11, rtol=1e-9, atol=1e-12)
+
+
+def test_cli_transformer_reports_guanella_lines(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = main(
+        [
+            "transformer",
+            "--kind",
+            "guanella",
+            "--z-low",
+            "50",
+            "--z-high",
+            "200",
+            "--core",
+            "FT240-43",
+            "--frequency",
+            "3.5M",
+            "--f-max",
+            "30M",
+            "--power",
+            "100",
+        ]
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "2-line Guanella" in out
 
 
 def test_balun_exports_use_bal1() -> None:

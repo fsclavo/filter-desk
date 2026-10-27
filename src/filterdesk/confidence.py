@@ -135,8 +135,11 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "balun_tlt",
         "Guanella/Ruthroff TLT",
         ConfidenceLevel.EXPERIMENTAL,
-        "First-order transformer + TEM-line model.",
-        "No full multi-line/EM model; common mode is not in the differential 2-port.",
+        "Integer 1:N² Guanella ratios use an explicit N-line "
+        "parallel/series network; other TLTs use a transformer + TEM line.",
+        "Ruthroff and non-integer Guanella ratios remain first-order. Common "
+        "mode is reported separately and is not in the differential 2-port; "
+        "no EM model.",
     ),
     ConfidenceItem(
         "microstrip",
@@ -204,9 +207,15 @@ def assumptions_for_circuit(circuit: Circuit) -> tuple[str, ...]:
         )
     if circuit.output_balun is not None:
         balun = circuit.output_balun
+        lines = balun.guanella_line_count
+        model = (
+            f"{lines}-line Guanella network"
+            if lines is not None
+            else "transformer + TEM-line"
+        )
         assumptions.append(
-            f"BAL1 is a {balun.kind} model ({balun.topology}); TLT/common-mode "
-            "behaviour is approximate."
+            f"BAL1 is a {balun.kind} model ({balun.topology}, {model}); "
+            "Ruthroff/common-mode behaviour is approximate."
         )
     if any(
         isinstance(el, (NonIdealInductor, NonIdealCapacitor)) for el in circuit.elements

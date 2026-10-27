@@ -2520,10 +2520,18 @@ def main(argv: list[str] | None = None) -> int:
             f"{tr_design.kind.value}: {tr_design.z_unbalanced_ohm:g} -> "
             f"{tr_design.z_balanced_ohm:g} Ohm on {tr_design.core.name}"
         )
+        tr_spec = tr_design.to_spec()
+        line_text = (
+            f", {tr_spec.guanella_line_count}-line Guanella"
+            if tr_spec.guanella_line_count is not None
+            else ""
+        )
         print(
             f"  Topology: {tr_design.topology.value}, "
-            f"total turns {tr_design.total_turns}"
+            f"total turns {tr_design.total_turns}{line_text}"
         )
+        if tr_design.common_mode_impedance_ohm > 0.0:
+            print(f"  Zcm(fmin) = {tr_design.common_mode_impedance_ohm:.4g} Ohm")
         print(
             f"  Turns: low={tr_design.n_primary}, high={tr_design.n_secondary} "
             f"({tr_design.ratio_text}, X_Lm/Z {tr_design.reactance_ratio:.2f})"

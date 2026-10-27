@@ -1658,8 +1658,13 @@ class TransformerDialog(QDialog):
         lk = format_engineering(design.leakage_inductance_h, "H", digits=4)
         self._inductances.setText(f"Lm {lm}, Lk {lk}")
         model = f"{design.kind.value}, Zline {design.z0_line_ohm:.3g} Ohm"
+        line_count = spec.guanella_line_count
+        if line_count is not None:
+            model += f", {line_count}-line Guanella"
         if design.length_m:
             model += f", l {design.length_m * 1000.0:.1f} mm"
+        if design.common_mode_impedance_ohm > 0.0:
+            model += f", Zcm(fmin) {design.common_mode_impedance_ohm:.3g} Ohm"
         if design.total_loss_w is not None:
             model += f", loss {design.total_loss_w:.2f} W, hot {design.thermal_text}"
         self._model.setText(model)

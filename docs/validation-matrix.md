@@ -46,6 +46,19 @@ bounded numerical fit and are accepted only with passband error ≤ 1.5 dB and
 stopband penalty ≤ 6 dB at `2 f_c`. It is marked **experimental**; ideal TEM, no
 dispersion/discontinuities/radiation, and no hardware validation yet.
 
+## Balun / TLT
+
+`tests/unit/test_balun.py` covers:
+
+- integer 1:N² Guanella line counts and zero-length reduction to the ideal
+  transformer;
+- the explicit parallel-input/series-output ABCD against the line formula;
+- ABCD/scikit-rf agreement and ladder/project round-trips;
+- Ruthroff/choke behavior and the first-order limitations.
+
+Guanella multi-line is still experimental; Ruthroff and common-mode behavior
+are not full multi-line/EM models.
+
 ## Power stress
 
 `tests/unit/test_stress.py` validates the nodal stress solve:

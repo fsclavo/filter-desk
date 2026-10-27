@@ -1,11 +1,12 @@
-"""Balun/unun design and first-order behavioral model parameters.
+"""Balun/unun design and boundary-model parameters.
 
 The calculator designs turns, core flux and wire on a toroid, then exposes a
-:class:`BalunSpec` that the circuit can cascade at its output boundary. The
-electrical model includes an ideal transformer, leakage inductance, winding
-capacitance, a shunt core-loss resistance and (for Guanella/Ruthhoff) a TEM
-line section. It is not a full multi-line transmission-line transformer or an
-EM solver: verify the winding layout and common-mode behavior on hardware.
+:class:`BalunSpec` that the circuit can cascade at its output boundary. Integer
+1:N² Guanella ratios use an explicit N-line parallel-input/series-output
+network; Ruthroff and other ratios keep the first-order transformer + TEM-line
+model. Leakage, winding capacitance, shunt core loss and common-mode estimates
+are included where applicable. This is not an EM solver: verify the layout and
+common-mode behavior on hardware.
 """
 
 from __future__ import annotations
@@ -266,8 +267,8 @@ def design_balun(
     i_unbalanced = math.sqrt(power_w / z_unbalanced_ohm)
     i_balanced = math.sqrt(power_w / z_balanced_ohm)
     ae_m2 = core.ae_mm2 * 1e-6
-    b_peak = math.sqrt(2.0) * v_unbalanced / (
-        2.0 * math.pi * f_min_hz * n_primary * ae_m2
+    b_peak = (
+        math.sqrt(2.0) * v_unbalanced / (2.0 * math.pi * f_min_hz * n_primary * ae_m2)
     )
     bsat_margin = core.bsat_t / b_peak if core.bsat_t is not None else None
     awg_primary = _awg_for_area(i_unbalanced / current_density_a_mm2)
@@ -302,9 +303,7 @@ def design_balun(
     rise = None if total_loss is None else total_loss * rth
     hot = None if rise is None else 25.0 + rise
     bsat_hot = (
-        None
-        if material is None or hot is None
-        else bsat_at_temperature(material, hot)
+        None if material is None or hot is None else bsat_at_temperature(material, hot)
     )
     margin_hot = None if bsat_hot is None else bsat_hot / b_peak
     thermal_caution = hot is not None and hot > 100.0
@@ -343,10 +342,23 @@ def design_balun(
         notes.append("core saturates at this power/frequency")
     if not fit.fits:
         notes.append("windings do not fit in one layer; use a larger core")
-    if kind_value in (BalunKind.GUANELLA, BalunKind.RUTHROFF):
+    if kind_value is BalunKind.GUANELLA:
+        lines = round(1.0 / actual_turns) if actual_turns < 1.0 else round(actual_turns)
+        expected = 1.0 / lines if actual_turns < 1.0 else float(lines)
+        if lines >= 1 and abs(actual_turns - expected) <= 1e-6 * max(1.0, actual_turns):
+            notes.append(
+                f"Guanella {lines}-line parallel/series network; verify the "
+                "winding layout and common-mode behavior"
+            )
+        else:
+            notes.append(
+                "non-integer Guanella ratio uses the first-order transformer + "
+                "TEM-line model; verify the winding layout"
+            )
+    elif kind_value is BalunKind.RUTHROFF:
         notes.append(
-            "TLT model is behavioral (one TEM section); verify the real "
-            "multi-line Guanella/Ruthroff layout"
+            "Ruthroff model is first-order (transformer + one TEM section); "
+            "verify the real winding layout"
         )
     if kind_value is BalunKind.CHOKE:
         notes.append(
