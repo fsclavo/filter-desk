@@ -9,7 +9,7 @@ count or release changes.
 **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.13.0 planning.
 
-**Verification:** local suite **937 passed, 1 skipped**; coverage **82.88 %**.
+**Verification:** local suite **942 passed, 1 skipped**; coverage **82.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -27,7 +27,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
   calculator, **Transformer / balun / unun**, Microstrip line.
 - **File** — project/Touchstone import and exports: BOM, SPICE, LTspice, Qucs,
-  CSV and Smith chart.
+  CSV and Smith chart; **Recent projects** for the last ten files.
 - **Help** — Model confidence inventory and user manual.
 - The transformer/balun/unun designer has only **Design** and **Model** tabs;
   winding diagrams were removed.
@@ -58,6 +58,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       Smith chart and response plots no longer advertise empty `meas` traces.
 - [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project
       v2, BOM geometry, schematic, experimental LP synthesis (order ≤ 3) and CLI.
+- [x] **File → Recent projects** (up to ten files, persisted, missing-entry
+      cleanup and clear action).
 
 ---
 

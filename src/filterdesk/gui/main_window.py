@@ -76,6 +76,13 @@ from filterdesk.gui.panels.markers_panel import MarkersPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
+from filterdesk.gui.recent_files import (
+    add_recent,
+    clear_recent,
+    load_recent,
+    prune_missing,
+    remove_recent,
+)
 from filterdesk.gui.settings import (
     GEOMETRY_KEY,
     LANGUAGE_KEY,
@@ -396,6 +403,9 @@ class MainWindow(QMainWindow):
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_new)
         file_menu.addAction(act_open)
+        self._recent_menu = file_menu.addMenu(tr("&Recent projects"))
+        self._refresh_recent_menu()
+        file_menu.addSeparator()
         file_menu.addAction(act_save)
         file_menu.addAction(act_save_as)
         file_menu.addAction(act_rename)
@@ -1928,14 +1938,57 @@ class MainWindow(QMainWindow):
         )
         if not path:
             return
+        self._open_project_path(Path(path))
+
+    def _open_project_path(self, path: Path) -> None:
+        if not path.is_file():
+            remove_recent(path)
+            self._refresh_recent_menu()
+            QMessageBox.warning(
+                self,
+                tr("Missing recent project"),
+                tr("The file no longer exists:\n{path}", path=path),
+            )
+            return
         try:
             project = load_project(path)
-            self._session.load_project(project, path=path)
+            self._session.load_project(project, path=str(path))
             self._undo.clear()
             self._load_session_into_ui()
             self._run_analyze()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, tr("Open failed"), _exc_text(exc))
+            return
+        add_recent(path)
+        self._refresh_recent_menu()
+
+    def _open_recent_project(self, path: str) -> None:
+        self._open_project_path(Path(path))
+
+    def _clear_recent_projects(self) -> None:
+        clear_recent()
+        self._refresh_recent_menu()
+
+    def _refresh_recent_menu(self) -> None:
+        menu = getattr(self, "_recent_menu", None)
+        if menu is None:
+            return
+        menu.clear()
+        existing, _missing = prune_missing(load_recent())
+        if not existing:
+            empty = menu.addAction(tr("No recent projects"))
+            empty.setEnabled(False)
+            return
+        for index, path in enumerate(existing, start=1):
+            label = f"{index}. {Path(path).name}".replace("&", "&&")
+            action = menu.addAction(label)
+            action.setToolTip(path)
+            action.triggered.connect(
+                lambda _checked=False, item=path: self._open_recent_project(item)
+            )
+        menu.addSeparator()
+        clear_action = menu.addAction(tr("Clear recent projects"))
+        clear_action.triggered.connect(self._clear_recent_projects)
 
     def _new_project(self) -> None:
         if self._session.dirty:
@@ -2025,6 +2078,8 @@ class MainWindow(QMainWindow):
             self._session.dirty = False
             self._update_title()
             self._status.setText(tr("Saved {path}", path=path))
+            add_recent(path)
+            self._refresh_recent_menu()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, tr("Save failed"), _exc_text(exc))
 

@@ -7,6 +7,8 @@ scheme while the public CLI/GUI stabilizes.
 
 ### Added
 
+- **File → Recent projects** keeps up to ten recently opened/saved projects,
+  removes missing entries and offers a clear-list action.
 - Experimental distributed microstrip v1: canonical microstrip line/stub
   elements, ABCD/scikit-rf analysis, project v2 round-trip, BOM geometry,
   schematic rendering and order-1–3 Butterworth/Chebyshev-I LP synthesis.

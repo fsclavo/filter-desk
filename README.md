@@ -128,6 +128,7 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   comparison table, with one-click load of a chosen variant.
 - **Interactive tuning**: tune components, retune by dragging markers, and scale
   the whole response.
+- **Recent projects** menu for the last ten opened/saved filter files.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

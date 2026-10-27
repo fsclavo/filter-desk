@@ -415,6 +415,7 @@ are hidden until a file is loaded and while the overlay is disabled.
 | --- | --- | --- | --- |
 | New project | File → New | `Ctrl+N` | — |
 | Open project | File → Open… | `Ctrl+O` | `.filterdesk.json` |
+| Recent projects | File → Recent projects | — | `.filterdesk.json` |
 | Save / Save As | File → Save / Save As… | `Ctrl+S` | `.filterdesk.json` |
 | Rename project | File → Rename project… | — | — |
 | Import measured | File → Import → Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
@@ -429,6 +430,11 @@ are hidden until a file is loaded and while the overlay is disabled.
 The native project file stores the specification, circuit, sweep settings,
 markers, limits, per-component tolerances and tune steps, the TX Power setting,
 the harmonic-readout fundamental, and metadata; it is reloadable and editable.
+
+**File → Recent projects** lists the last ten projects opened or saved, most
+recent first. Missing files are removed automatically; **Clear recent projects**
+empties the list. The list is stored in the application settings, not in the
+project file.
 
 The first **Save** suggests a name derived from the design
 (`<family>_<type>_n<order>_<freq>.filterdesk.json`, e.g.

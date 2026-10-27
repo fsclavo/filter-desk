@@ -610,6 +610,11 @@ _ES.update(
         "Only ideal L/C/R arms can be edited here.": (
             "Solo se pueden editar aquí ramas L/C/R ideales."
         ),
+        "&Recent projects": "Proyectos &recientes",
+        "No recent projects": "Sin proyectos recientes",
+        "Clear recent projects": "Borrar proyectos recientes",
+        "Missing recent project": "Proyecto reciente no encontrado",
+        "The file no longer exists:\n{path}": "El archivo ya no existe:\n{path}",
         "Open FilterDesk project": "Abrir proyecto FilterDesk",
         "Open failed": "Apertura fallida",
         "Optimize": "Optimizar",
