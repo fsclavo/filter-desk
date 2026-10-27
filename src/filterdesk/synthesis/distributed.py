@@ -211,10 +211,17 @@ def _refine_high_order(
         z0s = np.asarray(x[0::2], dtype=float).tolist()
         angles = np.asarray(x[1::2], dtype=float).tolist()
         trial = _make_circuit(base, substrate, spec.cutoff_hz, z0s, angles)
-        db = 20.0 * np.log10(
-            np.maximum(np.abs(analyze_circuit(trial, sweep, backend="abcd").s21), 1e-15)
+        db = np.asarray(
+            20.0
+            * np.log10(
+                np.maximum(
+                    np.abs(analyze_circuit(trial, sweep, backend="abcd").s21),
+                    1e-15,
+                )
+            ),
+            dtype=float,
         )
-        return (db - target_db) * weights
+        return np.asarray((db - target_db) * weights, dtype=float)
 
     solution = least_squares(
         residual,
