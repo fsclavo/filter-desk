@@ -9,6 +9,7 @@ import pytest
 
 from filterdesk.__main__ import main
 from filterdesk.analysis.stress import StressError, compute_stress
+from filterdesk.domain.circuit import Circuit, IdealResistor, Port
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
@@ -34,24 +35,38 @@ def _spec() -> FilterSpec:
     )
 
 
-def test_compute_stress_formulas() -> None:
-    circuit = synthesize(_spec()).circuit
-    report = compute_stress(circuit, power_w=100.0, frequency_hz=100e6)
-    i0 = math.sqrt(100.0 / 50.0)  # 1.414 A
-    v0 = math.sqrt(100.0 * 50.0)  # 70.71 V
-    by_ref = {e.ref: e for e in report.entries}
-    # Series element: Vpk = sqrt(2)*I0*|Z|, Ipk = sqrt(2)*I0.
-    series = next(e for e in report.entries if e.role.value == "series")
-    assert series.i_peak_a == pytest.approx(math.sqrt(2) * i0)
-    assert series.v_peak_v == pytest.approx(
-        math.sqrt(2) * i0 * abs(series.impedance_ohm)
+def test_compute_stress_series_resistor_matches_nodal_reference() -> None:
+    circuit = Circuit(
+        [IdealResistor("R1", 50.0, "in", "out")],
+        Port("P1", "in", 50.0),
+        Port("P2", "out", 50.0),
     )
-    # Shunt element: Vpk = sqrt(2)*V0.
-    shunt = next(e for e in report.entries if e.role.value == "shunt")
-    assert shunt.v_peak_v == pytest.approx(math.sqrt(2) * v0)
-    assert report.max_v_peak_v >= series.v_peak_v
-    assert report.worst_voltage_ref in by_ref
-    assert report.worst_current_ref in by_ref
+    report = compute_stress(circuit, power_w=100.0, frequency_hz=1e6)
+    # Source available power 100 W, Rs=50, R=50, load=50.
+    source_rms = math.sqrt(4.0 * 100.0 * 50.0)
+    current_rms = source_rms / (50.0 + 50.0 + 50.0)
+    resistor_rms = current_rms * 50.0
+    entry = report.entries[0]
+    assert entry.i_peak_a == pytest.approx(math.sqrt(2.0) * current_rms)
+    assert entry.v_peak_v == pytest.approx(math.sqrt(2.0) * resistor_rms)
+    assert report.max_v_peak_v == pytest.approx(entry.v_peak_v)
+    assert report.max_i_peak_a == pytest.approx(entry.i_peak_a)
+
+
+def test_bpf_stress_at_center_is_not_constant_arm_current() -> None:
+    from filterdesk.services.bands import BandKind, band_preset_spec, find_band
+
+    spec = band_preset_spec(find_band("40m"), BandKind.BPF)
+    circuit = synthesize(spec).circuit
+    report = compute_stress(
+        circuit, power_w=100.0, frequency_hz=float(spec.f_center_hz)
+    )
+    # At resonance the series LC arms are nearly shorts and the parallel tanks
+    # are nearly opens; the exact nodal values are close to 100 Vpk / 2 A.
+    assert report.max_v_peak_v == pytest.approx(100.0, abs=0.5)
+    assert report.max_i_peak_a == pytest.approx(2.0, abs=0.01)
+    assert all(math.isfinite(e.v_peak_v) for e in report.entries)
+    assert all(math.isfinite(e.i_peak_a) for e in report.entries)
 
 
 def test_compute_stress_validation() -> None:
@@ -71,6 +86,23 @@ def test_session_stress_none_when_power_off() -> None:
     report = session.compute_stress()
     assert report is not None
     assert report.frequency_hz == pytest.approx(100e6)
+
+
+def test_stress_supports_distributed_and_output_transformer() -> None:
+    from dataclasses import replace
+
+    from filterdesk.synthesis.distributed import design_distributed_lowpass
+
+    design = design_distributed_lowpass(replace(_spec(), order=3), "FR4")
+    report = compute_stress(design.circuit, power_w=100.0, frequency_hz=100e6)
+    assert len(report.entries) == len(design.circuit.elements)
+    assert all(math.isfinite(e.v_peak_v) for e in report.entries)
+    assert all(math.isfinite(e.i_peak_a) for e in report.entries)
+
+    with_t1 = replace(synthesize(_spec()).circuit, output_transformer_ratio=1.5)
+    t1_report = compute_stress(with_t1, power_w=100.0, frequency_hz=100e6)
+    assert t1_report.entries
+    assert all(math.isfinite(e.v_peak_v) for e in t1_report.entries)
 
 
 def test_stress_with_finite_q() -> None:

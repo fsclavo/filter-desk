@@ -9,7 +9,7 @@ not published · **Previous:**
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
 **Next:** v0.14.0 planning.
 
-**Verification:** local suite **943 passed, 1 skipped**; coverage **82.96 %**.
+**Verification:** local suite **945 passed, 1 skipped**; coverage **82.92 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -62,6 +62,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       cleanup and clear action).
 - [x] **Band Preset → Band Pass** uses order 5 so 50 Ω ports stay equal and no
       ideal output transformer T1 is inserted.
+- [x] **Power stress** now uses a nodal solve with source/load, T1/BAL1 and
+      distributed line/stub elements; Vpk/Ipk are no longer a constant-arm
+      rule of thumb.
 
 ---
 

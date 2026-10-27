@@ -270,7 +270,7 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._status)
         self._stress_label = QLabel("")
         self._stress_label.setToolTip(
-            "Worst-case peak voltage/current from the power-stress estimate"
+            "Worst-case peak voltage/current from the nodal power-stress analysis"
         )
         self.statusBar().addPermanentWidget(self._stress_label)
 

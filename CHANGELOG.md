@@ -17,6 +17,13 @@ scheme while the public CLI/GUI stabilizes.
   jobs covering GUI construction, synthesis, Touchstone round-trip, BOM export
   and project round-trip.
 
+### Changed
+
+- **Vpk / Ipk** now use a nodal solve at the reference frequency with the actual
+  source/load impedances and boundary T1/BAL1, instead of the constant-current
+  rule of thumb. Resonances, mismatch and distributed line/stub elements are
+  included; `TX Power` is the source available power.
+
 ### Fixed
 
 - **Band Preset → Band Pass** now uses order 5 (odd), so a 50 Ω design no longer

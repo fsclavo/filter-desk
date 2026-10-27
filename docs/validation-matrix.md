@@ -44,6 +44,19 @@ The v1 synthesis is limited to low-pass Butterworth/Chebyshev-I, order ≤ 3. It
 is marked **experimental**; ideal TEM, no dispersion/discontinuities/radiation,
 and no hardware validation yet.
 
+## Power stress
+
+`tests/unit/test_stress.py` validates the nodal stress solve:
+
+- series-resistor reference against the analytic source/load solution;
+- 40 m BPF at center: 100 W gives ~100 Vpk and ~2 A peak, including near-short
+  series resonators and near-open shunt tanks;
+- finite-Q circuits, distributed line/stub circuits and a boundary T1;
+- CLI/GUI wiring and error cases.
+
+`TX Power` is the source **available** power. The analysis is linear and
+frequency-domain; it does not model thermal drift or nonlinear saturation.
+
 ## SPICE validation
 
 - **Independent MNA test:** parses the exported SPICE E/F transformer netlist and

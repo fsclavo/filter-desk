@@ -328,7 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--power",
         type=float,
         default=0.0,
-        help="Forward power (W) for the per-element voltage/current stress estimate",
+        help="Source available power (W) for the per-element nodal stress analysis",
     )
     ana.add_argument(
         "--harmonics",
