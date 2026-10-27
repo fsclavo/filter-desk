@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.19.0 — 2026-10-27
+
+### QA
+
+- Extended the independent SciPy oracle to band-pass/band-stop Butterworth,
+  Chebyshev I/II and elliptic designs (orders 3/5).
+- Added an image-level Smith-chart baseline and tolerant pixel comparison.
+- Documented the BP/BS and visual-regression evidence in the QA matrix.
+
 ## v0.18.0 — 2026-10-27
 
 ### QA

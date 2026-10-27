@@ -65,10 +65,11 @@ are not full multi-line/EM models.
 
 ## Independent numerical oracle
 
-`tests/unit/test_numerical_oracle.py` compares LP and HP ABCD responses against
-SciPy analog prototypes (`butter`, `cheby1`, `cheby2`, `ellip`) for orders 3 and
-5. The maximum magnitude error is below **1e-4 dB**. This is independent of the
-project's g-value synthesis and backend.
+`tests/unit/test_numerical_oracle.py` compares LP, HP, BP and BS ABCD responses
+against SciPy analog prototypes (`butter`, `cheby1`, `cheby2`, `ellip`) for
+orders 3 and 5. The maximum magnitude error is below **1e-4 dB** (the BS notch
+is compared above -100 dB because the ideal zero is numerically singular). This
+is independent of the project's g-value synthesis and backend.
 
 ## Diagram QA
 
@@ -79,7 +80,9 @@ project's g-value synthesis and backend.
 - magnitude SVG axis/legend content and polyline count;
 - Smith SVG title, S11/S22 labels, axes and path count.
 
-This is semantic/structural QA, not a pixel-golden visual regression.
+`tests/unit/test_visual_regression.py` also compares a fixed Smith PNG export
+against `tests/golden/visual/smith_basic.png` with a tolerant pixel diff. This
+is a Linux offscreen baseline; Windows uses packaged smoke/self-test.
 
 ## Power stress
 
