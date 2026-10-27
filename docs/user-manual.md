@@ -870,8 +870,10 @@ PCB low-pass filters, not for arbitrary distributed networks.
 - The model is **experimental**: ideal TEM lines, no dispersion, step
   discontinuities, radiation, coupling or fabrication tolerances. It is not a
   hardware-validated engine. Verify the board with Touchstone/VNA.
-- SPICE/LTspice/Qucs export is intentionally rejected for distributed circuits
-  instead of emitting an approximate line model.
+- **SPICE netlist** export now represents series lines and shunt stubs with
+  ideal lossless `T` elements (open/short stub terminated). LTspice `.asc` and
+  Qucs `.sch` still reject distributed circuits. Loss, dispersion,
+  discontinuities and radiation are not in the exported model.
 
 On the command line:
 

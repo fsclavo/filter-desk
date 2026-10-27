@@ -7,6 +7,7 @@ expanded into primitives with internal nodes.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from filterdesk.analysis.types import SweepConfig
@@ -20,6 +21,8 @@ from filterdesk.domain.circuit import (
     IdealParallelLC,
     IdealResistor,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealCapacitor,
     NonIdealInductor,
 )
@@ -81,6 +84,25 @@ def _expand(el: Element, nodes: _Nodes) -> list[str]:
         lines.append(f"C{el.id}Cs {m1} {b} {_fmt(el.series_c_f)}")
         lines.append(f"L{el.id}Lp {a} {b} {_fmt(el.parallel_l_h)}")
         lines.append(f"C{el.id}Cp {a} {b} {_fmt(el.parallel_c_f)}")
+    elif isinstance(el, MicrostripLineElement):
+        delay_s = el.length_m * math.sqrt(el.eeff) / 299_792_458.0
+        lines.append(f"T{el.id} {a} 0 {b} 0 Z0={_fmt(el.z0_ohm)} TD={delay_s:.12g}")
+        lines.append(
+            f"* {el.id} microstrip loss {el.loss_db_per_m:g} dB/m ignored by T"
+        )
+    elif isinstance(el, MicrostripStubElement):
+        far = nodes.fresh()
+        delay_s = el.length_m * math.sqrt(el.eeff) / 299_792_458.0
+        lines.append(
+            f"T{el.id} {a} {b} {far} {b} Z0={_fmt(el.z0_ohm)} TD={delay_s:.12g}"
+        )
+        if el.stub_kind.value == "open":
+            lines.append(f"R{el.id}open {far} {b} 1e12")
+        else:
+            lines.append(f"R{el.id}short {far} {b} 1e-6")
+        lines.append(
+            f"* {el.id} microstrip stub loss {el.loss_db_per_m:g} dB/m ignored by T"
+        )
     elif isinstance(el, NonIdealInductor):
         if el.series_resistance_ohm > 0.0:
             mid = nodes.fresh()
@@ -150,9 +172,7 @@ def spice_netlist(
             lines.append(f"R_BAL1core {control} 0 {_fmt(balun.core_loss_ohm)}")
         lines.append(f"E_BAL1 BAL1_s 0 {control} 0 {_fmt(1.0 / ratio)}")
         lines.append("V_BAL1sense BAL1_s BAL1_sense 0")
-        lines.append(
-            f"F_BAL1 {control} 0 V_BAL1sense {_fmt(1.0 / ratio)}"
-        )
+        lines.append(f"F_BAL1 {control} 0 V_BAL1sense {_fmt(1.0 / ratio)}")
         out_net = "BAL1_sense"
         if balun.kind != "ideal" and balun.shunt_c_f > 0.0:
             lines.append(f"C_BAL1w {out_net} 0 {_fmt(balun.shunt_c_f)}")

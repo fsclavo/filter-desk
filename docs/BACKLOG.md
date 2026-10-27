@@ -9,7 +9,7 @@ not published · **Previous:**
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
 **Next:** v0.14.0 planning.
 
-**Verification:** local suite **945 passed, 1 skipped**; coverage **82.92 %**.
+**Verification:** local suite **946 passed, 2 skipped** (ngspice unavailable locally); coverage **82.93 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -106,6 +106,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ### P2 — data / ergonomics
 
+- [x] **Distributed SPICE export:** microstrip lines and stubs now export as
+      lossless SPICE `T` elements, with open/short stub terminations; LTspice
+      `.asc`/Qucs remain unsupported.
 - [ ] **Distributed synthesis depth:** higher-order/all-response distributed
       design, stub-only/Kuroda topologies, dispersion/discontinuity models and
       hardware validation. (L)

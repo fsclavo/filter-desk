@@ -200,10 +200,12 @@ def test_distributed_rejects_unsupported_requests() -> None:
         )
 
 
-def test_distributed_exports_are_rejected_by_spice_and_qucs() -> None:
+def test_distributed_spice_export_and_qucs_guard() -> None:
     design = design_distributed_lowpass(_spec(), "FR4")
-    with pytest.raises(SpiceExportError, match="unsupported element"):
-        spice_netlist(design.circuit)
+    text = spice_netlist(design.circuit)
+    assert "TTL1 in 0 " in text
+    assert "Z0=" in text and "TD=" in text
+    assert "microstrip loss" in text
     with pytest.raises(SpiceExportError, match="does not support"):
         qucs_schematic(design.circuit)
 

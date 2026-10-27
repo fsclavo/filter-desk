@@ -16,6 +16,7 @@ import pytest
 
 from filterdesk.analysis.adapters.abcd_ladder import LadderABCDAnalyzer
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
+from filterdesk.domain.circuit import Circuit, MicrostripLineElement, Port
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
@@ -192,15 +193,53 @@ def test_spice_transformer_model_matches_abcd(zs: float, zl: float) -> None:
         assert abs(got - expected) < 1e-8
 
 
+def test_spice_distributed_line_with_ngspice(tmp_path) -> None:
+    if shutil.which("ngspice") is None:
+        pytest.skip("ngspice is not installed")
+    f0 = 100e6
+    c0 = 299_792_458.0
+    line = MicrostripLineElement(
+        id="TL1",
+        z0_ohm=50.0,
+        length_m=c0 / f0 / 4.0,
+        eeff=1.0,
+        node_a="in",
+        node_b="out",
+    )
+    circuit = Circuit([line], Port("P1", "in", 50.0), Port("P2", "out", 50.0))
+    net = spice_netlist(
+        circuit, ac=SweepConfig(50e6, 150e6, 21, SweepSpacing.LOGARITHMIC)
+    )
+    net = net.replace(".backanno\n", "").replace(".end", ".print ac v(out)\n.end")
+    path = tmp_path / "line.cir"
+    path.write_text(net, encoding="utf-8")
+    output = subprocess.run(
+        ["ngspice", "-b", str(path)], check=True, capture_output=True, text=True
+    )
+    samples: list[tuple[float, complex]] = []
+    for line_text in output.stdout.splitlines():
+        parts = line_text.split()
+        if len(parts) >= 4 and parts[0].isdigit():
+            samples.append(
+                (
+                    float(parts[1]),
+                    complex(float(parts[2].rstrip(",")), float(parts[3])),
+                )
+            )
+    assert len(samples) > 15
+    freqs = np.asarray([sample[0] for sample in samples])
+    abcd = LadderABCDAnalyzer().analyze_at_frequencies(circuit, freqs)
+    for (_freq, vload), expected in zip(samples, abcd.s21, strict=True):
+        assert abs((2.0 * vload) - expected) < 1e-6
+
+
 def test_spice_transformer_model_with_ngspice(tmp_path) -> None:
     if shutil.which("ngspice") is None:
         pytest.skip("ngspice is not installed")
     circuit = synthesize(_spec(50.0, 75.0)).circuit
     net = spice_netlist(circuit, ac=SweepConfig(1e6, 1e9, 21, SweepSpacing.LOGARITHMIC))
     # ``.backanno`` is an LTspice convenience directive; ngspice rejects it.
-    net = net.replace(".backanno\n", "").replace(
-        ".end", ".print ac v(T1_s)\n.end"
-    )
+    net = net.replace(".backanno\n", "").replace(".end", ".print ac v(T1_s)\n.end")
     path = tmp_path / "t1.cir"
     path.write_text(net, encoding="utf-8")
     output = subprocess.run(

@@ -13,6 +13,9 @@ scheme while the public CLI/GUI stabilizes.
   elements, ABCD/scikit-rf analysis, project v2 round-trip, BOM geometry,
   schematic rendering and order-1–3 Butterworth/Chebyshev-I LP synthesis.
   CLI `filterdesk distributed` supports JSON, Touchstone and BOM export.
+- Distributed SPICE netlist export for microstrip lines and stubs using
+  lossless `T` elements; LTspice `.asc`/Qucs `.sch` still reject distributed
+  circuits.
 - Packaged-artifact `--self-test` plus Linux/Windows clean-runner acceptance
   jobs covering GUI construction, synthesis, Touchstone round-trip, BOM export
   and project round-trip.

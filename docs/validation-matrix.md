@@ -62,7 +62,8 @@ frequency-domain; it does not model thermal drift or nonlinear saturation.
 - **Independent MNA test:** parses the exported SPICE E/F transformer netlist and
   compares S21 with ABCD within `1e-8`.
 - **CI with ngspice:** the `spice-validation` job installs ngspice and runs the
-  MNA/export tests.
+  MNA/export tests, including a distributed quarter-wave line exported as a
+  lossless `T` element.
 - **LTspice/Qucs:** syntax is tested, but external tool validation remains a
   manual release checklist item; Qucs `Tr` ratio orientation is still to be
   confirmed.

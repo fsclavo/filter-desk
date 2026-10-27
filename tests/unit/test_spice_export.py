@@ -12,6 +12,8 @@ from filterdesk.domain.circuit import (
     Circuit,
     IdealBruneLC,
     IdealSeriesLC,
+    MicrostripLineElement,
+    MicrostripStubElement,
     NonIdealInductor,
     Port,
 )
@@ -20,6 +22,7 @@ from filterdesk.domain.enums import (
     CutoffDefinition,
     ElementRole,
     FilterResponse,
+    MicrostripStubKind,
     TopologyId,
 )
 from filterdesk.domain.specs import FilterSpec
@@ -110,6 +113,34 @@ def test_nonideal_inductor_expands_loss_and_parasitic() -> None:
     assert "LL1 in nc1" in text
     assert "RL1r nc1 out 0.5" in text
     assert "CL1cp in out 2e-12" in text
+
+
+def test_microstrip_line_and_stub_export_to_t_elements() -> None:
+    pin, pout = _ports()
+    line = MicrostripLineElement(
+        id="TL1",
+        z0_ohm=50.0,
+        length_m=0.05,
+        eeff=1.0,
+        node_a="in",
+        node_b="out",
+    )
+    text = spice_netlist(Circuit([line], pin, pout))
+    assert "TTL1 in 0 out 0 Z0=50 TD=" in text
+    assert "microstrip loss 0 dB/m" in text
+
+    stub = MicrostripStubElement(
+        id="ST1",
+        z0_ohm=50.0,
+        length_m=0.02,
+        eeff=1.0,
+        stub_kind=MicrostripStubKind.SHORT,
+        node_a="in",
+        node_b="gnd",
+    )
+    stub_text = spice_netlist(Circuit([stub], pin, pout))
+    assert "TST1 in 0 nc1 0 Z0=50 TD=" in stub_text
+    assert "RST1short nc1 0 1e-6" in stub_text
 
 
 def test_zero_dcr_is_ideal() -> None:

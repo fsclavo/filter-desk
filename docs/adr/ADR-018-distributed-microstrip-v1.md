@@ -35,7 +35,8 @@ elements.
   line sections only. Series stubs, Kuroda transformations, coupled lines,
   dispersion, discontinuities and EM simulation remain out of scope.
 - SPICE/LTspice/Qucs export for distributed circuits fails with an explicit
-  error rather than emitting an incorrect approximation.
+  error in v1. ADR-019 later adds lossless SPICE `T`-element netlist export;
+  LTspice `.asc` and Qucs `.sch` remain unsupported.
 - Stress estimation skips distributed elements; it has no lumped arm impedance.
 
 ## Consequences

@@ -163,8 +163,10 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "spice_export",
         "SPICE/LTspice/Qucs export",
         ConfidenceLevel.CROSS_CHECKED,
-        "SPICE/MNA validation and syntax tests.",
-        "LTspice/Qucs require a manual external check; TLT line export is partial.",
+        "SPICE/MNA validation and syntax tests, including lossless distributed "
+        "line/stub T-elements.",
+        "LTspice/Qucs graphical exports require a manual external check; "
+        "distributed loss and dispersion are not exported.",
     ),
     ConfidenceItem(
         "distributed",
