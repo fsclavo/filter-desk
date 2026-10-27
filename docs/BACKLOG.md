@@ -10,7 +10,7 @@ count or release changes.
 [v0.14.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.14.0) ·
 **Next:** v0.16.0 planning.
 
-**Verification:** local suite **956 passed, 2 skipped** (ngspice unavailable locally); coverage **82.96 %**.
+**Verification:** local suite **960 passed, 2 skipped** (ngspice unavailable locally); coverage **82.89 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40531208808
 
@@ -129,8 +129,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       first-order.
 - [x] **Choke common-mode estimate:** series-choke `Zcm` and attenuation at
       `f_min` are reported separately from the differential 2-port.
-- [ ] **Common-mode/TLT export depth:** full common-mode response in the
-      differential 2-port and validated TLT SPICE export. (L)
+- [x] **Choke common-mode sweep:** five-point `Zcm`/attenuation table and CLI
+      JSON, separate from the differential 2-port.
+- [ ] **Common-mode/TLT export depth:** full mixed-mode 3/4-port response and
+      validated TLT SPICE export. (L)
 - [x] **Distributed netlist v1:** line/stub elements are integrated into the
       domain, ABCD/skrf, project v2, BOM and an experimental order-1–3 LP
       synthesis. Full response coverage, higher orders, stub-only/Kuroda

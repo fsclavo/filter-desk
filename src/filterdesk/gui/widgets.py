@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.components_std import (
@@ -1497,7 +1498,17 @@ class TransformerDialog(QDialog):
         model_form.addRow("TLT length (m, blank=auto)", self._line_length)
         model_form.addRow("TLT velocity factor", self._vf)
         model_form.addRow("TLT loss (dB/m)", self._line_loss)
+        self._cm_table = QTableWidget(0, 3)
+        self._cm_table.setHorizontalHeaderLabels(
+            [tr("Frequency"), "|Zcm| (Ohm)", tr("Attenuation (dB)")]
+        )
+        self._cm_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._cm_table.setMaximumHeight(130)
+        self._cm_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self._confidence = ConfidenceBadge("thermal")
+        model_form.addRow("Common-mode sweep", self._cm_table)
         model_form.addRow("Confidence", self._confidence)
         model_form.addRow("Notes", self._notes)
 
@@ -1692,6 +1703,39 @@ class TransformerDialog(QDialog):
             f"{design.awg_secondary}; fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
+        self._show_common_mode(design)
+
+    def _show_common_mode(self, design: BalunDesign) -> None:
+        self._cm_table.setRowCount(0)
+        if design.kind.value != "choke":
+            return
+        try:
+            f_min = parse_si(self._frequency.text().strip() or "0")
+            f_max = parse_si(self._frequency_max.text().strip() or "0")
+            if f_min <= 0.0 or f_max <= f_min:
+                return
+            freqs = [f_min * (f_max / f_min) ** (index / 4.0) for index in range(5)]
+            report = common_mode_sweep(
+                design.to_spec(), freqs, z0_ohm=design.z_unbalanced_ohm
+            )
+        except (CommonModeError, ValueError):
+            return
+        for point in report.points:
+            row = self._cm_table.rowCount()
+            self._cm_table.insertRow(row)
+            self._cm_table.setItem(
+                row,
+                0,
+                QTableWidgetItem(
+                    format_engineering(point.frequency_hz, "Hz", digits=5)
+                ),
+            )
+            self._cm_table.setItem(
+                row, 1, QTableWidgetItem(f"{abs(point.impedance_ohm):.4g}")
+            )
+            self._cm_table.setItem(
+                row, 2, QTableWidgetItem(f"{point.attenuation_db:.2f}")
+            )
 
 
 class MicrostripDialog(QDialog):

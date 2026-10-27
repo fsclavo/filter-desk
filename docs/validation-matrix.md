@@ -55,7 +55,8 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 - the explicit parallel-input/series-output ABCD against the line formula;
 - 1:4 Ruthroff zero-length reduction and bootstrap reciprocity;
 - ABCD/scikit-rf agreement and ladder/project round-trips;
-- choke common-mode impedance/attenuation estimate and non-1:4 limitations.
+- choke common-mode impedance/attenuation and a five-point frequency sweep;
+- non-1:4 limitations.
 
 Guanella multi-line is still experimental; Ruthroff and common-mode behavior
 are not full multi-line/EM models.

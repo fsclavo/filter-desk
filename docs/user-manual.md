@@ -795,9 +795,9 @@ previously split across two tools.
   Integer 1:N² Guanella ratios use an explicit **N-line parallel/series**
   network; 1:4/4:1 Ruthroff uses an equal-delay bootstrap network. Non-integer
   Guanella and other Ruthroff ratios use the first-order transformer + TEM-line
-  model. For chokes the dialog/CLI reports `Zcm` and a first-order series-choke
-  common-mode attenuation at the lowest frequency; neither is part of the
-  differential 2-port.
+  model. For chokes the Model tab shows a five-point **common-mode sweep**
+  (`|Zcm|` and series-choke attenuation) and the CLI JSON includes the same
+  `common_mode_sweep`. It is not part of the differential 2-port.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.

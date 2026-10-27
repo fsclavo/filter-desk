@@ -177,6 +177,7 @@ class BalunSpec:
     shunt_c_f: float = 0.0
     core_loss_ohm: float | None = None
     common_mode_impedance_ohm: float = 0.0
+    magnetizing_inductance_h: float = 0.0
     core: str = ""
     turns: int | None = None
     wire_awg: int | None = None
@@ -248,6 +249,8 @@ class BalunSpec:
             raise ValueError("balun leakage/capacitance must be >= 0")
         if self.core_loss_ohm is not None and self.core_loss_ohm <= 0.0:
             raise ValueError("balun core_loss_ohm must be > 0")
+        if self.magnetizing_inductance_h < 0.0:
+            raise ValueError("balun magnetizing_inductance_h must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)

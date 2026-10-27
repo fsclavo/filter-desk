@@ -165,6 +165,7 @@ class BalunDesign:
             shunt_c_f=self.winding_capacitance_f,
             core_loss_ohm=self.core_loss_ohm,
             common_mode_impedance_ohm=self.common_mode_impedance_ohm,
+            magnetizing_inductance_h=self.magnetizing_inductance_h,
             core=self.core.name,
             turns=self.n_primary,
             wire_awg=self.awg_primary,

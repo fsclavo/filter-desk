@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Added
+
+- Choke baluns now expose a five-point common-mode frequency sweep (`|Zcm|` and
+  series-choke attenuation) in the GUI Model tab and CLI JSON, separate from the
+  differential 2-port.
+
 ## v0.15.0 — 2026-10-27
 
 ### Added

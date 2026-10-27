@@ -139,8 +139,8 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "parallel/series network; 1:4 Ruthroff uses an equal-delay bootstrap "
         "ABCD; other TLTs use a transformer + TEM line.",
         "Non-integer Guanella and non-1:4 Ruthroff ratios remain first-order. "
-        "Common-mode impedance/attenuation is a separate series-choke estimate, "
-        "not in the differential 2-port; no EM model.",
+        "Choke common-mode impedance/attenuation is a separate frequency sweep, "
+        "not a mixed-mode 3/4-port model; no EM model.",
     ),
     ConfidenceItem(
         "microstrip",

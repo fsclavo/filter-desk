@@ -10,6 +10,7 @@ from pathlib import Path
 
 from filterdesk import __version__
 from filterdesk.analysis.adapters.abcd_ladder import AnalysisError
+from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
 from filterdesk.analysis.compliance import (
     ComplianceResult,
     check_spec_compliance,
@@ -2440,6 +2441,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.show_options
             else []
         )
+        cm_report = None
+        if tr_design.kind is BalunKind.CHOKE:
+            try:
+                freqs = [f_min * (f_max / f_min) ** (index / 4.0) for index in range(5)]
+                cm_report = common_mode_sweep(tr_design.to_spec(), freqs)
+            except CommonModeError:
+                cm_report = None
         if args.json:
             payload = {
                 "kind": tr_design.kind.value,
@@ -2475,6 +2483,18 @@ def main(argv: list[str] | None = None) -> int:
                 "core_loss_ohm": tr_design.core_loss_ohm,
                 "common_mode_impedance_ohm": tr_design.common_mode_impedance_ohm,
                 "common_mode_attenuation_db": (tr_design.common_mode_attenuation_db),
+                "common_mode_sweep": (
+                    []
+                    if cm_report is None
+                    else [
+                        {
+                            "frequency_hz": point.frequency_hz,
+                            "zcm_ohm": abs(point.impedance_ohm),
+                            "attenuation_db": point.attenuation_db,
+                        }
+                        for point in cm_report.points
+                    ]
+                ),
                 "z0_line_ohm": tr_design.z0_line_ohm,
                 "length_m": tr_design.length_m,
                 "v_low_rms": tr_design.v_unbalanced_rms,
