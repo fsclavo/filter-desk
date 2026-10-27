@@ -4,8 +4,9 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-27 · **App version:** 0.17.0 · **Release:** prepared,
-not published · **Previous:**
+**Last verified:** 2026-10-27 · **App version:** 0.17.0 · **Released:**
+[v0.17.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.17.0) ·
+**Previous:**
 [v0.16.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.16.0) ·
 **Next:** v0.18.0 planning.
 
@@ -68,12 +69,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.17.0 release (prepared, not published)
+## 3. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
-- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
-- [ ] Release URL recorded above.
+- [x] Tag, publish and verify Windows/Linux/AppImage assets.
+- [x] Release URL recorded above.
 
 ---
 
