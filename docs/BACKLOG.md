@@ -4,13 +4,12 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-27 · **App version:** 0.16.0 · **Released:**
+**Last verified:** 2026-10-27 · **App version:** 0.17.0 · **Release:** prepared,
+not published · **Previous:**
 [v0.16.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.16.0) ·
-**Previous:**
-[v0.15.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.15.0) ·
-**Next:** v0.17.0 planning.
+**Next:** v0.18.0 planning.
 
-**Verification:** local suite **964 passed, 2 skipped** (ngspice unavailable locally); coverage **82.90 %**.
+**Verification:** local suite **964 passed, 2 skipped** (ngspice unavailable locally); coverage **82.92 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40531208808
 
@@ -69,7 +68,16 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.16.0 release
+## 3. v0.17.0 release (prepared, not published)
+
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -78,7 +86,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.15.0 release
+## 5. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -87,7 +95,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.14.0 release
+## 6. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -96,7 +104,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.13.0 release
+## 7. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -105,7 +113,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.12.0 release
+## 8. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -114,7 +122,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. Open backlog
+## 9. Open backlog
 
 ### P0 — release quality
 
@@ -162,14 +170,17 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       network plus separate `Zcm`/attenuation (post-v0.14.0).
 - [x] **ABCD edge cases:** exact open/short/resonant arms are clamped to finite
       stand-ins; stress handles an open shunt without warnings.
+- [x] **Winding realism:** DCR low/high, leakage and the selected option are
+      persisted and shown in GUI/CLI/BOM.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, dispersion/discontinuity models and hardware
       validation. (L)
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)
-- [ ] Persist the selected winding option in project/BOM notes. (S)
-- [ ] Add DCR/leakage estimates per winding option once the model supports them. (M)
+- [x] Persist the selected winding option in project/BOM notes.
+- [x] Add DCR/leakage estimates per winding option (DCR at 20 °C; leakage from
+      the coupling model).
 
 ### Parked by design
 
@@ -181,7 +192,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. Ham-radio onboarding and discoverability
+## 10. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -189,7 +200,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 10. Maintenance rule
+## 11. Maintenance rule
 
 Every change must update, in the same commit:
 

@@ -55,11 +55,15 @@ def test_guanella_design_1_to_4() -> None:
     assert design.length_m > 0.0
     assert design.bsat_margin is not None and design.bsat_margin > 1.0
     assert design.fit.fits
+    assert design.dcr_primary_ohm is not None and design.dcr_primary_ohm > 0.0
+    assert design.dcr_secondary_ohm is not None and design.dcr_secondary_ohm > 0.0
     assert any("Guanella 2-line" in note for note in design.notes)
     spec = design.to_spec()
     assert spec.kind == "guanella"
     assert spec.turns_ratio == pytest.approx(0.5)
     assert spec.core == "FT240-43"
+    assert spec.winding_option == "3:6"
+    assert spec.dcr_primary_ohm == pytest.approx(design.dcr_primary_ohm)
 
 
 def test_ratio_text_and_thermal_status() -> None:
@@ -263,6 +267,14 @@ def test_balun_in_ladder_and_project_roundtrip() -> None:
     assert restored.output_balun.core == "FT240-43"
     assert restored.output_balun.topology == "autotransformer"
     assert restored.output_balun.total_turns == balun.total_turns
+    assert restored.output_balun.winding_option == balun.winding_option
+    assert restored.output_balun.dcr_primary_ohm == pytest.approx(balun.dcr_primary_ohm)
+
+    rows = build_sheet_rows(circuit)
+    balun_row = next(row for row in rows if row.kind == "balun")
+    assert balun_row.winding_option == balun.winding_option
+    assert balun_row.dcr_ohm is not None and balun_row.dcr_ohm > 0.0
+    assert "DCR low/high" in balun_row.parasitic
 
     result = LadderABCDAnalyzer().analyze(circuit, SweepConfig(1e6, 100e6, 16))
     reference = LadderABCDAnalyzer().analyze(
@@ -324,6 +336,7 @@ def test_cli_transformer_reports_guanella_lines(
     assert code == 0
     out = capsys.readouterr().out
     assert "2-line Guanella" in out
+    assert "DCR low/high" in out
 
 
 def test_balun_exports_use_bal1() -> None:

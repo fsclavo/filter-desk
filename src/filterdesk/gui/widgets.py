@@ -1415,9 +1415,19 @@ class TransformerDialog(QDialog):
         self._power = EngineeringLineEdit()
         self._power.setText("10")
 
-        self._options_table = QTableWidget(0, 7)
+        self._options_table = QTableWidget(0, 9)
         self._options_table.setHorizontalHeaderLabels(
-            ["Turns", "Total", "Lm", "X/Z", "Bsat/B", "Fit", "Flags"]
+            [
+                "Option",
+                "Total",
+                "Lm",
+                "Lk",
+                "X/Z",
+                "Bsat/B",
+                "DCR low/high",
+                "Fit",
+                "Flags",
+            ]
         )
         self._options_table.verticalHeader().setVisible(False)
         self._options_table.setSelectionBehavior(
@@ -1430,12 +1440,12 @@ class TransformerDialog(QDialog):
             QAbstractItemView.EditTrigger.NoEditTriggers
         )
         options_header = self._options_table.horizontalHeader()
-        for column in range(6):
+        for column in range(8):
             options_header.setSectionResizeMode(
                 column, QHeaderView.ResizeMode.ResizeToContents
             )
-        options_header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
-        self._options_table.setColumnWidth(6, 300)
+        options_header.setSectionResizeMode(8, QHeaderView.ResizeMode.Stretch)
+        self._options_table.setColumnWidth(8, 300)
         self._options_table.setWordWrap(True)
         self._options_table.setTextElideMode(Qt.TextElideMode.ElideNone)
         self._options_table.setMaximumHeight(180)
@@ -1631,16 +1641,23 @@ class TransformerDialog(QDialog):
     def _populate_options(self) -> None:
         self._options_table.setRowCount(len(self._options))
         for row, design in enumerate(self._options):
+            dcr = (
+                "-"
+                if design.dcr_primary_ohm is None or design.dcr_secondary_ohm is None
+                else f"{design.dcr_primary_ohm:.3g}/{design.dcr_secondary_ohm:.3g}"
+            )
             values = (
                 f"{design.n_primary}:{design.n_secondary}",
                 str(design.total_turns),
                 format_engineering(design.magnetizing_inductance_h, "H", digits=3),
+                format_engineering(design.leakage_inductance_h, "H", digits=3),
                 f"{design.reactance_ratio:.2f}",
                 (
                     "-"
                     if design.bsat_margin is None
                     else f"{(design.bsat_margin_hot or design.bsat_margin):.1f}"
                 ),
+                dcr,
                 str(design.fit.awg) if design.fit.awg is not None else "n/f",
                 design.status_text,
             )
@@ -1667,7 +1684,13 @@ class TransformerDialog(QDialog):
         )
         lm = format_engineering(design.magnetizing_inductance_h, "H", digits=4)
         lk = format_engineering(design.leakage_inductance_h, "H", digits=4)
-        self._inductances.setText(f"Lm {lm}, Lk {lk}")
+        dcr = ""
+        if design.dcr_primary_ohm is not None and design.dcr_secondary_ohm is not None:
+            dcr = (
+                f"; DCR low/high {design.dcr_primary_ohm:.3g}/"
+                f"{design.dcr_secondary_ohm:.3g} Ohm"
+            )
+        self._inductances.setText(f"Lm {lm}, Lk {lk}{dcr}")
         model = f"{design.kind.value}, Zline {design.z0_line_ohm:.3g} Ohm"
         line_count = spec.guanella_line_count
         if line_count is not None:

@@ -18,6 +18,7 @@ from enum import StrEnum
 from filterdesk.components_std.materials import (
     bsat_at_temperature,
     copper_loss_w,
+    copper_resistance_ohm,
     core_loss_density_w_cm3,
     material_for,
     thermal_resistance_c_w,
@@ -75,6 +76,8 @@ class BalunDesign:
     awg_secondary: int | None
     fit: WireFit
     notes: tuple[str, ...]
+    dcr_primary_ohm: float | None = None
+    dcr_secondary_ohm: float | None = None
     topology: TransformerTopology = TransformerTopology.AUTOTRANSFORMER
     total_turns: int = 0
     reactance_ratio: float = 0.0
@@ -169,6 +172,9 @@ class BalunDesign:
             core=self.core.name,
             turns=self.n_primary,
             wire_awg=self.awg_primary,
+            winding_option=f"{self.n_primary}:{self.n_secondary}",
+            dcr_primary_ohm=self.dcr_primary_ohm,
+            dcr_secondary_ohm=self.dcr_secondary_ohm,
         )
 
 
@@ -305,6 +311,8 @@ def design_balun(
     d_sec = awg_diameter_mm(awg_secondary) if awg_secondary is not None else None
     l_pri = core.mean_turn_mm * n_primary / 1000.0
     l_sec = core.mean_turn_mm * n_secondary / 1000.0
+    dcr_primary = copper_resistance_ohm(l_pri, d_pri)
+    dcr_secondary = copper_resistance_ohm(l_sec, d_sec)
     copper_loss = copper_loss_w(i_unbalanced, l_pri, d_pri) + copper_loss_w(
         i_balanced, l_sec, d_sec
     )
@@ -410,6 +418,8 @@ def design_balun(
         bsat_margin=bsat_margin,
         awg_primary=awg_primary,
         awg_secondary=awg_secondary,
+        dcr_primary_ohm=dcr_primary,
+        dcr_secondary_ohm=dcr_secondary,
         fit=fit,
         notes=tuple(notes),
         topology=topology_value,

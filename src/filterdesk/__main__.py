@@ -2506,6 +2506,9 @@ def main(argv: list[str] | None = None) -> int:
                 "saturated": tr_design.saturated,
                 "awg_low": tr_design.awg_primary,
                 "awg_high": tr_design.awg_secondary,
+                "dcr_primary_ohm": tr_design.dcr_primary_ohm,
+                "dcr_secondary_ohm": tr_design.dcr_secondary_ohm,
+                "winding_option": tr_design.to_spec().winding_option,
                 "awg_primary": tr_design.awg_primary,
                 "awg_secondary": tr_design.awg_secondary,
                 "fit_awg": tr_design.fit.awg,
@@ -2582,6 +2585,15 @@ def main(argv: list[str] | None = None) -> int:
             f"{tr_design.awg_secondary}; single-layer fit AWG "
             f"{tr_design.fit.awg}"
         )
+        if (
+            tr_design.dcr_primary_ohm is not None
+            and tr_design.dcr_secondary_ohm is not None
+        ):
+            print(
+                f"  DCR low/high = {tr_design.dcr_primary_ohm:.4g} / "
+                f"{tr_design.dcr_secondary_ohm:.4g} Ohm; "
+                f"option {tr_design.to_spec().winding_option}"
+            )
         if tr_design.total_loss_w is not None:
             print(
                 f"  Loss: core {tr_design.core_loss_w:.2f} W, copper "

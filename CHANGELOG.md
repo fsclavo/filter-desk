@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.17.0 — 2026-10-27
+
+### Added
+
+- Transformer/balun options now report per-winding DC resistance (20 °C), the
+  selected winding option is persisted, and DCR/leakage appear in the GUI,
+  CLI and BOM.
+
 ## v0.16.0 — 2026-10-27
 
 ### Added

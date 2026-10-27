@@ -802,9 +802,11 @@ previously split across two tools.
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.
 - **Apply:** inserts the result as `BAL1` at the circuit output. It appears in
-  the project, component table and BOM with core/turns/AWG. The dialog has only
-  **Design** and **Model** tabs; winding diagrams were removed because they were
-  not reliable enough.
+  the project, component table and BOM with core, turns, AWG, the selected
+  winding option and the low/high DCR estimate. The DCR is a 20 °C copper
+  estimate from mean turn length and AWG; skin/proximity, leads and temperature
+  are not included. The dialog has only **Design** and **Model** tabs; winding
+  diagrams were removed because they were not reliable enough.
 
 The displayed ratio is explicit: for 50 → 2500 Ω with 3:21 it shows
 **`1:7 turns / 1:49 Z`**, not an ambiguous `0.1429:1`. The options table uses

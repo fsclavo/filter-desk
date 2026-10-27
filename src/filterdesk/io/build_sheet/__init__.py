@@ -57,6 +57,7 @@ class BuildSheetRow:
     core: str = ""
     turns: int | None = None
     wire_awg: int | None = None
+    winding_option: str = ""
     substrate: str = ""
     width_mm: float = 0.0
     length_mm: float = 0.0
@@ -82,6 +83,7 @@ BOM_COLUMNS: tuple[str, ...] = (
     "core",
     "turns",
     "wire_awg",
+    "winding_option",
     "substrate",
     "width_mm",
     "length_mm",
@@ -109,6 +111,7 @@ _SHEET_COLUMNS: tuple[str, ...] = (
     "core",
     "turns",
     "wire_awg",
+    "winding_option",
     "substrate",
     "width_mm",
     "length_mm",
@@ -132,6 +135,7 @@ _SHEET_HEADERS: tuple[str, ...] = (
     "Core",
     "Turns",
     "AWG",
+    "Option",
     "Substrate",
     "W",
     "L",
@@ -155,6 +159,22 @@ def _balun_value_text(comp: PhysicalComponent) -> str:
         f"{winding.impedance_ratio:.4g}" if winding.impedance_ratio is not None else "?"
     )
     return f"{turns} turns / {impedance} Z"
+
+
+def _balun_parasitic_text(comp: PhysicalComponent) -> str:
+    assert comp.winding is not None
+    text = f"balun {comp.winding.material} {comp.winding.topology}"
+    if comp.winding_option:
+        text += f"; option {comp.winding_option}"
+    if comp.dcr_primary_ohm is not None or comp.dcr_secondary_ohm is not None:
+        low = "?" if comp.dcr_primary_ohm is None else f"{comp.dcr_primary_ohm:.3g}"
+        high = (
+            "?" if comp.dcr_secondary_ohm is None else f"{comp.dcr_secondary_ohm:.3g}"
+        )
+        text += f"; DCR low/high {low}/{high} Ohm"
+    if comp.leakage_h:
+        text += f"; Lk {format_engineering(comp.leakage_h, 'H', digits=3)}"
+    return text
 
 
 def _parasitic_text(comp: PhysicalComponent) -> str:
@@ -197,6 +217,7 @@ def _group_key(row: BuildSheetRow) -> tuple[object, ...]:
         row.core,
         row.turns,
         row.wire_awg,
+        row.winding_option,
         row.substrate,
         row.width_mm,
         row.length_mm,
@@ -275,7 +296,7 @@ def build_sheet_rows(
                     "ideal"
                     if comp.kind == "transformer"
                     else (
-                        f"balun {comp.winding.material} {comp.winding.topology}"
+                        _balun_parasitic_text(comp)
                         if comp.kind == "balun" and comp.winding is not None
                         else (
                             "TEM line"
@@ -296,7 +317,15 @@ def build_sheet_rows(
                 dcr_ohm=(
                     comp.series_resistance_ohm
                     if comp.kind == "inductor" and comp.series_resistance_ohm > 0.0
-                    else None
+                    else (
+                        (comp.dcr_primary_ohm or 0.0) + (comp.dcr_secondary_ohm or 0.0)
+                        if comp.kind == "balun"
+                        and (
+                            comp.dcr_primary_ohm is not None
+                            or comp.dcr_secondary_ohm is not None
+                        )
+                        else None
+                    )
                 ),
                 srf_hz=(
                     comp.srf_hz if comp.srf_hz is not None else _component_srf_hz(comp)
@@ -304,6 +333,7 @@ def build_sheet_rows(
                 core=comp.winding.core if comp.winding is not None else "",
                 turns=comp.winding.turns if comp.winding is not None else None,
                 wire_awg=(comp.winding.wire_awg if comp.winding is not None else None),
+                winding_option=comp.winding_option,
                 substrate=comp.substrate,
                 width_mm=comp.width_mm,
                 length_mm=comp.length_mm,
@@ -361,6 +391,8 @@ def _column_value(row: BuildSheetRow, column: str, *, human: bool = False) -> st
         return "" if row.turns is None else str(row.turns)
     if column == "wire_awg":
         return "" if row.wire_awg is None else str(row.wire_awg)
+    if column == "winding_option":
+        return row.winding_option
     if column == "substrate":
         return row.substrate
     if column == "width_mm":

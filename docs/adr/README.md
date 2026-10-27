@@ -25,3 +25,4 @@
 - [ADR-020](ADR-020-distributed-lp-numerical-fit.md) — gated numerical fit for distributed LP orders 4–5
 - [ADR-021](ADR-021-guanella-multiline.md) — explicit multi-line Guanella and 1:4 Ruthroff models
 - [ADR-022](ADR-022-choke-common-mode-sweep.md) — choke common-mode frequency sweep
+- [ADR-023](ADR-023-winding-dcr-and-option.md) — winding DCR estimate and persisted option

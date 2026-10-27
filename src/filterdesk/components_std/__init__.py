@@ -128,6 +128,7 @@ __all__ = [
     "design_air_coil",
     "bsat_at_temperature",
     "core_loss_density_w_cm3",
+    "copper_resistance_ohm",
     "design_balun",
     "design_balun_options",
     "design_matching",

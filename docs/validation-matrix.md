@@ -57,6 +57,7 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 - ABCD/scikit-rf agreement and ladder/project round-trips;
 - choke common-mode impedance/attenuation and a five-point frequency sweep;
 - exact open/short/resonant arm edge cases without NaN or divide warnings;
+- winding option/DCR persistence and BOM propagation;
 - non-1:4 limitations.
 
 Guanella multi-line is still experimental; Ruthroff and common-mode behavior

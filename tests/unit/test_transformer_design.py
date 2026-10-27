@@ -199,8 +199,7 @@ def test_cli_transformer_options_and_topology(capsys) -> None:
     assert payload["topology"] == "isolated"
     assert payload["total_turns"] == 24
     option_turns = [
-        (o["n_low"], o["n_high"], o["total_turns"])
-        for o in payload["options"]
+        (o["n_low"], o["n_high"], o["total_turns"]) for o in payload["options"]
     ]
     assert option_turns == [(2, 14, 16), (3, 21, 24), (4, 28, 32)]
     assert payload["options"][2]["hf_caution"] is True
@@ -229,19 +228,21 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
     assert dialog.current_design() is not None
     assert dialog.current_design().n_primary == 3
     assert dialog._options_table.rowCount() == 3
-    assert dialog._options_table.horizontalHeaderItem(4).text() == "Bsat/B"
-    assert dialog._options_table.horizontalHeaderItem(6).text() == "Flags"
+    assert dialog._options_table.horizontalHeaderItem(5).text() == "Bsat/B"
+    assert dialog._options_table.horizontalHeaderItem(6).text() == "DCR low/high"
+    assert dialog._options_table.item(0, 6).text() != "-"
+    assert dialog._options_table.horizontalHeaderItem(8).text() == "Flags"
     assert dialog._options_table.wordWrap()
     assert (
-        dialog._options_table.horizontalHeader().sectionResizeMode(6)
+        dialog._options_table.horizontalHeader().sectionResizeMode(8)
         == QHeaderView.ResizeMode.Stretch
     )
     assert "LF" in dialog._flags_legend.text()
     assert "THERMAL" in dialog._flags_legend.text()
-    flags = dialog._options_table.item(2, 6).text()
+    flags = dialog._options_table.item(2, 8).text()
     assert "HF" in flags
     assert "THERMAL" in flags
-    assert dialog._options_table.item(2, 6).toolTip().startswith(flags)
+    assert dialog._options_table.item(2, 8).toolTip().startswith(flags)
     dialog._options_table.selectRow(2)
     design = dialog.current_design()
     assert design is not None
@@ -302,9 +303,7 @@ def test_cli_transformer_text_and_error(capsys) -> None:
     out = capsys.readouterr().out
     assert "Turns:" in out and "Wire:" in out
     assert (
-        main(
-            ["transformer", "--z-low", "0", "--z-high", "50", "--core", "FT50-43"]
-        )
+        main(["transformer", "--z-low", "0", "--z-high", "50", "--core", "FT50-43"])
         == 2
     )
     assert "error:" in capsys.readouterr().err

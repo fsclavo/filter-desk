@@ -104,6 +104,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   core/wire, complex-permeability core loss, thermal-rise estimate and
   output-boundary BOM insertion. Integer 1:N² Guanella ratios use an explicit
   multi-line network; 1:4 Ruthroff uses an equal-delay bootstrap network.
+  Winding options include DCR/leakage estimates and the selected option is
+  persisted.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
   transformer, open/short stubs, substrate presets and first-order loss.
 - **Experimental distributed LP synthesis**: order 1–5 Butterworth/Chebyshev-I

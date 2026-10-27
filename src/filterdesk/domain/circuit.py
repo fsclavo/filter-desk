@@ -178,6 +178,9 @@ class BalunSpec:
     core_loss_ohm: float | None = None
     common_mode_impedance_ohm: float = 0.0
     magnetizing_inductance_h: float = 0.0
+    winding_option: str = ""
+    dcr_primary_ohm: float | None = None
+    dcr_secondary_ohm: float | None = None
     core: str = ""
     turns: int | None = None
     wire_awg: int | None = None
@@ -251,6 +254,12 @@ class BalunSpec:
             raise ValueError("balun core_loss_ohm must be > 0")
         if self.magnetizing_inductance_h < 0.0:
             raise ValueError("balun magnetizing_inductance_h must be >= 0")
+        for name, value in (
+            ("dcr_primary_ohm", self.dcr_primary_ohm),
+            ("dcr_secondary_ohm", self.dcr_secondary_ohm),
+        ):
+            if value is not None and value < 0.0:
+                raise ValueError(f"balun {name} must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -495,6 +504,10 @@ class PhysicalComponent:
     length_mm: float = 0.0
     angle_deg: float = 0.0
     stub_kind: str = ""
+    winding_option: str = ""
+    dcr_primary_ohm: float | None = None
+    dcr_secondary_ohm: float | None = None
+    leakage_h: float | None = None
 
 
 def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
@@ -627,6 +640,10 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
                     ),
                     wire_awg=balun.wire_awg,
                 ),
+                winding_option=balun.winding_option,
+                dcr_primary_ohm=balun.dcr_primary_ohm,
+                dcr_secondary_ohm=balun.dcr_secondary_ohm,
+                leakage_h=balun.leakage_h,
             )
         )
     return rows
