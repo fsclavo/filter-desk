@@ -4,11 +4,10 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-27 · **App version:** 0.15.0 · **Released:**
+**Last verified:** 2026-10-27 · **App version:** 0.16.0 · **Release:** prepared,
+not published · **Previous:**
 [v0.15.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.15.0) ·
-**Previous:**
-[v0.14.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.14.0) ·
-**Next:** v0.16.0 planning.
+**Next:** v0.17.0 planning.
 
 **Verification:** local suite **960 passed, 2 skipped** (ngspice unavailable locally); coverage **82.89 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
@@ -69,7 +68,16 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.15.0 release
+## 3. v0.16.0 release (prepared, not published)
+
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -78,7 +86,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.14.0 release
+## 5. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -87,7 +95,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.13.0 release
+## 6. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -96,7 +104,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.12.0 release
+## 7. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -105,7 +113,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. Open backlog
+## 8. Open backlog
 
 ### P0 — release quality
 
@@ -170,7 +178,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. Ham-radio onboarding and discoverability
+## 9. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -178,7 +186,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 9. Maintenance rule
+## 10. Maintenance rule
 
 Every change must update, in the same commit:
 
