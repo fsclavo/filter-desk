@@ -11,6 +11,12 @@ scheme while the public CLI/GUI stabilizes.
   series-choke attenuation) in the GUI Model tab and CLI JSON, separate from the
   differential 2-port.
 
+### Fixed
+
+- Exact-resonance/open/short ideal arms no longer emit divide/invalid warnings
+  in ABCD or stress analysis; open shunt arms report infinite impedance and
+  zero current without warnings.
+
 ## v0.15.0 — 2026-10-27
 
 ### Added

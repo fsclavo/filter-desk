@@ -9,7 +9,7 @@ not published · **Previous:**
 [v0.15.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.15.0) ·
 **Next:** v0.17.0 planning.
 
-**Verification:** local suite **960 passed, 2 skipped** (ngspice unavailable locally); coverage **82.89 %**.
+**Verification:** local suite **964 passed, 2 skipped** (ngspice unavailable locally); coverage **82.90 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40531208808
 
@@ -159,6 +159,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       parallel/series network (post-v0.13.0).
 - [x] **1:4 Ruthroff and choke common-mode estimate:** equal-delay bootstrap
       network plus separate `Zcm`/attenuation (post-v0.14.0).
+- [x] **ABCD edge cases:** exact open/short/resonant arms are clamped to finite
+      stand-ins; stress handles an open shunt without warnings.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, dispersion/discontinuity models and hardware
       validation. (L)

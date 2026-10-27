@@ -56,6 +56,7 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 - 1:4 Ruthroff zero-length reduction and bootstrap reciprocity;
 - ABCD/scikit-rf agreement and ladder/project round-trips;
 - choke common-mode impedance/attenuation and a five-point frequency sweep;
+- exact open/short/resonant arm edge cases without NaN or divide warnings;
 - non-1:4 limitations.
 
 Guanella multi-line is still experimental; Ruthroff and common-mode behavior
