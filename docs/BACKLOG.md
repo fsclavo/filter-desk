@@ -11,7 +11,7 @@ count or release changes.
 **Next:** v0.14.0 planning.
 
 **Verification:** local suite **951 passed, 2 skipped** (ngspice unavailable locally); coverage **82.99 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40508031813
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40516044059
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40508031922
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
