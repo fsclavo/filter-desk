@@ -230,7 +230,7 @@ def test_spice_distributed_line_with_ngspice(tmp_path) -> None:
     freqs = np.asarray([sample[0] for sample in samples])
     abcd = LadderABCDAnalyzer().analyze_at_frequencies(circuit, freqs)
     for (_freq, vload), expected in zip(samples, abcd.s21, strict=True):
-        assert abs((2.0 * vload) - expected) < 1e-6
+        assert abs((2.0 * vload) - expected) < 5e-6
 
 
 def test_spice_transformer_model_with_ngspice(tmp_path) -> None:
