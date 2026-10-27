@@ -315,7 +315,7 @@ specification edits require an explicit **Synthesize**.
 | Workflow | How to trigger | Notes |
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
-| **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, sets sweep) |
+| **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, order 5, sets sweep) |
 | **HF band filter wizard** | **Design → HF band filter wizard…** | receive-band BPF workflow: band + max IL/rejection → order search → apply, optional E24 snap |
 | **Update spec from circuit** | **Design → Update spec from circuit…** | derive cutoff/center and bandwidth from the current analyzed response; family, order and topology are kept, and the circuit is not changed |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |

@@ -114,7 +114,9 @@ def band_preset_spec(band: Band, kind: BandKind = BandKind.LPF) -> FilterSpec:
         common["order"] = 5
         common["cutoff_hz"] = band.low_hz * 0.9
     else:
-        common["order"] = 5 if kind == BandKind.BSF else 4
+        # Odd order keeps both terminations equal (50 Ω); even-order
+        # Chebyshev-I would require the ideal output transformer T1.
+        common["order"] = 5
         common["f_center_hz"] = band.center_hz
         common["bandwidth_hz"] = (band.high_hz - band.low_hz) * 1.5
     return FilterSpec(**common)  # type: ignore[arg-type]

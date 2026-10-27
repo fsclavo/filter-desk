@@ -9,7 +9,7 @@ count or release changes.
 **Previous:** [v0.11.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.11.1) ·
 **Next:** v0.13.0 planning.
 
-**Verification:** local suite **942 passed, 1 skipped**; coverage **82.96 %**.
+**Verification:** local suite **943 passed, 1 skipped**; coverage **82.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40422306922
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
 
@@ -60,6 +60,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       v2, BOM geometry, schematic, experimental LP synthesis (order ≤ 3) and CLI.
 - [x] **File → Recent projects** (up to ten files, persisted, missing-entry
       cleanup and clear action).
+- [x] **Band Preset → Band Pass** uses order 5 so 50 Ω ports stay equal and no
+      ideal output transformer T1 is inserted.
 
 ---
 

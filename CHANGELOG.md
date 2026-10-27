@@ -19,6 +19,8 @@ scheme while the public CLI/GUI stabilizes.
 
 ### Fixed
 
+- **Band Preset → Band Pass** now uses order 5 (odd), so a 50 Ω design no longer
+  shows an ideal output transformer T1 with a 1.164:1 ratio.
 - Smith chart and response plots no longer show `S11 meas` / `S22 meas` legend
   entries when no measured Touchstone file is loaded.
 

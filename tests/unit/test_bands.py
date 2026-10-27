@@ -44,8 +44,18 @@ def test_hpf_and_bpf_presets() -> None:
 
     bp = band_preset_spec(band, BandKind.BPF)
     assert bp.response == FilterResponse.BAND_PASS
+    assert bp.order == 5
     assert bp.f_center_hz == pytest.approx(band.center_hz)
     assert bp.bandwidth_hz == pytest.approx((band.high_hz - band.low_hz) * 1.5)
+
+
+def test_bpf_preset_needs_no_output_transformer() -> None:
+    from filterdesk.synthesis import synthesize
+
+    spec = band_preset_spec(find_band("40m"), BandKind.BPF)
+    circuit = synthesize(spec).circuit
+    assert circuit.output_transformer_ratio == 1.0
+    assert circuit.output_balun is None
 
 
 def test_band_sweep_covers_third_harmonic() -> None:
@@ -67,12 +77,11 @@ def test_cli_synthesize_band(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_cli_band_kind_bpf(capsys: pytest.CaptureFixture[str]) -> None:
-    code = main(
-        ["synthesize", "--band", "20m", "--band-kind", "bpf", "--json"]
-    )
+    code = main(["synthesize", "--band", "20m", "--band-kind", "bpf", "--json"])
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["spec"]["response"] == "band_pass"
+    assert payload["spec"]["order"] == 5
 
 
 def test_cli_invalid_band(capsys: pytest.CaptureFixture[str]) -> None:
@@ -108,4 +117,3 @@ def test_cli_bands_lists_rejection(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["bands"]) == 0
     out = capsys.readouterr().out
     assert "AM broadcast" in out and "FM broadcast" in out
-
