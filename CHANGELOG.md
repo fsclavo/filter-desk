@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.15.0 — 2026-10-27
+
+### Added
+
+- 1:4/4:1 Ruthroff TLTs use an equal-delay bootstrap ABCD network.
+- Chokes report a first-order series common-mode impedance/attenuation estimate
+  at the lowest frequency, separately from the differential 2-port.
+
 ## v0.14.0 — 2026-10-27
 
 ### Added
@@ -11,9 +19,7 @@ scheme while the public CLI/GUI stabilizes.
   numerical fit and a strict response gate; rejected fits return an explicit
   error instead of a questionable design.
 - Guanella TLTs with integer 1:N² ratios now use an explicit N-line
-  parallel-input/series-output network; 1:4/4:1 Ruthroff uses an equal-delay
-  bootstrap network. Chokes report a first-order common-mode attenuation
-  estimate. Other TLT ratios remain first-order.
+  parallel-input/series-output network. Other TLT ratios remain first-order.
 
 ## v0.13.0 — 2026-10-27
 
