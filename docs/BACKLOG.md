@@ -4,14 +4,15 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-26 · **App version:** 0.13.0 · **Release:** prepared,
-not published · **Previous:**
+**Last verified:** 2026-10-27 · **App version:** 0.13.0 · **Released:**
+[v0.13.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.13.0) ·
+**Previous:**
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
 **Next:** v0.14.0 planning.
 
 **Verification:** local suite **946 passed, 2 skipped** (ngspice unavailable locally); coverage **82.93 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40490137920
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40409343943
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40508031813
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40508031922
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -68,12 +69,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.13.0 release (prepared, not published)
+## 3. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
-- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
-- [ ] Release URL recorded above.
+- [x] Tag, publish and verify Windows/Linux/AppImage assets.
+- [x] Release URL recorded above.
 
 ---
 
