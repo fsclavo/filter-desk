@@ -637,7 +637,8 @@ Topologies by response:
 
 ### Native project (`.filterdesk.json`)
 
-A versioned JSON document (`format_version: 1`) with `metadata`, `specification`,
+A versioned JSON document (`format_version: 2`; v1 still loads) with
+`metadata`, `specification`,
 `circuit`, `analysis.sweep`, and an `extensions` bag that stores `markers` and
 `limits`. It is written and read by the GUI and is lossless across a save/open
 cycle.

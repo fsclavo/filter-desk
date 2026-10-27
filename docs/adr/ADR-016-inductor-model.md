@@ -54,7 +54,8 @@ the normal undoable circuit edit; the build sheet prints the winding columns.
   law, DC derating is not core-specific, and air-core coils do not model SRF/Q
   (the calculators say so). Iron-powder cores have no `Bsat` in the table, so
   no saturation current is derived for them.
-- Persistence adds optional keys to `nonideal_inductor`; `FORMAT_VERSION` stays
-  at 1 (unknown fields were already preserved by ADR-004).
+- Persistence adds optional keys to `nonideal_inductor`; at the time of this
+  ADR `FORMAT_VERSION` stayed at 1. Distributed elements later bumped it to 2
+  in ADR-018.
 - The analysis layer stays independent of synthesis/services; ideal helpers live
   in the domain and the LCD (least common denominator) analysis adapter.

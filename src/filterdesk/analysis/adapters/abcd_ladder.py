@@ -148,13 +148,9 @@ def _propagation_constant(
         2.0
         * np.pi
         * np.asarray(frequency_hz, dtype=float)
-        / (math_sqrt(eeff) * 299_792_458.0)
+        / (np.sqrt(eeff) * 299_792_458.0)
     )
     return np.asarray(alpha + 1j * beta, dtype=np.complex128)
-
-
-def math_sqrt(value: float) -> float:
-    return float(np.sqrt(value))
 
 
 def _stub_input_impedance(
