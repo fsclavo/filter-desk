@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -366,7 +368,11 @@ def element_impedance_ohm(el: Element, frequency_hz: float) -> complex:
     abcd = _element_abcd(el, omega)[0]
     if el.role == ElementRole.SERIES:
         return complex(abcd[0, 1])  # B = Z
-    return complex(1.0 / abcd[1, 0])  # C = Y -> Z = 1/Y
+    admittance = complex(abcd[1, 0])  # C = Y
+    if admittance == 0.0:
+        # Open shunt arm (e.g. a parallel LC at its resonant frequency): Z -> ∞.
+        return complex(math.inf)
+    return 1.0 / admittance  # Z = 1/Y
 
 
 def cascade_abcd(
