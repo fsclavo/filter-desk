@@ -40,9 +40,11 @@ Checks per case:
   stopband no more than 6 dB worse at `2 f_c`;
 - CLI JSON/Touchstone/BOM export.
 
-The v1 synthesis is limited to low-pass Butterworth/Chebyshev-I, order ≤ 3. It
-is marked **experimental**; ideal TEM, no dispersion/discontinuities/radiation,
-and no hardware validation yet.
+The synthesis is limited to low-pass Butterworth/Chebyshev-I, order ≤ 5.
+Orders 1–3 use the analytical stepped-impedance formulas; orders 4–5 use a
+bounded numerical fit and are accepted only with passband error ≤ 1.5 dB and
+stopband penalty ≤ 6 dB at `2 f_c`. It is marked **experimental**; ideal TEM, no
+dispersion/discontinuities/radiation, and no hardware validation yet.
 
 ## Power stress
 

@@ -559,7 +559,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Electrical length at cutoff (degrees; auto-adjusted to fit Z0)",
     )
     dist.add_argument("--z0-min", type=float, default=10.0, help="Minimum line Z0")
-    dist.add_argument("--z0-max", type=float, default=120.0, help="Maximum line Z0")
+    dist.add_argument("--z0-max", type=float, default=250.0, help="Maximum line Z0")
     dist.add_argument(
         "--export-s2p",
         type=Path,
@@ -1788,10 +1788,14 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
         else:
+            length_text = (
+                "per-section lengths optimized"
+                if dist_design.optimized
+                else f"theta={dist_design.electrical_length_deg:g} deg"
+            )
             print(
                 f"Distributed LP: {spec.family.value}, order {spec.order}, "
-                f"{dist_design.substrate.name}, "
-                f"theta={dist_design.electrical_length_deg:g} deg"
+                f"{dist_design.substrate.name}, {length_text}"
             )
             for dist_line in dist_line_rows:
                 print(

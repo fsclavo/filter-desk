@@ -105,9 +105,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   output-boundary BOM insertion.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave
   transformer, open/short stubs, substrate presets and first-order loss.
-- **Experimental distributed LP synthesis**: order 1–3 Butterworth/Chebyshev-I
-  low-pass conversion to microstrip lines, with BOM geometry and explicit
-  model limits.
+- **Experimental distributed LP synthesis**: order 1–5 Butterworth/Chebyshev-I
+  low-pass conversion to microstrip lines; orders 4–5 use a gated numerical fit.
+  Includes BOM geometry and explicit model limits.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
   measured S11/S21 magnitude with bounded least squares.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical

@@ -1799,7 +1799,7 @@ class DistributedSynthesisDialog(QDialog):
         self._z_min = EngineeringLineEdit()
         self._z_min.setText("10")
         self._z_max = EngineeringLineEdit()
-        self._z_max.setText("120")
+        self._z_max.setText("250")
         self._confidence = ConfidenceBadge("distributed")
         self._preview = QLabel()
         self._preview.setWordWrap(True)

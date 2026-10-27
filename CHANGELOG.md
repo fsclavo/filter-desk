@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Added
+
+- Distributed LP v3: order 4–5 Butterworth/Chebyshev-I designs use a bounded
+  numerical fit and a strict response gate; rejected fits return an explicit
+  error instead of a questionable design.
+
 ## v0.13.0 — 2026-10-27
 
 ### Added

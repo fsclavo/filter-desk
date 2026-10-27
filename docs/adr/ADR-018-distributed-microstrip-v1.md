@@ -26,7 +26,8 @@ elements.
   projects. The BOM/build sheet carries substrate, width, length, angle and stub
   kind.
 - Add an **experimental** v1 low-pass realization:
-  - Butterworth and Chebyshev-I, order **1–3**;
+  - Butterworth and Chebyshev-I, order **1–3** (ADR-020 later extends the
+    supported range to order 5 with a gated numerical fit);
   - stepped-impedance cascade of high-/low-impedance microstrip lines;
   - electrical length is adjusted within the requested limits to keep `Z0`
     inside the selected range;

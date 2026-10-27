@@ -172,11 +172,12 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "distributed",
         "Distributed microstrip synthesis",
         ConfidenceLevel.EXPERIMENTAL,
-        "Stepped-impedance LP conversion with ABCD/skrf cross-checks and "
-        "analytic line/stub tests.",
-        "Low-pass, Butterworth/Chebyshev-I, order <= 3 only. Ideal TEM model: "
-        "no dispersion, discontinuities, radiation, coupling or fabrication "
-        "tolerances. Verify the board with Touchstone/VNA.",
+        "Stepped-impedance LP conversion with ABCD/skrf cross-checks; orders "
+        "4–5 add a bounded numerical fit against the lumped prototype.",
+        "Low-pass, Butterworth/Chebyshev-I, order <= 5. Orders 4–5 are accepted "
+        "only if the response gate passes and may require wide Z0 ranges. "
+        "Ideal TEM model: no dispersion, discontinuities, radiation, coupling "
+        "or fabrication tolerances. Verify the board with Touchstone/VNA.",
     ),
 )
 

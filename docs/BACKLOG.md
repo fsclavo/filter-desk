@@ -10,7 +10,7 @@ count or release changes.
 [v0.12.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.12.0) ·
 **Next:** v0.14.0 planning.
 
-**Verification:** local suite **946 passed, 2 skipped** (ngspice unavailable locally); coverage **82.93 %**.
+**Verification:** local suite **951 passed, 2 skipped** (ngspice unavailable locally); coverage **82.99 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40508031813
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40508031922
 
@@ -119,9 +119,11 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Distributed SPICE export:** microstrip lines and stubs now export as
       lossless SPICE `T` elements, with open/short stub terminations; LTspice
       `.asc`/Qucs remain unsupported.
-- [ ] **Distributed synthesis depth:** higher-order/all-response distributed
-      design, stub-only/Kuroda topologies, dispersion/discontinuity models and
-      hardware validation. (L)
+- [x] **Distributed LP orders 4–5:** bounded numerical fit with strict
+      passband/stopband gates (post-v0.13.0, in `Unreleased`).
+- [ ] **Distributed synthesis depth:** all-response distributed design,
+      stub-only/Kuroda topologies, dispersion/discontinuity models and hardware
+      validation. (L)
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)

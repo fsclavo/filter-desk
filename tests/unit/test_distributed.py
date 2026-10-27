@@ -189,9 +189,49 @@ def test_distributed_lowpass_tracks_lumped_response() -> None:
     assert dist_db[at_2fc] <= lumped_db[at_2fc] + 6.0
 
 
+@pytest.mark.parametrize(
+    "family",
+    [ApproximationFamily.BUTTERWORTH, ApproximationFamily.CHEBYSHEV_TYPE_I],
+)
+@pytest.mark.parametrize("order", [4, 5])
+def test_distributed_high_order_fit_gate(
+    family: ApproximationFamily, order: int
+) -> None:
+    spec = _spec(family, order=order)
+    design = design_distributed_lowpass(spec, "FR4")
+    assert design.optimized
+    assert len(design.circuit.elements) == order
+
+    lumped = synthesize(spec).circuit
+    sweep = SweepConfig(
+        f_start_hz=10e6,
+        f_stop_hz=300e6,
+        n_points=400,
+        spacing=SweepSpacing.LOGARITHMIC,
+    )
+    f = sweep.frequencies_hz()
+    dist_db = 20.0 * np.log10(
+        np.maximum(np.abs(analyze_circuit(design.circuit, sweep).s21), 1e-15)
+    )
+    lumped_db = 20.0 * np.log10(
+        np.maximum(np.abs(analyze_circuit(lumped, sweep).s21), 1e-15)
+    )
+    passband = (f >= 10e6) & (f <= 100e6)
+    assert np.max(np.abs(dist_db[passband] - lumped_db[passband])) <= 1.5
+    at_2fc = int(np.argmin(np.abs(f - 200e6)))
+    assert dist_db[at_2fc] <= lumped_db[at_2fc] + 6.0
+
+
+def test_distributed_high_order_rejects_bad_fit() -> None:
+    with pytest.raises(DistributedSynthesisError, match="fit rejected"):
+        design_distributed_lowpass(
+            _spec(order=5), "FR4", z0_min_ohm=45.0, z0_max_ohm=55.0
+        )
+
+
 def test_distributed_rejects_unsupported_requests() -> None:
-    with pytest.raises(DistributedSynthesisError, match="order <= 3"):
-        design_distributed_lowpass(_spec(order=4), "FR4")
+    with pytest.raises(DistributedSynthesisError, match="order <= 5"):
+        design_distributed_lowpass(_spec(order=6), "FR4")
     with pytest.raises(DistributedSynthesisError, match="low-pass"):
         design_distributed_lowpass(_spec(response=FilterResponse.HIGH_PASS), "FR4")
     with pytest.raises(DistributedSynthesisError, match="Chebyshev-I"):

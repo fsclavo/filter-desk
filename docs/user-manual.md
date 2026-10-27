@@ -858,11 +858,15 @@ the layout with a 2-D/3-D field solver or VNA.
 low-pass specification into a cascade of microstrip lines. It is intended for
 PCB low-pass filters, not for arbitrary distributed networks.
 
-- Supported: **Butterworth** and **Chebyshev-I low-pass**, order **1–3**.
-- Choose substrate, requested electrical length and a `Z0` range. The tool
-  starts at the requested angle and adjusts it (up to 80°) to keep every line
-  inside the range; warnings report the adjustment and any very narrow/wide
-  traces.
+- Supported: **Butterworth** and **Chebyshev-I low-pass**, order **1–5**.
+- Orders **1–3** use the analytical stepped-impedance formulas. Orders **4–5**
+  use a bounded numerical fit and are accepted only if passband/stopband gates
+  pass; otherwise the tool returns an explicit error instead of a questionable
+  design.
+- Choose substrate, requested electrical length and a `Z0` range (default
+  **10–250 Ω**). The tool starts at the requested angle and adjusts it (up to
+  80°) to keep every line inside the range; warnings report the adjustment and
+  any very narrow/wide traces. High-order fits may sit near the impedance limits.
 - Series inductors become high-impedance lines and shunt capacitors become
   low-impedance lines. The preview lists `Z0`, trace width, length and angle.
 - Apply creates a normal circuit: it appears in the schematic, component table,
@@ -881,7 +885,7 @@ On the command line:
 filterdesk distributed --family butterworth --response low_pass --order 3 \
   --cutoff 100M --substrate FR4 --json
 filterdesk distributed --family chebyshev_type_i --ripple 0.1 --response low_pass \
-  --order 3 --cutoff 100M --export-s2p out.s2p --export-build-sheet bom.csv
+  --order 5 --cutoff 100M --export-s2p out.s2p --export-build-sheet bom.csv
 ```
 
 Manual line and stub elements are also part of the canonical netlist and both
