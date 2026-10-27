@@ -1,4 +1,4 @@
-# ADR-021: Explicit multi-line Guanella model
+# ADR-021: Explicit multi-line Guanella and 1:4 Ruthroff models
 
 - **Status:** Accepted
 - **Date:** 2026-10-27
@@ -22,9 +22,14 @@ N identical transmission lines.
 - The line count is derived from `turns_ratio`; non-integer or non-Guanella
   ratios keep the previous transformer + TEM-line model.
 - Leakage, shunt core loss and winding capacitance remain boundary elements.
-- Ruthroff remains first-order (transformer + one TEM line). Common-mode
-  impedance is reported as a design quantity but is not represented in the
-  differential 2-port.
+- For 1:4/4:1 Ruthroff, use the equal-delay bootstrap ABCD:
+  `A = cosh(γl)/(1+cosh(γl))`,
+  `B = Z0·sinh(γl)/(1+cosh(γl))`,
+  `C = sinh(γl)/(Z0·(1+cosh(γl)))`, `D = 2` (inverted for 4:1).
+  It reduces to the ideal 1:2 transformer at zero length.
+- Other Ruthroff ratios keep the first-order transformer + TEM-line model.
+  Common-mode impedance is reported as a design quantity but is not
+  represented in the differential 2-port.
 
 ## Consequences
 

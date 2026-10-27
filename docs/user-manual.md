@@ -793,8 +793,10 @@ previously split across two tools.
 - **Model:** coupling/leakage, core `tan delta` (shunt `Rp`), winding
   capacitance and, for TLT kinds, line `Z0`, length, velocity factor and loss.
   Integer 1:N² Guanella ratios use an explicit **N-line parallel/series**
-  network; Ruthroff and non-integer ratios use the first-order transformer +
-  TEM-line model. Common-mode impedance is reported for chokes but is not in the
+  network; 1:4/4:1 Ruthroff uses an equal-delay bootstrap network. Non-integer
+  Guanella and other Ruthroff ratios use the first-order transformer + TEM-line
+  model. For chokes the dialog/CLI reports `Zcm` and a first-order series-choke
+  common-mode attenuation at the lowest frequency; neither is part of the
   differential 2-port.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot

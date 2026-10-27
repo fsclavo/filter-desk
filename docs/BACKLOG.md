@@ -10,7 +10,7 @@ count or release changes.
 [v0.13.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.13.0) ·
 **Next:** v0.15.0 planning.
 
-**Verification:** local suite **954 passed, 2 skipped** (ngspice unavailable locally); coverage **82.99 %**.
+**Verification:** local suite **956 passed, 2 skipped** (ngspice unavailable locally); coverage **82.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40522727081
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40522726976
 
@@ -116,8 +116,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       high-flux curves or measurements; validate FT140/FT240 temperature rise. (M/L)
 - [x] **Guanella multi-line:** integer 1:N² Guanella ratios now use an explicit
       N-line parallel/series network.
-- [ ] **Ruthroff/common-mode depth:** Ruthroff multi-line model, common-mode
-      response in the differential 2-port and validated TLT export. (L)
+- [x] **1:4 Ruthroff depth:** equal-delay bootstrap ABCD; other ratios remain
+      first-order.
+- [x] **Choke common-mode estimate:** series-choke `Zcm` and attenuation at
+      `f_min` are reported separately from the differential 2-port.
+- [ ] **Common-mode/TLT export depth:** full common-mode response in the
+      differential 2-port and validated TLT SPICE export. (L)
 - [x] **Distributed netlist v1:** line/stub elements are integrated into the
       domain, ABCD/skrf, project v2, BOM and an experimental order-1–3 LP
       synthesis. Full response coverage, higher orders, stub-only/Kuroda
@@ -133,7 +137,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Distributed LP orders 4–5:** bounded numerical fit with strict
       passband/stopband gates (post-v0.13.0, in `Unreleased`).
 - [x] **Guanella multi-line model:** integer 1:N² ratios use an explicit N-line
-      parallel/series network (post-v0.13.0, in `Unreleased`).
+      parallel/series network (post-v0.13.0).
+- [x] **1:4 Ruthroff and choke common-mode estimate:** equal-delay bootstrap
+      network plus separate `Zcm`/attenuation (post-v0.14.0).
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, dispersion/discontinuity models and hardware
       validation. (L)

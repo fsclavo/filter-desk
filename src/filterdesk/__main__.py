@@ -2474,6 +2474,7 @@ def main(argv: list[str] | None = None) -> int:
                 "leakage_inductance_h": tr_design.leakage_inductance_h,
                 "core_loss_ohm": tr_design.core_loss_ohm,
                 "common_mode_impedance_ohm": tr_design.common_mode_impedance_ohm,
+                "common_mode_attenuation_db": (tr_design.common_mode_attenuation_db),
                 "z0_line_ohm": tr_design.z0_line_ohm,
                 "length_m": tr_design.length_m,
                 "v_low_rms": tr_design.v_unbalanced_rms,

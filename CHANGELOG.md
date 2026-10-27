@@ -11,8 +11,9 @@ scheme while the public CLI/GUI stabilizes.
   numerical fit and a strict response gate; rejected fits return an explicit
   error instead of a questionable design.
 - Guanella TLTs with integer 1:N² ratios now use an explicit N-line
-  parallel-input/series-output network instead of a fixed transformer + line;
-  Ruthroff and non-integer ratios remain first-order.
+  parallel-input/series-output network; 1:4/4:1 Ruthroff uses an equal-delay
+  bootstrap network. Chokes report a first-order common-mode attenuation
+  estimate. Other TLT ratios remain first-order.
 
 ## v0.13.0 — 2026-10-27
 

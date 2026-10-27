@@ -140,6 +140,15 @@ class BalunDesign:
     def ratio_text(self) -> str:
         return self.to_spec().ratio_text
 
+    @property
+    def common_mode_attenuation_db(self) -> float | None:
+        """First-order series-choke common-mode attenuation at ``f_min``."""
+        if self.kind is not BalunKind.CHOKE or self.common_mode_impedance_ohm <= 0.0:
+            return None
+        z0 = self.z_unbalanced_ohm
+        s21 = 2.0 * z0 / (2.0 * z0 + self.common_mode_impedance_ohm)
+        return -20.0 * math.log10(abs(s21))
+
     def to_spec(self) -> BalunSpec:
         return BalunSpec(
             kind=self.kind.value,
@@ -356,14 +365,20 @@ def design_balun(
                 "TEM-line model; verify the winding layout"
             )
     elif kind_value is BalunKind.RUTHROFF:
-        notes.append(
-            "Ruthroff model is first-order (transformer + one TEM section); "
-            "verify the real winding layout"
-        )
+        if abs(actual_turns - 0.5) <= 1e-6 or abs(actual_turns - 2.0) <= 1e-6:
+            notes.append(
+                "Ruthroff 1:4 uses an equal-delay bootstrap ABCD; verify the "
+                "real winding layout and common-mode behavior"
+            )
+        else:
+            notes.append(
+                "Ruthroff ratio is outside 1:4; using the first-order "
+                "transformer + TEM-line model"
+            )
     if kind_value is BalunKind.CHOKE:
         notes.append(
-            "common-mode impedance is reported separately; the differential "
-            "2-port does not model the choke's common-mode stopband"
+            "common-mode impedance/attenuation is reported separately; the "
+            "differential 2-port does not model the choke's common-mode stopband"
         )
     if core_loss_resistance is not None:
         notes.append("core loss uses a shunt Rp = 2*pi*f_min*Lm/tan_delta")

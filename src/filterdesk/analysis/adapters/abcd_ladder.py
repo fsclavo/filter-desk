@@ -133,6 +133,45 @@ def _guanella_abcd(
     return out
 
 
+def _ruthroff_abcd(
+    balun: BalunSpec, frequency_hz: NDArray[np.floating]
+) -> NDArray[np.complexfloating] | None:
+    """First-order Ruthroff 1:4 distributed network.
+
+    Uses the equal-delay bootstrap ABCD, which reduces to a 1:2 ideal
+    transformer (1:4 impedance) at zero line length. Only the 1:4/4:1 ratios are
+    represented; other Ruthroff ratios keep the generic transformer + line.
+    """
+    if balun.kind != "ruthroff":
+        return None
+    ratio = balun.turns_ratio
+    if abs(ratio - 0.5) > 1e-6 and abs(ratio - 2.0) > 1e-6:
+        return None
+    line = transmission_line_abcd(
+        balun.z0_line_ohm,
+        balun.length_m,
+        balun.velocity_factor,
+        balun.loss_db_per_m,
+        frequency_hz,
+    )
+    cosh = line[:, 0, 0]
+    z0_sinh = line[:, 0, 1]
+    sinh_over_z0 = line[:, 1, 0]
+    denom = 1.0 + cosh
+    out = np.zeros_like(line)
+    if ratio <= 1.0:
+        out[:, 0, 0] = cosh / denom
+        out[:, 0, 1] = z0_sinh / denom
+        out[:, 1, 0] = sinh_over_z0 / denom
+        out[:, 1, 1] = 2.0
+    else:
+        out[:, 0, 0] = 2.0
+        out[:, 0, 1] = -z0_sinh / denom
+        out[:, 1, 0] = -sinh_over_z0 / denom
+        out[:, 1, 1] = cosh / denom
+    return out
+
+
 def balun_abcd(
     balun: BalunSpec, frequency_hz: NDArray[np.floating]
 ) -> NDArray[np.complexfloating]:
@@ -155,8 +194,11 @@ def balun_abcd(
             _shunt_abcd(np.full_like(omega, 1.0 / balun.core_loss_ohm, dtype=complex))
         )
     guanella = _guanella_abcd(balun, freq) if balun.kind == "guanella" else None
+    ruthroff = _ruthroff_abcd(balun, freq) if balun.kind == "ruthroff" else None
     if guanella is not None:
         sections.append(guanella)
+    elif ruthroff is not None:
+        sections.append(ruthroff)
     else:
         sections.append(transformer_abcd(balun.turns_ratio, freq.size))
         if balun.length_m > 0.0:

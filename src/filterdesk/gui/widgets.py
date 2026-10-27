@@ -1661,10 +1661,17 @@ class TransformerDialog(QDialog):
         line_count = spec.guanella_line_count
         if line_count is not None:
             model += f", {line_count}-line Guanella"
+        if design.kind.value == "ruthroff" and (
+            abs(spec.turns_ratio - 0.5) <= 1e-6 or abs(spec.turns_ratio - 2.0) <= 1e-6
+        ):
+            model += ", Ruthroff 1:4 distributed"
         if design.length_m:
             model += f", l {design.length_m * 1000.0:.1f} mm"
         if design.common_mode_impedance_ohm > 0.0:
             model += f", Zcm(fmin) {design.common_mode_impedance_ohm:.3g} Ohm"
+            cm_db = design.common_mode_attenuation_db
+            if cm_db is not None:
+                model += f", CM atten {cm_db:.1f} dB"
         if design.total_loss_w is not None:
             model += f", loss {design.total_loss_w:.2f} W, hot {design.thermal_text}"
         self._model.setText(model)

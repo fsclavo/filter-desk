@@ -136,6 +136,8 @@ def test_choke_requires_equal_impedances() -> None:
     )
     assert design.turns_ratio == pytest.approx(1.0)
     assert design.common_mode_impedance_ohm > 0.0
+    assert design.common_mode_attenuation_db is not None
+    assert design.common_mode_attenuation_db > 0.0
     assert any("common-mode" in note for note in design.notes)
     with pytest.raises(BalunError, match="equal impedances"):
         design_balun(
@@ -191,6 +193,29 @@ def test_guanella_line_count_and_zero_length_transformer() -> None:
         assert np.allclose(balun_abcd(spec, freq), expected, atol=1e-12)
     assert BalunSpec(kind="guanella", turns_ratio=0.6).guanella_line_count is None
     assert BalunSpec(kind="unun", turns_ratio=0.5).guanella_line_count is None
+
+
+def test_ruthroff_quarter_wave_reduces_to_transformer() -> None:
+    for ratio in (0.5, 2.0):
+        spec = BalunSpec(kind="ruthroff", turns_ratio=ratio)
+        freq = np.array([1e6, 10e6, 100e6])
+        expected = transformer_abcd(ratio, freq.size)
+        assert np.allclose(balun_abcd(spec, freq), expected, atol=1e-12)
+
+
+def test_ruthroff_bootstrap_response_is_finite_and_reciprocal() -> None:
+    spec = BalunSpec(
+        kind="ruthroff",
+        turns_ratio=0.5,
+        z0_line_ohm=100.0,
+        length_m=0.05,
+        velocity_factor=0.7,
+    )
+    freq = np.array([1e6, 10e6, 50e6])
+    abcd = balun_abcd(spec, freq)
+    assert np.all(np.isfinite(abcd))
+    det = abcd[:, 0, 0] * abcd[:, 1, 1] - abcd[:, 0, 1] * abcd[:, 1, 0]
+    assert np.allclose(det, 1.0, atol=1e-12)
 
 
 def test_guanella_multiline_network_matches_parallel_series_formula() -> None:

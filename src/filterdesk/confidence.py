@@ -136,10 +136,11 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "Guanella/Ruthroff TLT",
         ConfidenceLevel.EXPERIMENTAL,
         "Integer 1:N² Guanella ratios use an explicit N-line "
-        "parallel/series network; other TLTs use a transformer + TEM line.",
-        "Ruthroff and non-integer Guanella ratios remain first-order. Common "
-        "mode is reported separately and is not in the differential 2-port; "
-        "no EM model.",
+        "parallel/series network; 1:4 Ruthroff uses an equal-delay bootstrap "
+        "ABCD; other TLTs use a transformer + TEM line.",
+        "Non-integer Guanella and non-1:4 Ruthroff ratios remain first-order. "
+        "Common-mode impedance/attenuation is a separate series-choke estimate, "
+        "not in the differential 2-port; no EM model.",
     ),
     ConfidenceItem(
         "microstrip",
