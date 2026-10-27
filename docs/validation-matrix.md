@@ -63,6 +63,24 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 Guanella multi-line is still experimental; Ruthroff and common-mode behavior
 are not full multi-line/EM models.
 
+## Independent numerical oracle
+
+`tests/unit/test_numerical_oracle.py` compares LP and HP ABCD responses against
+SciPy analog prototypes (`butter`, `cheby1`, `cheby2`, `ellip`) for orders 3 and
+5. The maximum magnitude error is below **1e-4 dB**. This is independent of the
+project's g-value synthesis and backend.
+
+## Diagram QA
+
+`tests/unit/test_visual_qa.py` checks:
+
+- schematic group IDs, scene bounds, pairwise non-overlap, labels and a
+  non-blank rendered image;
+- magnitude SVG axis/legend content and polyline count;
+- Smith SVG title, S11/S22 labels, axes and path count.
+
+This is semantic/structural QA, not a pixel-golden visual regression.
+
 ## Power stress
 
 `tests/unit/test_stress.py` validates the nodal stress solve:

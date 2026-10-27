@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.18.0 — 2026-10-27
+
+### QA
+
+- Added an independent SciPy analog-prototype oracle for LP/HP Butterworth,
+  Chebyshev I/II and elliptic synthesis.
+- Added semantic visual QA for schematic geometry/labels/render and for SVG
+  plots/Smith export.
+- Added `docs/qa-matrix.md` with per-area evidence and known gaps.
+
 ## v0.17.0 — 2026-10-27
 
 ### Added

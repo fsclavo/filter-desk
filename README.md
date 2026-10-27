@@ -117,6 +117,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.
 - **English/Spanish GUI** (applies on restart).
+- **QA matrix** and independent LP/HP numerical oracle; see
+  [`docs/qa-matrix.md`](docs/qa-matrix.md).
 - **E-series snapping** (IEC 60063 E6–E96) to turn ideal values into real parts.
 - **Tolerance analysis**: per-component tolerances and a Monte-Carlo envelope
   with yield estimates.
