@@ -224,7 +224,7 @@ def tlt_spice_netlist(
     if lines < 1:
         raise SpiceExportError("Guanella TLT must have at least one line")
     delay_s = balun.length_m / (balun.velocity_factor * 299_792_458.0)
-    out_nodes = ["outm", *[f"mid{i}" for i in range(1, lines)], "outp"]
+    out_nodes = ["outp", *[f"mid{i}" for i in range(1, lines)], "outm"]
     net: list[str] = [f"* {title}", f"* {lines}-line Guanella, differential output"]
     net.append("V1 in_src 0 AC 1")
     net.append(f"RV1s in_src in {_fmt(balun.z_unbalanced_ohm)}")

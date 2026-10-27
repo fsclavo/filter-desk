@@ -30,8 +30,8 @@ def _guanella() -> BalunSpec:
 
 def test_guanella_tlt_netlist_structure(tmp_path: Path) -> None:
     text = tlt_spice_netlist(_guanella())
-    assert "TL1 in 0 outm mid1 Z0=100 TD=" in text
-    assert "TL2 in 0 mid1 outp Z0=100 TD=" in text
+    assert "TL1 in 0 outp mid1 Z0=100 TD=" in text
+    assert "TL2 in 0 mid1 outm Z0=100 TD=" in text
     assert "Lcm mid1 0 1e-05" in text
     assert "Rload outp outm 200" in text
     out = tmp_path / "tlt.cir"

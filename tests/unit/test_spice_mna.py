@@ -288,20 +288,33 @@ def test_guanella_tlt_spice_matches_mixed_mode(tmp_path) -> None:
     output = subprocess.run(
         ["ngspice", "-b", str(path)], check=True, capture_output=True, text=True
     )
-    samples: list[tuple[float, complex, complex]] = []
+    vectors: dict[str, list[tuple[float, complex]]] = {}
+    current: str | None = None
     for line in output.stdout.splitlines():
+        low = line.lower()
+        if "frequency" in low and "v(outp)" in low:
+            current = "outp"
+            vectors[current] = []
+            continue
+        if "frequency" in low and "v(outm)" in low:
+            current = "outm"
+            vectors[current] = []
+            continue
         parts = line.split()
-        if len(parts) >= 6 and parts[0].isdigit():
-            samples.append(
-                (
-                    float(parts[1]),
-                    complex(float(parts[2].rstrip(",")), float(parts[3])),
-                    complex(float(parts[4].rstrip(",")), float(parts[5])),
-                )
+        if current is None or len(parts) < 4 or not parts[0].isdigit():
+            continue
+        vectors[current].append(
+            (
+                float(parts[1]),
+                complex(float(parts[2].rstrip(",")), float(parts[3])),
             )
-    assert len(samples) > 5
-    freqs = np.asarray([sample[0] for sample in samples])
+        )
+    assert len(vectors.get("outp", [])) > 5
+    assert len(vectors.get("outm", [])) > 5
+    freqs = np.asarray([sample[0] for sample in vectors["outp"]])
     mixed = mixed_mode_balun(balun, freqs)
-    for index, (_freq, vp, vm) in enumerate(samples):
+    for index, ((_freq, vp), (_freq2, vm)) in enumerate(
+        zip(vectors["outp"], vectors["outm"], strict=True)
+    ):
         expected = mixed.sdd[index, 1, 0]
         assert abs((vp - vm) - expected) < 5e-5
