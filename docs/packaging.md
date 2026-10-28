@@ -80,8 +80,8 @@ LGPL-3.0 is compliant.
 To cut a release (bump `pyproject.toml` + `src/filterdesk/__init__.py` first):
 
 ```bash
-git tag v0.21.0
-git push origin v0.21.0
+git tag v0.23.0
+git push origin v0.23.0
 ```
 
 ## AppImage

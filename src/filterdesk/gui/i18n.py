@@ -154,6 +154,16 @@ _ES: dict[str, str] = {
     "Re(Γ)": "Re(Γ)",
     "Im(Γ)": "Im(Γ)",
     "S21 meas": "S21 med",
+    "   | meas: —": "   | med: —",
+    "   | meas: S21={s21:.2f} dB (Δ{ds21:+.2f}), "
+    "S11={s11:.2f} dB (Δ{ds11:+.2f}), "
+    "VSWR={vswr:.3f} (Δ{dvswr:+.3f}), "
+    "∠S21={phase:.1f}° (Δ{dphase:+.1f}°)": (
+        "   | med: S21={s21:.2f} dB (Δ{ds21:+.2f}), "
+        "S11={s11:.2f} dB (Δ{ds11:+.2f}), "
+        "VSWR={vswr:.3f} (Δ{dvswr:+.3f}), "
+        "∠S21={phase:.1f}° (Δ{dphase:+.1f}°)"
+    ),
     "S11 meas": "S11 med",
     "S22 meas": "S22 med",
     "S12 meas": "S12 med",

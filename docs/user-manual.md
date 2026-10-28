@@ -306,7 +306,10 @@ Six tabs, all with a logarithmic frequency axis:
 
 A **cursor readout** below the tabs reports `f`, `S21`, `S11`, `S22`, `S12`,
 `VSWR`, group delay, ∠S21, and |Zin| at the nearest sweep point, plus
-Monte-Carlo and marker details when present.
+Monte-Carlo and marker details when present. When a measured Touchstone overlay
+is visible, it also appends the measured `S21`, `S11`, `VSWR`, ∠S21 and their
+deltas (`sim − meas`) at the cursor frequency; frequencies outside the measured
+band show `—`.
 
 ---
 

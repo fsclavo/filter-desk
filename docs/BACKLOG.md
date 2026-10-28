@@ -4,15 +4,14 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.22.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.23.0 · **Release:** prepared,
+not published · **Previous:**
 [v0.22.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.22.0) ·
-**Previous:**
-[v0.21.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.21.0) ·
-**Next:** v0.23.0 planning.
+**Next:** v0.24.0 planning.
 
-**Verification:** local suite **1013 passed** with ngspice (3 skipped without); coverage **83.33 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40531208808
+**Verification:** local suite **1017 passed** with ngspice (3 skipped without); coverage **83.35 %**.
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40612598258
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40612598018
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -66,10 +65,21 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Power stress** now uses a nodal solve with source/load, T1/BAL1 and
       distributed line/stub elements; Vpk/Ipk are no longer a constant-arm
       rule of thumb.
+- [x] Measured-vs-simulated cursor readout with complex interpolation and
+      `ΔS21`/`ΔS11`/`ΔVSWR`/`Δ∠S21`, hidden unless the measured overlay is shown.
 
 ---
 
-## 3. v0.22.0 release
+## 3. v0.23.0 release (prepared, not published)
+
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -78,7 +88,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.21.0 release
+## 5. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -87,7 +97,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.20.0 release
+## 6. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -96,7 +106,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.19.0 release
+## 7. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -105,7 +115,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.18.0 release
+## 8. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -114,7 +124,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.17.0 release
+## 9. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -123,7 +133,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.16.0 release
+## 10. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -132,7 +142,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.15.0 release
+## 11. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -141,7 +151,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.14.0 release
+## 12. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -150,7 +160,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.13.0 release
+## 13. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -159,7 +169,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.12.0 release
+## 14. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -168,7 +178,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. Open backlog
+## 15. Open backlog
 
 ### P0 — release quality
 
@@ -234,25 +244,6 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Add DCR/leakage estimates per winding option (DCR at 20 °C; leakage from
       the coupling model).
 
-- [ ] **Measured-vs-simulated cursor readout:** when a Touchstone overlay is
-      visible, append the measured values and their differences to the cursor
-      readout so the built filter can be compared with the calculation:
-      `S21 meas` + `ΔS21` (dB), `S11 meas` + `ΔS11` (dB), `VSWR meas` + `ΔVSWR`,
-      and `∠S21 meas` + `Δ∠S21` (degrees). Definitions:
-      `ΔS21 = S21_dB − S21_meas_dB`, `ΔS11 = S11_dB − S11_meas_dB`,
-      `ΔVSWR = VSWR − VSWR_meas`, `Δ∠S21 = ∠S21 − ∠S21_meas` (wrapped to ±180°).
-      Because the simulated and VNA grids do not necessarily match, interpolate
-      the measured complex `S11`/`S21` onto the cursor frequency (real/imag, with
-      unwrapped phase for the phase delta) and show `—` outside the measured
-      band. Only shown while the measured overlay is visible; keep the existing
-      readout fields. (S/M)
-      - Acceptance: synthetic sim/meas fixtures with different frequency grids
-        verify interpolation and the four deltas; out-of-band shows `—`;
-        GUI smoke test.
-      - Later/optional (not part of v1): group-delay and `|Zin|` differences,
-        dedicated ΔS21/ΔS11 curves tab, band RMS/max comparison, and delay
-        alignment before comparing phase.
-
 ### Parked by design
 
 - Even-order elliptic synthesis (needs general unequal-R Darlington/Cauer).
@@ -263,7 +254,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. Ham-radio onboarding and discoverability
+## 16. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -271,7 +262,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 16. Maintenance rule
+## 17. Maintenance rule
 
 Every change must update, in the same commit:
 

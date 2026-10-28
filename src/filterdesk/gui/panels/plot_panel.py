@@ -18,6 +18,7 @@ from filterdesk.gui.i18n import tr
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
 from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 from filterdesk.gui.widgets import ConfidenceStrip
+from filterdesk.services.compare import measured_at_frequency, wrap_degrees
 
 if TYPE_CHECKING:
     from filterdesk.montecarlo import MonteCarloResult
@@ -347,6 +348,35 @@ class PlotPanel(QWidget):
         self._curve_mc_min.setData(f, np.asarray(mc.s21_db_min, dtype=float))
         self._curve_mc_max.setData(f, np.asarray(mc.s21_db_max, dtype=float))
         self._mc_fill.setVisible(True)
+
+    def _measured_readout_bits(
+        self,
+        freq_hz: float,
+        *,
+        s21: float,
+        s11: float,
+        vswr_value: float,
+        phase21: float,
+    ) -> str:
+        if self._measured is None or not self._show_measured:
+            return ""
+        sample = measured_at_frequency(self._measured, freq_hz)
+        if sample is None:
+            return tr("   | meas: —")
+        return tr(
+            "   | meas: S21={s21:.2f} dB (Δ{ds21:+.2f}), "
+            "S11={s11:.2f} dB (Δ{ds11:+.2f}), "
+            "VSWR={vswr:.3f} (Δ{dvswr:+.3f}), "
+            "∠S21={phase:.1f}° (Δ{dphase:+.1f}°)",
+            s21=sample.s21_db,
+            ds21=s21 - sample.s21_db,
+            s11=sample.s11_db,
+            ds11=s11 - sample.s11_db,
+            vswr=sample.vswr,
+            dvswr=vswr_value - sample.vswr,
+            phase=sample.phase_s21_deg,
+            dphase=wrap_degrees(phase21 - sample.phase_s21_deg),
+        )
 
     def _mc_readout_bits(self, freq_hz: float) -> str:
         """Cursor readout segment for the Monte-Carlo envelope at ``freq_hz``."""
@@ -756,6 +786,9 @@ class PlotPanel(QWidget):
         ph21 = float(self._phase21[idx])
         zin_abs = float(self._zin_abs[idx])
         mc_bits = self._mc_readout_bits(f_hz)
+        measured_bits = self._measured_readout_bits(
+            f_hz, s21=s21, s11=s11, vswr_value=vs, phase21=ph21
+        )
         marker_bits = ""
         if self._markers:
             parts = [
@@ -774,5 +807,6 @@ class PlotPanel(QWidget):
             f"∠S21 = {ph21:.1f}°   "
             f"|Zin| = {zin_abs:.2f} Ω"
             f"{mc_bits}"
+            f"{measured_bits}"
             f"{marker_bits}"
         )

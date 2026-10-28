@@ -101,9 +101,7 @@ def compare_results(
     f_min = max(float(sim_f.min()), float(mea_f.min()))
     f_max = min(float(sim_f.max()), float(mea_f.max()))
     if not f_max > f_min:
-        raise CompareError(
-            "simulated and measured frequency ranges do not overlap"
-        )
+        raise CompareError("simulated and measured frequency ranges do not overlap")
 
     mask = (sim_f >= f_min) & (sim_f <= f_max)
     grid = sim_f[mask]
@@ -130,4 +128,71 @@ def compare_results(
     )
 
 
-__all__ = ["CompareError", "CompareResult", "compare_results"]
+@dataclass(frozen=True, slots=True)
+class MeasuredAtFrequency:
+    """Interpolated measured values at one cursor frequency."""
+
+    frequency_hz: float
+    s21_db: float
+    s11_db: float
+    vswr: float
+    phase_s21_deg: float
+
+
+def wrap_degrees(value: float) -> float:
+    """Wrap an angle to (-180, 180]."""
+    wrapped = (float(value) + 180.0) % 360.0 - 180.0
+    return 180.0 if wrapped == -180.0 else wrapped
+
+
+def measured_at_frequency(
+    measured: AnalysisResult,
+    frequency_hz: float,
+) -> MeasuredAtFrequency | None:
+    """Interpolate measured complex S11/S21 onto ``frequency_hz``.
+
+    Returns ``None`` when the cursor is outside the measured band. The phase is
+    interpolated from the unwrapped measured S21 phase so a 360° wrap does not
+    create a bogus linear interpolation.
+    """
+    f = np.asarray(measured.frequency_hz, dtype=float)
+    if f.size < 2 or not np.isfinite(frequency_hz):
+        return None
+    order = np.argsort(f, kind="stable")
+    f_sorted = f[order]
+    target = float(frequency_hz)
+    if target < f_sorted[0] or target > f_sorted[-1]:
+        return None
+    s11 = np.asarray(measured.s11, dtype=np.complex128)[order]
+    s21 = np.asarray(measured.s21, dtype=np.complex128)[order]
+    log_f = np.log10(np.maximum(f_sorted, 1e-30))
+    log_target = float(np.log10(max(target, 1e-30)))
+    s11_i = complex(
+        np.interp(log_target, log_f, s11.real),
+        np.interp(log_target, log_f, s11.imag),
+    )
+    s21_i = complex(
+        np.interp(log_target, log_f, s21.real),
+        np.interp(log_target, log_f, s21.imag),
+    )
+    phase_unwrapped = np.degrees(np.unwrap(np.angle(s21)))
+    phase_i = float(np.interp(log_target, log_f, phase_unwrapped))
+    gamma = min(abs(s11_i), 0.999999999)
+    vswr_i = (1.0 + gamma) / (1.0 - gamma)
+    return MeasuredAtFrequency(
+        frequency_hz=target,
+        s21_db=float(20.0 * np.log10(max(abs(s21_i), 1e-15))),
+        s11_db=float(20.0 * np.log10(max(abs(s11_i), 1e-15))),
+        vswr=float(vswr_i),
+        phase_s21_deg=phase_i,
+    )
+
+
+__all__ = [
+    "CompareError",
+    "CompareResult",
+    "MeasuredAtFrequency",
+    "compare_results",
+    "measured_at_frequency",
+    "wrap_degrees",
+]

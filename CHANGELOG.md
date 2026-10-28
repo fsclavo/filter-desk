@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.23.0 — 2026-10-28
+
+### Added
+
+- Measured-vs-simulated cursor readout: while a Touchstone overlay is visible,
+  the response cursor now appends interpolated measured S21/S11/VSWR/∠S21 and
+  the four deltas against the simulation. Values outside the measured band show
+  `—`; the existing readout fields are unchanged.
+
 ## v0.22.0 — 2026-10-28
 
 ### Added

@@ -6,7 +6,12 @@ import numpy as np
 import pytest
 
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
-from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.compare import (
+    CompareError,
+    compare_results,
+    measured_at_frequency,
+    wrap_degrees,
+)
 from filterdesk.services.session import DesignSession
 
 
@@ -121,3 +126,54 @@ def test_measured_interpolation_between_points() -> None:
 def test_coarse_measured_passes_through_sweep_config() -> None:
     cfg = SweepConfig(1e6, 100e6, n_points=64, spacing=SweepSpacing.LOGARITHMIC)
     assert cfg.frequencies_hz().shape[0] == 64
+
+
+def test_measured_at_frequency_interpolation_and_limits() -> None:
+    freq = np.array([90e6, 100e6, 110e6], dtype=float)
+    s11 = np.full(3, 0.2 + 0j, dtype=np.complex128)
+    s21 = np.array([1.0 + 0j, 0.5 + 0.5j, 0.0 + 1.0j], dtype=np.complex128)
+    measured = AnalysisResult(
+        frequency_hz=freq,
+        s11=s11,
+        s21=s21,
+        s12=s21.copy(),
+        s22=s11.copy(),
+        zin_ohm=np.full(3, 50.0 + 0j),
+        zout_ohm=np.full(3, 50.0 + 0j),
+        z0_source_ohm=50.0,
+        z0_load_ohm=50.0,
+    )
+    exact = measured_at_frequency(measured, 100e6)
+    assert exact is not None
+    assert exact.s21_db == pytest.approx(-3.0102999566, rel=1e-8)
+    assert exact.s11_db == pytest.approx(-13.979400086, rel=1e-8)
+    assert exact.vswr == pytest.approx(1.5, rel=1e-12)
+    assert measured_at_frequency(measured, 80e6) is None
+    assert measured_at_frequency(measured, 120e6) is None
+
+
+def test_measured_phase_interpolation_uses_unwrapped_angle() -> None:
+    freq = np.array([90e6, 110e6], dtype=float)
+    s11 = np.full(2, 0.1 + 0j, dtype=np.complex128)
+    s21 = np.array([np.exp(1j * np.deg2rad(170.0)), np.exp(1j * np.deg2rad(-170.0))])
+    measured = AnalysisResult(
+        frequency_hz=freq,
+        s11=s11,
+        s21=s21,
+        s12=s21.copy(),
+        s22=s11.copy(),
+        zin_ohm=np.full(2, 50.0 + 0j),
+        zout_ohm=np.full(2, 50.0 + 0j),
+        z0_source_ohm=50.0,
+        z0_load_ohm=50.0,
+    )
+    sample = measured_at_frequency(measured, float(np.sqrt(90e6 * 110e6)))
+    assert sample is not None
+    assert sample.phase_s21_deg == pytest.approx(180.0, abs=1e-9)
+
+
+def test_wrap_degrees() -> None:
+    assert wrap_degrees(0.0) == pytest.approx(0.0)
+    assert wrap_degrees(181.0) == pytest.approx(-179.0)
+    assert wrap_degrees(-181.0) == pytest.approx(179.0)
+    assert wrap_degrees(360.0) == pytest.approx(0.0)
