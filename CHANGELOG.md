@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.28.1 — 2026-10-28
+
+### Fixed
+
+- Band-filter wizard snapping now uses **Preserve LC resonances** instead of
+  independent L/C rounding. The series is selectable (E24/E48/E96), defaults to
+  E96 above 100 MHz and warns when the snapped response misses the target.
+
 ## v0.28.0 — 2026-10-28
 
 ### Added

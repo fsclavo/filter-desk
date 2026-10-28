@@ -172,6 +172,46 @@ def test_wizard_quick_and_guided_modes(qtbot) -> None:
     assert dialog.result_spec().response is FilterResponse.BAND_STOP
 
 
+def test_snap_series_defaults_to_e96_for_vhf(qtbot) -> None:
+    from filterdesk.components_std import ESeries
+    from filterdesk.gui.widgets import BandFilterWizardDialog
+
+    dialog = BandFilterWizardDialog()
+    qtbot.addWidget(dialog)
+    assert not dialog.snap_enabled()
+    assert not dialog._snap_series.isEnabled()
+    assert dialog.snap_series() is ESeries.E24
+
+    dialog._snap.setChecked(True)
+    assert dialog._snap_series.isEnabled()
+    dialog._band.setCurrentIndex(dialog._band.findText("2 m"))
+    assert dialog.snap_series() is ESeries.E96
+    dialog._band.setCurrentIndex(dialog._band.findText("70 cm"))
+    assert dialog.snap_series() is ESeries.E96
+    dialog._band.setCurrentIndex(dialog._band.findText("40 m"))
+    assert dialog.snap_series() is ESeries.E24
+
+
+def test_e96_preserve_snap_keeps_2m_response() -> None:
+    from filterdesk.components_std import ESeries, SnapStrategy
+    from filterdesk.components_std.snap import snap_circuit
+    from filterdesk.services.hf_band import evaluate_band_filter_response
+    from filterdesk.synthesis import synthesize
+
+    request = BandFilterRequest(_band("2 m"), BandKind.BPF)
+    design = design_band_filter(request)
+    assert design.selected is not None
+    ideal = synthesize(design.selected.spec).circuit
+
+    e24, _ = snap_circuit(ideal, ESeries.E24, SnapStrategy.INDEPENDENT)
+    assert not evaluate_band_filter_response(request, e24).passband_ok
+
+    e96, _ = snap_circuit(
+        ideal, ESeries.E96, SnapStrategy.PRESERVE_LC_RESONANCES
+    )
+    assert evaluate_band_filter_response(request, e96).ok
+
+
 def test_broadcast_presets_only_offer_notch(qtbot) -> None:
     from filterdesk.gui.widgets import BandFilterWizardDialog
 

@@ -1223,8 +1223,13 @@ def test_main_window_band_wizard(monkeypatch: pytest.MonkeyPatch) -> None:
         def result_kind(self):
             return BandKind.LPF
 
-        def snap_to_e24(self) -> bool:
+        def snap_enabled(self) -> bool:
             return False
+
+        def snap_series(self):
+            from filterdesk.components_std import ESeries
+
+            return ESeries.E24
 
     monkeypatch.setattr(mw, "BandFilterWizardDialog", _FakeDialog)
     window._run_band_wizard()
@@ -1278,8 +1283,13 @@ def test_main_window_band_wizard_updates_sweep(
         def result_kind(self):
             return BandKind.BSF
 
-        def snap_to_e24(self) -> bool:
+        def snap_enabled(self) -> bool:
             return False
+
+        def snap_series(self):
+            from filterdesk.components_std import ESeries
+
+            return ESeries.E24
 
     monkeypatch.setattr(mw, "BandFilterWizardDialog", _FakeDialog)
     window._run_band_wizard()
@@ -1292,6 +1302,69 @@ def test_main_window_band_wizard_updates_sweep(
     window._undo.undo()
     assert window._f_start.text() == old_start
     assert window._f_stop.text() == old_stop
+    window.close()
+    assert app is not None
+
+
+def test_main_window_band_wizard_warns_on_bad_snap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication, QDialog
+
+    from filterdesk.components_std import ESeries
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.bands import BandKind, find_band
+    from filterdesk.services.hf_band import (
+        BandFilterRequest,
+        design_band_filter,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    band = find_band("2 m")
+    request = BandFilterRequest(band, BandKind.BPF)
+    design = design_band_filter(request)
+    assert design.selected is not None
+    spec = design.selected.spec
+    warnings: list[tuple[object, ...]] = []
+    monkeypatch.setattr(
+        mw.QMessageBox, "warning", lambda *args, **kwargs: warnings.append(args)
+    )
+
+    class _FakeDialog:
+        def __init__(self, parent: object = None) -> None:
+            self.parent = parent
+
+        def exec(self) -> QDialog.DialogCode:
+            return QDialog.DialogCode.Accepted
+
+        def result_spec(self):
+            return spec
+
+        def result_band(self):
+            return band
+
+        def result_kind(self):
+            return BandKind.BPF
+
+        def result_request(self):
+            return request
+
+        def snap_enabled(self) -> bool:
+            return True
+
+        def snap_series(self):
+            return ESeries.E24
+
+    monkeypatch.setattr(mw, "BandFilterWizardDialog", _FakeDialog)
+    window._run_band_wizard()
+
+    assert warnings
+    assert any("Snap changed the response" in str(arg) for arg in warnings[0])
     window.close()
     assert app is not None
 

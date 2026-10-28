@@ -261,7 +261,13 @@ _ES.update(
         ),
         "Quick preset": "Preset rápido",
         "Guided design": "Diseño guiado",
-        "Snap to E24 after apply": "Ajustar a E24 después de aplicar",
+        "Snap after apply": "Ajustar a serie E después de aplicar",
+        "Snap changed the response": "El ajuste cambió la respuesta",
+        "Snapping to {series} no longer meets the passband/stopband target. "
+        "Undo with Ctrl+Z or choose a finer series (E96 for VHF/UHF).": (
+            "Ajustar a {series} ya no cumple el objetivo de banda de paso/rechazo. "
+            "Deshacé con Ctrl+Z o elegí una serie más fina (E96 para VHF/UHF)."
+        ),
         "Max insertion loss (dB)": "Pérdida de inserción máx. (dB)",
         "Min stopband attenuation (dB)": "Atenuación mín. en rechazo (dB)",
         "Pass edge (Hz)": "Borde de paso (Hz)",

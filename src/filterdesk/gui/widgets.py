@@ -2183,8 +2183,12 @@ class BandFilterWizardDialog(QDialog):
         self._max_order = QSpinBox()
         self._max_order.setRange(2, 12)
         self._max_order.setValue(12)
-        self._snap_e24 = QCheckBox(tr("Snap to E24 after apply"))
-        self._snap_e24.setChecked(False)
+        self._snap = QCheckBox(tr("Snap after apply"))
+        self._snap.setChecked(False)
+        self._snap_series = QComboBox()
+        for series in (ESeries.E24, ESeries.E48, ESeries.E96):
+            self._snap_series.addItem(series.value)
+        self._snap_series.setEnabled(False)
 
         self._table = QTableWidget(0, 6)
         self._table.setHorizontalHeaderLabels(
@@ -2219,7 +2223,8 @@ class BandFilterWizardDialog(QDialog):
         guided_layout.addRow(tr("Stop edge (Hz)"), self._stop_edge)
         guided_layout.addRow(tr("Stopband guard (% of band span)"), self._guard)
         guided_layout.addRow(tr("Max order"), self._max_order)
-        guided_layout.addRow(self._snap_e24)
+        guided_layout.addRow(self._snap)
+        guided_layout.addRow(tr("Series"), self._snap_series)
         guided_layout.addRow(tr("Candidates"), self._table)
         guided_layout.addRow(self._confidence)
         guided_layout.addRow(tr("Result"), self._result)
@@ -2248,9 +2253,12 @@ class BandFilterWizardDialog(QDialog):
         form.addRow(buttons)
 
         self._band.currentIndexChanged.connect(self._on_selection_changed)
+        self._band.currentIndexChanged.connect(self._sync_snap_series)
         self._kind.currentIndexChanged.connect(self._on_selection_changed)
         self._mode.currentIndexChanged.connect(self._sync_mode)
+        self._snap.toggled.connect(self._snap_series.setEnabled)
         self._sync_kind_choices()
+        self._sync_snap_series()
         self._sync_edges()
         self._sync_mode()
 
@@ -2273,8 +2281,16 @@ class BandFilterWizardDialog(QDialog):
     def result_kind(self) -> BandKind:
         return self._kind_choices[self._kind.currentIndex()][0]
 
-    def snap_to_e24(self) -> bool:
-        return self._snap_e24.isChecked()
+    def snap_enabled(self) -> bool:
+        return self._snap.isChecked()
+
+    def snap_series(self) -> ESeries:
+        return ESeries(self._snap_series.currentText())
+
+    def result_request(self) -> BandFilterRequest:
+        if self._mode.currentIndex() == 1 and self._design_value is not None:
+            return self._design_value.request
+        return BandFilterRequest(self.result_band(), self.result_kind())
 
     def _quick_spec(self) -> FilterSpec | None:
         try:
@@ -2325,6 +2341,14 @@ class BandFilterWizardDialog(QDialog):
             center=format_engineering(spec.f_center_hz or 0.0, "Hz"),
             bandwidth=format_engineering(spec.bandwidth_hz or 0.0, "Hz"),
         )
+
+    def _sync_snap_series(self) -> None:
+        recommended = (
+            ESeries.E96 if self.result_band().low_hz >= 100e6 else ESeries.E24
+        )
+        index = self._snap_series.findText(recommended.value)
+        if index >= 0:
+            self._snap_series.setCurrentIndex(index)
 
     def _sync_edges(self) -> None:
         band, kind = self.selection()

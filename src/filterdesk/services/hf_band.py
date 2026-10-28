@@ -14,6 +14,7 @@ import numpy as np
 from filterdesk.analysis.derived import mag_db
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.types import AnalysisResult
+from filterdesk.domain.circuit import Circuit
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
@@ -104,6 +105,23 @@ class BandFilterRequest:
 class BandFilterCandidate:
     order: int
     spec: FilterSpec
+    passband_min_db: float
+    stopband_low_db: float | None
+    stopband_high_db: float | None
+    passband_ok: bool
+    stopband_ok: bool
+    harmonic_2f_db: float | None = None
+    harmonic_3f_db: float | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.passband_ok and self.stopband_ok
+
+
+@dataclass(frozen=True, slots=True)
+class BandFilterResponse:
+    """Passband/stopband metrics for a concrete circuit."""
+
     passband_min_db: float
     stopband_low_db: float | None
     stopband_high_db: float | None
@@ -220,13 +238,17 @@ def _stopband(
     )
 
 
-def _candidate(request: BandFilterRequest, order: int) -> BandFilterCandidate:
-    spec = _spec_for(request, order)
-    circuit = synthesize(spec).circuit
-    analysis = analyze_circuit(circuit, band_sweep(request.band))
-    s21_db = mag_db(analysis.s21)
-    passband_min = _passband_min_db(request, analysis, s21_db)
-    stop_low, stop_high = _stopband(request, analysis)
+def evaluate_band_filter_response(
+    request: BandFilterRequest,
+    circuit: Circuit,
+    *,
+    analysis: AnalysisResult | None = None,
+) -> BandFilterResponse:
+    """Evaluate a synthesized/snapped circuit against the wizard limits."""
+    result = analysis or analyze_circuit(circuit, band_sweep(request.band))
+    s21_db = mag_db(result.s21)
+    passband_min = _passband_min_db(request, result, s21_db)
+    stop_low, stop_high = _stopband(request, result)
     passband_ok = passband_min >= -request.max_insertion_loss_db
     stopband_ok = all(
         value <= -request.min_stopband_attenuation_db
@@ -235,18 +257,34 @@ def _candidate(request: BandFilterRequest, order: int) -> BandFilterCandidate:
     )
     harmonic_2f = harmonic_3f = None
     if request.kind is BandKind.LPF:
-        harmonic_2f = _at_nearest(analysis, request.band.high_hz * 2.0)
-        harmonic_3f = _at_nearest(analysis, request.band.high_hz * 3.0)
+        harmonic_2f = _at_nearest(result, request.band.high_hz * 2.0)
+        harmonic_3f = _at_nearest(result, request.band.high_hz * 3.0)
+    return BandFilterResponse(
+        passband_min,
+        stop_low,
+        stop_high,
+        passband_ok,
+        stopband_ok,
+        harmonic_2f,
+        harmonic_3f,
+    )
+
+
+def _candidate(request: BandFilterRequest, order: int) -> BandFilterCandidate:
+    spec = _spec_for(request, order)
+    circuit = synthesize(spec).circuit
+    analysis = analyze_circuit(circuit, band_sweep(request.band))
+    response = evaluate_band_filter_response(request, circuit, analysis=analysis)
     return BandFilterCandidate(
         order=order,
         spec=spec,
-        passband_min_db=passband_min,
-        stopband_low_db=stop_low,
-        stopband_high_db=stop_high,
-        passband_ok=passband_ok,
-        stopband_ok=stopband_ok,
-        harmonic_2f_db=harmonic_2f,
-        harmonic_3f_db=harmonic_3f,
+        passband_min_db=response.passband_min_db,
+        stopband_low_db=response.stopband_low_db,
+        stopband_high_db=response.stopband_high_db,
+        passband_ok=response.passband_ok,
+        stopband_ok=response.stopband_ok,
+        harmonic_2f_db=response.harmonic_2f_db,
+        harmonic_3f_db=response.harmonic_3f_db,
     )
 
 
@@ -325,6 +363,7 @@ design_hf_band_filter = design_band_filter
 
 __all__ = [
     "BandFilterCandidate",
+    "BandFilterResponse",
     "BandFilterDesign",
     "BandFilterDesignError",
     "BandFilterRequest",
@@ -334,4 +373,5 @@ __all__ = [
     "HfBandRequest",
     "design_band_filter",
     "design_hf_band_filter",
+    "evaluate_band_filter_response",
 ]

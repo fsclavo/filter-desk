@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.28.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.28.1 · **Released:**
 [v0.28.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.0) ·
 **Previous:**
 [v0.27.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.1) ·
-**Next:** v0.29.0 planning.
+**Next:** v0.28.1 release (resonance-preserving snap, pending CI/tag).
 
-**Verification:** local suite **1091 passed** with ngspice (3 skipped without); coverage **83.96 %**.
+**Verification:** local suite **1094 passed** with ngspice (3 skipped without); coverage **83.99 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40773534744
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40774805971
 
@@ -351,6 +351,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         Band-stop (notch); the wizard now applies its band sweep to the visible
         range controls and restores them on undo.
       - 2026-10-28 v0.28.0: added 2 m, 1.25 m (Region 2) and 70 cm presets.
+      - 2026-10-28 v0.28.1: wizard snap uses preserve-resonance strategy,
+        offers E24/E48/E96 (E96 default above 100 MHz) and warns on degradation.
 
 - [ ] **Automatic sweep fit:** suggest a plotting range per filter kind
       (e.g. HPF 140 MHz ≈ 50 M–1 G), including harmonic coverage for TX LPF,

@@ -362,7 +362,9 @@ schematic. Depending on the selected element it offers:
 ### Dialogs
 
 - **Snap to E-series** — *Series* (E6, E12, E24, E48, E96; default E24) and
-  *Strategy* (Independent, L only, C only, Preserve LC resonances).
+  *Strategy* (Independent, L only, C only, Preserve LC resonances). Narrow VHF
+  resonators usually need E96 and **Preserve LC resonances**; the band wizard
+  applies that combination automatically above 100 MHz.
 - **Apply parasitics / finite Q** — inductor **Q** (needs a Q reference
   frequency), **DCR**, **Cpar**; capacitor **ESR**, **ESL**. Blank fields leave
   that aspect ideal.
@@ -734,9 +736,11 @@ Chebyshev-I.
   designs use odd orders to avoid the ideal output transformer.
 - **Transmit LPF** candidates also report rejection at 2× and 3× the upper band
   edge.
-- **Apply to project** synthesizes the selected design and sets a band sweep;
-  optionally **Snap to E24 after apply** converts the values to commercial
-  series values before analysis.
+- **Apply to project** synthesizes the selected design and sets a band sweep.
+  The optional **Snap after apply** uses the resonance-preserving strategy and
+  lets you choose E24, E48 or E96; E96 is selected automatically for 2 m,
+  1.25 m and 70 cm. If the snapped response no longer meets the target, the
+  wizard warns you and you can undo with `Ctrl+Z`.
 
 For a receive band-pass, choose **Guided design → Band-pass**. After applying,
 use **File → Export → build sheet / BOM…** and the normal VNA measurement

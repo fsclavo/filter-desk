@@ -38,7 +38,7 @@ from filterdesk import __version__
 from filterdesk.analysis.compliance import check_spec_compliance
 from filterdesk.analysis.limits_eval import evaluate_limits
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
-from filterdesk.components_std import ESeries, SnapStrategy, set_element_parasitics
+from filterdesk.components_std import SnapStrategy, set_element_parasitics
 from filterdesk.confidence import filter_confidence_items
 from filterdesk.domain import circuit_edit
 from filterdesk.domain.circuit import (
@@ -138,6 +138,7 @@ from filterdesk.services.design_sweep import (
     parse_values,
     run_design_sweep,
 )
+from filterdesk.services.hf_band import evaluate_band_filter_response
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import DEFAULT_TITLE, DesignSession
 from filterdesk.services.spec_update import SpecUpdateError, update_spec_from_response
@@ -940,15 +941,32 @@ class MainWindow(QMainWindow):
                     on_applied=self._after_synth_change,
                 )
             )
-            if dialog.snap_to_e24():
+            if dialog.snap_enabled():
+                series = dialog.snap_series()
                 self._undo.push(
                     SnapCommand(
                         self._session,
-                        ESeries.E24,
-                        SnapStrategy.INDEPENDENT,
+                        series,
+                        SnapStrategy.PRESERVE_LC_RESONANCES,
                         on_applied=self._after_circuit_change,
                     )
                 )
+                assert self._session.circuit is not None
+                response = evaluate_band_filter_response(
+                    dialog.result_request(),
+                    self._session.circuit,
+                )
+                if not response.ok:
+                    QMessageBox.warning(
+                        self,
+                        tr("Snap changed the response"),
+                        tr(
+                            "Snapping to {series} no longer meets the passband/"
+                            "stopband target. Undo with Ctrl+Z or choose a finer "
+                            "series (E96 for VHF/UHF).",
+                            series=series.value,
+                        ),
+                    )
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, tr("Band filter wizard"), _exc_text(exc))
             return
