@@ -724,6 +724,18 @@ class MainWindow(QMainWindow):
         freqs = [h.frequency_hz for h in report.harmonics] if report is not None else []
         self._plots.set_harmonics(freqs)
 
+    def _sync_sweep_controls(self) -> None:
+        sweep = self._session.sweep
+        if sweep is None:
+            return
+        self._f_start.setText(self._eng_freq(sweep.f_start_hz))
+        self._f_stop.setText(self._eng_freq(sweep.f_stop_hz))
+        self._points.setValue(sweep.n_points)
+
+    def _after_synth_change(self) -> None:
+        self._sync_sweep_controls()
+        self._after_circuit_change()
+
     def _after_circuit_change(self) -> None:
         self._refresh_table()
         self._schematic.set_circuit(self._session.circuit)
@@ -744,7 +756,7 @@ class MainWindow(QMainWindow):
                 spacing=SweepSpacing.LOGARITHMIC,
             )
             cmd = SynthesizeCommand(
-                self._session, new_spec, on_applied=self._after_circuit_change
+                self._session, new_spec, on_applied=self._after_synth_change
             )
             self._undo.push(cmd)
         except Exception as exc:  # noqa: BLE001
@@ -925,7 +937,7 @@ class MainWindow(QMainWindow):
                     self._session,
                     spec,
                     new_sweep=band_sweep(band),
-                    on_applied=self._after_circuit_change,
+                    on_applied=self._after_synth_change,
                 )
             )
             if dialog.snap_to_e24():
@@ -1154,7 +1166,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, tr("Scale response"), _exc_text(exc))
             return
         cmd = SynthesizeCommand(
-            self._session, new_spec, on_applied=self._after_circuit_change
+            self._session, new_spec, on_applied=self._after_synth_change
         )
         self._undo.push(cmd)
         self._status.setText(tr("Scaled response ×{factor:g}", factor=factor))

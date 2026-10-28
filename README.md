@@ -28,7 +28,7 @@ Typical amateur-radio jobs:
 
 - **Transmit low-pass filter** for an HF/VHF transmitter or QRP rig.
 - **Receive band-pass filter** for a noisy HF band or a contest receiver.
-- **AM/FM broadcast rejection** with a high-pass or band-stop filter.
+- **AM/FM broadcast rejection** with a band-stop notch.
 - **Output transformer, unun or balun** for an antenna or a matching network.
 - **Toroid and air-core coil** turns, wire gauge, DCR and saturation checks.
 - **Microstrip/stub** sizing for a PCB filter or matching section.
@@ -60,8 +60,7 @@ verify the real build.
 | --- | --- |
 | 40 m / 20 m receive band-pass | **Design → Band filter wizard…** → **Guided design** → **Band-pass** |
 | HF transmitter low-pass | **Design → Band filter wizard…** → **Quick preset** → **Transmit LPF** |
-| AM broadcast high-pass (2–3 MHz) | **Design → Band filter wizard…** → **High-pass** |
-| FM broadcast notch | **Design → Band filter wizard…** → **Band-stop** |
+| AM/FM broadcast notch | **Design → Band filter wizard…** → **Band-stop** |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid/air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip, stub, quarter-wave | **Tools → Microstrip line…** |

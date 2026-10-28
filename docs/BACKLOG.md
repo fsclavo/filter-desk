@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.27.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.27.1 · **Released:**
 [v0.27.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.0) ·
 **Previous:**
 [v0.26.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.26.0) ·
-**Next:** v0.28.0 planning.
+**Next:** v0.27.1 release (wizard sweep and broadcast-kind fixes, pending CI/tag).
 
-**Verification:** local suite **1077 passed** with ngspice (3 skipped without); coverage **83.60 %**.
+**Verification:** local suite **1079 passed** with ngspice (3 skipped without); coverage **83.97 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40756253295
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40760693415
 
@@ -322,8 +322,11 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         table; Quick matches today's preset; Guided selects the lowest valid
         order; AM/FM notches included; the existing HF receive-BPF workflow is
         preserved as Guided BPF.
-      - 2026-10-28 implemented in v0.27.0; all 52 band×kind defaults produce a
-        selected design, with LPF/HPF harmonic readout and odd-order BPF/BSF.
+      - 2026-10-28 implemented in v0.27.0; the service supports all 52
+        band×kind defaults, with LPF/HPF harmonic readout and odd-order BPF/BSF.
+      - 2026-10-28 v0.27.1: the GUI restricts AM/FM broadcast presets to
+        Band-stop (notch); the wizard now applies its band sweep to the visible
+        range controls and restores them on undo.
 
 ### P2 — data / ergonomics
 

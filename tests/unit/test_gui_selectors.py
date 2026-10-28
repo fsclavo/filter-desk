@@ -21,12 +21,13 @@ def test_band_filter_selection_matches_items() -> None:
     app = QApplication.instance() or QApplication([])
     dialog = BandFilterWizardDialog()
     for index, band in enumerate(ALL_PRESETS):
-        kind_index = index % len(dialog._KINDS)
         dialog._band.setCurrentIndex(index)
+        choices = dialog._kind_choices
+        kind_index = index % len(choices)
         dialog._kind.setCurrentIndex(kind_index)
         selected, kind = dialog.selection()
         assert selected == band
-        assert kind == dialog._KINDS[kind_index][0]
+        assert kind == choices[kind_index][0]
     dialog.close()
     assert app is not None
 

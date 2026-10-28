@@ -1067,7 +1067,7 @@ def test_band_filter_dialog_selection() -> None:
     am_index = dialog._band.findText("AM broadcast")
     assert am_index >= 0
     dialog._band.setCurrentIndex(am_index)
-    dialog._kind.setCurrentIndex(3)  # ... -> band-stop
+    assert dialog._kind.count() == 1
     band, kind = dialog.selection()
     assert band.name == "AM broadcast"
     assert kind == BandKind.BSF
@@ -1235,6 +1235,63 @@ def test_main_window_band_wizard(monkeypatch: pytest.MonkeyPatch) -> None:
 
     window._undo.undo()
     assert session.spec.response == FilterResponse.HIGH_PASS
+    window.close()
+    assert app is not None
+
+
+def test_main_window_band_wizard_updates_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication, QDialog
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.bands import (
+        BandKind,
+        band_preset_spec,
+        band_sweep,
+        find_band,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    old_start = window._f_start.text()
+    old_stop = window._f_stop.text()
+    band = find_band("AM broadcast")
+
+    class _FakeDialog:
+        def __init__(self, parent: object = None) -> None:
+            self.parent = parent
+
+        def exec(self) -> QDialog.DialogCode:
+            return QDialog.DialogCode.Accepted
+
+        def result_spec(self):
+            return band_preset_spec(band, BandKind.BSF)
+
+        def result_band(self):
+            return band
+
+        def result_kind(self):
+            return BandKind.BSF
+
+        def snap_to_e24(self) -> bool:
+            return False
+
+    monkeypatch.setattr(mw, "BandFilterWizardDialog", _FakeDialog)
+    window._run_band_wizard()
+
+    sweep = band_sweep(band)
+    assert window._f_start.text() == window._eng_freq(sweep.f_start_hz)
+    assert window._f_stop.text() == window._eng_freq(sweep.f_stop_hz)
+    assert session.sweep == sweep
+
+    window._undo.undo()
+    assert window._f_start.text() == old_start
+    assert window._f_stop.text() == old_stop
     window.close()
     assert app is not None
 

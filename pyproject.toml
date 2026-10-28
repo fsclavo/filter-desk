@@ -1,6 +1,6 @@
 [project]
 name = "filterdesk"
-version = "0.27.0"
+version = "0.27.1"
 description = "RF filter design, construction and measurement companion for radio amateurs and RF builders"
 readme = "README.md"
 requires-python = ">=3.11"

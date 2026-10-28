@@ -3,6 +3,19 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.27.1 — 2026-10-28
+
+### Fixed
+
+- The band-filter wizard now applies its band sweep to the visible start/stop
+  frequency controls before analysis, and undo restores the previous range.
+  Previously the analysis silently re-used the old default range.
+
+### Changed
+
+- AM/FM broadcast presets in the GUI now offer only **Band-stop (notch)**;
+  amateur bands keep LPF, HPF, BPF and BSF. The service API remains general.
+
 ## v0.27.0 — 2026-10-28
 
 ### Added

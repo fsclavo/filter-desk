@@ -88,6 +88,7 @@ from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import (
     ALL_PRESETS,
+    REJECTION_PRESETS,
     Band,
     BandKind,
     band_preset_spec,
@@ -2153,6 +2154,9 @@ class BandFilterWizardDialog(QDialog):
             next((i for i, b in enumerate(ALL_PRESETS) if b.name == "40 m"), 0)
         )
         self._kind = QComboBox()
+        self._kind_choices = self._KINDS
+        self._rejection_mode: bool | None = None
+        self._last_amateur_kind = BandKind.LPF
         for _kind, label in self._KINDS:
             self._kind.addItem(label)
 
@@ -2246,14 +2250,12 @@ class BandFilterWizardDialog(QDialog):
         self._band.currentIndexChanged.connect(self._on_selection_changed)
         self._kind.currentIndexChanged.connect(self._on_selection_changed)
         self._mode.currentIndexChanged.connect(self._sync_mode)
+        self._sync_kind_choices()
         self._sync_edges()
         self._sync_mode()
 
     def selection(self) -> tuple[Band, BandKind]:
-        return (
-            ALL_PRESETS[self._band.currentIndex()],
-            self._KINDS[self._kind.currentIndex()][0],
-        )
+        return ALL_PRESETS[self._band.currentIndex()], self.result_kind()
 
     def current_design(self) -> BandFilterDesign | None:
         return self._design_value
@@ -2269,7 +2271,7 @@ class BandFilterWizardDialog(QDialog):
         return ALL_PRESETS[self._band.currentIndex()]
 
     def result_kind(self) -> BandKind:
-        return self._KINDS[self._kind.currentIndex()][0]
+        return self._kind_choices[self._kind.currentIndex()][0]
 
     def snap_to_e24(self) -> bool:
         return self._snap_e24.isChecked()
@@ -2281,7 +2283,32 @@ class BandFilterWizardDialog(QDialog):
             return None
 
     def _kind_label(self) -> str:
-        return self._KINDS[self._kind.currentIndex()][1]
+        return self._kind_choices[self._kind.currentIndex()][1]
+
+    def _sync_kind_choices(self) -> None:
+        rejection = self.result_band() in REJECTION_PRESETS
+        if rejection == self._rejection_mode:
+            return
+        if self._rejection_mode is False:
+            self._last_amateur_kind = self.result_kind()
+        self._rejection_mode = rejection
+        choices = (
+            (self._KINDS[-1],)
+            if rejection
+            else self._KINDS
+        )
+        preferred = BandKind.BSF if rejection else self._last_amateur_kind
+        self._kind.blockSignals(True)
+        self._kind.clear()
+        for _kind, label in choices:
+            self._kind.addItem(label)
+        self._kind_choices = choices
+        index = next(
+            (i for i, (kind, _label) in enumerate(choices) if kind is preferred),
+            0,
+        )
+        self._kind.setCurrentIndex(index)
+        self._kind.blockSignals(False)
 
     def _describe_spec(self, spec: FilterSpec) -> str:
         if spec.response in (FilterResponse.LOW_PASS, FilterResponse.HIGH_PASS):
@@ -2324,6 +2351,7 @@ class BandFilterWizardDialog(QDialog):
             self._update_quick()
 
     def _on_selection_changed(self) -> None:
+        self._sync_kind_choices()
         self._sync_edges()
         if self._mode.currentIndex() == 1:
             self._run_design()

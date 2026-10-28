@@ -716,8 +716,9 @@ are included automatically.
 
 **Design → Band filter wizard…** combines the old quick presets and receive-BPF
 wizard in one dialog. It covers every amateur allocation from 160 m to 6 m and
-the AM/FM broadcast rejection bands, with LPF, HPF, BPF and BSF kinds. All
-designs are Chebyshev-I.
+the AM/FM broadcast rejection bands. Amateur bands support LPF, HPF, BPF and
+BSF; AM/FM broadcast presets are rejection-only and offer just **Band-stop
+(notch)**. All designs are Chebyshev-I.
 
 - **Quick preset** uses the fixed order-5 recipe, matching the previous
   **Band preset** dialog. It is the fastest path for a transmit LPF or an

@@ -164,11 +164,30 @@ def test_wizard_quick_and_guided_modes(qtbot) -> None:
     dialog._min_stop.setText("30")
     am_index = dialog._band.findText("AM broadcast")
     dialog._band.setCurrentIndex(am_index)
-    dialog._kind.setCurrentIndex(3)
+    assert dialog._kind.count() == 1
+    assert dialog.result_kind() is BandKind.BSF
     design = dialog.current_design()
     assert design is not None and design.ok
     assert dialog.result_spec() is not None
     assert dialog.result_spec().response is FilterResponse.BAND_STOP
+
+
+def test_broadcast_presets_only_offer_notch(qtbot) -> None:
+    from filterdesk.gui.widgets import BandFilterWizardDialog
+
+    dialog = BandFilterWizardDialog()
+    qtbot.addWidget(dialog)
+    for name in ("AM broadcast", "FM broadcast"):
+        dialog._band.setCurrentIndex(dialog._band.findText(name))
+        assert dialog._kind.count() == 1
+        assert dialog.result_kind() is BandKind.BSF
+        spec = dialog.result_spec()
+        assert spec is not None
+        assert spec.response is FilterResponse.BAND_STOP
+
+    dialog._band.setCurrentIndex(dialog._band.findText("20 m"))
+    assert dialog._kind.count() == 4
+    assert dialog._kind_choices == dialog._KINDS
 
 
 def test_design_menu_has_unified_wizard() -> None:
