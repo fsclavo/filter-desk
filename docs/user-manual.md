@@ -894,7 +894,9 @@ PCB low-pass filters, not for arbitrary distributed networks.
   ideal lossless `T` elements (open/short stub terminated). Integer-ratio
   Guanella TLTs export as parallel/series `T` lines with an optional center-node
   `Lcm`; Ruthroff 1:4 step-up exports as one bootstrap `T` line with a floating
-  balanced load. Both are validated with ngspice. LTspice `.asc`, Qucs `.sch`
+  balanced load. The Transformer / balun / unun dialog exposes **Export TLT
+  SPICE…** for these supported kinds. Both are validated with ngspice. LTspice
+  `.asc`, Qucs `.sch`
   and reverse/other Ruthroff ratios remain unsupported. Loss, dispersion,
   discontinuities and radiation are not in the exported model.
 

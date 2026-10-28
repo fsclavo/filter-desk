@@ -80,3 +80,33 @@ def test_filter_confidence_adds_distributed() -> None:
     design = design_distributed_lowpass(_spec(), "FR4")  # type: ignore[arg-type]
     keys = {item.key for item in filter_confidence_items(design.circuit)}
     assert "distributed" in keys
+
+
+def test_transformer_dialog_exports_ruthroff_spice(tmp_path, monkeypatch) -> None:
+    from PySide6.QtWidgets import QApplication, QFileDialog
+
+    from filterdesk.gui.widgets import TransformerDialog
+
+    _ = QApplication.instance() or QApplication([])
+    dialog = TransformerDialog()
+    dialog._kind.setCurrentText("ruthroff")
+    dialog._z_low.setText("50")
+    dialog._z_high.setText("200")
+    dialog._frequency.setText("3.5M")
+    dialog._frequency_max.setText("30M")
+    dialog._power.setText("5")
+    dialog._line_z0.setText("100")
+    dialog._line_length.setText("0.5")
+    dialog._recompute()
+    assert dialog._export_tlt_button.isEnabled()
+
+    target = tmp_path / "ruthroff.cir"
+    monkeypatch.setattr(
+        QFileDialog,
+        "getSaveFileName",
+        staticmethod(lambda *args, **kwargs: (str(target), "")),
+    )
+    dialog._export_tlt_spice()
+    assert target.is_file()
+    assert "TL1 in 0 0 outm" in target.read_text(encoding="utf-8")
+    dialog.close()

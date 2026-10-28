@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.24.1 — 2026-10-28
+
+### Fixed
+
+- The Transformer / balun / unun dialog now exposes **Export TLT SPICE…** for
+  integer-ratio Guanella and Ruthroff 1:4 step-up designs.
+
 ## v0.24.0 — 2026-10-28
 
 ### Added

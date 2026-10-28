@@ -283,6 +283,11 @@ _ES.update(
             "&Realización microstrip distribuida…"
         ),
         "Distributed microstrip realization": "Realización microstrip distribuida",
+        "Export TLT SPICE…": "Exportar SPICE TLT…",
+        "Export TLT SPICE": "Exportar SPICE TLT",
+        "SPICE netlist (*.cir *.net);;All files (*)": (
+            "Netlist SPICE (*.cir *.net);;Todos los archivos (*)"
+        ),
         "Applied distributed microstrip realization on {substrate}": (
             "Realización microstrip distribuida aplicada en {substrate}"
         ),

@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QHeaderView,
@@ -31,7 +32,7 @@ from PySide6.QtWidgets import (
 from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport
-from filterdesk.analysis.types import AnalysisResult
+from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     AirCoilError,
     AttenuatorDesign,
@@ -81,6 +82,7 @@ from filterdesk.domain.circuit import (
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
+from filterdesk.io.spice import write_tlt_spice_netlist
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import ALL_PRESETS, BANDS, Band, BandKind
@@ -1547,9 +1549,13 @@ class TransformerDialog(QDialog):
         self._remove_button = buttons.addButton(
             "Remove", QDialogButtonBox.ButtonRole.ActionRole
         )
+        self._export_tlt_button = buttons.addButton(
+            tr("Export TLT SPICE…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
         close = buttons.addButton(QDialogButtonBox.StandardButton.Close)
         self._apply_button.clicked.connect(self.accept)
         self._remove_button.clicked.connect(self._remove)
+        self._export_tlt_button.clicked.connect(self._export_tlt_spice)
         close.clicked.connect(self.reject)
 
         layout = QVBoxLayout(self)
@@ -1593,6 +1599,36 @@ class TransformerDialog(QDialog):
         self._remove_requested = True
         self.accept()
 
+    def _export_tlt_spice(self) -> None:
+        balun = self.balun_spec()
+        if balun is None:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            tr("Export TLT SPICE"),
+            "",
+            tr("SPICE netlist (*.cir *.net);;All files (*)"),
+        )
+        if not path:
+            return
+        try:
+            f_min = parse_si(self._frequency.text().strip() or "0")
+            f_max = parse_si(self._frequency_max.text().strip() or "0")
+            if f_min <= 0.0 or f_max <= f_min:
+                f_max = f_min * 1.1
+            write_tlt_spice_netlist(
+                balun,
+                path,
+                ac=SweepConfig(
+                    f_start_hz=f_min,
+                    f_stop_hz=f_max,
+                    n_points=101,
+                    spacing=SweepSpacing.LOGARITHMIC,
+                ),
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, tr("Export TLT SPICE"), str(exc))
+
     def _recompute(self) -> None:
         try:
             options = design_balun_options(
@@ -1625,6 +1661,7 @@ class TransformerDialog(QDialog):
             self._options = []
             self._design_value = None
             self._options_table.setRowCount(0)
+            self._export_tlt_button.setEnabled(False)
             for label in (
                 self._turns,
                 self._inductances,
@@ -1739,6 +1776,12 @@ class TransformerDialog(QDialog):
             f"{design.awg_secondary}; fit AWG {design.fit.awg}"
         )
         self._notes.setText("; ".join(design.notes) if design.notes else "-")
+        tlt_export = False
+        if spec.guanella_line_count is not None:
+            tlt_export = True
+        elif design.kind.value == "ruthroff" and abs(spec.turns_ratio - 0.5) <= 1e-6:
+            tlt_export = True
+        self._export_tlt_button.setEnabled(tlt_export)
         self._show_common_mode(design)
         self._show_mixed_mode(design)
 
