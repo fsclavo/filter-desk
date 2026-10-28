@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.22.0 — 2026-10-28
+
+### Added
+
+- Open microstrip stubs now include the Hammerstad open-end/fringing length
+  correction, using dispersive `eeff` and stored substrate geometry.
+
 ## v0.21.0 — 2026-10-27
 
 ### Added

@@ -180,9 +180,10 @@ ITEMS: tuple[ConfidenceItem, ...] = (
         "4–5 add a bounded numerical fit against the lumped prototype.",
         "Low-pass, Butterworth/Chebyshev-I, order <= 5. Orders 4–5 are accepted "
         "only if the response gate passes and may require wide Z0 ranges. "
-        "Kirschning-Jansen dispersion is included when substrate geometry is "
-        "available; discontinuities, radiation, coupling and fabrication "
-        "tolerances are not modeled. Verify the board with Touchstone/VNA.",
+        "Kirschning-Jansen dispersion and open-end stub fringing are included "
+        "when substrate geometry is available; step discontinuities, radiation, "
+        "coupling and fabrication tolerances are not modeled. Verify the board "
+        "with Touchstone/VNA.",
     ),
 )
 

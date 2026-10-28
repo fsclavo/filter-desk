@@ -882,10 +882,11 @@ PCB low-pass filters, not for arbitrary distributed networks.
   low-impedance lines. The preview lists `Z0`, trace width, length and angle.
 - Apply creates a normal circuit: it appears in the schematic, component table,
   project, BOM and Touchstone export. The action is undoable.
-- The model is **experimental**: lines use Kirschning-Jansen dispersion when
-  substrate `er`/height/width are available, but step discontinuities,
-  radiation, coupling and fabrication tolerances are not modeled. It is not a
-  hardware-validated engine. Verify the board with Touchstone/VNA.
+- The model is **experimental**: lines use Kirschning-Jansen dispersion and
+  open stubs include the Hammerstad open-end fringing correction when substrate
+  `er`/height/width are available. Step discontinuities, radiation, coupling and
+  fabrication tolerances are not modeled. It is not a hardware-validated
+  engine. Verify the board with Touchstone/VNA.
 - **SPICE netlist** export now represents series lines and shunt stubs with
   ideal lossless `T` elements (open/short stub terminated). Integer-ratio
   Guanella TLTs export as parallel/series `T` lines with an optional center-node

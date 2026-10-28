@@ -82,4 +82,23 @@ def dispersion_eeff_z0(
     return np.asarray(eeff, dtype=np.float64), np.asarray(z0, dtype=np.float64)
 
 
-__all__ = ["dispersion_eeff_z0"]
+def open_end_extension_mm(
+    eeff: float | NDArray[np.floating],
+    height_mm: float,
+    width_mm: float,
+) -> float | NDArray[np.float64]:
+    """Hammerstad open-end length extension (same units as ``height_mm``)."""
+    if height_mm <= 0.0 or width_mm <= 0.0:
+        if isinstance(eeff, np.ndarray):
+            return np.zeros(eeff.shape, dtype=np.float64)
+        return 0.0
+    wh = width_mm / height_mm
+    ratio = (np.asarray(eeff) + 0.3) / (np.asarray(eeff) - 0.258)
+    shape = (wh + 0.262) / (wh + 0.813)
+    extension = 0.412 * height_mm * ratio * shape
+    if np.ndim(extension) == 0:
+        return float(extension)
+    return np.asarray(extension, dtype=np.float64)
+
+
+__all__ = ["dispersion_eeff_z0", "open_end_extension_mm"]

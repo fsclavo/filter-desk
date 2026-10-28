@@ -7,7 +7,10 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
-from filterdesk.analysis.microstrip_dispersion import dispersion_eeff_z0
+from filterdesk.analysis.microstrip_dispersion import (
+    dispersion_eeff_z0,
+    open_end_extension_mm,
+)
 from filterdesk.analysis.types import AnalysisResult, SweepConfig
 from filterdesk.domain.circuit import (
     BalunSpec,
@@ -303,12 +306,20 @@ def _stub_input_impedance(
     frequency_hz: NDArray[np.floating],
 ) -> NDArray[np.complexfloating]:
     eeff, z0 = _microstrip_properties(stub, frequency_hz)
-    gamma_l = (
-        _propagation_constant(frequency_hz, eeff, stub.loss_db_per_m) * stub.length_m
-    )
+    length_m = np.full(frequency_hz.size, stub.length_m, dtype=np.float64)
+    if stub.stub_kind == MicrostripStubKind.OPEN:
+        length_m = (
+            length_m
+            + np.asarray(
+                open_end_extension_mm(eeff, stub.height_mm, stub.width_mm),
+                dtype=float,
+            )
+            * 1e-3
+        )
+    gamma_l = _propagation_constant(frequency_hz, eeff, stub.loss_db_per_m) * length_m
     tanh = np.tanh(gamma_l)
     if stub.stub_kind == MicrostripStubKind.OPEN:
-        if stub.length_m <= 0.0:
+        if stub.length_m <= 0.0 and stub.height_mm <= 0.0:
             return np.full_like(tanh, 1e12, dtype=np.complex128)
         z = z0 / np.where(np.abs(tanh) < 1e-15, 1e-15, tanh)
     else:

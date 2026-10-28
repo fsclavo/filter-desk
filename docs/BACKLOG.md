@@ -10,7 +10,7 @@ count or release changes.
 [v0.20.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.20.0) ·
 **Next:** v0.22.0 planning.
 
-**Verification:** local suite **1012 passed** with ngspice (3 skipped without); coverage **83.28 %**.
+**Verification:** local suite **1013 passed** with ngspice (3 skipped without); coverage **83.33 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40531208808
 
@@ -69,7 +69,16 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.21.0 release
+## 3. v0.22.0 release (prepared, not published)
+
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -78,7 +87,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.20.0 release
+## 5. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -87,7 +96,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.19.0 release
+## 6. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -96,7 +105,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.18.0 release
+## 7. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -105,7 +114,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.17.0 release
+## 8. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -114,7 +123,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.16.0 release
+## 9. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -123,7 +132,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.15.0 release
+## 10. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -132,7 +141,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.14.0 release
+## 11. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -141,7 +150,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.13.0 release
+## 12. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -150,7 +159,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.12.0 release
+## 13. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -159,7 +168,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. Open backlog
+## 14. Open backlog
 
 ### P0 — release quality
 
@@ -215,8 +224,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       diagram/SVG checks, Smith image baseline and `docs/qa-matrix.md`.
 - [x] **Microstrip dispersion:** Kirschning-Jansen `eeff(f)`/`Z0(f)` for line and
       stub analysis.
+- [x] **Open-end fringing:** Hammerstad open-stub length correction.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
-      stub-only/Kuroda topologies, discontinuities and hardware validation. (L)
+      stub-only/Kuroda topologies, step discontinuities and hardware validation. (L)
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)
@@ -234,7 +244,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. Ham-radio onboarding and discoverability
+## 15. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -242,7 +252,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 15. Maintenance rule
+## 16. Maintenance rule
 
 Every change must update, in the same commit:
 

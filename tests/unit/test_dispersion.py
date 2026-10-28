@@ -6,10 +6,18 @@ import numpy as np
 import pytest
 
 from filterdesk.analysis.adapters.abcd_ladder import _element_abcd
-from filterdesk.analysis.microstrip_dispersion import dispersion_eeff_z0
+from filterdesk.analysis.microstrip_dispersion import (
+    dispersion_eeff_z0,
+    open_end_extension_mm,
+)
 from filterdesk.components_std.microstrip import design_microstrip, find_substrate
-from filterdesk.domain.circuit import Circuit, MicrostripLineElement, Port
-from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.circuit import (
+    Circuit,
+    MicrostripLineElement,
+    MicrostripStubElement,
+    Port,
+)
+from filterdesk.domain.enums import ElementRole, MicrostripStubKind
 from filterdesk.domain.project import circuit_from_mapping, circuit_to_mapping
 
 
@@ -86,3 +94,27 @@ def test_dispersion_geometry_project_round_trip() -> None:
     assert isinstance(restored_line, MicrostripLineElement)
     assert restored_line.er == pytest.approx(4.4)
     assert restored_line.height_mm == pytest.approx(1.6)
+
+
+def test_open_end_extension_and_stub_fringing() -> None:
+    extension = open_end_extension_mm(3.0, 1.6, 3.0)
+    assert isinstance(extension, float)
+    assert 0.1 < extension < 2.0
+    assert open_end_extension_mm(3.0, 0.0, 3.0) == 0.0
+
+    base = dict(
+        id="ST1",
+        z0_ohm=50.0,
+        length_m=0.0,
+        eeff=3.0,
+        stub_kind=MicrostripStubKind.OPEN,
+        node_a="in",
+        node_b="gnd",
+    )
+    no_geometry = MicrostripStubElement(**base)
+    with_geometry = MicrostripStubElement(er=4.4, height_mm=1.6, width_mm=3.0, **base)
+    f = np.array([1e9])
+    z_open = 1.0 / complex(_element_abcd(no_geometry, 2 * np.pi * f)[0, 1, 0])
+    z_fringing = 1.0 / complex(_element_abcd(with_geometry, 2 * np.pi * f)[0, 1, 0])
+    assert abs(z_open) > 1e10
+    assert abs(z_fringing) < 1e4
