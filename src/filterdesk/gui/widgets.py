@@ -79,19 +79,25 @@ from filterdesk.domain.circuit import (
     MicrostripLineElement,
     NonIdealInductor,
 )
+from filterdesk.domain.enums import FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
 from filterdesk.io.spice import write_tlt_spice_netlist
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
-from filterdesk.services.bands import ALL_PRESETS, BANDS, Band, BandKind
+from filterdesk.services.bands import (
+    ALL_PRESETS,
+    Band,
+    BandKind,
+    band_preset_spec,
+)
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
 from filterdesk.services.hf_band import (
-    HfBandDesign,
-    HfBandDesignError,
-    HfBandRequest,
-    design_hf_band_filter,
+    BandFilterDesign,
+    BandFilterDesignError,
+    BandFilterRequest,
+    design_band_filter,
 )
 from filterdesk.services.inductor_realization import (
     InductorRealizationError,
@@ -553,53 +559,6 @@ class OptimizeDialog(QDialog):
         dialog = cls(parent, initial=initial)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.to_config()
-        return None
-
-
-class BandPresetDialog(QDialog):
-    """Choose an amateur band and filter kind for a quick preset design."""
-
-    _KINDS: tuple[tuple[BandKind, str], ...] = (
-        (BandKind.LPF, tr("Transmit LPF")),
-        (BandKind.HPF, tr("High-pass")),
-        (BandKind.BPF, tr("Band-pass")),
-        (BandKind.BSF, tr("Band-stop (notch)")),
-    )
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle(tr("Amateur band preset"))
-        self._band = QComboBox()
-        for band in ALL_PRESETS:
-            self._band.addItem(band.name)
-        # Default to 40 m.
-        self._band.setCurrentIndex(
-            next((i for i, b in enumerate(ALL_PRESETS) if b.name == "40 m"), 0)
-        )
-        self._kind = QComboBox()
-        for _kind, label in self._KINDS:
-            self._kind.addItem(label)
-        form = QFormLayout(self)
-        form.addRow(tr("Band"), self._band)
-        form.addRow(tr("Filter"), self._kind)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        form.addRow(buttons)
-
-    def selection(self) -> tuple[Band, BandKind]:
-        # Indices (not userData): PySide would coerce the StrEnum to a plain str.
-        band = ALL_PRESETS[self._band.currentIndex()]
-        kind = self._KINDS[self._kind.currentIndex()][0]
-        return band, kind
-
-    @classmethod
-    def ask(cls, parent: QWidget | None = None) -> tuple[Band, BandKind] | None:
-        dialog = cls(parent)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            return dialog.selection()
         return None
 
 
@@ -2167,40 +2126,72 @@ class VnaTuningDialog(QDialog):
         self._apply_button.setEnabled(True)
 
 
-class HfBandWizardDialog(QDialog):
-    """Guided receive-band BPF design for an amateur HF allocation."""
+class BandFilterWizardDialog(QDialog):
+    """Quick or guided Chebyshev-I design for any amateur/broadcast band."""
+
+    _KINDS: tuple[tuple[BandKind, str], ...] = (
+        (BandKind.LPF, tr("Transmit LPF")),
+        (BandKind.HPF, tr("High-pass")),
+        (BandKind.BPF, tr("Band-pass")),
+        (BandKind.BSF, tr("Band-stop (notch)")),
+    )
+    _MODES: tuple[str, ...] = (tr("Quick preset"), tr("Guided design"))
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("HF band filter wizard")
-        self.setMinimumWidth(760)
-        self._design_value: HfBandDesign | None = None
+        self.setWindowTitle(tr("Band filter wizard"))
+        self.setMinimumWidth(820)
+        self._design_value: BandFilterDesign | None = None
 
+        self._mode = QComboBox()
+        for label in self._MODES:
+            self._mode.addItem(label)
         self._band = QComboBox()
-        for band in BANDS:
+        for band in ALL_PRESETS:
             self._band.addItem(band.name)
         self._band.setCurrentIndex(
-            next((i for i, b in enumerate(BANDS) if b.name == "40 m"), 0)
+            next((i for i, b in enumerate(ALL_PRESETS) if b.name == "40 m"), 0)
         )
+        self._kind = QComboBox()
+        for _kind, label in self._KINDS:
+            self._kind.addItem(label)
+
+        self._quick_summary = QLabel("-")
+        self._quick_summary.setWordWrap(True)
+        quick = QWidget()
+        quick_layout = QFormLayout(quick)
+        quick_layout.addRow(self._quick_summary)
+
         self._z_in = EngineeringLineEdit()
         self._z_in.setText("50")
         self._z_out = EngineeringLineEdit()
         self._z_out.setText("50")
+        self._ripple = EngineeringLineEdit()
+        self._ripple.setText("0.1")
         self._max_il = EngineeringLineEdit()
         self._max_il.setText("0.5")
         self._min_stop = EngineeringLineEdit()
         self._min_stop.setText("30")
+        self._pass_edge = EngineeringLineEdit()
+        self._stop_edge = EngineeringLineEdit()
         self._guard = EngineeringLineEdit()
         self._guard.setText("50")
         self._max_order = QSpinBox()
         self._max_order.setRange(2, 12)
-        self._max_order.setValue(8)
-        self._snap_e24 = QCheckBox("Snap to E24 after apply")
+        self._max_order.setValue(12)
+        self._snap_e24 = QCheckBox(tr("Snap to E24 after apply"))
         self._snap_e24.setChecked(False)
 
-        self._table = QTableWidget(0, 5)
+        self._table = QTableWidget(0, 6)
         self._table.setHorizontalHeaderLabels(
-            ["Order", "Passband", "Stop low", "Stop high", "Status"]
+            [
+                tr("Order"),
+                tr("Passband"),
+                tr("Stop low"),
+                tr("Stop high"),
+                tr("2f/3f"),
+                tr("Status"),
+            ]
         )
         self._table.verticalHeader().setVisible(False)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -2213,19 +2204,35 @@ class HfBandWizardDialog(QDialog):
         self._notes.setWordWrap(True)
         self._confidence = ConfidenceBadge("filter_synthesis")
 
-        form = QFormLayout(self)
-        form.addRow("Band", self._band)
-        form.addRow("Source Z (Ohm)", self._z_in)
-        form.addRow("Load Z (Ohm)", self._z_out)
-        form.addRow("Max insertion loss (dB)", self._max_il)
-        form.addRow("Min stopband attenuation (dB)", self._min_stop)
-        form.addRow("Stopband guard (% of band span)", self._guard)
-        form.addRow("Max order", self._max_order)
-        form.addRow(self._snap_e24)
-        form.addRow("Candidates", self._table)
+        guided = QWidget()
+        guided_layout = QFormLayout(guided)
+        guided_layout.addRow(tr("Source Z (Ohm)"), self._z_in)
+        guided_layout.addRow(tr("Load Z (Ohm)"), self._z_out)
+        guided_layout.addRow(tr("Passband ripple (dB)"), self._ripple)
+        guided_layout.addRow(tr("Max insertion loss (dB)"), self._max_il)
+        guided_layout.addRow(tr("Min stopband attenuation (dB)"), self._min_stop)
+        guided_layout.addRow(tr("Pass edge (Hz)"), self._pass_edge)
+        guided_layout.addRow(tr("Stop edge (Hz)"), self._stop_edge)
+        guided_layout.addRow(tr("Stopband guard (% of band span)"), self._guard)
+        guided_layout.addRow(tr("Max order"), self._max_order)
+        guided_layout.addRow(self._snap_e24)
+        guided_layout.addRow(tr("Candidates"), self._table)
+        guided_layout.addRow(self._confidence)
+        guided_layout.addRow(tr("Result"), self._result)
+        guided_layout.addRow(tr("Notes"), self._notes)
 
-        self._design_button = QPushButton("Design")
-        self._apply_button = QPushButton("Apply to project")
+        self._stack = QStackedWidget()
+        self._stack.addWidget(quick)
+        self._stack.addWidget(guided)
+
+        form = QFormLayout(self)
+        form.addRow(tr("Mode"), self._mode)
+        form.addRow(tr("Band"), self._band)
+        form.addRow(tr("Filter"), self._kind)
+        form.addRow(self._stack)
+
+        self._design_button = QPushButton(tr("Design"))
+        self._apply_button = QPushButton(tr("Apply to project"))
         self._apply_button.setEnabled(False)
         buttons = QDialogButtonBox()
         buttons.addButton(self._design_button, QDialogButtonBox.ButtonRole.ActionRole)
@@ -2234,40 +2241,133 @@ class HfBandWizardDialog(QDialog):
         self._design_button.clicked.connect(self._run_design)
         self._apply_button.clicked.connect(self.accept)
         close.clicked.connect(self.reject)
-        form.addRow(self._confidence)
-        form.addRow("Result", self._result)
-        form.addRow("Notes", self._notes)
         form.addRow(buttons)
 
-        self._run_design()
+        self._band.currentIndexChanged.connect(self._on_selection_changed)
+        self._kind.currentIndexChanged.connect(self._on_selection_changed)
+        self._mode.currentIndexChanged.connect(self._sync_mode)
+        self._sync_edges()
+        self._sync_mode()
 
-    def current_design(self) -> HfBandDesign | None:
+    def selection(self) -> tuple[Band, BandKind]:
+        return (
+            ALL_PRESETS[self._band.currentIndex()],
+            self._KINDS[self._kind.currentIndex()][0],
+        )
+
+    def current_design(self) -> BandFilterDesign | None:
         return self._design_value
 
     def result_spec(self) -> FilterSpec | None:
+        if self._mode.currentIndex() == 0:
+            return self._quick_spec()
         if self._design_value is None or self._design_value.selected is None:
             return None
         return self._design_value.selected.spec
 
-    def result_band(self) -> Band | None:
-        return self._design_value.request.band if self._design_value else None
+    def result_band(self) -> Band:
+        return ALL_PRESETS[self._band.currentIndex()]
+
+    def result_kind(self) -> BandKind:
+        return self._KINDS[self._kind.currentIndex()][0]
 
     def snap_to_e24(self) -> bool:
         return self._snap_e24.isChecked()
 
-    def _run_design(self) -> None:
+    def _quick_spec(self) -> FilterSpec | None:
         try:
-            request = HfBandRequest(
-                band=BANDS[self._band.currentIndex()],
+            return band_preset_spec(self.result_band(), self.result_kind())
+        except (KeyError, ValueError):
+            return None
+
+    def _kind_label(self) -> str:
+        return self._KINDS[self._kind.currentIndex()][1]
+
+    def _describe_spec(self, spec: FilterSpec) -> str:
+        if spec.response in (FilterResponse.LOW_PASS, FilterResponse.HIGH_PASS):
+            return tr(
+                "Order {order} Chebyshev-I {kind}; cutoff {cutoff}.",
+                order=spec.order,
+                kind=self._kind_label(),
+                cutoff=format_engineering(spec.cutoff_hz, "Hz"),
+            )
+        return tr(
+            "Order {order} Chebyshev-I {kind}; center {center}; bandwidth {bandwidth}.",
+            order=spec.order,
+            kind=self._kind_label(),
+            center=format_engineering(spec.f_center_hz or 0.0, "Hz"),
+            bandwidth=format_engineering(spec.bandwidth_hz or 0.0, "Hz"),
+        )
+
+    def _sync_edges(self) -> None:
+        band, kind = self.selection()
+        edges = kind in (BandKind.LPF, BandKind.HPF)
+        if kind is BandKind.LPF:
+            pass_edge, stop_edge = band.high_hz, band.high_hz * 1.5
+        elif kind is BandKind.HPF:
+            pass_edge, stop_edge = band.low_hz, band.low_hz / 1.5
+        else:
+            pass_edge, stop_edge = band.low_hz, band.high_hz
+        self._pass_edge.setText(format_engineering(pass_edge, "Hz"))
+        self._stop_edge.setText(format_engineering(stop_edge, "Hz"))
+        self._pass_edge.setEnabled(edges)
+        self._stop_edge.setEnabled(edges)
+        self._guard.setEnabled(not edges)
+
+    def _sync_mode(self) -> None:
+        guided = self._mode.currentIndex() == 1
+        self._stack.setCurrentIndex(1 if guided else 0)
+        self._design_button.setVisible(guided)
+        if guided:
+            self._run_design()
+        else:
+            self._update_quick()
+
+    def _on_selection_changed(self) -> None:
+        self._sync_edges()
+        if self._mode.currentIndex() == 1:
+            self._run_design()
+        else:
+            self._update_quick()
+
+    def _update_quick(self) -> None:
+        self._design_value = None
+        spec = self._quick_spec()
+        if spec is None:
+            self._quick_summary.setText(tr("Invalid band preset."))
+            self._apply_button.setEnabled(False)
+            return
+        self._quick_summary.setText(self._describe_spec(spec))
+        self._apply_button.setEnabled(True)
+
+    def _run_design(self) -> None:
+        if self._mode.currentIndex() != 1:
+            return
+        band, kind = self.selection()
+        try:
+            request = BandFilterRequest(
+                band=band,
+                kind=kind,
                 z_source_ohm=parse_si(self._z_in.text().strip() or "0"),
                 z_load_ohm=parse_si(self._z_out.text().strip() or "0"),
+                passband_ripple_db=float(self._ripple.text().strip() or "0"),
                 max_insertion_loss_db=float(self._max_il.text().strip() or "0"),
                 min_stopband_attenuation_db=float(self._min_stop.text().strip() or "0"),
                 stopband_guard=float(self._guard.text().strip() or "0") / 100.0,
                 max_order=self._max_order.value(),
+                pass_edge_hz=(
+                    parse_si(self._pass_edge.text().strip() or "0")
+                    if kind in (BandKind.LPF, BandKind.HPF)
+                    else None
+                ),
+                stop_edge_hz=(
+                    parse_si(self._stop_edge.text().strip() or "0")
+                    if kind in (BandKind.LPF, BandKind.HPF)
+                    else None
+                ),
             )
-            design = design_hf_band_filter(request)
-        except (HfBandDesignError, ValueError) as exc:
+            design = design_band_filter(request)
+        except (BandFilterDesignError, ValueError) as exc:
             self._design_value = None
             self._table.setRowCount(0)
             self._result.setText(str(exc))
@@ -2277,26 +2377,36 @@ class HfBandWizardDialog(QDialog):
         self._design_value = design
         self._table.setRowCount(len(design.candidates))
         for row, candidate in enumerate(design.candidates):
+            harmonics = "—"
+            if (
+                candidate.harmonic_2f_db is not None
+                and candidate.harmonic_3f_db is not None
+            ):
+                harmonics = (
+                    f"{-candidate.harmonic_2f_db:.0f}/"
+                    f"{-candidate.harmonic_3f_db:.0f} dB"
+                )
             values = (
                 str(candidate.order),
                 f"{candidate.passband_min_db:.2f} dB",
-                f"{candidate.stopband_low_db:.1f} dB",
-                f"{candidate.stopband_high_db:.1f} dB",
-                "OK" if candidate.ok else "no",
+                "—"
+                if candidate.stopband_low_db is None
+                else f"{candidate.stopband_low_db:.1f} dB",
+                "—"
+                if candidate.stopband_high_db is None
+                else f"{candidate.stopband_high_db:.1f} dB",
+                harmonics,
+                tr("OK") if candidate.ok else tr("No"),
             )
             for col, value in enumerate(values):
                 self._table.setItem(row, col, QTableWidgetItem(value))
         self._table.resizeRowsToContents()
         if design.selected is None:
-            self._result.setText("No order met the requirements")
+            self._result.setText(tr("No order met the requirements"))
             self._notes.setText("; ".join(design.notes))
             self._apply_button.setEnabled(False)
             return
         spec = design.selected.spec
-        self._result.setText(
-            f"Order {design.selected.order}; "
-            f"center {format_engineering(spec.f_center_hz or 0.0, 'Hz')}; "
-            f"bandwidth {format_engineering(spec.bandwidth_hz or 0.0, 'Hz')}"
-        )
+        self._result.setText(self._describe_spec(spec))
         self._notes.setText("; ".join(design.notes))
         self._apply_button.setEnabled(True)

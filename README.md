@@ -41,10 +41,11 @@ You do not need to know the synthesis mathematics first.
 
 1. Download the Windows installer, Linux AppImage or Debian/Ubuntu package from
    [Releases](https://github.com/fsclavo/filter-desk/releases) and open FilterDesk.
-2. For a **receive filter**, use **Design → HF band filter wizard…**, choose the
-   band and required rejection, then press **Design**.
-3. For a quick **transmit low-pass**, use **Design → Band preset…**, choose the
-   band and **Transmit LPF**, then **Synthesize + Analyze**.
+2. For a **receive filter**, open **Design → Band filter wizard…**, choose the
+   band, **Guided design** and **Band-pass**, set the rejection, then press
+   **Design**.
+3. For a quick **transmit low-pass**, use **Design → Band filter wizard…**,
+   choose **Quick preset**, the band and **Transmit LPF**.
 4. Use **Design → Snap to E-series…** to turn ideal values into standard parts.
 5. Export the **build sheet/BOM** and compare against your measurement with the
    Touchstone import and the measured overlay.
@@ -57,10 +58,10 @@ verify the real build.
 
 | Task | Start here |
 | --- | --- |
-| 40 m / 20 m receive band-pass | **Design → HF band filter wizard…** |
-| HF transmitter low-pass | **Design → Band preset… → Transmit LPF** |
-| AM broadcast high-pass (2–3 MHz) | **Design → Band preset…** or enter an HPF specification |
-| FM broadcast notch | **Design → Band preset… → Band-stop** |
+| 40 m / 20 m receive band-pass | **Design → Band filter wizard…** → **Guided design** → **Band-pass** |
+| HF transmitter low-pass | **Design → Band filter wizard…** → **Quick preset** → **Transmit LPF** |
+| AM broadcast high-pass (2–3 MHz) | **Design → Band filter wizard…** → **High-pass** |
+| FM broadcast notch | **Design → Band filter wizard…** → **Band-stop** |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid/air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip, stub, quarter-wave | **Tools → Microstrip line…** |
@@ -127,8 +128,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Optimization** against limit regions (passband/stopband masks).
 - **Component sensitivity** analysis that ranks parts by their effect and
   suggests a tuning direction.
-- **HF receive-band BPF wizard**: band + insertion-loss/rejection requirements
-  → order search → apply with optional E24 snap.
+- **Band filter wizard**: Quick LP/HP/BP/BS presets or guided band +
+  insertion-loss/rejection requirements → order search → optional E24 snap.
 - **Spec-from-circuit update**: manually re-target cutoff/center/bandwidth from
   the measured/analyzed response without silently changing the circuit.
 - **Design parameter sweeps** (order, family, frequency, ripple…) into a

@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.26.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.27.0 · **Released:**
 [v0.26.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.26.0) ·
 **Previous:**
 [v0.25.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.1) ·
-**Next:** v0.27.0 planning.
+**Next:** v0.27.0 release (band wizard implemented, pending CI/tag).
 
-**Verification:** local suite **1023 passed** with ngspice (3 skipped without); coverage **83.40 %**.
+**Verification:** local suite **1077 passed** with ngspice (3 skipped without); coverage **83.60 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40747996025
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40748998544
 
@@ -21,8 +21,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ## 1. Current GUI map
 
-- **Design** — filter-only workflow: Synthesize + Analyze, Band preset, Snap to
-  E-series, Apply parasitics/Q, Monte-Carlo, Scale response, Optimize to limits,
+- **Design** — filter-only workflow: Synthesize + Analyze, Band filter wizard,
+  Snap to E-series, Apply parasitics/Q, Monte-Carlo, Scale response, Optimize to limits,
   Component sensitivity, Parameter sweep, Check spec compliance, Tune to VNA,
   **Distributed microstrip realization**, Component submenu.
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
@@ -53,8 +53,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Manual **Update spec from circuit** action: derives cutoff/center/bandwidth
       from the response while preserving family/order/topology; circuit untouched,
       undoable, with explicit preview.
-- [x] HF receive-band BPF wizard: band/requirements → candidate order table →
-      apply → optional E24 snap; reuses normal BOM/VNA workflow.
+- [x] Unified band filter wizard: Quick LP/HP/BP/BS presets plus a Guided
+      requirements → candidate-order table workflow for every amateur and AM/FM
+      broadcast preset; optional E24 snap; equal-port BPF/BSF use odd orders.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
 - [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project
@@ -293,7 +294,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         `verify_deb.sh`; release/acceptance workflows build the `.deb` and run
         install/self-test/removal in `ubuntu:22.04`.
 
-- [ ] **Unify Band Preset and HF band wizard:** replace the
+- [x] **Unify Band Preset and HF band wizard:** replace the
       `Design → Band preset…` dialog with a single band-filter wizard (e.g.
       `Design → Band filter wizard…`) covering every preset kind
       (LPF/HPF/BPF/BSF) and the AM/FM broadcast rejection bands, with two modes:
@@ -311,6 +312,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         table; Quick matches today's preset; Guided selects the lowest valid
         order; AM/FM notches included; the existing HF receive-BPF workflow is
         preserved as Guided BPF.
+      - 2026-10-28 implemented in v0.27.0; all 52 band×kind defaults produce a
+        selected design, with LPF/HPF harmonic readout and odd-order BPF/BSF.
 
 ### P2 — data / ergonomics
 

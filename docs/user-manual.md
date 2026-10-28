@@ -61,9 +61,9 @@ projects**. A good first path is:
 
 | What you want | Where to start |
 | --- | --- |
-| Receive band-pass for 160–10 m | **Design → HF band filter wizard…** |
-| Transmit low-pass for an HF/VHF rig | **Design → Band preset… → Transmit LPF** |
-| Reject AM or FM broadcast | **Design → Band preset… → Band-stop**, or enter an HPF/BSF spec |
+| Receive band-pass for 160–10 m | **Design → Band filter wizard…** → Guided → Band-pass |
+| Transmit low-pass for an HF/VHF rig | **Design → Band filter wizard…** → Quick → Transmit LPF |
+| Reject AM or FM broadcast | **Design → Band filter wizard…** → Band-stop |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
@@ -323,8 +323,7 @@ specification edits require an explicit **Synthesize**.
 | Workflow | How to trigger | Notes |
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
-| **Band preset** | **Design → Band preset…** | one-click LP/HP/BP/BS design for 160 m–6 m and AM/FM broadcast notches (Chebyshev-I, order 5, sets sweep) |
-| **HF band filter wizard** | **Design → HF band filter wizard…** | receive-band BPF workflow: band + max IL/rejection → order search → apply, optional E24 snap |
+| **Band filter wizard** | **Design → Band filter wizard…** | Quick LP/HP/BP/BS preset for 160 m–6 m and AM/FM notches, or Guided band + requirements → order search → apply, optional E24 snap |
 | **Update spec from circuit** | **Design → Update spec from circuit…** | derive cutoff/center and bandwidth from the current analyzed response; family, order and topology are kept, and the circuit is not changed |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
@@ -713,25 +712,33 @@ row with a combined reference list and a quantity.
 Per-part tolerances (GUI) and the power-stress columns (when **TX Power** is set)
 are included automatically.
 
-### HF receive-band filter wizard
+### Band filter wizard
 
-**Design → HF band filter wizard…** builds a Chebyshev-I receive-band BPF from
-practical requirements, not from a fully specified prototype:
+**Design → Band filter wizard…** combines the old quick presets and receive-BPF
+wizard in one dialog. It covers every amateur allocation from 160 m to 6 m and
+the AM/FM broadcast rejection bands, with LPF, HPF, BPF and BSF kinds. All
+designs are Chebyshev-I.
 
-- choose the amateur band and source/load impedance;
-- enter maximum passband insertion loss and minimum stopband attenuation;
-- choose how far outside the allocation the rejection is required
-  (`Stopband guard` as a percentage of the band span; default 50 %);
-- the wizard searches orders 2…N and shows passband/rejection for every
-  candidate, selecting the lowest order that meets both;
+- **Quick preset** uses the fixed order-5 recipe, matching the previous
+  **Band preset** dialog. It is the fastest path for a transmit LPF or an
+  AM/FM notch.
+- **Guided design** builds from practical requirements and shows a candidate
+  table. Choose the band, kind, source/load impedance, passband ripple, maximum
+  insertion loss and minimum stopband attenuation. For LPF/HPF set the pass and
+  stop edges; for BPF/BSF set the stopband guard as a percentage of the band
+  span (default 50 %). The wizard searches orders 2…12 and selects the lowest
+  order that meets both passband and rejection checks. Equal-port BPF/BSF
+  designs use odd orders to avoid the ideal output transformer.
+- **Transmit LPF** candidates also report rejection at 2× and 3× the upper band
+  edge.
 - **Apply to project** synthesizes the selected design and sets a band sweep;
   optionally **Snap to E24 after apply** converts the values to commercial
   series values before analysis.
 
-After applying, use **File → Export → build sheet / BOM…** and the normal VNA
-measurement compare/overlay. The wizard is a starting design: verify the final
-values, parasitics and rejection with the normal analysis and measurement
-workflow.
+For a receive band-pass, choose **Guided design → Band-pass**. After applying,
+use **File → Export → build sheet / BOM…** and the normal VNA measurement
+compare/overlay. The wizard is a starting design: verify the final values,
+parasitics and rejection with the normal analysis and measurement workflow.
 
 ### Updating the target spec from the circuit
 

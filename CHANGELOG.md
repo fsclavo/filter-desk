@@ -3,6 +3,22 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.27.0 — 2026-10-28
+
+### Added
+
+- Unified **Band filter wizard** for every amateur and AM/FM broadcast preset,
+  with **Quick** order-5 presets and a **Guided** requirements → candidate-order
+  workflow for LPF, HPF, BPF and BSF.
+- Guided LPF candidates report rejection at 2× and 3× the upper band edge;
+  equal-port BPF/BSF designs search odd orders to avoid the ideal output
+  transformer.
+
+### Changed
+
+- Replaced the separate **Band preset…** and **HF band filter wizard…** menu
+  actions with **Design → Band filter wizard…**.
+
 ## v0.26.0 — 2026-10-28
 
 ### Added

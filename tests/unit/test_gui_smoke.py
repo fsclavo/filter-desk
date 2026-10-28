@@ -429,7 +429,7 @@ def test_tools_menu_holds_calculators() -> None:
 
     for filter_action in (
         "Synthesize + Analyze",
-        "Band preset",
+        "Band filter wizard",
         "Snap to E-series",
         "Optimize to limits",
         "Check spec compliance",
@@ -1049,14 +1049,14 @@ def test_main_window_insert_resistor_arm(monkeypatch: pytest.MonkeyPatch) -> Non
     assert app is not None
 
 
-def test_band_preset_dialog_selection() -> None:
+def test_band_filter_dialog_selection() -> None:
     from PySide6.QtWidgets import QApplication
 
-    from filterdesk.gui.widgets import BandPresetDialog
+    from filterdesk.gui.widgets import BandFilterWizardDialog
     from filterdesk.services.bands import BandKind
 
     app = QApplication.instance() or QApplication([])
-    dialog = BandPresetDialog()
+    dialog = BandFilterWizardDialog()
     band, kind = dialog.selection()
     assert band.name == "40 m"
     assert kind == BandKind.LPF
@@ -1192,12 +1192,12 @@ def test_main_window_harmonics() -> None:
     assert app is not None
 
 
-def test_main_window_band_preset(monkeypatch: pytest.MonkeyPatch) -> None:
-    from PySide6.QtWidgets import QApplication
+def test_main_window_band_wizard(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication, QDialog
 
     from filterdesk.domain.enums import FilterResponse
     from filterdesk.gui import main_window as mw
-    from filterdesk.services.bands import BandKind, find_band
+    from filterdesk.services.bands import BandKind, band_preset_spec, find_band
     from filterdesk.services.session import DesignSession
 
     app = QApplication.instance() or QApplication([])
@@ -1205,19 +1205,33 @@ def test_main_window_band_preset(monkeypatch: pytest.MonkeyPatch) -> None:
     session.synthesize()
     window = mw.MainWindow(session, auto_run=False)
     monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    band = find_band("40m")
 
     class _FakeDialog:
-        @staticmethod
-        def ask(*args: object, **kwargs: object) -> tuple[object, BandKind]:
-            return find_band("40m"), BandKind.LPF
+        def __init__(self, parent: object = None) -> None:
+            self.parent = parent
 
-    monkeypatch.setattr(mw, "BandPresetDialog", _FakeDialog)
-    window._run_band_preset()
+        def exec(self) -> QDialog.DialogCode:
+            return QDialog.DialogCode.Accepted
 
-    band = find_band("40m")
+        def result_spec(self):
+            return band_preset_spec(band, BandKind.LPF)
+
+        def result_band(self):
+            return band
+
+        def result_kind(self):
+            return BandKind.LPF
+
+        def snap_to_e24(self) -> bool:
+            return False
+
+    monkeypatch.setattr(mw, "BandFilterWizardDialog", _FakeDialog)
+    window._run_band_wizard()
+
     assert session.spec.response == FilterResponse.LOW_PASS
     assert session.spec.cutoff_hz == pytest.approx(band.high_hz * 1.1)
-    assert "Band preset" in window._status.text()
+    assert "Applied 40 m LPF" in window._status.text()
 
     window._undo.undo()
     assert session.spec.response == FilterResponse.HIGH_PASS

@@ -12,14 +12,14 @@ import pytest
 pytest.importorskip("PySide6")
 
 
-def test_band_preset_selection_matches_items() -> None:
+def test_band_filter_selection_matches_items() -> None:
     from PySide6.QtWidgets import QApplication
 
-    from filterdesk.gui.widgets import BandPresetDialog
+    from filterdesk.gui.widgets import BandFilterWizardDialog
     from filterdesk.services.bands import ALL_PRESETS
 
     app = QApplication.instance() or QApplication([])
-    dialog = BandPresetDialog()
+    dialog = BandFilterWizardDialog()
     for index, band in enumerate(ALL_PRESETS):
         kind_index = index % len(dialog._KINDS)
         dialog._band.setCurrentIndex(index)

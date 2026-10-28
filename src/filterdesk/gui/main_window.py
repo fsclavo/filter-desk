@@ -93,7 +93,7 @@ from filterdesk.gui.settings import (
 from filterdesk.gui.theme import ThemeColors, ThemeMode, apply_theme
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
-    BandPresetDialog,
+    BandFilterWizardDialog,
     BuildSheetDialog,
     CoilCalculatorDialog,
     ConfidenceDialog,
@@ -101,7 +101,6 @@ from filterdesk.gui.widgets import (
     DesignSweepResultDialog,
     DistributedSynthesisDialog,
     EngineeringLineEdit,
-    HfBandWizardDialog,
     MatchingDialog,
     MicrostripDialog,
     MonteCarloDialog,
@@ -132,7 +131,7 @@ from filterdesk.io.touchstone import (
 from filterdesk.montecarlo import MonteCarloResult
 from filterdesk.optimization import OptimizationResult
 from filterdesk.plotting import get_plot_backend
-from filterdesk.services.bands import band_preset_spec, band_sweep
+from filterdesk.services.bands import band_sweep
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.design_sweep import (
     DesignSweepConfig,
@@ -493,15 +492,12 @@ class MainWindow(QMainWindow):
         act_syn.setShortcut("Ctrl+Return")
         act_syn.triggered.connect(self._run_synthesize_and_analyze)
         design_menu.addAction(act_syn)
-        act_band = QAction(tr("&Band preset…"), self)
-        act_band.triggered.connect(self._run_band_preset)
-        design_menu.addAction(act_band)
+        act_band_wizard = QAction(tr("&Band filter wizard…"), self)
+        act_band_wizard.triggered.connect(self._run_band_wizard)
+        design_menu.addAction(act_band_wizard)
         act_update_spec = QAction(tr("Update spec from &circuit…"), self)
         act_update_spec.triggered.connect(self._run_update_spec_from_circuit)
         design_menu.addAction(act_update_spec)
-        act_hf_wizard = QAction(tr("HF band filter &wizard…"), self)
-        act_hf_wizard.triggered.connect(self._run_hf_band_wizard)
-        design_menu.addAction(act_hf_wizard)
         act_distributed = QAction(tr("&Distributed microstrip realization…"), self)
         act_distributed.triggered.connect(self._run_distributed)
         design_menu.addAction(act_distributed)
@@ -914,27 +910,40 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, tr("Spec compliance"), text)
         self._status.setText(tr("Spec compliance: {result}", result=result))
 
-    def _run_band_preset(self) -> None:
-        choice = BandPresetDialog.ask(self)
-        if choice is None:
+    def _run_band_wizard(self) -> None:
+        dialog = BandFilterWizardDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
-        band, kind = choice
-        spec = band_preset_spec(band, kind)
-        sweep = band_sweep(band)
-        self._f_start.setText(self._eng_freq(sweep.f_start_hz))
-        self._f_stop.setText(self._eng_freq(sweep.f_stop_hz))
-        self._points.setValue(sweep.n_points)
-        cmd = SynthesizeCommand(
-            self._session,
-            spec,
-            new_sweep=sweep,
-            on_applied=self._after_circuit_change,
-        )
-        self._undo.push(cmd)
+        spec = dialog.result_spec()
+        band = dialog.result_band()
+        kind = dialog.result_kind()
+        if spec is None or band is None:
+            return
+        try:
+            self._undo.push(
+                SynthesizeCommand(
+                    self._session,
+                    spec,
+                    new_sweep=band_sweep(band),
+                    on_applied=self._after_circuit_change,
+                )
+            )
+            if dialog.snap_to_e24():
+                self._undo.push(
+                    SnapCommand(
+                        self._session,
+                        ESeries.E24,
+                        SnapStrategy.INDEPENDENT,
+                        on_applied=self._after_circuit_change,
+                    )
+                )
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.warning(self, tr("Band filter wizard"), _exc_text(exc))
+            return
         self._status.setText(
             tr(
-                "Band preset: {name} {kind}",
-                name=band.name,
+                "Applied {band} {kind} — analyzing…",
+                band=band.name,
                 kind=kind.value.upper(),
             )
         )
@@ -1269,37 +1278,6 @@ class MainWindow(QMainWindow):
         self._plots.set_confidence_items(
             () if circuit is None else filter_confidence_items(circuit)
         )
-
-    def _run_hf_band_wizard(self) -> None:
-        dialog = HfBandWizardDialog(self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-        spec = dialog.result_spec()
-        band = dialog.result_band()
-        if spec is None or band is None:
-            return
-        try:
-            cmd = SynthesizeCommand(
-                self._session,
-                spec,
-                new_sweep=band_sweep(band),
-                on_applied=self._after_circuit_change,
-            )
-            self._undo.push(cmd)
-            if dialog.snap_to_e24():
-                self._undo.push(
-                    SnapCommand(
-                        self._session,
-                        ESeries.E24,
-                        SnapStrategy.INDEPENDENT,
-                        on_applied=self._after_circuit_change,
-                    )
-                )
-        except Exception as exc:  # noqa: BLE001
-            QMessageBox.warning(self, tr("HF band filter wizard"), _exc_text(exc))
-            return
-        self._status.setText(tr("Applied {band} BPF — analyzing…", band=band.name))
-        self._run_analyze()
 
     def _run_update_spec_from_circuit(self) -> None:
         circuit = self._session.circuit
