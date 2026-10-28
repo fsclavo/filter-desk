@@ -228,6 +228,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 - [ ] **High-flux thermal validation:** replace low-flux μ'' estimates with vendor
       high-flux curves or measurements; validate FT140/FT240 temperature rise. (M/L)
+      - 2026-10-28 audit: Fair-Rite's public power-loss-vs-flux curves cover
+        power mixes (61/77/78/80/85); 31/43/52 are suppression mixes without
+        public high-flux curves. Do not invent coefficients; wait for measured
+        data or vendor curves.
 - [x] **Guanella multi-line:** integer 1:N² Guanella ratios now use an explicit
       N-line parallel/series network.
 - [x] **1:4 Ruthroff depth:** equal-delay bootstrap ABCD; other ratios remain
