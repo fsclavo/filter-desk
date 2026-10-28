@@ -48,14 +48,23 @@ def test_known_amidon_al_values() -> None:
         "FT37-43": 350.0,
         "FT50-43": 440.0,
         "FT82-43": 470.0,
+        "FT37-31": 639.0,
+        "FT50-31": 804.0,
+        "FT82-31": 864.0,
         "FT114-31": 956.0,
         "FT140-31": 1659.0,
         "FT114-43": 510.0,
         "FT140-43": 885.0,
         "FT240-43": 1075.0,
         "FT290-43": 1300.0,
+        "FT37-61": 53.0,
+        "FT50-61": 67.0,
+        "FT82-61": 72.0,
         "FT114-61": 80.0,
         "FT350-61": 178.0,
+        "FT37-52": 106.0,
+        "FT50-52": 134.0,
+        "FT82-52": 144.0,
         "FT114-52": 160.0,
         "FT140-61": 140.0,
         "FT240-61": 170.0,
@@ -120,9 +129,7 @@ def test_design_from_turns_and_saturation() -> None:
     design = design_toroid(core, turns=5, current_a=0.5)
     assert design.turns == 5
     assert design.inductance_h == pytest.approx(440.0 * 25 * 1e-9)
-    b = flux_density_t(
-        design.inductance_h, 0.5, 5, core.ae_mm2 * 1e-6
-    )
+    b = flux_density_t(design.inductance_h, 0.5, 5, core.ae_mm2 * 1e-6)
     assert design.flux_density_t == pytest.approx(b)
     assert design.saturation_ratio == pytest.approx(b / 0.295)
     assert not design.saturated
@@ -203,3 +210,19 @@ def test_cli_text_and_custom(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["toroid", "--al", "4.9", "--inductance", "1u"]) == 0
     assert "custom" in capsys.readouterr().out
     assert main(["toroid"]) == 2
+
+
+def test_ferrite_al_values_match_mu_and_dimensions() -> None:
+    import math
+
+    from filterdesk.components_std.materials import MATERIALS
+
+    mu0 = 4e-7 * math.pi
+    for core in CORES:
+        if core.kind != "ferrite":
+            continue
+        material = MATERIALS[core.material]
+        ae_cm2 = core.height_mm * (core.od_mm - core.id_mm) / 2.0 / 100.0
+        le_cm = math.pi * (core.od_mm + core.id_mm) / 2.0 / 10.0
+        expected = mu0 * material.mu_i * ae_cm2 * 1e-4 / (le_cm * 1e-2) * 1e9
+        assert core.al_nh == pytest.approx(expected, rel=0.10), core.name

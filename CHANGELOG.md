@@ -3,6 +3,19 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.25.0 — 2026-10-28
+
+### Added
+
+- Ferrite core table now includes FT37/FT50/FT82 sizes in 31, 52 and 61 mixes.
+- Dimension/permeability consistency test for every ferrite AL entry, including
+  the previously estimated FT114/FT140-31 values.
+
+### Changed
+
+- Clarified that ferrite AL values are typical μi/dimension-derived values with
+  ±20–25 % batch spread, not individually measured vendor data.
+
 ## v0.24.1 — 2026-10-28
 
 ### Fixed

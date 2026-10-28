@@ -751,7 +751,8 @@ circuit from the updated target.
 **Toroid** (`filterdesk toroid`) computes windings from `L = AL * N^2`, with AL in
 nH/N². The built-in table covers common Amidon/Fair-Rite iron-powder cores
 (mixes 2, 6, 10) and ferrite mixes 31/43/52/61, including the HF power sizes
-FT114/FT140/FT240/FT290; `--al`/`--od`/`--id`/`--height` accept a custom core. With a
+FT37/FT50/FT82/FT114/FT140/FT240/FT290; `--al`/`--od`/`--id`/`--height` accept a
+custom core. With a
 target inductance the turn count is rounded **up**, so the achieved L is at least
 the requested value. It also reports:
 
@@ -760,7 +761,8 @@ the requested value. It also reports:
 - peak flux density `B = L*I / (N*Ae)` and `B/Bsat` for ferrite cores
   (Bsat is the room-temperature typical value; derate it with temperature).
 
-AL spread is typically ±20–25 % (vendor test conditions differ), `Ae` is derived
+AL spread is typically ±20–25 % (vendor test conditions differ); ferrite AL
+entries are typical μi/dimension-derived values, not individually measured. `Ae` is derived
 geometrically from the catalog dimensions (coating ignored), and iron-powder
 cores do not show a Bsat check. Mix 31 is intended for low-HF common-mode
 chokes, 43 for general HF power, 52 for wideband/high-power, and 61 for the

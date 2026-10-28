@@ -95,11 +95,13 @@ def _core(
     )
 
 
-#: Common Amidon/Fair-Rite cores. AL from the vendor tables (nH/N²); powder
-#: mixes 2/6/10 and ferrite mixes 31/43/52/61. AL is specified with roughly
-#: ±20–25 % tolerance. Ferrite Bsat is a room-temperature typical value; derate
-#: with temperature and DC bias. Large 43/61 cores cover HF power transformers;
-#: 31 is aimed at low-HF common-mode chokes and 52 at wideband/high-power use.
+#: Common Amidon/Fair-Rite cores. AL is in nH/N² for powder mixes 2/6/10 and
+#: ferrite mixes 31/43/52/61. Ferrite AL values are typical values consistent
+#: with Fair-Rite μi and the nominal core dimensions (not individually
+#: measured); expect roughly ±20–25 % batch tolerance. Ferrite Bsat is a
+#: room-temperature typical value; derate with temperature and DC bias. Large
+#: 43/61 cores cover HF power transformers; 31 is aimed at low-HF common-mode
+#: chokes and 52 at wideband/high-power use.
 CORES: tuple[ToroidCore, ...] = (
     _core("T37-2", "2", "iron_powder", "red", 4.0, 9.53, 5.21, 3.25),
     _core("T50-2", "2", "iron_powder", "red", 4.9, 12.70, 7.70, 4.83),
@@ -120,16 +122,25 @@ CORES: tuple[ToroidCore, ...] = (
     # 31/52 AL values for the smaller/extra sizes are scaled from the
     # same-size 43 core using the vendor μi ratio; verify the exact batch
     # before production (the 240-31 value is from the Amidon table).
+    _core("FT37-31", "31", "ferrite", "gray/blue", 639.0, 9.53, 4.75, 3.18, 0.360),
+    _core("FT50-31", "31", "ferrite", "gray/blue", 804.0, 12.70, 7.14, 4.78, 0.360),
+    _core("FT82-31", "31", "ferrite", "gray/blue", 864.0, 20.96, 13.21, 6.35, 0.360),
     _core("FT114-31", "31", "ferrite", "gray/blue", 956.0, 29.01, 19.00, 7.49, 0.360),
     _core("FT140-31", "31", "ferrite", "gray/blue", 1659.0, 35.56, 22.86, 12.70, 0.360),
     _core("FT114-43", "43", "ferrite", "black", 510.0, 29.01, 19.00, 7.49, 0.295),
     _core("FT140-43", "43", "ferrite", "black", 885.0, 35.56, 22.86, 12.70, 0.295),
     _core("FT240-43", "43", "ferrite", "black", 1075.0, 60.96, 35.56, 12.70, 0.295),
     _core("FT290-43", "43", "ferrite", "black", 1300.0, 73.66, 38.86, 12.70, 0.295),
+    _core("FT37-61", "61", "ferrite", "gray", 53.0, 9.53, 4.75, 3.18, 0.250),
+    _core("FT50-61", "61", "ferrite", "gray", 67.0, 12.70, 7.14, 4.78, 0.250),
+    _core("FT82-61", "61", "ferrite", "gray", 72.0, 20.96, 13.21, 6.35, 0.250),
     _core("FT114-61", "61", "ferrite", "gray", 80.0, 29.01, 19.00, 7.49, 0.250),
     _core("FT140-61", "61", "ferrite", "gray", 140.0, 35.56, 22.86, 12.70, 0.250),
     _core("FT240-61", "61", "ferrite", "gray", 170.0, 60.96, 35.56, 12.70, 0.250),
     _core("FT350-61", "61", "ferrite", "gray", 178.0, 88.90, 50.80, 12.70, 0.250),
+    _core("FT37-52", "52", "ferrite", "gray", 106.0, 9.53, 4.75, 3.18, 0.420),
+    _core("FT50-52", "52", "ferrite", "gray", 134.0, 12.70, 7.14, 4.78, 0.420),
+    _core("FT82-52", "52", "ferrite", "gray", 144.0, 20.96, 13.21, 6.35, 0.420),
     _core("FT114-52", "52", "ferrite", "gray", 160.0, 29.01, 19.00, 7.49, 0.420),
     _core("FT140-52", "52", "ferrite", "gray", 283.0, 35.25, 22.60, 12.70, 0.420),
     _core("FT240-52", "52", "ferrite", "gray", 325.0, 61.00, 35.55, 12.70, 0.420),
@@ -173,9 +184,7 @@ def make_custom_core(
         raise ToroidError("AL must be > 0")
     if od_mm < 0.0 or id_mm < 0.0 or height_mm < 0.0:
         raise ToroidError("core dimensions must be >= 0")
-    if (od_mm or id_mm or height_mm) and not (
-        od_mm > id_mm > 0.0 and height_mm > 0.0
-    ):
+    if (od_mm or id_mm or height_mm) and not (od_mm > id_mm > 0.0 and height_mm > 0.0):
         raise ToroidError("need OD > ID > 0 and H > 0 when dimensions are supplied")
     return ToroidCore(
         name=name or "custom",
