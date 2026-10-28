@@ -5,14 +5,14 @@ decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
 **Last verified:** 2026-10-28 · **App version:** 0.26.0 · **Released:**
-[v0.25.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.1) ·
+[v0.26.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.26.0) ·
 **Previous:**
-[v0.25.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.0) ·
-**Next:** v0.26.0 release (`.deb` packaging implemented, pending CI/tag).
+[v0.25.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.1) ·
+**Next:** v0.27.0 planning.
 
 **Verification:** local suite **1023 passed** with ngspice (3 skipped without); coverage **83.40 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40733452074
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40734854895
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40747996025
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40748998544
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -77,7 +77,17 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.25.1 release
+## 3. v0.26.0 release
+
+- [x] Add self-contained Debian/Ubuntu amd64 package and clean-container check.
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.26.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
+
+---
+
+## 4. v0.25.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -86,7 +96,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.25.0 release
+## 5. v0.25.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -95,7 +105,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.24.1 release
+## 6. v0.24.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -104,7 +114,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.24.0 release
+## 7. v0.24.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -113,7 +123,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.23.0 release
+## 8. v0.23.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -122,7 +132,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.22.0 release
+## 9. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -131,7 +141,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.21.0 release
+## 10. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -140,7 +150,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.20.0 release
+## 11. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -149,7 +159,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.19.0 release
+## 12. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -158,7 +168,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.18.0 release
+## 13. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -167,7 +177,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.17.0 release
+## 14. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -176,7 +186,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. v0.16.0 release
+## 15. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -185,7 +195,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. v0.15.0 release
+## 16. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -194,7 +204,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 16. v0.14.0 release
+## 17. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -203,7 +213,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 17. v0.13.0 release
+## 18. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -212,7 +222,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 18. v0.12.0 release
+## 19. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -221,7 +231,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 19. Open backlog
+## 20. Open backlog
 
 ### P0 — release quality
 
@@ -268,7 +278,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ### P1 — distribution / UX completeness
 
-- [ ] **Debian/Ubuntu `.deb` package (amd64):** build a self-contained package
+- [x] **Debian/Ubuntu `.deb` package (amd64):** build a self-contained package
       (Python, Qt and the scientific stack bundled, like the AppImage) targeting
       Ubuntu 22.04+/Debian 12+ (glibc 2.35 baseline), built in CI and attached
       automatically to the tag-triggered GitHub release as
@@ -279,9 +289,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       Add a clean-container install/uninstall check to the release workflow.
       Out of scope for now: `arm64`; macOS packaging is deferred (needs
       signing/notarization decisions). (M)
-      - 2026-10-28 implementation: `packaging/debian/build_deb.sh` and
+      - 2026-10-28 released in v0.26.0: `packaging/debian/build_deb.sh` and
         `verify_deb.sh`; release/acceptance workflows build the `.deb` and run
-        install/self-test/removal in `ubuntu:22.04`. Pending CI and v0.26.0 tag.
+        install/self-test/removal in `ubuntu:22.04`.
 
 - [ ] **Unify Band Preset and HF band wizard:** replace the
       `Design → Band preset…` dialog with a single band-filter wizard (e.g.
@@ -348,7 +358,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 20. Ham-radio onboarding and discoverability
+## 21. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -356,7 +366,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 21. Maintenance rule
+## 22. Maintenance rule
 
 Every change must update, in the same commit:
 
