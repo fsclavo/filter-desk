@@ -1,4 +1,4 @@
-# ADR-024: Mixed-mode 3-port boundary model and Guanella SPICE export
+# ADR-024: Mixed-mode 3-port boundary model and TLT SPICE export
 
 - **Status:** Accepted
 - **Date:** 2026-10-27
@@ -28,8 +28,11 @@ represented.
   N `T` lines parallel at input, series at output, center-node `Lcm`/core-loss
   shunt, and a differential load. Validate the differential response against
   `Sdd21` with ngspice.
-- Ruthroff/non-integer ratios keep the existing differential model; their SPICE
-  export remains unsupported.
+- Add a Ruthroff **1:4 step-up** bootstrap netlist: one TEM line with port 1
+  across the source and port 2 from ground to the floating output; validate the
+  low-frequency voltage/load match with ngspice.
+- Non-integer Guanella, other Ruthroff ratios and reverse Ruthroff orientation
+  keep the existing differential model; their SPICE export remains unsupported.
 
 ## Consequences
 
@@ -37,5 +40,6 @@ represented.
   pretending the 2-port captures both.
 - The common-mode result is a choke/center-tap estimate, not a full EM or
   asymmetric 4-port model.
-- Guanella SPICE export is lossless and differential-port validated; common-mode
-  fixture/EM validation remains future work.
+- Guanella SPICE export is lossless and differential-port validated; the
+  Ruthroff export is a step-up bootstrap test netlist. Common-mode fixture/EM
+  validation remains future work.

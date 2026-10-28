@@ -893,8 +893,9 @@ PCB low-pass filters, not for arbitrary distributed networks.
 - **SPICE netlist** export now represents series lines and shunt stubs with
   ideal lossless `T` elements (open/short stub terminated). Integer-ratio
   Guanella TLTs export as parallel/series `T` lines with an optional center-node
-  `Lcm`; the differential response is validated with ngspice. LTspice `.asc`,
-  Qucs `.sch` and Ruthroff TLT export remain unsupported. Loss, dispersion,
+  `Lcm`; Ruthroff 1:4 step-up exports as one bootstrap `T` line with a floating
+  balanced load. Both are validated with ngspice. LTspice `.asc`, Qucs `.sch`
+  and reverse/other Ruthroff ratios remain unsupported. Loss, dispersion,
   discontinuities and radiation are not in the exported model.
 
 On the command line:

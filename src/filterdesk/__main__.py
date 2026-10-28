@@ -531,7 +531,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--export-spice",
         type=Path,
         default=None,
-        help="Write a Guanella TLT SPICE test netlist to this path",
+        help="Write a Guanella/Ruthroff TLT SPICE test netlist to this path",
     )
     tr.add_argument("--json", action="store_true", help="Emit JSON")
 
@@ -2596,11 +2596,12 @@ def main(argv: list[str] | None = None) -> int:
             f"{tr_design.z_balanced_ohm:g} Ohm on {tr_design.core.name}"
         )
         tr_spec = tr_design.to_spec()
-        line_text = (
-            f", {tr_spec.guanella_line_count}-line Guanella"
-            if tr_spec.guanella_line_count is not None
-            else ""
-        )
+        if tr_spec.guanella_line_count is not None:
+            line_text = f", {tr_spec.guanella_line_count}-line Guanella"
+        elif tr_spec.kind == "ruthroff":
+            line_text = ", Ruthroff 1:4 bootstrap"
+        else:
+            line_text = ""
         print(
             f"  Topology: {tr_design.topology.value}, "
             f"total turns {tr_design.total_turns}{line_text}"

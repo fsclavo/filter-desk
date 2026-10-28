@@ -103,7 +103,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Balun / unun designer**: ideal, Guanella/Ruthroff and choke models with
   core/wire, complex-permeability core loss, thermal-rise estimate and
   output-boundary BOM insertion. Integer 1:N² Guanella ratios use an explicit
-  multi-line network; 1:4 Ruthroff uses an equal-delay bootstrap network.
+  multi-line network; 1:4 Ruthroff uses an equal-delay bootstrap network. Both
+  TLT kinds can export a SPICE test netlist; Ruthroff is 1:4 step-up.
   Winding options include DCR/leakage estimates and the selected option is
   persisted.
 - **Microstrip / distributed calculators**: line width, `eeff`, quarter-wave

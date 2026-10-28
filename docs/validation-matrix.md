@@ -59,11 +59,11 @@ dispersion/discontinuities/radiation, and no hardware validation yet.
 - exact open/short/resonant arm edge cases without NaN or divide warnings;
 - winding option/DCR persistence and BOM propagation;
 - non-1:4 limitations;
-- mixed-mode 3-port blocks and Guanella SPICE export against ngspice.
+- mixed-mode 3-port blocks, Guanella and Ruthroff 1:4 SPICE exports against ngspice.
 
 Guanella multi-line is still experimental; the mixed-mode model is
 block-diagonal, and Ruthroff/common-mode are not full asymmetric 4-port/EM
-models.
+models. Ruthroff SPICE covers the 1:4 step-up bootstrap orientation only.
 
 ## Independent numerical oracle
 

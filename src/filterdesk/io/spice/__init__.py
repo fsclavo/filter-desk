@@ -203,21 +203,14 @@ def spice_netlist(
     return "\n".join(lines) + "\n"
 
 
-def tlt_spice_netlist(
+def _guanella_spice_netlist(
     balun: BalunSpec,
     *,
-    title: str = "FilterDesk Guanella TLT",
-    ac: SweepConfig | None = None,
+    title: str,
+    ac: SweepConfig | None,
 ) -> str:
-    """Return a 3-port Guanella test netlist (input + differential output).
-
-    The N lines are parallel at the input and series at the output. A common-mode
-    choke inductance/core-loss shunt is placed at the output center node when
-    available. Lossless ``T`` elements are used; conductor/dielectric loss is
-    not represented.
-    """
     lines = balun.guanella_line_count
-    if balun.kind != "guanella" or lines is None:
+    if lines is None:
         raise SpiceExportError(
             "TLT SPICE export currently supports integer-ratio Guanella only"
         )
@@ -246,11 +239,68 @@ def tlt_spice_netlist(
     return "\n".join(net) + "\n"
 
 
+def _ruthroff_spice_netlist(
+    balun: BalunSpec,
+    *,
+    title: str,
+    ac: SweepConfig | None,
+) -> str:
+    """Return a Ruthroff 1:4 voltage-balun test netlist.
+
+    The single TEM line is bootstrap-connected: port 1 is ``in`` to ground and
+    port 2 is ground to ``outm``. The floating load sits between ``in`` and
+    ``outm``, so the output is differential while the source remains
+    ground-referenced. This is the step-up (50 -> 200 ohm) orientation.
+    """
+    if abs(balun.turns_ratio - 0.5) > 1e-6:
+        raise SpiceExportError(
+            "Ruthroff SPICE export currently supports the 1:4 step-up "
+            "orientation (turns_ratio = 0.5)"
+        )
+    if balun.length_m <= 0.0:
+        raise SpiceExportError("Ruthroff TLT needs a positive line length")
+    delay_s = balun.length_m / (balun.velocity_factor * 299_792_458.0)
+    net: list[str] = [
+        f"* {title}",
+        "* Ruthroff 1:4 voltage balun, bootstrap connection",
+        "* output floats between in and outm",
+    ]
+    net.append("V1 in_src 0 AC 1")
+    net.append(f"RV1s in_src in {_fmt(balun.z_unbalanced_ohm)}")
+    net.append(f"TL1 in 0 0 outm Z0={_fmt(balun.z0_line_ohm)} TD={delay_s:.12g}")
+    net.append(f"Rload in outm {_fmt(balun.z_balanced_ohm)}")
+    if ac is not None:
+        net.append(f".ac dec {ac.n_points} {_fmt(ac.f_start_hz)} {_fmt(ac.f_stop_hz)}")
+        net.append(".print ac v(in) v(outm)")
+    net.append(".end")
+    return "\n".join(net) + "\n"
+
+
+def tlt_spice_netlist(
+    balun: BalunSpec,
+    *,
+    title: str = "FilterDesk TLT",
+    ac: SweepConfig | None = None,
+) -> str:
+    """Return a TLT test netlist (Guanella or Ruthroff 1:4).
+
+    Guanella uses N parallel-input/series-output lines and a common-mode choke
+    shunt at the output centre. Ruthroff uses one bootstrap TEM line and a
+    floating load. Lossless ``T`` elements are used; conductor/dielectric loss
+    is not represented.
+    """
+    if balun.kind == "guanella":
+        return _guanella_spice_netlist(balun, title=title, ac=ac)
+    if balun.kind == "ruthroff":
+        return _ruthroff_spice_netlist(balun, title=title, ac=ac)
+    raise SpiceExportError("TLT SPICE export supports Guanella and Ruthroff 1:4 only")
+
+
 def write_tlt_spice_netlist(
     balun: BalunSpec,
     path: Path | str,
     *,
-    title: str = "FilterDesk Guanella TLT",
+    title: str = "FilterDesk TLT",
     ac: SweepConfig | None = None,
 ) -> Path:
     out = Path(path)

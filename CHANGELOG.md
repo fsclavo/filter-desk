@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.24.0 — 2026-10-28
+
+### Added
+
+- Ruthroff 1:4 voltage-balun SPICE export: single bootstrap TEM line, floating
+  balanced load, CLI/GUI path and ngspice low-frequency validation.
+
 ## v0.23.0 — 2026-10-28
 
 ### Added
