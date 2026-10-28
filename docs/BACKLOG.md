@@ -5,14 +5,14 @@ decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
 **Last verified:** 2026-10-28 · **App version:** 0.27.1 · **Released:**
-[v0.27.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.0) ·
+[v0.27.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.1) ·
 **Previous:**
-[v0.26.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.26.0) ·
-**Next:** v0.27.1 release (wizard sweep and broadcast-kind fixes, pending CI/tag).
+[v0.27.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.0) ·
+**Next:** v0.28.0 planning.
 
 **Verification:** local suite **1079 passed** with ngspice (3 skipped without); coverage **83.97 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40756253295
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40760693415
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40766327520
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40767969876
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -78,7 +78,18 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.27.0 release
+## 3. v0.27.1 release
+
+- [x] Apply the wizard band sweep to the visible range controls and undo.
+- [x] Restrict AM/FM broadcast presets to Band-stop in the GUI.
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.27.1.
+- [x] CHANGELOG/manual/backlog updated.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
+
+---
+
+## 4. v0.27.0 release
 
 - [x] Add unified Band filter wizard (Quick and Guided LP/HP/BP/BS).
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.27.0.
@@ -88,7 +99,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.26.0 release
+## 5. v0.26.0 release
 
 - [x] Add self-contained Debian/Ubuntu amd64 package and clean-container check.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.26.0.
@@ -98,7 +109,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.25.1 release
+## 6. v0.25.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -107,7 +118,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.25.0 release
+## 7. v0.25.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -116,7 +127,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.24.1 release
+## 8. v0.24.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -125,7 +136,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.24.0 release
+## 9. v0.24.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -134,7 +145,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.23.0 release
+## 10. v0.23.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -143,7 +154,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.22.0 release
+## 11. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -152,7 +163,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.21.0 release
+## 12. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -161,7 +172,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.20.0 release
+## 13. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -170,7 +181,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.19.0 release
+## 14. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -179,7 +190,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. v0.18.0 release
+## 15. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -188,7 +199,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. v0.17.0 release
+## 16. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -197,7 +208,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 16. v0.16.0 release
+## 17. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -206,7 +217,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 17. v0.15.0 release
+## 18. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -215,7 +226,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 18. v0.14.0 release
+## 19. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -224,7 +235,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 19. v0.13.0 release
+## 20. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -233,7 +244,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 20. v0.12.0 release
+## 21. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -242,7 +253,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 21. Open backlog
+## 22. Open backlog
 
 ### P0 — release quality
 
@@ -328,6 +339,13 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         Band-stop (notch); the wizard now applies its band sweep to the visible
         range controls and restores them on undo.
 
+- [ ] **Automatic sweep fit:** suggest a plotting range per filter kind
+      (e.g. HPF 140 MHz ≈ 50 M–1 G), including harmonic coverage for TX LPF,
+      and apply it only when the user has not customized the range (explicit
+      **Auto** mode or equivalent). Preserve custom ranges used for VNA,
+      limits and saved projects; update UI/session together and cover
+      redo/undo. Keep the wizard's band-specific range. (M)
+
 ### P2 — data / ergonomics
 
 - [x] **Distributed SPICE export:** microstrip lines and stubs now export as
@@ -374,7 +392,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 22. Ham-radio onboarding and discoverability
+## 23. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -382,7 +400,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 23. Maintenance rule
+## 24. Maintenance rule
 
 Every change must update, in the same commit:
 
