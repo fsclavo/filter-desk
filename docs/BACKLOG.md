@@ -4,11 +4,10 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.21.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.22.0 · **Release:** prepared,
+not published · **Previous:**
 [v0.21.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.21.0) ·
-**Previous:**
-[v0.20.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.20.0) ·
-**Next:** v0.22.0 planning.
+**Next:** v0.23.0 planning.
 
 **Verification:** local suite **1013 passed** with ngspice (3 skipped without); coverage **83.33 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40531208496
@@ -233,6 +232,25 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Persist the selected winding option in project/BOM notes.
 - [x] Add DCR/leakage estimates per winding option (DCR at 20 °C; leakage from
       the coupling model).
+
+- [ ] **Measured-vs-simulated cursor readout:** when a Touchstone overlay is
+      visible, append the measured values and their differences to the cursor
+      readout so the built filter can be compared with the calculation:
+      `S21 meas` + `ΔS21` (dB), `S11 meas` + `ΔS11` (dB), `VSWR meas` + `ΔVSWR`,
+      and `∠S21 meas` + `Δ∠S21` (degrees). Definitions:
+      `ΔS21 = S21_dB − S21_meas_dB`, `ΔS11 = S11_dB − S11_meas_dB`,
+      `ΔVSWR = VSWR − VSWR_meas`, `Δ∠S21 = ∠S21 − ∠S21_meas` (wrapped to ±180°).
+      Because the simulated and VNA grids do not necessarily match, interpolate
+      the measured complex `S11`/`S21` onto the cursor frequency (real/imag, with
+      unwrapped phase for the phase delta) and show `—` outside the measured
+      band. Only shown while the measured overlay is visible; keep the existing
+      readout fields. (S/M)
+      - Acceptance: synthetic sim/meas fixtures with different frequency grids
+        verify interpolation and the four deltas; out-of-band shows `—`;
+        GUI smoke test.
+      - Later/optional (not part of v1): group-delay and `|Zin|` differences,
+        dedicated ΔS21/ΔS11 curves tab, band RMS/max comparison, and delay
+        alignment before comparing phase.
 
 ### Parked by design
 
