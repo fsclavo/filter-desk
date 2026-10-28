@@ -25,6 +25,10 @@ class FerriteMaterial:
     #: (frequency Hz, mu_real, mu_imag) from the vendor complex-permeability
     #: table; interpolated logarithmically in frequency.
     loss_points: tuple[tuple[float, float, float], ...]
+    #: True only for mixes with published high-flux power-loss data. Suppression
+    #: mixes have no public high-flux curves, so their thermal estimate is not
+    #: evaluated instead of extrapolating low-flux mu'' data.
+    power_rated: bool = False
 
     def mu_at(self, frequency_hz: float) -> tuple[float, float]:
         if not self.loss_points:
@@ -128,6 +132,7 @@ MATERIALS: dict[str, FerriteMaterial] = {
             (50e6, 64.3, 73.2),
             (100e6, 32.9, 51.4),
         ),
+        power_rated=True,
     ),
 }
 

@@ -241,7 +241,8 @@ def test_transformer_dialog_options_and_topology(qtbot) -> None:
     assert "THERMAL" in dialog._flags_legend.text()
     flags = dialog._options_table.item(2, 8).text()
     assert "HF" in flags
-    assert "THERMAL" in flags
+    assert "THERMAL" not in flags
+    assert any("high-flux" in note for note in dialog.current_design().notes)
     assert dialog._options_table.item(2, 8).toolTip().startswith(flags)
     dialog._options_table.selectRow(2)
     design = dialog.current_design()

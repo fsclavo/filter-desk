@@ -826,21 +826,23 @@ The **Flags** column is intentionally stricter and explicit: `LF X/Z ...`,
 `SAT ...` (Bsat/B below 3), `FIT no`, `HF ...`, and `THERMAL ...`. The table
 wraps the flags, stretches that column, and shows a full tooltip; a legend below
 the table explains every code.
-The thermal estimate uses the vendor complex-permeability data (μ' and μ'') for
-mixes 31/43/52/61, evaluates core loss over the band, adds an approximate copper
-loss, and applies a natural-convection thermal resistance for the core. It
-reports the estimated hot temperature and flags `THERMAL` above 100 °C; above
-the material's Curie point it reports `>Tc`. The model assumes a matched
-sinusoidal load and low-flux μ'' data, so mismatch, DC bias, duty cycle,
-mounting and ambient temperature can make the real part much worse. For example,
-100 W on an FT140-43 is flagged; use a larger core or measure the actual rise.
+The thermal estimate uses vendor complex-permeability data (μ' and μ'') for
+power-rated mix 61, evaluates core loss over the band, adds an approximate
+copper loss, and applies a natural-convection thermal resistance for the core.
+It reports the estimated hot temperature and flags `THERMAL` above 100 °C; above
+the material's Curie point it reports `>Tc`. Mixes 31/43/52 are suppression
+materials without public high-flux power-loss curves, so their thermal rise is
+reported as **not evaluated** instead of extrapolating low-flux μ''. The model
+assumes a matched sinusoidal load; mismatch, DC bias, duty cycle, mounting and
+ambient temperature can make the real rise worse. Measure the actual rise for
+power designs.
 
 Ferrite material data for mixes 31/43/52/61 includes initial permeability,
 saturation flux, Curie temperature and Fair-Rite complex-permeability points
 (μ'/μ''). Core loss is calculated from those points; the project does not claim
 fitted Steinmetz coefficients, because the complex-permeability model is used
-instead. Some 31-size AL values (FT114/FT140) are scaled from the μi ratio and
-must be confirmed against the actual core batch.
+instead. Ferrite AL entries are typical values derived from Fair-Rite μi and
+nominal dimensions; confirm the actual core batch.
 
 The model is **first-order and behavioral**: the TLT section is a single TEM
 line, not a full multi-line Guanella/Ruthoff derivation or an EM simulation;
@@ -1079,11 +1081,12 @@ detailed test cases and tolerances are in
 - **Real-inductor model is approximate**: `dc_skin` is a simple `sqrt(f)` law, DC
   bias uses a core-agnostic `1/(1+(I/Isat)²)` derating, and air-core coils do not
   model SRF/Q (see [ADR-016](adr/ADR-016-inductor-model.md)).
-- **Ferrite loss/thermal model**: core loss uses low-flux complex-permeability
-  data and a natural-convection estimate, not vendor high-flux loss curves or a
-  thermal simulation. It is a conservative sizing aid; validate power designs
-  with the core datasheet or measurement. Some 31-size AL values are scaled from
-  the μi ratio and marked in the core table; confirm the exact batch.
+- **Ferrite loss/thermal model**: thermal loss is evaluated only for power-rated
+  mix 61 using low-flux complex-permeability data; 31/43/52 are marked not
+  evaluated because public high-flux curves are unavailable. It is not a
+  high-flux thermal simulation; validate power designs with the core datasheet or
+  measurement. Ferrite AL values are typical μi/dimension-derived values; confirm
+  the exact batch.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

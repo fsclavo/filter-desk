@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.25.1 — 2026-10-28
+
+### Fixed
+
+- Thermal rise is no longer extrapolated from low-flux μ'' for suppression mixes
+  31/43/52; those designs now report **not evaluated**. Power-rated mix 61 keeps
+  the existing estimated thermal model.
+
 ## v0.25.0 — 2026-10-28
 
 ### Added

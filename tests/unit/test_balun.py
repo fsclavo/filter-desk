@@ -79,10 +79,25 @@ def test_ratio_text_and_thermal_status() -> None:
     )
     spec = auto.to_spec()
     assert spec.ratio_text == "1:7 turns / 1:49 Z"
-    assert auto.thermal_caution
-    assert "THERMAL" in auto.status_text
-    assert auto.core_loss_w is not None and auto.core_loss_w > 0.0
-    assert auto.hot_temperature_c is not None
+    assert not auto.thermal_caution
+    assert "THERMAL" not in auto.status_text
+    assert auto.core_loss_w is None
+    assert auto.hot_temperature_c is None
+    assert any("high-flux" in note for note in auto.notes)
+
+    power_mix = design_balun(
+        find_core("FT140-61"),
+        kind="unun",
+        z_unbalanced_ohm=50.0,
+        z_balanced_ohm=2500.0,
+        f_min_hz=7e6,
+        f_max_hz=28e6,
+        power_w=100.0,
+    )
+    assert power_mix.thermal_caution
+    assert "THERMAL" in power_mix.status_text
+    assert power_mix.core_loss_w is not None and power_mix.core_loss_w > 0.0
+    assert power_mix.hot_temperature_c is not None
 
     big = design_balun(
         find_core("FT240-43"),
@@ -95,6 +110,7 @@ def test_ratio_text_and_thermal_status() -> None:
     )
     assert not big.thermal_caution
     assert "THERMAL" not in big.status_text
+    assert big.hot_temperature_c is None
 
 
 def test_balun_topology_and_winding_options() -> None:

@@ -300,7 +300,7 @@ def design_balun(
 
     material = material_for(core.material)
     core_loss: float | None = None
-    if material is not None:
+    if material is not None and material.power_rated:
         loss_candidates = []
         for freq in (f_min_hz, math.sqrt(f_min_hz * f_max_hz), f_max_hz):
             b_at_f = b_peak * f_min_hz / freq
@@ -349,6 +349,11 @@ def design_balun(
             f"estimated core+copper loss {total_loss:.2f} W, "
             f"hot {hot:.0f} C (complex-permeability model; "
             "verify with measurement)"
+        )
+    elif material is not None and not material.power_rated:
+        notes.append(
+            "high-flux core-loss curves are unavailable for this suppression "
+            "mix; thermal rise not evaluated"
         )
     if abs(actual_turns - turns) > 1e-12:
         notes.append(

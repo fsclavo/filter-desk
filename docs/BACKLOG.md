@@ -4,13 +4,12 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.25.0 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.25.1 · **Release:** prepared,
+not published · **Previous:**
 [v0.25.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.0) ·
-**Previous:**
-[v0.24.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.24.1) ·
 **Next:** v0.26.0 planning.
 
-**Verification:** local suite **1023 passed** with ngspice (3 skipped without); coverage **83.39 %**.
+**Verification:** local suite **1023 passed** with ngspice (3 skipped without); coverage **83.40 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40712796899
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40714254137
 
@@ -70,12 +69,23 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       load, ngspice low-frequency validation and CLI/GUI export.
 - [x] **Core AL audit:** FT37/FT50/FT82 sizes added for 31/52/61; all ferrite AL
       entries checked against Fair-Rite μi and nominal dimensions.
+- [x] **Thermal guard:** suppression mixes 31/43/52 no longer extrapolate
+      low-flux μ'' to a thermal rise; mix 61 remains estimated.
 - [x] Measured-vs-simulated cursor readout with complex interpolation and
       `ΔS21`/`ΔS11`/`ΔVSWR`/`Δ∠S21`, hidden unless the measured overlay is shown.
 
 ---
 
-## 3. v0.25.0 release
+## 3. v0.25.1 release (prepared, not published)
+
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.1.
+- [x] CHANGELOG/manual/backlog updated.
+- [ ] Tag, publish and verify Windows/Linux/AppImage assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.25.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -84,7 +94,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.24.1 release
+## 5. v0.24.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -93,7 +103,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.24.0 release
+## 6. v0.24.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -102,7 +112,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.23.0 release
+## 7. v0.23.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -111,7 +121,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.22.0 release
+## 8. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -120,7 +130,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.21.0 release
+## 9. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -129,7 +139,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.20.0 release
+## 10. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -138,7 +148,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.19.0 release
+## 11. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -147,7 +157,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.18.0 release
+## 12. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -156,7 +166,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.17.0 release
+## 13. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -165,7 +175,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.16.0 release
+## 14. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -174,7 +184,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. v0.15.0 release
+## 15. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -183,7 +193,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. v0.14.0 release
+## 16. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -192,7 +202,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 16. v0.13.0 release
+## 17. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -201,7 +211,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 17. v0.12.0 release
+## 18. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -210,7 +220,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 18. Open backlog
+## 19. Open backlog
 
 ### P0 — release quality
 
@@ -232,6 +242,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         power mixes (61/77/78/80/85); 31/43/52 are suppression mixes without
         public high-flux curves. Do not invent coefficients; wait for measured
         data or vendor curves.
+      - 2026-10-28 guard: 31/43/52 now report thermal as not evaluated; only 61
+        keeps the estimated low-flux thermal model.
 - [x] **Guanella multi-line:** integer 1:N² Guanella ratios now use an explicit
       N-line parallel/series network.
 - [x] **1:4 Ruthroff depth:** equal-delay bootstrap ABCD; other ratios remain
@@ -299,7 +311,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 19. Ham-radio onboarding and discoverability
+## 20. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -307,7 +319,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 20. Maintenance rule
+## 21. Maintenance rule
 
 Every change must update, in the same commit:
 
