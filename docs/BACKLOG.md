@@ -266,6 +266,39 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Installed-package regression:** CI now exercises Linux bundle/AppImage
       and the installed Windows app headlessly; see `docs/packaging.md`. (M)
 
+### P1 — distribution / UX completeness
+
+- [ ] **Debian/Ubuntu `.deb` package (amd64):** build a self-contained package
+      (Python, Qt and the scientific stack bundled, like the AppImage) targeting
+      Ubuntu 22.04+/Debian 12+ (glibc 2.35 baseline), built in CI and attached
+      automatically to the tag-triggered GitHub release as
+      `FilterDesk-<ver>-amd64.deb`. Install to `/opt/filterdesk` with a
+      `/usr/bin/filterdesk` symlink, a `.desktop` entry and the app icon;
+      package name `filterdesk`, license Apache-2.0, maintainer
+      "FilterDesk contributors" with the GitHub repository URL (no email).
+      Add a clean-container install/uninstall check to the release workflow.
+      Out of scope for now: `arm64`; macOS packaging is deferred (needs
+      signing/notarization decisions). (M)
+
+- [ ] **Unify Band Preset and HF band wizard:** replace the
+      `Design → Band preset…` dialog with a single band-filter wizard (e.g.
+      `Design → Band filter wizard…`) covering every preset kind
+      (LPF/HPF/BPF/BSF) and the AM/FM broadcast rejection bands, with two modes:
+      **Quick** (today's fixed Chebyshev-I order-5 preset) and **Guided**
+      (requirements → candidate-order table → apply), keeping the optional E24
+      snap. Chebyshev-I only for now. Requirements per kind: LPF/HPF use
+      pass/stop edges + max IL/ripple + min attenuation; BPF uses the allocation
+      as passband + guard + max IL/min attenuation; BSF/notch (including AM/FM)
+      uses the allocation as stopband + guard + max IL/min attenuation. TX LPF
+      candidates also report harmonic rejection at 2f/3f. Keep the order search
+      2…12 and odd orders for equal ports (avoid the ideal T1). Update the
+      Design menu, i18n, manual and tests; remove the old Band Preset dialog and
+      menu action. (M/L)
+      - Acceptance: every band×kind combination produces a valid spec/candidate
+        table; Quick matches today's preset; Guided selects the lowest valid
+        order; AM/FM notches included; the existing HF receive-BPF workflow is
+        preserved as Guided BPF.
+
 ### P2 — data / ergonomics
 
 - [x] **Distributed SPICE export:** microstrip lines and stubs now export as
