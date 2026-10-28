@@ -242,6 +242,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
         low-order BP passband numerically but not the stopband; HP/BS fail
         because they require series stubs (Kuroda) or coupled lines. Do not ship
         HP/BP/BS until series-stub/Kuroda support and a stopband gate exist.
+      - 2026-10-28: deferred. The analytic lambda/4 shunt-stub BP also failed the
+        stopband gate (lower selectivity than the lumped BP); IL limits do not
+        fix it. Revisit only with coupled-line or lambda/2 resonator synthesis.
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)
