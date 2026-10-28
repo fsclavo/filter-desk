@@ -238,6 +238,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Open-end fringing:** Hammerstad open-stub length correction.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, step discontinuities and hardware validation. (L)
+      - 2026-10-28 spike: shunt-only unit-element/stub topologies reproduce a
+        low-order BP passband numerically but not the stopband; HP/BS fail
+        because they require series stubs (Kuroda) or coupled lines. Do not ship
+        HP/BP/BS until series-stub/Kuroda support and a stopband gate exist.
 
 - [ ] Confirm the estimated FT114/FT140-31 AL values and add more 31/52/61 core
       sizes with verified material data. (M)
