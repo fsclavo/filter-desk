@@ -216,7 +216,10 @@ hide any dock from the **View** menu; drag docks to rearrange them.
 | **Harmonics** | right | `|S21|`/suppression at 2f, 3f, … of a fundamental |
 
 The central area is a tabbed **plot panel**: **Magnitude**, **S12 / S22**,
-**Phase**, **VSWR**, **Group delay**, **Impedance**, and **Smith**.
+**Phase**, **VSWR**, **Group delay**, **Impedance**, and **Smith**. After a new
+synthesis or wizard apply, the plots fit the new data automatically, even if
+you had zoomed or panned before. Manual zoom is kept until the next deliberate
+synthesis.
 
 The **toolbar** holds **Synthesize**, **Analyze**, **Tune +** (`Ctrl+]`),
 **Tune −** (`Ctrl+[`), and inline sweep controls (**Start Frequency**, **Stop

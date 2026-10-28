@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.28.1 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.28.2 · **Released:**
 [v0.28.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.1) ·
 **Previous:**
 [v0.28.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.0) ·
-**Next:** v0.29.0 planning.
+**Next:** v0.28.2 release (plot auto-fit, pending CI/tag).
 
-**Verification:** local suite **1094 passed** with ngspice (3 skipped without); coverage **83.99 %**.
+**Verification:** local suite **1096 passed** with ngspice (3 skipped without); coverage **84.01 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40780360378
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40781699802
 
@@ -364,6 +364,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       - 2026-10-28 v0.28.0: added 2 m, 1.25 m (Region 2) and 70 cm presets.
       - 2026-10-28 v0.28.1: wizard snap uses preserve-resonance strategy,
         offers E24/E48/E96 (E96 default above 100 MHz) and warns on degradation.
+      - 2026-10-28 v0.28.2: one-shot plot auto-fit after deliberate synthesis,
+        wizard apply, scale or project load; manual zoom is kept for tuning.
 
 - [ ] **Automatic sweep fit:** suggest a plotting range per filter kind
       (e.g. HPF 140 MHz ≈ 50 M–1 G), including harmonic coverage for TX LPF,

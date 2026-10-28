@@ -228,6 +228,7 @@ class MainWindow(QMainWindow):
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(80)
         self._debounce.timeout.connect(self._run_analyze)
+        self._fit_plots_after_analysis = False
 
         self._spec = SpecPanel()
         self._table = ComponentTablePanel()
@@ -585,6 +586,8 @@ class MainWindow(QMainWindow):
         self._refresh_table()
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
+        if self._session.analysis is not None:
+            QTimer.singleShot(0, self._plots.auto_range)
         self._plots.set_monte_carlo(None)
         self._plots.set_measured(
             self._session.measured, self._session.measured_name or ""
@@ -734,6 +737,7 @@ class MainWindow(QMainWindow):
         self._points.setValue(sweep.n_points)
 
     def _after_synth_change(self) -> None:
+        self._fit_plots_after_analysis = True
         self._sync_sweep_controls()
         self._after_circuit_change()
 
@@ -1395,6 +1399,9 @@ class MainWindow(QMainWindow):
         assert isinstance(result, AnalysisResult)
         self._session.analysis = result
         self._plots.set_result(result)
+        if self._fit_plots_after_analysis:
+            self._plots.auto_range()
+            self._fit_plots_after_analysis = False
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
@@ -1424,6 +1431,7 @@ class MainWindow(QMainWindow):
         self._limits_panel.set_pass_fail_text("  ".join(parts))
 
     def _on_analyze_failed(self, message: str) -> None:
+        self._fit_plots_after_analysis = False
         self._status.setText(tr("Analysis failed"))
         text = message.strip() or "Unknown analysis error"
         QMessageBox.critical(self, tr("Analysis failed"), text)

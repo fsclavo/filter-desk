@@ -467,6 +467,11 @@ class PlotPanel(QWidget):
         self._curve_zin_abs_meas.setData(fm, np.asarray(np.abs(measured.zin_ohm)))
         self._smith.set_measured_s_params(fm, measured.s11, measured.s22)
 
+    def auto_range(self) -> None:
+        """Fit every Cartesian plot once without leaving auto-range latched."""
+        for plot in self._plots:
+            plot.getViewBox().autoRange(padding=0.05)
+
     def set_result(self, result: AnalysisResult | None) -> None:
         self._result = result
         if result is None:

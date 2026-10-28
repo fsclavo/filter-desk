@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.28.2 — 2026-10-28
+
+### Fixed
+
+- After a deliberate synthesis, band-wizard apply, response scaling or project
+  load, the frequency plots fit their data again even if the user had previously
+  panned or zoomed. The one-shot fit does not keep auto-range latched during
+  marker tuning.
+
 ## v0.28.1 — 2026-10-28
 
 ### Fixed

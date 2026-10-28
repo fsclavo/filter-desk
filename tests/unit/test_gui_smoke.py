@@ -310,6 +310,38 @@ def test_measured_overlay_toggles() -> None:
     assert app is not None
 
 
+def test_plot_auto_range_recovers_after_manual_view() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    result = session.analysis
+    assert result is not None
+    panel = PlotPanel()
+    panel.resize(900, 600)
+    panel.show()
+    app.processEvents()
+    panel.set_result(result)
+    app.processEvents()
+    view = panel._mag.getViewBox()
+    view.disableAutoRange()
+    view.setXRange(0.0, 1.0)
+    view.setYRange(0.0, 1.0)
+    panel.auto_range()
+    app.processEvents()
+    import math
+
+    x_range, y_range = view.viewRange()
+    assert x_range[0] <= math.log10(float(result.frequency_hz[0])) <= x_range[1]
+    assert y_range[0] < y_range[1]
+    panel.close()
+    assert app is not None
+
+
 def test_extra_response_plots_populate() -> None:
     from PySide6.QtWidgets import QApplication
 
@@ -1365,6 +1397,31 @@ def test_main_window_band_wizard_warns_on_bad_snap(
 
     assert warnings
     assert any("Snap changed the response" in str(arg) for arg in warnings[0])
+    window.close()
+    assert app is not None
+
+
+def test_main_window_fits_plots_after_synthesis(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    result = session.analysis
+    assert result is not None
+    window = mw.MainWindow(session, auto_run=False)
+    calls: list[bool] = []
+    monkeypatch.setattr(window._plots, "auto_range", lambda: calls.append(True))
+    window._fit_plots_after_analysis = True
+    window._on_analyze_finished(result)
+
+    assert calls == [True]
+    assert not window._fit_plots_after_analysis
     window.close()
     assert app is not None
 
