@@ -23,6 +23,9 @@ def test_find_band_variants() -> None:
     assert find_band("40").name == "40 m"
     assert find_band("40 m").name == "40 m"
     assert find_band("20M").name == "20 m"
+    assert find_band("2m").name == "2 m"
+    assert find_band("1.25m").name == "1.25 m"
+    assert find_band("70cm").name == "70 cm"
     with pytest.raises(KeyError):
         find_band("11m")
 
@@ -90,9 +93,12 @@ def test_cli_invalid_band(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_bands_table_sane() -> None:
-    assert len(BANDS) >= 10
+    assert len(BANDS) >= 14
     for band in BANDS:
         assert 0.0 < band.low_hz < band.high_hz
+    assert find_band("2m").low_hz == pytest.approx(144e6)
+    assert find_band("1.25m").high_hz == pytest.approx(225e6)
+    assert find_band("70cm").high_hz == pytest.approx(450e6)
 
 
 def test_rejection_presets_bsf() -> None:

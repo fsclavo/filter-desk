@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.27.1 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.28.0 · **Released:**
 [v0.27.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.1) ·
 **Previous:**
 [v0.27.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.27.0) ·
-**Next:** v0.28.0 planning.
+**Next:** v0.28.0 release (VHF/UHF presets, pending CI/tag).
 
-**Verification:** local suite **1079 passed** with ngspice (3 skipped without); coverage **83.97 %**.
+**Verification:** local suite **1091 passed** with ngspice (3 skipped without); coverage **83.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40766327520
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40767969876
 
@@ -56,6 +56,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Unified band filter wizard: Quick LP/HP/BP/BS presets plus a Guided
       requirements → candidate-order table workflow for every amateur and AM/FM
       broadcast preset; optional E24 snap; equal-port BPF/BSF use odd orders.
+- [x] VHF/UHF presets: 2 m (144–148 MHz), 1.25 m (222–225 MHz, Region 2) and
+      70 cm (420–450 MHz) added to the wizard and CLI.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
 - [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project
@@ -338,6 +340,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       - 2026-10-28 v0.27.1: the GUI restricts AM/FM broadcast presets to
         Band-stop (notch); the wizard now applies its band sweep to the visible
         range controls and restores them on undo.
+      - 2026-10-28 v0.28.0: added 2 m, 1.25 m (Region 2) and 70 cm presets.
 
 - [ ] **Automatic sweep fit:** suggest a plotting range per filter kind
       (e.g. HPF 140 MHz ≈ 50 M–1 G), including harmonic coverage for TX LPF,

@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.28.0 — 2026-10-28
+
+### Added
+
+- VHF/UHF band presets: **2 m** (144–148 MHz), **1.25 m** (222–225 MHz,
+  Region 2) and **70 cm** (420–450 MHz) in the GUI wizard and the `bands` /
+  `synthesize --band` CLI paths.
+
 ## v0.27.1 — 2026-10-28
 
 ### Fixed

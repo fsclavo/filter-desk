@@ -26,7 +26,7 @@ build sheet and a comparison with a VNA measurement.
 
 Typical amateur-radio jobs:
 
-- **Transmit low-pass filter** for an HF/VHF transmitter or QRP rig.
+- **Transmit low-pass filter** for an HF/VHF/UHF transmitter or QRP rig.
 - **Receive band-pass filter** for a noisy HF band or a contest receiver.
 - **AM/FM broadcast rejection** with a band-stop notch.
 - **Output transformer, unun or balun** for an antenna or a matching network.

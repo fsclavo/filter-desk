@@ -365,7 +365,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser(
         "bands",
-        help="List amateur band presets (160 m–6 m)",
+        help="List amateur band presets (160 m–70 cm)",
     )
 
     atten = sub.add_parser(

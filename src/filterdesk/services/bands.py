@@ -39,7 +39,8 @@ class Band:
         return math.sqrt(self.low_hz * self.high_hz)
 
 
-#: Approximate amateur allocations (Hz), IARU region-agnostic common ranges.
+#: Approximate amateur allocations (Hz), common IARU ranges where possible.
+#: 1.25 m is a Region 2 allocation; 70 cm uses a broad 420-450 MHz range.
 BANDS: tuple[Band, ...] = (
     Band("160 m", 1.8e6, 2.0e6),
     Band("80 m", 3.5e6, 4.0e6),
@@ -52,6 +53,9 @@ BANDS: tuple[Band, ...] = (
     Band("12 m", 24.89e6, 24.99e6),
     Band("10 m", 28.0e6, 29.7e6),
     Band("6 m", 50.0e6, 54.0e6),
+    Band("2 m", 144.0e6, 148.0e6),
+    Band("1.25 m", 222.0e6, 225.0e6),
+    Band("70 cm", 420.0e6, 450.0e6),
 )
 
 #: Broadcast bands commonly notched out (band-stop presets).

@@ -61,8 +61,8 @@ projects**. A good first path is:
 
 | What you want | Where to start |
 | --- | --- |
-| Receive band-pass for 160–10 m | **Design → Band filter wizard…** → Guided → Band-pass |
-| Transmit low-pass for an HF/VHF rig | **Design → Band filter wizard…** → Quick → Transmit LPF |
+| Receive band-pass for 160 m–70 cm | **Design → Band filter wizard…** → Guided → Band-pass |
+| Transmit low-pass for an HF/VHF/UHF rig | **Design → Band filter wizard…** → Quick → Transmit LPF |
 | Reject AM or FM broadcast | **Design → Band filter wizard…** → Band-stop |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
@@ -323,7 +323,7 @@ specification edits require an explicit **Synthesize**.
 | Workflow | How to trigger | Notes |
 | --- | --- | --- |
 | **Synthesize + Analyze** | `Ctrl+Return`, toolbar **Synthesize**, Design menu | builds circuit from spec + sweep, then analyzes |
-| **Band filter wizard** | **Design → Band filter wizard…** | Quick LP/HP/BP/BS preset for 160 m–6 m and AM/FM notches, or Guided band + requirements → order search → apply, optional E24 snap |
+| **Band filter wizard** | **Design → Band filter wizard…** | Quick LP/HP/BP/BS preset for 160 m–70 cm and AM/FM notches, or Guided band + requirements → order search → apply, optional E24 snap |
 | **Update spec from circuit** | **Design → Update spec from circuit…** | derive cutoff/center and bandwidth from the current analyzed response; family, order and topology are kept, and the circuit is not changed |
 | **Harmonic readout** | **Harmonics** dock | table of `|S21|` and suppression at 2f, 3f, … of the fundamental |
 | **Attenuator pad** | **Tools → Attenuator pad…** | designs a symmetric T/Pi pad and inserts it at the input |
@@ -715,10 +715,12 @@ are included automatically.
 ### Band filter wizard
 
 **Design → Band filter wizard…** combines the old quick presets and receive-BPF
-wizard in one dialog. It covers every amateur allocation from 160 m to 6 m and
+wizard in one dialog. It covers every amateur allocation from 160 m to 70 cm and
 the AM/FM broadcast rejection bands. Amateur bands support LPF, HPF, BPF and
 BSF; AM/FM broadcast presets are rejection-only and offer just **Band-stop
-(notch)**. All designs are Chebyshev-I.
+(notch)**. The 1.25 m preset is a Region 2 allocation, and 70 cm uses the broad
+420–450 MHz range; verify the limits that apply in your country. All designs are
+Chebyshev-I.
 
 - **Quick preset** uses the fixed order-5 recipe, matching the previous
   **Band preset** dialog. It is the fastest path for a transmit LPF or an
