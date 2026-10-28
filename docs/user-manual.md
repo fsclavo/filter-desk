@@ -91,6 +91,7 @@ Download the file for your platform from the
 | Windows | `FilterDesk-windows-x86_64.zip` | portable bundle |
 | Linux | `FilterDesk-x86_64.AppImage` | single-file app, **glibc ≥ 2.35** (Ubuntu 22.04+) |
 | Linux | `FilterDesk-linux-x86_64.tar.gz` | portable bundle |
+| Debian/Ubuntu | `FilterDesk-<ver>-amd64.deb` | system package; `sudo apt install ./FilterDesk-<ver>-amd64.deb` |
 
 The launcher is **GUI-first**: double-click it, or run it with no arguments, to
 open the desktop application. Passing command-line arguments (for example

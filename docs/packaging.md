@@ -40,6 +40,7 @@ Notes:
 | Windows x86_64 | `FilterDesk-windows-x86_64.zip` | portable onedir bundle |
 | Linux x86_64 | `FilterDesk-x86_64.AppImage` | **single-file app**; **glibc ≥ 2.35** (built on Ubuntu 22.04) |
 | Linux x86_64 | `FilterDesk-linux-x86_64.tar.gz` | portable onedir bundle |
+| Debian/Ubuntu amd64 | `FilterDesk-<ver>-amd64.deb` | **system package**; installs under `/opt/filterdesk` |
 
 ### Windows installer
 
@@ -73,15 +74,18 @@ LGPL-3.0 is compliant.
 2. `windows` job: sync → PyInstaller → licenses → smoke → `zip` → NSIS
    **installer** → upload artifacts.
 3. `appimage` job (ubuntu-22.04): builds the AppImage → upload artifact.
-4. `release` job (`needs: [linux, windows, appimage]`): downloads the artifacts
-   and publishes a **GitHub Release** for the tag attaching the Windows installer
-   + zip, the Linux AppImage, and the tar.gz, with generated release notes.
+4. `deb` job (ubuntu-22.04): builds the onedir bundle and `.deb`, then verifies
+   install/self-test/removal in a clean Ubuntu 22.04 container.
+5. `release` job (`needs: [linux, windows, appimage, deb]`): downloads the
+   artifacts and publishes a **GitHub Release** for the tag attaching the Windows
+   installer + zip, the Linux AppImage, the tar.gz and the `.deb`, with generated
+   release notes.
 
 To cut a release (bump `pyproject.toml` + `src/filterdesk/__init__.py` first):
 
 ```bash
-git tag v0.25.1
-git push origin v0.25.1
+git tag v0.26.0
+git push origin v0.26.0
 ```
 
 ## AppImage
@@ -91,6 +95,28 @@ runs `appimagetool` (`--appimage-extract-and-run`, no FUSE needed to build). It
 needs `dist/FilterDesk/` to exist first. The desktop entry and icon live in
 `packaging/appimage/`. Verified locally: the produced AppImage runs `--version`
 and launches the GUI.
+
+## Debian/Ubuntu package
+
+`packaging/debian/build_deb.sh` turns the same onedir bundle into
+`FilterDesk-<ver>-amd64.deb`. It installs the payload under
+`/opt/filterdesk`, adds `/usr/bin/filterdesk`, a desktop entry and the 256 px
+icon, and copies the Apache-2.0 copyright plus third-party notice into
+`/usr/share/doc/filterdesk/`.
+
+Build it after the PyInstaller and license steps:
+
+```bash
+bash packaging/debian/build_deb.sh
+sudo apt install ./FilterDesk-0.26.0-amd64.deb
+filterdesk --self-test
+sudo apt remove filterdesk
+```
+
+The package targets Ubuntu 22.04+/Debian 12+ (glibc 2.35) and depends on the
+same X/GL runtime libraries as the AppImage. `packaging/debian/verify_deb.sh`
+performs the clean-container check: install, desktop/launcher assertions,
+headless `--self-test`, removal and leftover-file check.
 
 ## Package acceptance
 
@@ -107,8 +133,9 @@ native project in a temporary directory. The command exits non-zero on failure.
 CI runs the acceptance pass on clean GitHub runners:
 
 - **`package-acceptance-linux`** builds the onedir bundle, runs `--self-test`
-  with a temporary `HOME`/XDG tree, builds the AppImage, and repeats the test via
-  `--appimage-extract-and-run` (no FUSE required).
+  with a temporary `HOME`/XDG tree, builds the AppImage, repeats the test via
+  `--appimage-extract-and-run` (no FUSE required), then builds the `.deb` and
+  verifies install/self-test/removal in a clean Ubuntu 22.04 container.
 - **`package-acceptance-windows`** builds the bundle, runs `--self-test`, builds
   the NSIS installer, installs it silently, checks the installed executable,
   uninstaller and desktop shortcut, runs the installed app's `--self-test`, and

@@ -39,7 +39,7 @@ Typical amateur-radio jobs:
 
 You do not need to know the synthesis mathematics first.
 
-1. Download the Windows installer or Linux AppImage from
+1. Download the Windows installer, Linux AppImage or Debian/Ubuntu package from
    [Releases](https://github.com/fsclavo/filter-desk/releases) and open FilterDesk.
 2. For a **receive filter**, use **Design → HF band filter wizard…**, choose the
    band and required rejection, then press **Design**.
@@ -153,6 +153,7 @@ Prebuilt packages for Windows and Linux are published on the
 | Windows | `FilterDesk-windows-x86_64.zip` | portable bundle |
 | Linux | `FilterDesk-x86_64.AppImage` | single-file app (needs **glibc ≥ 2.35**, i.e. Ubuntu 22.04+) |
 | Linux | `FilterDesk-linux-x86_64.tar.gz` | portable bundle |
+| Debian/Ubuntu | `FilterDesk-<ver>-amd64.deb` | system package; `sudo apt install ./FilterDesk-<ver>-amd64.deb` |
 
 The launcher is GUI-first: double-click it to open the desktop app. Passing CLI
 arguments (for example `FilterDesk --version`) uses the command-line interface.

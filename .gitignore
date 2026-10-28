@@ -24,6 +24,7 @@ venv/
 
 # Packaging artifacts
 *.AppImage
+*.deb
 /FilterDesk.spec
 
 # Local LCT corpus may contain non-redistributable files — keep private

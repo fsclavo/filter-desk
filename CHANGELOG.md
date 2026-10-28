@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.26.0 — 2026-10-28
+
+### Added
+
+- Self-contained Debian/Ubuntu `amd64` package (`FilterDesk-<ver>-amd64.deb`)
+  with an `/opt/filterdesk` payload, `/usr/bin/filterdesk` launcher, desktop
+  entry, icon and documentation.
+- Release CI builds the `.deb` and verifies install, headless self-test and
+  removal in a clean Ubuntu 22.04 container.
+
 ## v0.25.1 — 2026-10-28
 
 ### Fixed

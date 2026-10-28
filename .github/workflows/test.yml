@@ -118,12 +118,17 @@ jobs:
             XDG_DATA_HOME="$clean/data" \
             QT_QPA_PLATFORM=offscreen \
             ./FilterDesk-x86_64.AppImage --appimage-extract-and-run --self-test
+      - name: Build Debian package
+        run: bash packaging/debian/build_deb.sh
+      - name: Verify Debian package in a clean container
+        run: bash packaging/debian/verify_deb.sh "$(ls FilterDesk-*-amd64.deb)"
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: acceptance-linux
           path: |
             FilterDesk-linux-x86_64.tar.gz
             FilterDesk-x86_64.AppImage
+            FilterDesk-*-amd64.deb
           retention-days: 7
 
   package-acceptance-windows:

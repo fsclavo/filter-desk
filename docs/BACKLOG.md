@@ -4,11 +4,11 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.25.1 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.26.0 · **Released:**
 [v0.25.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.1) ·
 **Previous:**
 [v0.25.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.25.0) ·
-**Next:** v0.26.0 planning.
+**Next:** v0.26.0 release (`.deb` packaging implemented, pending CI/tag).
 
 **Verification:** local suite **1023 passed** with ngspice (3 skipped without); coverage **83.40 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40733452074
@@ -279,6 +279,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       Add a clean-container install/uninstall check to the release workflow.
       Out of scope for now: `arm64`; macOS packaging is deferred (needs
       signing/notarization decisions). (M)
+      - 2026-10-28 implementation: `packaging/debian/build_deb.sh` and
+        `verify_deb.sh`; release/acceptance workflows build the `.deb` and run
+        install/self-test/removal in `ubuntu:22.04`. Pending CI and v0.26.0 tag.
 
 - [ ] **Unify Band Preset and HF band wizard:** replace the
       `Design → Band preset…` dialog with a single band-filter wizard (e.g.
