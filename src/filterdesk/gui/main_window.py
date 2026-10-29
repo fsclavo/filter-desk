@@ -599,7 +599,6 @@ class MainWindow(QMainWindow):
             help_menu: tr("Documentation, model confidence and About."),
         }
         for menu, tip in menu_tips.items():
-            menu.setToolTipsVisible(True)
             menu.menuAction().setToolTip(tip)
             menu.menuAction().setStatusTip(tip)
 
