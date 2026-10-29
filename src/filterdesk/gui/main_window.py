@@ -606,7 +606,7 @@ class MainWindow(QMainWindow):
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
         if self._session.analysis is not None:
-            QTimer.singleShot(0, self._plots.auto_range)
+            QTimer.singleShot(0, self, self._plots.auto_range)
         self._plots.set_monte_carlo(None)
         self._plots.set_measured(
             self._session.measured, self._session.measured_name or ""
