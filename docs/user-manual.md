@@ -449,6 +449,8 @@ are hidden until a file is loaded and while the overlay is disabled.
 The native project file stores the specification, circuit, sweep settings,
 markers, limits, per-component tolerances and tune steps, the TX Power setting,
 the harmonic-readout fundamental, and metadata; it is reloadable and editable.
+Closing with unsaved changes asks **Save / Discard / Cancel**; cancelling the
+save dialog leaves the application open.
 
 **File → Recent projects** lists the last ten projects opened or saved, most
 recent first. Missing files are removed automatically; **Clear recent projects**

@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.31.1 — 2026-10-29
+
+### Added
+
+- Closing a dirty project now asks **Save / Discard / Cancel**. Cancelling the
+  save dialog keeps the application open; successful saves close normally.
+
 ## v0.31.0 — 2026-10-29
 
 ### Added

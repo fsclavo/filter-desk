@@ -2130,13 +2130,12 @@ class MainWindow(QMainWindow):
     def _show_confidence(self) -> None:
         ConfidenceDialog(self).exec()
 
-    def _save_project(self) -> None:
+    def _save_project(self) -> bool:
         if self._session.path:
-            self._write_project(Path(self._session.path))
-        else:
-            self._save_project_as()
+            return self._write_project(Path(self._session.path))
+        return self._save_project_as()
 
-    def _save_project_as(self) -> None:
+    def _save_project_as(self) -> bool:
         path, _ = QFileDialog.getSaveFileName(
             self,
             tr("Save FilterDesk project"),
@@ -2144,17 +2143,17 @@ class MainWindow(QMainWindow):
             "FilterDesk (*.filterdesk.json)",
         )
         if not path:
-            return
+            return False
         if not path.endswith(".json"):
             path += ".filterdesk.json"
-        self._write_project(Path(path))
+        return self._write_project(Path(path))
 
-    def _write_project(self, path: Path) -> None:
+    def _write_project(self, path: Path) -> bool:
         try:
             self._apply_spec_and_sweep_from_ui()
         except Exception as exc:  # noqa: BLE001
             QMessageBox.warning(self, tr("Invalid specification"), _exc_text(exc))
-            return
+            return False
         try:
             if self._session.title.strip() in ("", DEFAULT_TITLE):
                 self._session.title = _project_stem(str(path))
@@ -2165,8 +2164,10 @@ class MainWindow(QMainWindow):
             self._status.setText(tr("Saved {path}", path=path))
             add_recent(path)
             self._refresh_recent_menu()
+            return True
         except Exception as exc:  # noqa: BLE001
             QMessageBox.critical(self, tr("Save failed"), _exc_text(exc))
+            return False
 
     def _import_touchstone(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -2455,7 +2456,28 @@ class MainWindow(QMainWindow):
             # The C++ QThread was already deleted; nothing left to stop.
             return
 
+    def _confirm_close(self) -> bool:
+        if not self._session.dirty:
+            return True
+        answer = QMessageBox.question(
+            self,
+            tr("Unsaved changes"),
+            tr("Save changes before closing? Unsaved work will be lost."),
+            QMessageBox.StandardButton.Save
+            | QMessageBox.StandardButton.Discard
+            | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Save,
+        )
+        if answer == QMessageBox.StandardButton.Cancel:
+            return False
+        if answer == QMessageBox.StandardButton.Save:
+            return self._save_project()
+        return True
+
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802
+        if not self._confirm_close():
+            event.ignore()
+            return
         self._save_window_state()
         self._stop_thread(self._analyze_thread, 500)
         self._stop_thread(self._import_thread, 500)

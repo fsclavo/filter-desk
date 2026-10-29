@@ -63,6 +63,43 @@ def test_write_project_names_from_filename(tmp_path: Path) -> None:
     assert app is not None
 
 
+def test_confirm_close_save_discard_cancel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.synthesize_and_analyze()
+    session.dirty = True
+    window = mw.MainWindow(session, auto_run=False)
+    answers = [
+        mw.QMessageBox.StandardButton.Cancel,
+        mw.QMessageBox.StandardButton.Discard,
+        mw.QMessageBox.StandardButton.Save,
+    ]
+    monkeypatch.setattr(
+        mw.QMessageBox, "question", lambda *args, **kwargs: answers.pop(0)
+    )
+    assert not window._confirm_close()
+    assert window._confirm_close()
+
+    saved: list[bool] = []
+    monkeypatch.setattr(
+        window, "_save_project", lambda: saved.append(True) or True
+    )
+    assert window._confirm_close()
+    assert saved == [True]
+
+    session.dirty = False
+    assert window._confirm_close()
+    window.close()
+    assert app is not None
+
+
 def test_open_project_is_not_dirty(tmp_path: Path) -> None:
     from PySide6.QtWidgets import QApplication
 

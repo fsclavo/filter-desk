@@ -52,6 +52,22 @@ def _isolate_settings() -> object:
 
 
 @pytest.fixture(autouse=True)
+def _dismiss_close_prompt(monkeypatch: pytest.MonkeyPatch) -> object:
+    """Discard unsaved changes automatically when tests close a dirty window."""
+    from PySide6.QtWidgets import QMessageBox
+
+    original = QMessageBox.question
+
+    def _question(parent, title, text, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if title == "Unsaved changes":
+            return QMessageBox.StandardButton.Discard
+        return original(parent, title, text, *args, **kwargs)
+
+    monkeypatch.setattr(QMessageBox, "question", _question)
+    yield None
+
+
+@pytest.fixture(autouse=True)
 def _reset_language() -> object:
     """Always run tests in English so translation state cannot leak between them."""
     from filterdesk.gui.i18n import Language, set_language

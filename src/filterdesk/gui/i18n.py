@@ -639,6 +639,10 @@ _ES.update(
         "Delete element": "Eliminar elemento",
         "Delete {ref}": "Eliminar {ref}",
         "Discard the current unsaved changes?": ("¿Descartar los cambios sin guardar?"),
+        "Unsaved changes": "Cambios sin guardar",
+        "Save changes before closing? Unsaved work will be lost.": (
+            "¿Guardar los cambios antes de cerrar? Si no, se perderá el trabajo."
+        ),
         "Edit element": "Editar elemento",
         "Edit limits": "Editar límites",
         "Edit markers": "Editar marcadores",

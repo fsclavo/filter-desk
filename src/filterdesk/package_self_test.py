@@ -35,6 +35,7 @@ def run_package_self_test(*, quiet: bool = False) -> int:
         window = MainWindow(session, auto_run=False)
         window.show()
         app.processEvents()
+        window._session.dirty = False
         window.close()
         app.processEvents()
 
