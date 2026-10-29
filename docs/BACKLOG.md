@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.29.2 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.29.3 · **Released:**
 [v0.29.2](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.2) ·
 **Previous:**
 [v0.29.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.1) ·
-**Next:** v0.30.0 planning.
+**Next:** v0.29.3 release (stale cursor fix, pending CI/tag).
 
-**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.05 %**.
+**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.07 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40882645254
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40884099552
 

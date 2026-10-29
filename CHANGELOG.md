@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.29.3 — 2026-10-29
+
+### Fixed
+
+- A new analysis now hides the stale plot cursor before fitting the view. A
+  cursor left outside the new frequency range no longer expands the X axis.
+
 ## v0.29.2 — 2026-10-29
 
 ### Fixed

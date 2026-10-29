@@ -518,6 +518,9 @@ class PlotPanel(QWidget):
             self._update_measured()
             return
 
+        for cursor in self._cursors:
+            cursor.setVisible(False)
+        self._cursor_freq_hz = None
         f = np.asarray(result.frequency_hz, dtype=float)
         self._freq = f
         self._s21_db = np.asarray(mag_db(result.s21), dtype=float)

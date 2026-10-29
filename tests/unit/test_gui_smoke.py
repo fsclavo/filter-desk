@@ -1454,10 +1454,18 @@ def test_auto_fit_runs_after_harmonics_refresh(
     session.set_spec(band_preset_spec(next_band, BandKind.BSF))
     session.sweep = band_sweep(next_band)
     second = session.synthesize_and_analyze()
+    for cursor in window._plots._cursors:
+        cursor.setPos(math.log10(50e6))
+        cursor.setVisible(True)
+    window._plots._cursor_freq_hz = 50e6
     seen: list[float] = []
+    cursor_visibility: list[bool] = []
 
     def _capture_auto_range() -> None:
         seen.extend(line.value() for line in window._plots._harmonic_lines)
+        cursor_visibility.extend(
+            cursor.isVisible() for cursor in window._plots._cursors
+        )
 
     monkeypatch.setattr(window._plots, "auto_range", _capture_auto_range)
     window._fit_plots_after_analysis = True
@@ -1466,6 +1474,8 @@ def test_auto_fit_runs_after_harmonics_refresh(
     assert seen
     assert all(value > math.log10(second.frequency_hz[0]) for value in seen)
     assert all(value not in seen for value in old_lines)
+    assert cursor_visibility and not any(cursor_visibility)
+    assert window._plots.cursor_frequency_hz() is None
     window.close()
     assert app is not None
 
