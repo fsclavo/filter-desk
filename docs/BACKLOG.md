@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.29.3 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.29.4 · **Released:**
 [v0.29.3](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.3) ·
 **Previous:**
 [v0.29.2](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.2) ·
-**Next:** v0.30.0 planning.
+**Next:** v0.29.4 release (plot-state hardening, pending CI/tag).
 
-**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.07 %**.
+**Verification:** local suite **1101 passed**, 4 skipped (ngspice unavailable); coverage **84.06 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40890002563
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40891725115
 
@@ -58,6 +58,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       broadcast preset; optional E24 snap; equal-port BPF/BSF use odd orders.
 - [x] VHF/UHF presets: 2 m (144–148 MHz), 1.25 m (222–225 MHz, Region 2) and
       70 cm (420–450 MHz) added to the wizard and CLI.
+- [x] Plot-state hardening: full preset-matrix regression verifies current
+      harmonics, hidden cursors and data range at auto-fit time.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
 - [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project

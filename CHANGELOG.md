@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.29.4 — 2026-10-29
+
+### QA
+
+- Added a full preset-matrix regression test that verifies the plot state at
+  auto-fit time: no stale cursors, only current harmonic markers, and the data
+  range matches the active sweep.
+
 ## v0.29.3 — 2026-10-29
 
 ### Fixed
