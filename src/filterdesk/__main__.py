@@ -43,6 +43,8 @@ from filterdesk.components_std import (
     AttenuatorKind,
     BalunError,
     BalunKind,
+    CoaxStubError,
+    CoaxStubKind,
     ESeries,
     MatchingError,
     MatchingTopology,
@@ -57,6 +59,7 @@ from filterdesk.components_std import (
     design_attenuator,
     design_balun,
     design_balun_options,
+    design_coax_stub,
     design_matching,
     design_microstrip,
     design_quarter_wave_transformer,
@@ -562,6 +565,26 @@ def build_parser() -> argparse.ArgumentParser:
     stub.add_argument("--frequency", default="1G", help="Design frequency")
     _add_microstrip_substrate(stub)
     stub.add_argument("--json", action="store_true", help="Emit JSON")
+
+    coax = sub.add_parser(
+        "coax-stub",
+        help="Coaxial quarter-wave/half-wave notch stub calculator",
+    )
+    coax.add_argument("--z0", default="50", help="Cable Z0 in ohms")
+    coax.add_argument("--frequency", required=True, help="Notch frequency")
+    coax.add_argument(
+        "--vf", type=float, default=0.66, help="Velocity factor (default 0.66)"
+    )
+    coax.add_argument(
+        "--kind",
+        choices=[kind.value for kind in CoaxStubKind],
+        default=CoaxStubKind.OPEN_QUARTER.value,
+        help="open_quarter (lambda/4) or short_half (lambda/2)",
+    )
+    coax.add_argument(
+        "--loss", type=float, default=0.0, help="Cable loss in dB/m"
+    )
+    coax.add_argument("--json", action="store_true", help="Emit JSON")
 
     dist = sub.add_parser(
         "distributed",
@@ -2670,6 +2693,48 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  status: {tr_design.status_text}")
         for note in tr_design.notes:
             print(f"  note: {note}")
+        return 0
+
+    if args.command == "coax-stub":
+        try:
+            coax_design = design_coax_stub(
+                parse_si(str(args.z0)),
+                parse_si(str(args.frequency)),
+                float(args.vf),
+                kind=CoaxStubKind(str(args.kind)),
+                loss_db_per_m=float(args.loss),
+            )
+        except (CoaxStubError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        payload = {
+            "kind": coax_design.kind.value,
+            "frequency_hz": coax_design.frequency_hz,
+            "z0_ohm": coax_design.z0_ohm,
+            "velocity_factor": coax_design.velocity_factor,
+            "electrical_length_deg": coax_design.electrical_length_deg,
+            "wavelength_m": coax_design.wavelength_m,
+            "length_m": coax_design.length_m,
+            "loss_db_per_m": coax_design.loss_db_per_m,
+            "loss_db": coax_design.loss_db,
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2))
+            return 0
+        print(
+            f"Coax {coax_design.kind.value} notch at "
+            f"{format_engineering(coax_design.frequency_hz, 'Hz')}"
+        )
+        print(
+            f"  Z0 = {coax_design.z0_ohm:g} Ohm, vf = "
+            f"{coax_design.velocity_factor:g}"
+        )
+        print(
+            f"  Length = {coax_design.length_m * 1000.0:.2f} mm "
+            f"({coax_design.electrical_length_deg:g} deg), "
+            f"lambda = {coax_design.wavelength_m * 1000.0:.2f} mm"
+        )
+        print(f"  Loss estimate = {coax_design.loss_db:.4f} dB")
         return 0
 
     if args.command in {"microstrip", "qwt", "stub"}:

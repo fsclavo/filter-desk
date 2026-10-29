@@ -49,6 +49,9 @@ from filterdesk.components_std import (
     BalunDesign,
     BalunError,
     BalunKind,
+    CoaxStubDesign,
+    CoaxStubError,
+    CoaxStubKind,
     ESeries,
     MatchingDesign,
     MatchingError,
@@ -57,6 +60,7 @@ from filterdesk.components_std import (
     design_air_coil,
     design_attenuator,
     design_balun_options,
+    design_coax_stub,
     design_matching,
     design_microstrip,
     design_toroid,
@@ -1911,6 +1915,82 @@ class MicrostripDialog(QDialog):
             )
         else:
             self._length_result.setText("-")
+
+
+class CoaxStubDialog(QDialog):
+    """Shunt coaxial stub notch calculator (lambda/4 open or lambda/2 short)."""
+
+    _KINDS: tuple[tuple[CoaxStubKind, str], ...] = (
+        (CoaxStubKind.OPEN_QUARTER, tr("Open λ/4")),
+        (CoaxStubKind.SHORT_HALF, tr("Shorted λ/2")),
+    )
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Coaxial stub notch"))
+        self._design: CoaxStubDesign | None = None
+        self._z0 = EngineeringLineEdit()
+        self._z0.setText("50")
+        self._frequency = EngineeringLineEdit()
+        self._frequency.setText("146M")
+        self._vf = EngineeringLineEdit()
+        self._vf.setText("0.66")
+        self._kind = QComboBox()
+        for _kind, label in self._KINDS:
+            self._kind.addItem(label)
+        self._loss = EngineeringLineEdit()
+        self._loss.setText("0")
+        self._length = QLabel("-")
+        self._wavelength = QLabel("-")
+        self._loss_result = QLabel("-")
+        self._note = QLabel(
+            tr(
+                "Shunt stub across the feedline. Ideal narrowband notch; "
+                "verify connectors, cable loss and the real velocity factor."
+            )
+        )
+        self._note.setWordWrap(True)
+        form = QFormLayout(self)
+        form.addRow(tr("Cable Z0 (Ohm)"), self._z0)
+        form.addRow(tr("Notch frequency"), self._frequency)
+        form.addRow(tr("Velocity factor"), self._vf)
+        form.addRow(tr("Stub type"), self._kind)
+        form.addRow(tr("Cable loss (dB/m)"), self._loss)
+        form.addRow(tr("Physical length"), self._length)
+        form.addRow(tr("Guided wavelength"), self._wavelength)
+        form.addRow(tr("Estimated loss"), self._loss_result)
+        form.addRow(self._note)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
+        for field in (self._z0, self._frequency, self._vf, self._loss):
+            field.editingFinished.connect(self._recompute)
+        self._kind.currentIndexChanged.connect(self._recompute)
+        self._recompute()
+
+    def current_design(self) -> CoaxStubDesign | None:
+        return self._design
+
+    def _recompute(self) -> None:
+        try:
+            design = design_coax_stub(
+                parse_si(self._z0.text().strip() or "0"),
+                parse_si(self._frequency.text().strip() or "0"),
+                float(self._vf.text().strip() or "0"),
+                kind=self._KINDS[self._kind.currentIndex()][0],
+                loss_db_per_m=float(self._loss.text().strip() or "0"),
+            )
+        except (CoaxStubError, ValueError):
+            self._design = None
+            self._length.setText("-")
+            self._wavelength.setText("-")
+            self._loss_result.setText("-")
+            return
+        self._design = design
+        self._length.setText(f"{design.length_m * 1000.0:.2f} mm")
+        self._wavelength.setText(f"{design.wavelength_m * 1000.0:.2f} mm")
+        self._loss_result.setText(f"{design.loss_db:.4f} dB")
 
 
 class DistributedSynthesisDialog(QDialog):

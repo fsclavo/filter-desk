@@ -258,6 +258,26 @@ _ES.update(
         "Export CSV…": "Exportar CSV…",
         "Export JSON…": "Exportar JSON…",
         "Export mixed-mode CSV": "Exportar CSV de modo mixto",
+        "Coaxial &stub notch…": "Notch con &stub coaxil…",
+        "Coaxial stub notch": "Notch con stub coaxil",
+        "Design a shunt coax stub notch.": (
+            "Diseñar un notch con stub coaxil en paralelo."
+        ),
+        "Cable Z0 (Ohm)": "Z0 del cable (Ω)",
+        "Notch frequency": "Frecuencia de notch",
+        "Velocity factor": "Factor de velocidad",
+        "Stub type": "Tipo de stub",
+        "Open λ/4": "Abierto λ/4",
+        "Shorted λ/2": "Corto λ/2",
+        "Cable loss (dB/m)": "Pérdida del cable (dB/m)",
+        "Physical length": "Longitud física",
+        "Guided wavelength": "Longitud de onda guiada",
+        "Estimated loss": "Pérdida estimada",
+        "Shunt stub across the feedline. Ideal narrowband notch; "
+        "verify connectors, cable loss and the real velocity factor.": (
+            "Stub en paralelo sobre la línea. Notch ideal de banda estrecha; "
+            "verificar conectores, pérdida del cable y el factor de velocidad real."
+        ),
         "Export mixed-mode JSON": "Exportar JSON de modo mixto",
         "Open 4-port Touchstone": "Abrir Touchstone de 4 puertos",
         "Open a 4-port Touchstone file to analyze.": (

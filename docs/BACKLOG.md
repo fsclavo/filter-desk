@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.34.1 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.35.0 · **Released:**
 [v0.34.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.34.1) ·
 **Previous:**
 [v0.34.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.34.0) ·
-**Next:** v0.35.0 planning.
+**Next:** v0.35.0 release (coax stub notch, pending CI/tag).
 
-**Verification:** local suite **1109 passed**, 4 skipped (ngspice unavailable); coverage **83.44 %**.
+**Verification:** local suite **1118 passed**, 4 skipped (ngspice unavailable); coverage **83.22 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40963990777
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40965287214
 
@@ -69,6 +69,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Contextual help: tooltips/status tips for Specification fields, plot
       tabs and main menu actions.
 - [x] Debian build hygiene: `.deb` under `dist/` and automatic staging cleanup.
+- [x] Coaxial stub notch: λ/4 open / λ/2 shorted cable calculator and CLI.
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.

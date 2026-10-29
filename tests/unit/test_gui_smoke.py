@@ -482,6 +482,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Coil calculator",
         "Transformer / balun",
         "Microstrip line",
+        "Coaxial stub notch",
         "4-port mixed-mode",
     ):
         assert not any(calculator in label for label in design_labels)

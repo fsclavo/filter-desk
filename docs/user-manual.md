@@ -68,6 +68,7 @@ projects**. A good first path is:
 | Analyze a measured 4-port balun | **Tools → 4-port mixed-mode…** |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
+| Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
 | Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
 | Compare a built filter with a VNA | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
 | Produce a BOM/build sheet | **File → Export → build sheet / BOM…** |
@@ -343,6 +344,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
+| **Coaxial stub notch** | **Tools → Coaxial stub notch…** | sizes a shunt λ/4 open or λ/2 shorted coax stub for a narrowband notch |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
@@ -610,6 +612,11 @@ Most commands accept `--json` for machine-readable output.
   and open/short stub on a built-in substrate (`--substrate FR4` or overrides
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
+- **`coax-stub`** — shunt coaxial notch stub. Use `--frequency`, `--z0`,
+  `--vf`, `--kind open_quarter|short_half` and optional `--loss` (dB/m).
+  ```bash
+  filterdesk coax-stub --frequency 146M --vf 0.66 --kind open_quarter
+  ```
 - **`distributed`** — experimental microstrip stepped-impedance low-pass
   realization (Butterworth/Chebyshev-I, order ≤ 3):
   `filterdesk distributed --family butterworth --response low_pass --order 3
@@ -900,6 +907,13 @@ and first-order conductor/dielectric loss (`dB/m` and for an optional length).
 `filterdesk qwt` sizes a quarter-wave transformer
 (`Z0 = sqrt(Z_low*Z_high)`), and `filterdesk stub` gives the width, length and
 input reactance of an open or short stub at a chosen electrical angle.
+
+**Tools → Coaxial stub notch…** (`filterdesk coax-stub`) is a separate TEM
+calculator for a shunt cable stub: an open λ/4 stub or a shorted λ/2 stub whose
+input is a short at the chosen notch frequency. It reports the physical length,
+guided wavelength and optional cable-loss estimate. It is a narrowband notch
+starting point, not a complete filter synthesis; verify the cable velocity
+factor, connectors and real loss with a VNA.
 
 Limitations: strip thickness is not included in `Z0`; conductor loss uses a
 surface-resistance/skin-depth approximation and dielectric loss the standard

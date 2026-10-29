@@ -64,6 +64,7 @@ verify the real build.
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Toroid/air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip, stub, quarter-wave | **Tools → Microstrip line…** |
+| Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
 | Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
 | Compare or trim a built filter | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
 

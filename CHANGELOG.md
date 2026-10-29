@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.35.0 — 2026-10-29
+
+### Added
+
+- **Coaxial stub notch** calculator (`filterdesk coax-stub` and Tools):
+  λ/4 open or λ/2 shorted shunt cable stub, with velocity factor, optional
+  cable loss and physical/electrical length output.
+
 ## v0.34.1 — 2026-10-29
 
 ### Fixed

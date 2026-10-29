@@ -19,6 +19,12 @@ from filterdesk.components_std.balun import (
     design_balun,
     design_balun_options,
 )
+from filterdesk.components_std.coax import (
+    CoaxStubDesign,
+    CoaxStubError,
+    CoaxStubKind,
+    design_coax_stub,
+)
 from filterdesk.components_std.e_series import (
     ESeries,
     base_values,
@@ -98,6 +104,9 @@ __all__ = [
     "BalunError",
     "BalunKind",
     "CORES",
+    "CoaxStubDesign",
+    "CoaxStubError",
+    "CoaxStubKind",
     "ESeries",
     "MatchingDesign",
     "MatchingElement",
@@ -131,6 +140,7 @@ __all__ = [
     "copper_resistance_ohm",
     "design_balun",
     "design_balun_options",
+    "design_coax_stub",
     "design_matching",
     "design_microstrip",
     "design_quarter_wave_transformer",

@@ -96,6 +96,7 @@ from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandFilterWizardDialog,
     BuildSheetDialog,
+    CoaxStubDialog,
     CoilCalculatorDialog,
     ConfidenceDialog,
     DesignSweepDialog,
@@ -568,6 +569,9 @@ class MainWindow(QMainWindow):
         act_microstrip = QAction(tr("&Microstrip line…"), self)
         act_microstrip.triggered.connect(self._run_microstrip)
         tools_menu.addAction(act_microstrip)
+        act_coax = QAction(tr("Coaxial &stub notch…"), self)
+        act_coax.triggered.connect(self._run_coax_stub)
+        tools_menu.addAction(act_coax)
         act_four_port = QAction(tr("&4-port mixed-mode…"), self)
         act_four_port.triggered.connect(self._run_four_port_mixed)
         tools_menu.addAction(act_four_port)
@@ -639,6 +643,7 @@ class MainWindow(QMainWindow):
             act_coil: tr("Calculate toroid and air-core coils."),
             act_transformer: tr("Design transformers, baluns, ununs and chokes."),
             act_microstrip: tr("Microstrip line, stub and quarter-wave calculators."),
+            act_coax: tr("Design a shunt coax stub notch."),
             act_four_port: tr("Import an .s4p and inspect mixed-mode S data."),
             act_docs: tr("Open the user manual in a browser."),
             act_confidence: tr("Inspect model validation and confidence levels."),
@@ -1163,6 +1168,9 @@ class MainWindow(QMainWindow):
         self._push_circuit_edit(new_circuit, tr("Apply output balun"))
         self._run_analyze()
         self._status.setText(tr("Applied output balun ({kind})", kind=balun.kind))
+
+    def _run_coax_stub(self) -> None:
+        CoaxStubDialog(self).exec()
 
     def _run_four_port_mixed(self) -> None:
         dialog = FourPortMixedModeDialog(self)
