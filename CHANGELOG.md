@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.29.2 — 2026-10-29
+
+### Fixed
+
+- Auto plot fitting now runs **after** harmonic markers are refreshed. Stale
+  harmonics from the previous filter no longer expand the X axis when switching
+  between quick presets.
+
 ## v0.29.1 — 2026-10-29
 
 ### Fixed

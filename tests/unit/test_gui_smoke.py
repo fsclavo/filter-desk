@@ -1423,6 +1423,53 @@ def test_main_window_band_wizard_warns_on_bad_snap(
     assert app is not None
 
 
+def test_auto_fit_runs_after_harmonics_refresh(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import math
+
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.bands import (
+        BandKind,
+        band_preset_spec,
+        band_sweep,
+        find_band,
+    )
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    session.set_spec(band_preset_spec(find_band("80 m"), BandKind.LPF))
+    session.sweep = band_sweep(find_band("80 m"))
+    first = session.synthesize_and_analyze()
+    window = mw.MainWindow(session, auto_run=False)
+    window._plots.set_result(first)
+    window._refresh_harmonics()
+    old_lines = tuple(line.value() for line in window._plots._harmonic_lines)
+    assert old_lines
+
+    next_band = find_band("70 cm")
+    session.set_spec(band_preset_spec(next_band, BandKind.BSF))
+    session.sweep = band_sweep(next_band)
+    second = session.synthesize_and_analyze()
+    seen: list[float] = []
+
+    def _capture_auto_range() -> None:
+        seen.extend(line.value() for line in window._plots._harmonic_lines)
+
+    monkeypatch.setattr(window._plots, "auto_range", _capture_auto_range)
+    window._fit_plots_after_analysis = True
+    window._on_analyze_finished(second)
+
+    assert seen
+    assert all(value > math.log10(second.frequency_hz[0]) for value in seen)
+    assert all(value not in seen for value in old_lines)
+    window.close()
+    assert app is not None
+
+
 def test_main_window_fits_plots_after_synthesis(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -1458,16 +1458,16 @@ class MainWindow(QMainWindow):
             or not math.isclose(old_range[0], new_range[0], rel_tol=1e-9)
             or not math.isclose(old_range[1], new_range[1], rel_tol=1e-9)
         )
-        if self._fit_plots_after_analysis or (
-            self._auto_sweep.isChecked() and range_changed
-        ):
-            self._plots.auto_range()
-            self._fit_plots_after_analysis = False
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
         self._refresh_harmonics()
         self._refresh_confidence()
+        if self._fit_plots_after_analysis or (
+            self._auto_sweep.isChecked() and range_changed
+        ):
+            self._plots.auto_range()
+            self._fit_plots_after_analysis = False
         metrics = self._session.summary_metrics()
         self._status.setText(
             f"Done ({result.backend}, {result.frequency_hz.shape[0]} pts)  "

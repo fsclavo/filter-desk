@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.29.1 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.29.2 · **Released:**
 [v0.29.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.1) ·
 **Previous:**
 [v0.29.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.0) ·
-**Next:** v0.30.0 planning.
+**Next:** v0.29.2 release (harmonic-aware plot refit, pending CI/tag).
 
-**Verification:** local suite **1099 passed**, 4 skipped (ngspice unavailable); coverage **84.05 %**.
+**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.05 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40875986245
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40877048886
 
