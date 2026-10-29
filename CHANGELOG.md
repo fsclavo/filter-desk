@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.30.0 — 2026-10-29
+
+### Added
+
+- **4-port mixed-mode analysis:** `filterdesk mixed-mode` reads an asymmetric
+  `.s4p` Touchstone file and returns differential/common S blocks plus the
+  cross-mode `Sdc`/`Scd` terms in JSON. This is a rigorous S-parameter transform;
+  it does not invent an EM/device model.
+
 ## v0.29.4 — 2026-10-29
 
 ### QA

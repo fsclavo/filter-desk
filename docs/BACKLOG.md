@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.29.4 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.30.0 · **Released:**
 [v0.29.4](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.4) ·
 **Previous:**
 [v0.29.3](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.3) ·
-**Next:** v0.30.0 planning.
+**Next:** v0.30.0 release (4-port mixed-mode CLI, pending CI/tag).
 
-**Verification:** local suite **1101 passed**, 4 skipped (ngspice unavailable); coverage **84.06 %**.
+**Verification:** local suite **1108 passed**, 4 skipped (ngspice unavailable); coverage **84.04 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40897006491
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40898603357
 
@@ -60,6 +60,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       70 cm (420–450 MHz) added to the wizard and CLI.
 - [x] Plot-state hardening: full preset-matrix regression verifies current
       harmonics, hidden cursors and data range at auto-fit time.
+- [x] 4-port S-parameter foundation: `.s4p` mixed-mode transform with
+      differential, common and cross-mode blocks (`filterdesk mixed-mode`).
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
 - [x] Distributed microstrip v1: line/stub domain elements, ABCD/skrf, project
@@ -382,6 +384,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain
       future work. (L)
+      - 2026-10-29 v0.30.0: added the `.s4p` mixed-mode transform and CLI
+        (`Sdd/Sdc/Scd/Scc`); a physical asymmetric/EM device model and GUI import
+        remain future work.
 - [x] **Distributed netlist v1:** line/stub elements are integrated into the
       domain, ABCD/skrf, project v2, BOM and an experimental order-1–3 LP
       synthesis. Full response coverage, higher orders, stub-only/Kuroda

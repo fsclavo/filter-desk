@@ -9,6 +9,9 @@ import math
 import sys
 from pathlib import Path
 
+import numpy as np
+from numpy.typing import NDArray
+
 from filterdesk import __version__
 from filterdesk.analysis.adapters.abcd_ladder import AnalysisError
 from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
@@ -23,6 +26,7 @@ from filterdesk.analysis.derived import (
     return_loss_db,
     vswr,
 )
+from filterdesk.analysis.four_port import FourPortError, mixed_mode_4port
 from filterdesk.analysis.harmonics import (
     HarmonicError,
     HarmonicReport,
@@ -892,10 +896,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     tsinfo = sub.add_parser(
         "touchstone-info",
-        help="Inspect a Touchstone file (.s1p / .s2p)",
+        help="Inspect a Touchstone file (.sNp)",
     )
     tsinfo.add_argument("path", type=Path, help="Touchstone file path")
     tsinfo.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit machine-readable JSON",
+    )
+
+    mixed = sub.add_parser(
+        "mixed-mode",
+        help="Mixed-mode analysis of a 4-port Touchstone file",
+    )
+    mixed.add_argument("path", type=Path, help="4-port Touchstone file (.s4p)")
+    mixed.add_argument(
         "--json",
         action="store_true",
         help="Emit machine-readable JSON",
@@ -3004,6 +3019,73 @@ def main(argv: list[str] | None = None) -> int:
             print(data.summary())
             if data.source:
                 print(f"source: {data.source}")
+        return 0
+
+    if args.command == "mixed-mode":
+        try:
+            data = read_touchstone(args.path)
+            if data.n_ports != 4:
+                raise FourPortError(
+                    f"mixed-mode requires a 4-port file (got {data.n_ports})"
+                )
+            mixed_report = mixed_mode_4port(
+                data.s, data.frequency_hz, z0_ohm=data.z0_ohm
+            )
+        except (TouchstoneError, FourPortError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            def _complex_matrix(
+                matrix: NDArray[np.complex128],
+            ) -> list[list[list[list[float]]]]:
+                return [
+                    [
+                        [[float(value.real), float(value.imag)] for value in row]
+                        for row in plane
+                    ]
+                    for plane in matrix
+                ]
+
+            print(
+                json.dumps(
+                    {
+                        "source": data.source,
+                        "n_ports": data.n_ports,
+                        "n_points": data.n_points,
+                        "frequency_hz": data.frequency_hz.tolist(),
+                        "z0_ohm": mixed_report.z0_single_ended_ohm,
+                        "z0_diff_ohm": mixed_report.z0_diff_ohm,
+                        "z0_common_ohm": mixed_report.z0_common_ohm,
+                        "sdd": _complex_matrix(mixed_report.sdd),
+                        "sdc": _complex_matrix(mixed_report.sdc),
+                        "scd": _complex_matrix(mixed_report.scd),
+                        "scc": _complex_matrix(mixed_report.scc),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(data.summary())
+            print(
+                f"mixed-mode refs: Zd={mixed_report.z0_diff_ohm:g} ohm, "
+                f"Zc={mixed_report.z0_common_ohm:g} ohm"
+            )
+            print("Frequency(Hz)  Sdd21(dB)  Sdc21(dB)  Scd21(dB)  Scc21(dB)")
+            for index, freq in enumerate(mixed_report.frequency_hz):
+                values = (
+                    mixed_report.sdd[index, 1, 0],
+                    mixed_report.sdc[index, 1, 0],
+                    mixed_report.scd[index, 1, 0],
+                    mixed_report.scc[index, 1, 0],
+                )
+                dbs = [
+                    20.0 * math.log10(max(float(np.abs(value)), 1e-15))
+                    for value in values
+                ]
+                print(
+                    f"{freq:12.6g}  {dbs[0]:10.2f}  {dbs[1]:10.2f}  "
+                    f"{dbs[2]:10.2f}  {dbs[3]:10.2f}"
+                )
         return 0
 
     if args.command == "tune-vna":

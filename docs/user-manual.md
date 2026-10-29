@@ -572,6 +572,12 @@ Most commands accept `--json` for machine-readable output.
     --f-pass 1M --f-stop 2M --ap 0.1 --as 40
   ```
 - **`touchstone-info`** — summarize a Touchstone file.
+- **`mixed-mode`** — transform a 4-port `.s4p` into differential, common-mode
+  and cross-mode S-parameters. Ports are paired as (1,2) and (3,4); mixed-mode
+  references are `Zd = 2·Z0` and `Zc = Z0/2`. `--json` emits the full matrices.
+  ```bash
+  filterdesk mixed-mode balun.s4p --json
+  ```
 - **`compare`** — compare two Touchstone results (simulated vs measured).
   ```bash
   filterdesk compare out.s2p measured.s2p
