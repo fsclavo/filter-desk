@@ -18,6 +18,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QDialog,
     QDockWidget,
     QDoubleSpinBox,
@@ -140,7 +141,12 @@ from filterdesk.services.design_sweep import (
 )
 from filterdesk.services.hf_band import evaluate_band_filter_response
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
-from filterdesk.services.session import DEFAULT_TITLE, DesignSession
+from filterdesk.services.session import (
+    DEFAULT_TITLE,
+    DesignSession,
+    is_default_sweep,
+    suggested_sweep_for_spec,
+)
 from filterdesk.services.spec_update import SpecUpdateError, update_spec_from_response
 
 
@@ -356,6 +362,13 @@ class MainWindow(QMainWindow):
         wrap = QWidget()
         lay = QHBoxLayout(wrap)
         lay.setContentsMargins(4, 0, 4, 0)
+        self._auto_sweep = QCheckBox(tr("Auto"))
+        self._auto_sweep.setChecked(True)
+        self._auto_sweep.setToolTip(
+            tr("Choose a plotting range from the filter type on each synthesis")
+        )
+        self._auto_sweep.toggled.connect(self._on_auto_sweep_toggled)
+        lay.addWidget(self._auto_sweep)
         lay.addWidget(QLabel(tr("Start Frequency")))
         lay.addWidget(self._f_start)
         lay.addWidget(QLabel(tr("Stop Frequency")))
@@ -583,6 +596,12 @@ class MainWindow(QMainWindow):
         self._f_start.setText(self._eng_freq(self._session.sweep.f_start_hz))
         self._f_stop.setText(self._eng_freq(self._session.sweep.f_stop_hz))
         self._points.setValue(self._session.sweep.n_points)
+        auto_sweep = is_default_sweep(self._session.spec, self._session.sweep)
+        self._auto_sweep.blockSignals(True)
+        self._auto_sweep.setChecked(auto_sweep)
+        self._auto_sweep.blockSignals(False)
+        self._f_start.setEnabled(not auto_sweep)
+        self._f_stop.setEnabled(not auto_sweep)
         self._refresh_table()
         self._schematic.set_circuit(self._session.circuit)
         self._plots.set_result(self._session.analysis)
@@ -686,6 +705,20 @@ class MainWindow(QMainWindow):
         store.set_bytes(GEOMETRY_KEY, bytes(self.saveGeometry().data()))
         store.set_bytes(STATE_KEY, bytes(self.saveState().data()))
 
+    def _on_auto_sweep_toggled(self, checked: bool) -> None:
+        self._f_start.setEnabled(not checked)
+        self._f_stop.setEnabled(not checked)
+        if not checked:
+            return
+        try:
+            spec = self._spec.build_spec()
+        except Exception:  # noqa: BLE001
+            return
+        self._session.sweep = suggested_sweep_for_spec(
+            spec, n_points=int(self._points.value())
+        )
+        self._sync_sweep_controls()
+
     def _apply_spec_and_sweep_from_ui(self) -> None:
         spec = self._spec.build_spec()
         self._session.set_spec(spec)
@@ -754,14 +787,22 @@ class MainWindow(QMainWindow):
     def _run_synthesize_and_analyze(self) -> None:
         try:
             new_spec = self._spec.build_spec()
-            self._session.sweep = SweepConfig(
-                f_start_hz=parse_si(self._f_start.text()),
-                f_stop_hz=parse_si(self._f_stop.text()),
-                n_points=int(self._points.value()),
-                spacing=SweepSpacing.LOGARITHMIC,
-            )
+            if self._auto_sweep.isChecked():
+                new_sweep = suggested_sweep_for_spec(
+                    new_spec, n_points=int(self._points.value())
+                )
+            else:
+                new_sweep = SweepConfig(
+                    f_start_hz=parse_si(self._f_start.text()),
+                    f_stop_hz=parse_si(self._f_stop.text()),
+                    n_points=int(self._points.value()),
+                    spacing=SweepSpacing.LOGARITHMIC,
+                )
             cmd = SynthesizeCommand(
-                self._session, new_spec, on_applied=self._after_synth_change
+                self._session,
+                new_spec,
+                new_sweep=new_sweep,
+                on_applied=self._after_synth_change,
             )
             self._undo.push(cmd)
         except Exception as exc:  # noqa: BLE001
@@ -1187,8 +1228,18 @@ class MainWindow(QMainWindow):
         except ValueError as exc:  # noqa: BLE001
             QMessageBox.warning(self, tr("Scale response"), _exc_text(exc))
             return
+        new_sweep = (
+            suggested_sweep_for_spec(
+                new_spec, n_points=int(self._points.value())
+            )
+            if self._auto_sweep.isChecked()
+            else None
+        )
         cmd = SynthesizeCommand(
-            self._session, new_spec, on_applied=self._after_synth_change
+            self._session,
+            new_spec,
+            new_sweep=new_sweep,
+            on_applied=self._after_synth_change,
         )
         self._undo.push(cmd)
         self._status.setText(tr("Scaled response ×{factor:g}", factor=factor))

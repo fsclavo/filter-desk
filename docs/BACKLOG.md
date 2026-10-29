@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-28 · **App version:** 0.28.2 · **Released:**
+**Last verified:** 2026-10-28 · **App version:** 0.29.0 · **Released:**
 [v0.28.2](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.2) ·
 **Previous:**
 [v0.28.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.1) ·
-**Next:** v0.29.0 planning.
+**Next:** v0.29.0 release (auto sweep fit, pending CI/tag).
 
-**Verification:** local suite **1096 passed** with ngspice (3 skipped without); coverage **84.01 %**.
+**Verification:** local suite **1099 passed**, 4 skipped (ngspice unavailable); coverage **84.08 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40786193641
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40787320616
 
@@ -378,12 +378,14 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       - 2026-10-28 v0.28.2: one-shot plot auto-fit after deliberate synthesis,
         wizard apply, scale or project load; manual zoom is kept for tuning.
 
-- [ ] **Automatic sweep fit:** suggest a plotting range per filter kind
+- [x] **Automatic sweep fit:** suggest a plotting range per filter kind
       (e.g. HPF 140 MHz ≈ 50 M–1 G), including harmonic coverage for TX LPF,
       and apply it only when the user has not customized the range (explicit
       **Auto** mode or equivalent). Preserve custom ranges used for VNA,
       limits and saved projects; update UI/session together and cover
       redo/undo. Keep the wizard's band-specific range. (M)
+      - 2026-10-28 v0.29.0: Auto checkbox, suggested ranges per response,
+        wizard band sweep preserved, custom ranges kept when Auto is off.
 
 ### P2 — data / ergonomics
 

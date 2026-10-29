@@ -261,6 +261,10 @@ _ES.update(
         ),
         "Quick preset": "Preset rápido",
         "Guided design": "Diseño guiado",
+        "Auto": "Auto",
+        "Choose a plotting range from the filter type on each synthesis": (
+            "Elegir el rango del gráfico según el tipo de filtro en cada síntesis"
+        ),
         "Snap after apply": "Ajustar a serie E después de aplicar",
         "Snap changed the response": "El ajuste cambió la respuesta",
         "Snapping to {series} no longer meets the passband/stopband target. "

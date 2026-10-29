@@ -222,9 +222,13 @@ you had zoomed or panned before. Manual zoom is kept until the next deliberate
 synthesis.
 
 The **toolbar** holds **Synthesize**, **Analyze**, **Tune +** (`Ctrl+]`),
-**Tune −** (`Ctrl+[`), and inline sweep controls (**Start Frequency**, **Stop
-Frequency**, **N**). The **status bar** at the bottom reports progress, results,
-and errors.
+**Tune −** (`Ctrl+[`), and inline sweep controls (**Auto**, **Start Frequency**,
+**Stop Frequency**, **N**). **Auto** is enabled by default and chooses a range
+from the filter type: LPFs include 2f/3f, HPFs show the lower skirt and passband,
+and BPF/BSF use both band edges. Uncheck **Auto** to type a custom range; a
+custom range stays in place across analyses and project loads. The band wizard
+keeps its own band sweep. The **status bar** at the bottom reports progress,
+results, and errors.
 
 The window title shows `FilterDesk — <name>`, where `*` marks unsaved changes.
 The name is the project title (see **File → Rename project…**) or, until you

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from filterdesk.analysis.limits_eval import evaluate_limit
+from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.domain.circuit import IdealCapacitor, IdealInductor
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.io.native import load_project, save_project
@@ -39,6 +40,7 @@ def test_markers_limits_roundtrip(tmp_path: Path) -> None:
 
 def test_limit_eval_pass_fail() -> None:
     session = DesignSession()
+    session.sweep = SweepConfig(1e6, 1e9, 1024, SweepSpacing.LOGARITHMIC)
     session.synthesize_and_analyze()
     assert session.analysis is not None
     # Far below cutoff HP should have low S21 → pass if y_max=-20 in stopband
@@ -82,6 +84,7 @@ def test_element_value_edit_roundtrip() -> None:
 
 def test_smith_limit_eval_and_roundtrip(tmp_path: Path) -> None:
     session = DesignSession()
+    session.sweep = SweepConfig(1e6, 1e9, 1024, SweepSpacing.LOGARITHMIC)
     session.synthesize_and_analyze()
     assert session.analysis is not None
     # High-pass: deep stopband reflects almost all → |S11| near 1 (fail 0.5).

@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.29.0 — 2026-10-28
+
+### Added
+
+- **Auto** sweep mode in the toolbar. It chooses a plotting range from the
+  filter type (including 2f/3f coverage for LPFs), updates the visible start/stop
+  controls and keeps custom ranges when Auto is off.
+- Suggested ranges now replace the fixed `fc/20 … fc*20` default for new
+  sessions and CLI analyses.
+
+### Changed
+
+- Band-wizard applies keep their band-specific sweep; project loads infer Auto
+  from whether the saved sweep still matches the suggested range.
+
 ## v0.28.2 — 2026-10-28
 
 ### Fixed

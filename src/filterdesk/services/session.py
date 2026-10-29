@@ -12,6 +12,7 @@ from filterdesk.analysis.harmonics import (
     HarmonicReport,
     compute_harmonics,
 )
+from filterdesk.analysis.metrics import band_edges
 from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import StressError, StressReport, compute_stress
@@ -148,17 +149,39 @@ def default_milestone_spec() -> FilterSpec:
     )
 
 
-def default_sweep_for_spec(spec: FilterSpec, n_points: int = 1024) -> SweepConfig:
-    if spec.response in (FilterResponse.BAND_PASS, FilterResponse.BAND_STOP):
-        assert spec.f_center_hz is not None
-        fc = spec.f_center_hz
-    else:
+def suggested_sweep_for_spec(
+    spec: FilterSpec, n_points: int = 1024
+) -> SweepConfig:
+    """Suggested plotting range: passband, skirts and TX harmonics."""
+    if spec.response == FilterResponse.LOW_PASS:
         fc = spec.cutoff_hz
+        start, stop = fc / 8.0, fc * 8.0
+    elif spec.response == FilterResponse.HIGH_PASS:
+        fc = spec.cutoff_hz
+        start, stop = fc / 3.0, fc * 8.0
+    else:
+        low, high = band_edges(spec)
+        start, stop = low / 2.0, high * 2.0
     return SweepConfig(
-        f_start_hz=fc / 20.0,
-        f_stop_hz=fc * 20.0,
+        f_start_hz=max(start, 1e-3),
+        f_stop_hz=stop,
         n_points=n_points,
         spacing=SweepSpacing.LOGARITHMIC,
+    )
+
+
+def default_sweep_for_spec(spec: FilterSpec, n_points: int = 1024) -> SweepConfig:
+    return suggested_sweep_for_spec(spec, n_points)
+
+
+def is_default_sweep(spec: FilterSpec, sweep: SweepConfig) -> bool:
+    """True when ``sweep`` is still the auto-generated range for ``spec``."""
+    ref = suggested_sweep_for_spec(spec, n_points=sweep.n_points)
+    return (
+        sweep.spacing == ref.spacing
+        and sweep.n_points == ref.n_points
+        and abs(sweep.f_start_hz - ref.f_start_hz) <= 1e-9 * ref.f_start_hz
+        and abs(sweep.f_stop_hz - ref.f_stop_hz) <= 1e-9 * ref.f_stop_hz
     )
 
 

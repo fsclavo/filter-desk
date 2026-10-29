@@ -1224,6 +1224,42 @@ def test_main_window_harmonics() -> None:
     assert app is not None
 
 
+def test_auto_sweep_toggle_and_custom_range(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.analysis.types import SweepConfig, SweepSpacing
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession, suggested_sweep_for_spec
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    window = mw.MainWindow(session, auto_run=False)
+    monkeypatch.setattr(window, "_run_analyze", lambda: None)
+    assert window._auto_sweep.isChecked()
+    assert not window._f_start.isEnabled()
+
+    window._auto_sweep.setChecked(False)
+    assert window._f_start.isEnabled()
+    window._f_start.setText("100M")
+    window._f_stop.setText("200M")
+    window._run_synthesize_and_analyze()
+    assert session.sweep is not None
+    assert session.sweep.f_start_hz == pytest.approx(100e6)
+    assert session.sweep.f_stop_hz == pytest.approx(200e6)
+
+    window._auto_sweep.setChecked(True)
+    assert not window._f_start.isEnabled()
+    assert session.sweep == suggested_sweep_for_spec(session.spec)
+
+    custom = SweepConfig(90e6, 210e6, 1024, SweepSpacing.LOGARITHMIC)
+    session.sweep = custom
+    window._load_session_into_ui()
+    assert not window._auto_sweep.isChecked()
+    assert window._f_start.isEnabled()
+    window.close()
+    assert app is not None
+
+
 def test_main_window_band_wizard(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication, QDialog
 
