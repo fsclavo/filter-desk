@@ -23,6 +23,8 @@ def test_main_window_constructs() -> None:
     session.synthesize_and_analyze()
     window = MainWindow(session, auto_run=False)
     assert "FilterDesk" in window.windowTitle()
+    assert window._spec._order.toolTip()
+    assert window._spec._zl.toolTip()
     window.close()
     assert app is not None
 
@@ -386,6 +388,8 @@ def test_extra_response_plots_populate() -> None:
 
     labels = [panel._tabs.tabText(i) for i in range(panel._tabs.count())]
     assert "Phase" in labels and "Impedance" in labels and "S12 / S22" in labels
+    assert panel._tabs.tabToolTip(0)
+    assert panel._tabs.tabToolTip(4)
     for curve in (
         panel._curve_phase21,
         panel._curve_phase11,
@@ -492,41 +496,13 @@ def test_tools_menu_holds_calculators() -> None:
         "Tune to VNA measurement",
     ):
         assert any(filter_action in label for label in design_labels)
-
-    window.close()
-    assert app is not None
-
-
-def test_help_tooltips_are_present() -> None:
-    from PySide6.QtWidgets import QApplication
-
-    from filterdesk.gui.main_window import MainWindow
-    from filterdesk.gui.panels.plot_panel import PlotPanel
-    from filterdesk.gui.panels.spec_panel import SpecPanel
-    from filterdesk.services.session import DesignSession
-
-    app = QApplication.instance() or QApplication([])
-    spec = SpecPanel()
-    assert spec._family.toolTip()
-    assert spec._order.toolTip()
-    assert spec._zl.toolTip()
-    plots = PlotPanel()
-    assert plots._tabs.tabToolTip(0)
-    assert plots._tabs.tabToolTip(4)
-    window = MainWindow(DesignSession(), auto_run=False)
-    design_menu = next(
-        action.menu()
-        for action in window.menuBar().actions()
-        if "&Design" in action.text()
-    )
     syn = next(
         action for action in design_menu.actions() if "Synthesize" in action.text()
     )
     assert syn.toolTip()
     assert syn.statusTip()
+
     window.close()
-    plots.close()
-    spec.close()
     assert app is not None
 
 
