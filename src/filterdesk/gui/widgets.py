@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
+import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -30,6 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
+from filterdesk.analysis.four_port import FourPortError, mixed_mode_4port
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
@@ -84,6 +87,7 @@ from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
 from filterdesk.io.spice import write_tlt_spice_netlist
+from filterdesk.io.touchstone import TouchstoneError, read_touchstone
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import (
@@ -2462,3 +2466,129 @@ class BandFilterWizardDialog(QDialog):
         self._result.setText(self._describe_spec(spec))
         self._notes.setText("; ".join(design.notes))
         self._apply_button.setEnabled(True)
+
+
+class FourPortMixedModeDialog(QDialog):
+    """Import a 4-port Touchstone file and show its mixed-mode S blocks."""
+
+    _MAX_ROWS = 2000
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("4-port mixed-mode"))
+        self.setMinimumWidth(820)
+        self._path = QLabel("-")
+        self._path.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self._open_button = QPushButton(tr("Open .s4p…"))
+        self._open_button.clicked.connect(self._choose_file)
+        self._summary = QLabel(tr("Open a 4-port Touchstone file to analyze."))
+        self._summary.setWordWrap(True)
+        self._table = QTableWidget(0, 5)
+        self._table.setHorizontalHeaderLabels(
+            [
+                tr("Frequency"),
+                tr("Sdd21 (dB)"),
+                tr("Sdc21 (dB)"),
+                tr("Scd21 (dB)"),
+                tr("Scc21 (dB)"),
+            ]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+
+        top = QHBoxLayout()
+        top.addWidget(self._open_button)
+        top.addWidget(self._path, 1)
+        form = QFormLayout(self)
+        form.addRow(top)
+        form.addRow(self._summary)
+        form.addRow(self._table)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
+
+    @staticmethod
+    def _db(value: complex) -> float:
+        return 20.0 * math.log10(max(abs(value), 1e-15))
+
+    def _choose_file(self) -> None:
+        path, _selected = QFileDialog.getOpenFileName(
+            self,
+            tr("Open 4-port Touchstone"),
+            "",
+            "Touchstone 4-port (*.s4p *.S4P);;All files (*)",
+        )
+        if path:
+            self.load_path(path)
+
+    def load_path(self, path: str | Path) -> bool:
+        try:
+            data = read_touchstone(path)
+            if data.n_ports != 4:
+                raise FourPortError(
+                    tr(
+                        "Mixed-mode requires a 4-port file (got {ports}).",
+                        ports=data.n_ports,
+                    )
+                )
+            report = mixed_mode_4port(
+                data.s, data.frequency_hz, z0_ohm=data.z0_ohm
+            )
+        except (TouchstoneError, FourPortError, OSError, ValueError) as exc:
+            self._table.setRowCount(0)
+            self._summary.setText(str(exc))
+            self._path.setText(str(path))
+            return False
+
+        self._path.setText(str(path))
+        shown = min(report.frequency_hz.size, self._MAX_ROWS)
+        suffix = (
+            f" — showing {shown} of {report.frequency_hz.size} points"
+            if shown < report.frequency_hz.size
+            else ""
+        )
+        self._summary.setText(
+            tr(
+                "4-port, {points} points, {fmin}–{fmax}; "
+                "Zd={zd} Ω, Zc={zc} Ω{suffix}",
+                points=report.frequency_hz.size,
+                fmin=format_engineering(float(report.frequency_hz[0]), "Hz"),
+                fmax=format_engineering(float(report.frequency_hz[-1]), "Hz"),
+                zd=format_engineering(report.z0_diff_ohm, "Ohm", digits=4),
+                zc=format_engineering(report.z0_common_ohm, "Ohm", digits=4),
+                suffix=suffix,
+            )
+        )
+        indices = np.linspace(
+            0, report.frequency_hz.size - 1, shown, dtype=int
+        )
+        self._table.setUpdatesEnabled(False)
+        try:
+            self._table.setRowCount(indices.size)
+            for row, index in enumerate(indices):
+                values = (
+                    report.frequency_hz[index],
+                    self._db(complex(report.sdd[index, 1, 0])),
+                    self._db(complex(report.sdc[index, 1, 0])),
+                    self._db(complex(report.scd[index, 1, 0])),
+                    self._db(complex(report.scc[index, 1, 0])),
+                )
+                cells = (
+                    format_engineering(float(values[0]), "Hz", digits=5),
+                    f"{values[1]:.2f}",
+                    f"{values[2]:.2f}",
+                    f"{values[3]:.2f}",
+                    f"{values[4]:.2f}",
+                )
+                for column, text in enumerate(cells):
+                    self._table.setItem(row, column, QTableWidgetItem(text))
+        finally:
+            self._table.setUpdatesEnabled(True)
+        self._table.resizeRowsToContents()
+        return True

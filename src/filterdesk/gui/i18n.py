@@ -252,6 +252,24 @@ _ES.update(
         "&Language": "&Idioma",
         "&Design": "&Diseño",
         "&Tools": "&Herramientas",
+        "&4-port mixed-mode…": "&Modo mixto de 4 puertos…",
+        "4-port mixed-mode": "Modo mixto de 4 puertos",
+        "Open .s4p…": "Abrir .s4p…",
+        "Open 4-port Touchstone": "Abrir Touchstone de 4 puertos",
+        "Open a 4-port Touchstone file to analyze.": (
+            "Abrí un archivo Touchstone de 4 puertos para analizar."
+        ),
+        "Mixed-mode requires a 4-port file (got {ports}).": (
+            "El modo mixto requiere un archivo de 4 puertos (se obtuvo {ports})."
+        ),
+        "4-port, {points} points, {fmin}–{fmax}; Zd={zd} Ω, Zc={zc} Ω{suffix}": (
+            "4 puertos, {points} puntos, {fmin}–{fmax}; "
+            "Zd={zd} Ω, Zc={zc} Ω{suffix}"
+        ),
+        "Sdd21 (dB)": "Sdd21 (dB)",
+        "Sdc21 (dB)": "Sdc21 (dB)",
+        "Scd21 (dB)": "Scd21 (dB)",
+        "Scc21 (dB)": "Scc21 (dB)",
         "&Synthesize + Analyze": "&Sintetizar + analizar",
         "&Band filter wizard…": "&Asistente de filtro de banda…",
         "Band filter wizard": "Asistente de filtro de banda",

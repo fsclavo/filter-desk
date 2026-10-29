@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.31.0 — 2026-10-29
+
+### Added
+
+- **Tools → 4-port mixed-mode…** imports an `.s4p` Touchstone file and shows
+  `Sdd21`, `Sdc21`, `Scd21` and `Scc21` in a table, with the mixed-mode reference
+  impedances and a sampled view for very large files.
+
 ## v0.30.0 — 2026-10-29
 
 ### Added

@@ -65,6 +65,7 @@ projects**. A good first path is:
 | Transmit low-pass for an HF/VHF/UHF rig | **Design → Band filter wizard…** → Quick → Transmit LPF |
 | Reject AM or FM broadcast | **Design → Band filter wizard…** → Band-stop |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
+| Analyze a measured 4-port balun | **Tools → 4-port mixed-mode…** |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
 | Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
@@ -339,6 +340,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
+| **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p` and shows Sdd/Sdc/Scd/Scc; ports paired as (1,2)/(3,4) |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -833,7 +835,9 @@ previously split across two tools.
   `|Scc|`) and, for chokes, a five-point common-mode sweep. The CLI JSON includes
   `mixed_mode` and `common_mode_sweep`. These are block-diagonal boundary
   estimates: cross-mode terms are zero, and they are not a full asymmetric
-  4-port/EM model.
+  4-port/EM model. For measured or externally simulated asymmetric data, use
+  **Tools → 4-port mixed-mode…** to import an `.s4p` and inspect the real
+  cross-mode terms.
   Core loss uses Fair-Rite complex-permeability data for mixes 31/43/52/61;
   copper loss and a natural-convection thermal resistance give an estimated hot
   temperature. This is a sizing estimate, not a high-flux or thermal simulation.

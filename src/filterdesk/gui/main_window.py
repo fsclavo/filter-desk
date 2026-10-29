@@ -102,6 +102,7 @@ from filterdesk.gui.widgets import (
     DesignSweepResultDialog,
     DistributedSynthesisDialog,
     EngineeringLineEdit,
+    FourPortMixedModeDialog,
     MatchingDialog,
     MicrostripDialog,
     MonteCarloDialog,
@@ -567,6 +568,9 @@ class MainWindow(QMainWindow):
         act_microstrip = QAction(tr("&Microstrip line…"), self)
         act_microstrip.triggered.connect(self._run_microstrip)
         tools_menu.addAction(act_microstrip)
+        act_four_port = QAction(tr("&4-port mixed-mode…"), self)
+        act_four_port.triggered.connect(self._run_four_port_mixed)
+        tools_menu.addAction(act_four_port)
 
         help_menu = self.menuBar().addMenu(tr("&Help"))
         act_about = QAction(tr("&About FilterDesk"), self)
@@ -1101,6 +1105,10 @@ class MainWindow(QMainWindow):
         self._push_circuit_edit(new_circuit, tr("Apply output balun"))
         self._run_analyze()
         self._status.setText(tr("Applied output balun ({kind})", kind=balun.kind))
+
+    def _run_four_port_mixed(self) -> None:
+        dialog = FourPortMixedModeDialog(self)
+        dialog.exec()
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()
