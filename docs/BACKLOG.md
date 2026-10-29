@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.32.0 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.33.0 · **Released:**
 [v0.32.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.32.0) ·
 **Previous:**
 [v0.31.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.31.1) ·
-**Next:** v0.33.0 planning.
+**Next:** v0.33.0 release (4-port CSV/JSON export, pending CI/tag).
 
-**Verification:** local suite **1109 passed**, 4 skipped (ngspice unavailable); coverage **83.66 %**.
+**Verification:** local suite **1110 passed**, 4 skipped (ngspice unavailable); coverage **83.41 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40935679350
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40937338875
 
@@ -65,6 +65,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] 4-port GUI: **Tools → 4-port mixed-mode…** imports `.s4p`, shows the
       mixed-mode table and handles large files with a sampled view.
 - [x] 4-port GUI plot: Sdd21/Sdc21/Scd21/Scc21 versus frequency.
+- [x] 4-port export: full mixed-mode CSV and JSON from the GUI.
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.

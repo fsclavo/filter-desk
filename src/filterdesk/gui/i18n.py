@@ -255,6 +255,10 @@ _ES.update(
         "&4-port mixed-mode…": "&Modo mixto de 4 puertos…",
         "4-port mixed-mode": "Modo mixto de 4 puertos",
         "Open .s4p…": "Abrir .s4p…",
+        "Export CSV…": "Exportar CSV…",
+        "Export JSON…": "Exportar JSON…",
+        "Export mixed-mode CSV": "Exportar CSV de modo mixto",
+        "Export mixed-mode JSON": "Exportar JSON de modo mixto",
         "Open 4-port Touchstone": "Abrir Touchstone de 4 puertos",
         "Open a 4-port Touchstone file to analyze.": (
             "Abrí un archivo Touchstone de 4 puertos para analizar."

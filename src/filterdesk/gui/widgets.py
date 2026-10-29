@@ -33,7 +33,11 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.analysis.common_mode import CommonModeError, common_mode_sweep
-from filterdesk.analysis.four_port import FourPortError, mixed_mode_4port
+from filterdesk.analysis.four_port import (
+    FourPortError,
+    FourPortMixedMode,
+    mixed_mode_4port,
+)
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
@@ -87,6 +91,7 @@ from filterdesk.domain.enums import FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
+from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
 from filterdesk.io.spice import write_tlt_spice_netlist
 from filterdesk.io.touchstone import TouchstoneError, read_touchstone
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
@@ -2484,6 +2489,14 @@ class FourPortMixedModeDialog(QDialog):
         )
         self._open_button = QPushButton(tr("Open .s4p…"))
         self._open_button.clicked.connect(self._choose_file)
+        self._report: FourPortMixedMode | None = None
+        self._source: str | None = None
+        self._export_csv_button = QPushButton(tr("Export CSV…"))
+        self._export_json_button = QPushButton(tr("Export JSON…"))
+        self._export_csv_button.setEnabled(False)
+        self._export_json_button.setEnabled(False)
+        self._export_csv_button.clicked.connect(self._export_csv)
+        self._export_json_button.clicked.connect(self._export_json)
         self._summary = QLabel(tr("Open a 4-port Touchstone file to analyze."))
         self._summary.setWordWrap(True)
         self._table = QTableWidget(0, 5)
@@ -2527,9 +2540,13 @@ class FourPortMixedModeDialog(QDialog):
         top = QHBoxLayout()
         top.addWidget(self._open_button)
         top.addWidget(self._path, 1)
+        top.addWidget(self._export_csv_button)
+        top.addWidget(self._export_json_button)
+        self._export_status = QLabel("")
         form = QFormLayout(self)
         form.addRow(top)
         form.addRow(self._summary)
+        form.addRow(self._export_status)
         form.addRow(self._view_tabs)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
@@ -2539,6 +2556,55 @@ class FourPortMixedModeDialog(QDialog):
     @staticmethod
     def _db(value: complex) -> float:
         return 20.0 * math.log10(max(abs(value), 1e-15))
+
+    def _default_export_name(self, suffix: str) -> str:
+        stem = Path(self._source).stem if self._source else "mixed_mode"
+        return f"{stem}{suffix}"
+
+    def _export_csv(self) -> None:
+        if self._report is None:
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export mixed-mode CSV"),
+            self._default_export_name(".csv"),
+            "CSV (*.csv);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".csv"):
+            path += ".csv"
+        try:
+            Path(path).write_text(
+                mixed_mode_csv(self._report), encoding="utf-8"
+            )
+        except OSError as exc:
+            QMessageBox.critical(self, tr("Export failed"), str(exc))
+            return
+        self._export_status.setText(tr("Wrote {path}", path=path))
+
+    def _export_json(self) -> None:
+        if self._report is None:
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export mixed-mode JSON"),
+            self._default_export_name(".json"),
+            "JSON (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".json"):
+            path += ".json"
+        try:
+            Path(path).write_text(
+                mixed_mode_json(self._report, source=self._source),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            QMessageBox.critical(self, tr("Export failed"), str(exc))
+            return
+        self._export_status.setText(tr("Wrote {path}", path=path))
 
     def _choose_file(self) -> None:
         path, _selected = QFileDialog.getOpenFileName(
@@ -2573,11 +2639,21 @@ class FourPortMixedModeDialog(QDialog):
                 self._curve_scc,
             ):
                 curve.setData(empty, empty)
+            self._report = None
+            self._source = None
+            self._export_csv_button.setEnabled(False)
+            self._export_json_button.setEnabled(False)
+            self._export_status.setText("")
             self._summary.setText(str(exc))
             self._path.setText(str(path))
             return False
 
         self._path.setText(str(path))
+        self._report = report
+        self._source = data.source
+        self._export_csv_button.setEnabled(True)
+        self._export_json_button.setEnabled(True)
+        self._export_status.setText("")
         shown = min(report.frequency_hz.size, self._MAX_ROWS)
         suffix = (
             f" — showing {shown} of {report.frequency_hz.size} points"

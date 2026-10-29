@@ -93,3 +93,23 @@ def test_cli_mixed_mode_json(tmp_path, capsys: pytest.CaptureFixture[str]) -> No
     assert len(payload["sdd"]) == 1
 
 
+
+
+def test_mixed_mode_csv_and_json_export() -> None:
+    from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
+
+    report = mixed_mode_4port(_thru_pairs(), [100e6])
+    csv_text = mixed_mode_csv(report)
+    assert csv_text.splitlines()[0] == (
+        "frequency_hz,sdd21_db,sdc21_db,scd21_db,scc21_db"
+    )
+    assert ",0.000000" in csv_text
+
+    payload = json.loads(mixed_mode_json(report, source="device.s4p"))
+    assert payload["n_ports"] == 4
+    assert payload["n_points"] == 1
+    assert payload["source"] == "device.s4p"
+    assert payload["z0_diff_ohm"] == pytest.approx(100.0)
+    assert payload["points"][0]["frequency_hz"] == pytest.approx(100e6)
+    assert payload["points"][0]["sdd21_db"] == pytest.approx(0.0)
+    assert payload["points"][0]["scc21_db"] == pytest.approx(0.0)
