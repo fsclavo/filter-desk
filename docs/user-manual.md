@@ -222,8 +222,8 @@ synthesis or wizard apply, the plots fit the new data automatically, even if
 you had zoomed or panned before. Manual zoom is kept until the next deliberate
 synthesis.
 
-Hover the Specification fields, plot tabs and main menu actions for short
-definitions and reminders.
+Hover the Specification fields and plot tabs for short definitions; main menu
+actions show their hints in the status bar.
 
 The **toolbar** holds **Synthesize**, **Analyze**, **Tune +** (`Ctrl+]`),
 **Tune −** (`Ctrl+[`), and inline sweep controls (**Auto**, **Start Frequency**,
