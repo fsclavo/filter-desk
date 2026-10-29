@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.34.0 — 2026-10-29
+
+### Added
+
+- Contextual tooltips and status tips for the Specification fields, plot tabs
+  and the main menu actions, in English and Spanish.
+
 ## v0.33.0 — 2026-10-29
 
 ### Added

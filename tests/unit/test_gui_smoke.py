@@ -497,6 +497,39 @@ def test_tools_menu_holds_calculators() -> None:
     assert app is not None
 
 
+def test_help_tooltips_are_present() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.gui.panels.plot_panel import PlotPanel
+    from filterdesk.gui.panels.spec_panel import SpecPanel
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    spec = SpecPanel()
+    assert spec._family.toolTip()
+    assert spec._order.toolTip()
+    assert spec._zl.toolTip()
+    plots = PlotPanel()
+    assert plots._tabs.tabToolTip(0)
+    assert plots._tabs.tabToolTip(4)
+    window = MainWindow(DesignSession(), auto_run=False)
+    design_menu = next(
+        action.menu()
+        for action in window.menuBar().actions()
+        if "&Design" in action.text()
+    )
+    syn = next(
+        action for action in design_menu.actions() if "Synthesize" in action.text()
+    )
+    assert syn.toolTip()
+    assert syn.statusTip()
+    window.close()
+    plots.close()
+    spec.close()
+    assert app is not None
+
+
 def test_help_menu(monkeypatch: pytest.MonkeyPatch) -> None:
     from PySide6.QtWidgets import QApplication
 

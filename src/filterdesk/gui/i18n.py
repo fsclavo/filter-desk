@@ -772,6 +772,205 @@ _ES.update(
 )
 
 
+_ES.update(
+    {
+        "Add a marker at the cursor frequency.": (
+            "Agregar un marcador en la frecuencia del cursor."
+        ),
+        "Apply finite Q, ESR/DCR and parasitic models.": (
+            "Aplicar Q finito, ESR/DCR y modelos de parásitos."
+        ),
+        "Approximation family used for synthesis: Butterworth, Chebyshev, "
+        "elliptic, Bessel, Gaussian, Legendre, constant-k or m-derived.": (
+            "Familia de aproximación usada para la síntesis: Butterworth, "
+            "Chebyshev, elíptica, Bessel, Gaussiana, Legendre, k constante "
+            "o derivada m."
+        ),
+        "Calculate toroid and air-core coils.": (
+            "Calcular bobinas toroidales y de aire."
+        ),
+        "Change the project title.": "Cambiar el título del proyecto.",
+        "Check the response against the specification.": (
+            "Verificar la respuesta contra la especificación."
+        ),
+        "Close FilterDesk.": "Cerrar FilterDesk.",
+        "Compare design variants along one parameter.": (
+            "Comparar variantes de diseño variando un parámetro."
+        ),
+        "Create a new filter project.": "Crear un proyecto de filtro nuevo.",
+        "Derive center/cutoff and bandwidth from the analyzed response.": (
+            "Derivar centro/corte y ancho de banda de la respuesta analizada."
+        ),
+        "Design an L/Pi/T matching network.": (
+            "Diseñar una red de adaptación L/Pi/T."
+        ),
+        "Design and insert a T/Pi resistive attenuator.": (
+            "Diseñar e insertar un atenuador resistivo T/Pi."
+        ),
+        "Design transformers, baluns, ununs and chokes.": (
+            "Diseñar transformadores, baluns, ununs y choques."
+        ),
+        "Docks, overlays, theme and language.": (
+            "Paneles, superposiciones, tema e idioma."
+        ),
+        "Documentation, model confidence and About.": (
+            "Documentación, confianza de modelos y Acerca de."
+        ),
+        "Estimated stopband edge used by Estimate N; it is not part of "
+        "the synthesized specification.": (
+            "Borde de rechazo estimado usado por Estimar N; no forma parte "
+            "de la especificación sintetizada."
+        ),
+        "Export the BOM and build sheet.": (
+            "Exportar la lista de materiales y la hoja de construcción."
+        ),
+        "Filter response: low-pass, high-pass, band-pass or band-stop.": (
+            "Respuesta del filtro: paso bajo, paso alto, paso banda o "
+            "rechazo de banda."
+        ),
+        "Geometric center frequency of a band-pass or band-stop filter.": (
+            "Frecuencia central geométrica de un filtro de paso banda o "
+            "rechazo de banda."
+        ),
+        "Group delay from the slope of S21 phase (-dφ/dω).": (
+            "Retardo de grupo a partir de la pendiente de la fase de S21 "
+            "(-dφ/dω)."
+        ),
+        "Import an .s4p and inspect mixed-mode S data.": (
+            "Importar un .s4p e inspeccionar datos S en modo mixto."
+        ),
+        "Import measured S11/S21 data from Touchstone.": (
+            "Importar datos medidos de S11/S21 desde Touchstone."
+        ),
+        "Independent RF calculators and analysis tools.": (
+            "Calculadoras y herramientas de análisis de RF independientes."
+        ),
+        "Input and output impedance versus frequency.": (
+            "Impedancia de entrada y salida versus frecuencia."
+        ),
+        "Input voltage standing-wave ratio (VSWR).": (
+            "Relación de onda estacionaria de tensión de entrada (ROE/VSWR)."
+        ),
+        "Inspect model validation and confidence levels.": (
+            "Inspeccionar la validación y los niveles de confianza del modelo."
+        ),
+        "Ladder topology: which element faces the source.": (
+            "Topología de escalera: qué elemento mira hacia la fuente."
+        ),
+        "Load/reference impedance at port 2.": (
+            "Impedancia de carga/referencia en el puerto 2."
+        ),
+        "M-derived prototype parameter controlling the section shape.": (
+            "Parámetro del prototipo derivado m que controla la forma de la "
+            "sección."
+        ),
+        "Maximum passband ripple for Chebyshev-I, elliptic and related "
+        "families.": (
+            "Rizado máximo de banda de paso para Chebyshev-I, elíptica y "
+            "familias relacionadas."
+        ),
+        "Microstrip line, stub and quarter-wave calculators.": (
+            "Calculadoras de línea microstrip, stub y transformador de "
+            "cuarto de onda."
+        ),
+        "Minimum stopband attenuation target used for order estimation "
+        "and compliance checks.": (
+            "Atenuación mínima de rechazo usada para estimar el orden y "
+            "verificar el cumplimiento."
+        ),
+        "Number of reactive elements in the ladder. Higher order gives "
+        "steeper rejection but more components.": (
+            "Número de elementos reactivos en la escalera. Un orden mayor da "
+            "más rechazo pero más componentes."
+        ),
+        "Open a saved FilterDesk project.": (
+            "Abrir un proyecto FilterDesk guardado."
+        ),
+        "Open the user manual in a browser.": (
+            "Abrir el manual de usuario en el navegador."
+        ),
+        "Optimize component values against the limits.": (
+            "Optimizar los valores de los componentes contra los límites."
+        ),
+        "Passband edge or cutoff frequency. For BPF/BSF use Center and "
+        "Bandwidth instead.": (
+            "Frecuencia de corte o borde de paso. Para BPF/BSF usar Centro "
+            "y Ancho de banda."
+        ),
+        "Passband width (BPF) or stopband width (BSF).": (
+            "Ancho de banda de paso (BPF) o de rechazo (BSF)."
+        ),
+        "Project files, imports and exports.": (
+            "Archivos de proyecto, importaciones y exportaciones."
+        ),
+        "Quick presets or guided band-filter design by requirements.": (
+            "Presets rápidos o diseño guiado de filtros de banda por "
+            "requisitos."
+        ),
+        "Rank components by sensitivity and tuning direction.": (
+            "Clasificar componentes por sensibilidad y dirección de ajuste."
+        ),
+        "Realize a low-pass filter with microstrip lines.": (
+            "Realizar un filtro pasa bajos con líneas microstrip."
+        ),
+        "Redo the last undone edit.": "Rehacer la última edición deshecha.",
+        "Reverse transmission (S12) and output reflection (S22).": (
+            "Transmisión inversa (S12) y reflexión de salida (S22)."
+        ),
+        "Round L/C values to a standard E-series grid.": (
+            "Redondear valores de L/C a una serie E estándar."
+        ),
+        "Run a Monte-Carlo tolerance analysis.": (
+            "Ejecutar un análisis de tolerancias Monte-Carlo."
+        ),
+        "S21 and S11 phase versus frequency.": (
+            "Fase de S21 y S11 versus frecuencia."
+        ),
+        "Save the current project.": "Guardar el proyecto actual.",
+        "Save the project under a new name.": (
+            "Guardar el proyecto con otro nombre."
+        ),
+        "Scale the filter response in frequency.": (
+            "Escalar la respuesta del filtro en frecuencia."
+        ),
+        "Show or hide harmonic marker lines.": (
+            "Mostrar u ocultar las líneas de armónicos."
+        ),
+        "Show or hide the Monte-Carlo envelope.": (
+            "Mostrar u ocultar la envolvente Monte-Carlo."
+        ),
+        "Show or hide the measured overlay.": (
+            "Mostrar u ocultar la superposición medida."
+        ),
+        "Show version and license information.": (
+            "Mostrar versión e información de licencia."
+        ),
+        "Smith chart of S11 (and S22 for 2-port data).": (
+            "Carta de Smith de S11 (y S22 para datos de 2 puertos)."
+        ),
+        "Source/reference impedance at port 1.": (
+            "Impedancia de fuente/referencia en el puerto 1."
+        ),
+        "Synthesis, tuning, optimization and compliance.": (
+            "Síntesis, ajuste, optimización y cumplimiento."
+        ),
+        "Synthesize the current specification and analyze it.": (
+            "Sintetizar la especificación actual y analizarla."
+        ),
+        "Transmission and reflection magnitude versus frequency.": (
+            "Magnitud de transmisión y reflexión versus frecuencia."
+        ),
+        "Trim component values to a measured VNA response.": (
+            "Ajustar valores de componentes a una respuesta de VNA medida."
+        ),
+        "Undo the last design edit.": "Deshacer la última edición de diseño.",
+        "Undo, redo and measurement markers.": (
+            "Deshacer, rehacer y marcadores de medición."
+        ),
+    }
+)
+
+
 def tr(text: str, **fmt: object) -> str:
     """Translate an English source string (with optional ``str.format`` fields)."""
     translated = _ES.get(text, text) if _current is Language.ES else text

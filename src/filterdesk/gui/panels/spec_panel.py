@@ -157,6 +157,56 @@ class SpecPanel(QWidget):
         form.addRow(tr("Zload"), self._zl)
         form.addRow(tr("Topology"), self._topology)
 
+        tips = (
+            (self._family, tr(
+                "Approximation family used for synthesis: Butterworth, "
+                "Chebyshev, elliptic, Bessel, Gaussian, Legendre, constant-k "
+                "or m-derived."
+            )),
+            (self._response, tr(
+                "Filter response: low-pass, high-pass, band-pass or band-stop."
+            )),
+            (self._order, tr(
+                "Number of reactive elements in the ladder. Higher order gives "
+                "steeper rejection but more components."
+            )),
+            (self._cutoff, tr(
+                "Passband edge or cutoff frequency. For BPF/BSF use Center and "
+                "Bandwidth instead."
+            )),
+            (self._f_stop, tr(
+                "Estimated stopband edge used by Estimate N; it is not part of "
+                "the synthesized specification."
+            )),
+            (self._f_center, tr(
+                "Geometric center frequency of a band-pass or band-stop filter."
+            )),
+            (self._bandwidth, tr(
+                "Passband width (BPF) or stopband width (BSF)."
+            )),
+            (self._ripple, tr(
+                "Maximum passband ripple for Chebyshev-I, elliptic and related "
+                "families."
+            )),
+            (self._stop_att, tr(
+                "Minimum stopband attenuation target used for order estimation "
+                "and compliance checks."
+            )),
+            (self._m_param, tr(
+                "M-derived prototype parameter controlling the section shape."
+            )),
+            (self._zs, tr("Source/reference impedance at port 1.")),
+            (self._zl, tr("Load/reference impedance at port 2.")),
+            (self._topology, tr(
+                "Ladder topology: which element faces the source."
+            )),
+        )
+        for widget, tip in tips:
+            widget.setToolTip(tip)
+            label = form.labelForField(widget)
+            if label is not None:
+                label.setToolTip(tip)
+
         self._note = QLabel()
         self._note.setWordWrap(True)
         self._note.setVisible(False)

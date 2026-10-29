@@ -590,6 +590,65 @@ class MainWindow(QMainWindow):
         act_confidence.triggered.connect(self._show_confidence)
         help_menu.addAction(act_confidence)
 
+        menu_tips = {
+            file_menu: tr("Project files, imports and exports."),
+            edit_menu: tr("Undo, redo and measurement markers."),
+            view_menu: tr("Docks, overlays, theme and language."),
+            design_menu: tr("Synthesis, tuning, optimization and compliance."),
+            tools_menu: tr("Independent RF calculators and analysis tools."),
+            help_menu: tr("Documentation, model confidence and About."),
+        }
+        for menu, tip in menu_tips.items():
+            menu.setToolTipsVisible(True)
+            menu.menuAction().setToolTip(tip)
+            menu.menuAction().setStatusTip(tip)
+
+        action_tips = {
+            act_new: tr("Create a new filter project."),
+            act_open: tr("Open a saved FilterDesk project."),
+            act_save: tr("Save the current project."),
+            act_save_as: tr("Save the project under a new name."),
+            act_rename: tr("Change the project title."),
+            act_import_ts: tr("Import measured S11/S21 data from Touchstone."),
+            act_export_build: tr("Export the BOM and build sheet."),
+            act_quit: tr("Close FilterDesk."),
+            act_undo: tr("Undo the last design edit."),
+            act_redo: tr("Redo the last undone edit."),
+            act_add_m: tr("Add a marker at the cursor frequency."),
+            self._act_measured: tr("Show or hide the measured overlay."),
+            self._act_mc: tr("Show or hide the Monte-Carlo envelope."),
+            self._act_harmonics: tr("Show or hide harmonic marker lines."),
+            act_syn: tr("Synthesize the current specification and analyze it."),
+            act_band_wizard: tr(
+                "Quick presets or guided band-filter design by requirements."
+            ),
+            act_update_spec: tr(
+                "Derive center/cutoff and bandwidth from the analyzed response."
+            ),
+            act_distributed: tr("Realize a low-pass filter with microstrip lines."),
+            act_snap: tr("Round L/C values to a standard E-series grid."),
+            act_nonideal: tr("Apply finite Q, ESR/DCR and parasitic models."),
+            act_mc: tr("Run a Monte-Carlo tolerance analysis."),
+            act_scale: tr("Scale the filter response in frequency."),
+            act_opt: tr("Optimize component values against the limits."),
+            act_sens: tr("Rank components by sensitivity and tuning direction."),
+            act_sweep: tr("Compare design variants along one parameter."),
+            act_compliance: tr("Check the response against the specification."),
+            act_vna: tr("Trim component values to a measured VNA response."),
+            act_match: tr("Design an L/Pi/T matching network."),
+            act_atten: tr("Design and insert a T/Pi resistive attenuator."),
+            act_coil: tr("Calculate toroid and air-core coils."),
+            act_transformer: tr("Design transformers, baluns, ununs and chokes."),
+            act_microstrip: tr("Microstrip line, stub and quarter-wave calculators."),
+            act_four_port: tr("Import an .s4p and inspect mixed-mode S data."),
+            act_docs: tr("Open the user manual in a browser."),
+            act_confidence: tr("Inspect model validation and confidence levels."),
+            act_about: tr("Show version and license information."),
+        }
+        for action, tip in action_tips.items():
+            action.setToolTip(tip)
+            action.setStatusTip(tip)
+
     def _load_session_into_ui(self) -> None:
         # Populating the widgets emits ``spec_changed``; keep the session's
         # unsaved flag as-is (e.g. a freshly opened project is not dirty).

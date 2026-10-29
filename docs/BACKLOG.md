@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.33.0 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.34.0 · **Released:**
 [v0.33.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.33.0) ·
 **Previous:**
 [v0.32.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.32.0) ·
-**Next:** v0.34.0 planning.
+**Next:** v0.34.0 release (contextual tooltips, pending CI/tag).
 
-**Verification:** local suite **1110 passed**, 4 skipped (ngspice unavailable); coverage **83.41 %**.
+**Verification:** local suite **1111 passed**, 4 skipped (ngspice unavailable); coverage **83.43 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40943800781
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40945330858
 
@@ -66,6 +66,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       mixed-mode table and handles large files with a sampled view.
 - [x] 4-port GUI plot: Sdd21/Sdc21/Scd21/Scc21 versus frequency.
 - [x] 4-port export: full mixed-mode CSV and JSON from the GUI.
+- [x] Contextual help: tooltips/status tips for Specification fields, plot
+      tabs and main menu actions.
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.

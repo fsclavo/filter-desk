@@ -238,6 +238,17 @@ class PlotPanel(QWidget):
         self._tabs.addTab(self._gd_plot, tr("Group delay"))
         self._tabs.addTab(self._z_plot, tr("Impedance"))
         self._tabs.addTab(self._smith, "Smith")
+        tab_tips = (
+            tr("Transmission and reflection magnitude versus frequency."),
+            tr("Reverse transmission (S12) and output reflection (S22)."),
+            tr("S21 and S11 phase versus frequency."),
+            tr("Input voltage standing-wave ratio (VSWR)."),
+            tr("Group delay from the slope of S21 phase (-dφ/dω)."),
+            tr("Input and output impedance versus frequency."),
+            tr("Smith chart of S11 (and S22 for 2-port data)."),
+        )
+        for index, tip in enumerate(tab_tips):
+            self._tabs.setTabToolTip(index, tip)
 
         self._readout = QLabel(
             tr(
