@@ -10,7 +10,7 @@ count or release changes.
 [v0.28.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.1) ·
 **Next:** v0.29.0 release (auto sweep fit, pending CI/tag).
 
-**Verification:** local suite **1099 passed**, 4 skipped (ngspice unavailable); coverage **84.10 %**.
+**Verification:** local suite **1099 passed**, 4 skipped (ngspice unavailable); coverage **84.12 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40786193641
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40787320616
 
