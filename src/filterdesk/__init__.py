@@ -1,3 +1,3 @@
 """FilterDesk — passive LC filter synthesis and analysis."""
 
-__version__ = "0.31.1"
+__version__ = "0.32.0"

@@ -266,6 +266,9 @@ _ES.update(
             "4 puertos, {points} puntos, {fmin}–{fmax}; "
             "Zd={zd} Ω, Zc={zc} Ω{suffix}"
         ),
+        "Mixed-mode S (dB)": "S en modo mixto (dB)",
+        "Table": "Tabla",
+        "Plot": "Gráfico",
         "Sdd21 (dB)": "Sdd21 (dB)",
         "Sdc21 (dB)": "Sdc21 (dB)",
         "Scd21 (dB)": "Scd21 (dB)",

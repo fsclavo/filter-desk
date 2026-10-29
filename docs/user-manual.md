@@ -340,7 +340,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
-| **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p` and shows Sdd/Sdc/Scd/Scc; ports paired as (1,2)/(3,4) |
+| **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p` and shows Sdd/Sdc/Scd/Scc in a table and plot; ports paired as (1,2)/(3,4) |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |

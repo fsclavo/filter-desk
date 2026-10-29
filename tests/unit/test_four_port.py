@@ -114,3 +114,32 @@ def test_gui_dialog_loads_4port(tmp_path) -> None:
     assert dialog._table.horizontalHeaderItem(1).text() == "Sdd21 (dB)"
     dialog.close()
     assert app is not None
+
+
+def test_gui_dialog_plot_populates(tmp_path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import FourPortMixedModeDialog
+
+    app = QApplication.instance() or QApplication([])
+    values = [100e6]
+    for row in np.eye(4).reshape(-1):
+        values.extend((float(row.real), float(row.imag)))
+    path = tmp_path / "device.s4p"
+    path.write_text(
+        "# HZ S RI R 50\n" + " ".join(f"{value:.12g}" for value in values) + "\n",
+        encoding="utf-8",
+    )
+    dialog = FourPortMixedModeDialog()
+    assert dialog.load_path(path)
+    for curve in (
+        dialog._curve_sdd,
+        dialog._curve_sdc,
+        dialog._curve_scd,
+        dialog._curve_scc,
+    ):
+        data = curve.getData()
+        assert data[0] is not None and data[0].size == 1
+    assert dialog._view_tabs.count() == 2
+    dialog.close()
+    assert app is not None

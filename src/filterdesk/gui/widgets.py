@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -2500,6 +2501,28 @@ class FourPortMixedModeDialog(QDialog):
         self._table.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
+        self._plot = pg.PlotWidget(title=tr("Mixed-mode S (dB)"))
+        self._plot.setLogMode(x=True, y=False)
+        self._plot.showGrid(x=True, y=True, alpha=0.3)
+        self._plot.setLabel("bottom", tr("Frequency"), units="Hz")
+        self._plot.setLabel("left", tr("Magnitude"), units="dB")
+        self._plot.addLegend()
+        self._plot.setMinimumHeight(280)
+        self._curve_sdd = self._plot.plot(
+            pen=pg.mkPen("#1f77b4", width=2), name="Sdd21"
+        )
+        self._curve_sdc = self._plot.plot(
+            pen=pg.mkPen("#ff7f0e", width=2), name="Sdc21"
+        )
+        self._curve_scd = self._plot.plot(
+            pen=pg.mkPen("#2ca02c", width=2), name="Scd21"
+        )
+        self._curve_scc = self._plot.plot(
+            pen=pg.mkPen("#d62728", width=2), name="Scc21"
+        )
+        self._view_tabs = QTabWidget()
+        self._view_tabs.addTab(self._table, tr("Table"))
+        self._view_tabs.addTab(self._plot, tr("Plot"))
 
         top = QHBoxLayout()
         top.addWidget(self._open_button)
@@ -2507,7 +2530,7 @@ class FourPortMixedModeDialog(QDialog):
         form = QFormLayout(self)
         form.addRow(top)
         form.addRow(self._summary)
-        form.addRow(self._table)
+        form.addRow(self._view_tabs)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
@@ -2542,6 +2565,14 @@ class FourPortMixedModeDialog(QDialog):
             )
         except (TouchstoneError, FourPortError, OSError, ValueError) as exc:
             self._table.setRowCount(0)
+            empty = np.array([], dtype=float)
+            for curve in (
+                self._curve_sdd,
+                self._curve_sdc,
+                self._curve_scd,
+                self._curve_scc,
+            ):
+                curve.setData(empty, empty)
             self._summary.setText(str(exc))
             self._path.setText(str(path))
             return False
@@ -2591,4 +2622,15 @@ class FourPortMixedModeDialog(QDialog):
         finally:
             self._table.setUpdatesEnabled(True)
         self._table.resizeRowsToContents()
+
+        freq = report.frequency_hz
+        curves = (
+            (self._curve_sdd, report.sdd[:, 1, 0]),
+            (self._curve_sdc, report.sdc[:, 1, 0]),
+            (self._curve_scd, report.scd[:, 1, 0]),
+            (self._curve_scc, report.scc[:, 1, 0]),
+        )
+        for curve, series in curves:
+            curve.setData(freq, np.asarray([self._db(complex(v)) for v in series]))
+        self._plot.autoRange()
         return True

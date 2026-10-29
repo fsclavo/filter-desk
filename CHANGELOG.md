@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.32.0 — 2026-10-29
+
+### Added
+
+- The **4-port mixed-mode** dialog now has a **Plot** tab with Sdd21, Sdc21,
+  Scd21 and Scc21 versus frequency, alongside the existing table.
+
 ## v0.31.1 — 2026-10-29
 
 ### Added
