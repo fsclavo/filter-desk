@@ -1449,8 +1449,18 @@ class MainWindow(QMainWindow):
     def _on_analyze_finished(self, result: object) -> None:
         assert isinstance(result, AnalysisResult)
         self._session.analysis = result
+        old_range = self._plots.frequency_range()
         self._plots.set_result(result)
-        if self._fit_plots_after_analysis:
+        new_range = self._plots.frequency_range()
+        range_changed = (
+            old_range is None
+            or new_range is None
+            or not math.isclose(old_range[0], new_range[0], rel_tol=1e-9)
+            or not math.isclose(old_range[1], new_range[1], rel_tol=1e-9)
+        )
+        if self._fit_plots_after_analysis or (
+            self._auto_sweep.isChecked() and range_changed
+        ):
             self._plots.auto_range()
             self._fit_plots_after_analysis = False
         self._plots.set_markers(self._session.markers)

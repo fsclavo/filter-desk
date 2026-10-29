@@ -1423,6 +1423,38 @@ def test_main_window_band_wizard_warns_on_bad_snap(
     assert app is not None
 
 
+def test_main_window_auto_view_refits_on_sweep_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.analysis.types import SweepConfig, SweepSpacing
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    first = session.synthesize_and_analyze()
+    window = mw.MainWindow(session, auto_run=False)
+    window._plots.set_result(first)
+    assert window._auto_sweep.isChecked()
+
+    session.sweep = SweepConfig(1e6, 100e6, 512, SweepSpacing.LOGARITHMIC)
+    changed = session.analyze()
+    calls: list[bool] = []
+    monkeypatch.setattr(window._plots, "auto_range", lambda: calls.append(True))
+    window._fit_plots_after_analysis = False
+    window._on_analyze_finished(changed)
+    assert calls == [True]
+
+    calls.clear()
+    same = session.analyze()
+    window._on_analyze_finished(same)
+    assert calls == []
+    window.close()
+    assert app is not None
+
+
 def test_main_window_fits_plots_after_synthesis(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

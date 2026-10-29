@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.29.0 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.29.1 · **Released:**
 [v0.29.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.29.0) ·
 **Previous:**
 [v0.28.2](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.2) ·
-**Next:** v0.30.0 planning.
+**Next:** v0.29.1 release (data-driven plot refit, pending CI/tag).
 
-**Verification:** local suite **1099 passed**, 4 skipped (ngspice unavailable); coverage **84.12 %**.
+**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.10 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40799362840
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40800624996
 
@@ -397,6 +397,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       redo/undo. Keep the wizard's band-specific range. (M)
       - 2026-10-28 v0.29.0: Auto checkbox, suggested ranges per response,
         wizard band sweep preserved, custom ranges kept when Auto is off.
+      - 2026-10-29 v0.29.1: Auto view also refits when a new result has a
+        different frequency span; same-span reanalysis keeps the zoom.
 
 ### P2 — data / ergonomics
 

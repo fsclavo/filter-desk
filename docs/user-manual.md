@@ -226,9 +226,10 @@ The **toolbar** holds **Synthesize**, **Analyze**, **Tune +** (`Ctrl+]`),
 **Stop Frequency**, **N**). **Auto** is enabled by default and chooses a range
 from the filter type: LPFs include 2f/3f, HPFs show the lower skirt and passband,
 and BPF/BSF use both band edges. Uncheck **Auto** to type a custom range; a
-custom range stays in place across analyses and project loads. The band wizard
-keeps its own band sweep. The **status bar** at the bottom reports progress,
-results, and errors.
+custom range stays in place across analyses and project loads. With Auto on, a
+new analysis with a different frequency span also refits the plot, while
+reanalysing the same sweep keeps your zoom. The band wizard keeps its own band
+sweep. The **status bar** at the bottom reports progress, results, and errors.
 
 The window title shows `FilterDesk — <name>`, where `*` marks unsaved changes.
 The name is the project title (see **File → Rename project…**) or, until you

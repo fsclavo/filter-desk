@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.29.1 — 2026-10-29
+
+### Fixed
+
+- With **Auto** enabled, the plot view now refits whenever a new analysis has a
+  different frequency span, even if the one-shot synthesis fit was missed.
+  Reanalysing the same sweep keeps the current zoom for tuning.
+
 ## v0.29.0 — 2026-10-28
 
 ### Added

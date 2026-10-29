@@ -467,6 +467,12 @@ class PlotPanel(QWidget):
         self._curve_zin_abs_meas.setData(fm, np.asarray(np.abs(measured.zin_ohm)))
         self._smith.set_measured_s_params(fm, measured.s11, measured.s22)
 
+    def frequency_range(self) -> tuple[float, float] | None:
+        """First/last frequency of the current result, if any."""
+        if self._freq.size < 2:
+            return None
+        return float(self._freq[0]), float(self._freq[-1])
+
     def auto_range(self) -> None:
         """Fit every Cartesian plot once without leaving auto-range latched."""
         for plot in self._plots:
