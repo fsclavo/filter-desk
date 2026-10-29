@@ -137,11 +137,11 @@ jobs:
       - name: Build Debian package
         run: bash packaging/debian/build_deb.sh
       - name: Verify Debian package in a clean container
-        run: bash packaging/debian/verify_deb.sh "$(ls FilterDesk-*-amd64.deb)"
+        run: bash packaging/debian/verify_deb.sh "$(ls dist/FilterDesk-*-amd64.deb)"
       - uses: actions/upload-artifact@v7.0.2
         with:
           name: linux-deb
-          path: FilterDesk-*-amd64.deb
+          path: dist/FilterDesk-*-amd64.deb
 
   release:
     needs: [linux, windows, appimage, deb]

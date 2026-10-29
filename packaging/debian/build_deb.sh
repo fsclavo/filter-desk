@@ -9,8 +9,16 @@ VERSION="${1:-$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -n 1)}
 VERSION="${VERSION#v}"
 ARCH="${2:-amd64}"
 BUNDLE="${BUNDLE:-$ROOT/dist/FilterDesk}"
-OUT="${OUT:-$ROOT/FilterDesk-${VERSION}-${ARCH}.deb}"
-STAGE="$ROOT/build/deb/filterdesk_${VERSION}_${ARCH}"
+OUT="${OUT:-$ROOT/dist/FilterDesk-${VERSION}-${ARCH}.deb}"
+STAGE="${STAGE:-$ROOT/build/deb/filterdesk_${VERSION}_${ARCH}}"
+
+cleanup() {
+  if [ "${KEEP_DEB_STAGE:-0}" != "1" ]; then
+    rm -rf "$STAGE"
+    rmdir "$(dirname "$STAGE")" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
 
 if [ -z "$VERSION" ]; then
   echo "Could not determine version; pass it as the first argument." >&2
@@ -23,6 +31,7 @@ if [ ! -x "$BUNDLE/FilterDesk" ]; then
 fi
 
 rm -rf "$STAGE"
+mkdir -p "$(dirname "$OUT")"
 mkdir -p \
   "$STAGE/DEBIAN" \
   "$STAGE/opt/filterdesk" \
@@ -70,3 +79,6 @@ chmod 0755 "$STAGE/DEBIAN"
 
 dpkg-deb --build --root-owner-group "$STAGE" "$OUT"
 echo "Wrote $OUT"
+if [ "${KEEP_DEB_STAGE:-0}" = "1" ]; then
+  echo "Kept staging directory: $STAGE" >&2
+fi

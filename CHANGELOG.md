@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.34.1 — 2026-10-29
+
+### Fixed
+
+- Debian packaging now writes the `.deb` to `dist/` and removes the ~750 MB
+  staging tree after each build. Set `KEEP_DEB_STAGE=1` only when debugging.
+
 ## v0.34.0 — 2026-10-29
 
 ### Added

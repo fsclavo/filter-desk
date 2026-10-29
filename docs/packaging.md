@@ -84,8 +84,8 @@ LGPL-3.0 is compliant.
 To cut a release (bump `pyproject.toml` + `src/filterdesk/__init__.py` first):
 
 ```bash
-git tag v0.34.0
-git push origin v0.34.0
+git tag v0.34.1
+git push origin v0.34.1
 ```
 
 ## AppImage
@@ -99,7 +99,7 @@ and launches the GUI.
 ## Debian/Ubuntu package
 
 `packaging/debian/build_deb.sh` turns the same onedir bundle into
-`FilterDesk-<ver>-amd64.deb`. It installs the payload under
+`dist/FilterDesk-<ver>-amd64.deb`. It installs the payload under
 `/opt/filterdesk`, adds `/usr/bin/filterdesk`, a desktop entry and the 256 px
 icon, and copies the Apache-2.0 copyright plus third-party notice into
 `/usr/share/doc/filterdesk/`.
@@ -108,7 +108,7 @@ Build it after the PyInstaller and license steps:
 
 ```bash
 bash packaging/debian/build_deb.sh
-sudo apt install ./FilterDesk-0.34.0-amd64.deb
+sudo apt install ./dist/FilterDesk-0.34.1-amd64.deb
 filterdesk --self-test
 sudo apt remove filterdesk
 ```
@@ -117,6 +117,10 @@ The package targets Ubuntu 22.04+/Debian 12+ (glibc 2.35) and depends on the
 same X/GL runtime libraries as the AppImage. `packaging/debian/verify_deb.sh`
 performs the clean-container check: install, desktop/launcher assertions,
 headless `--self-test`, removal and leftover-file check.
+
+The temporary `/opt/filterdesk` staging tree is removed automatically after
+`dpkg-deb`; set `KEEP_DEB_STAGE=1` only for debugging. The final `.deb` lives in
+`dist/`, which is ignored by git.
 
 ## Package acceptance
 
