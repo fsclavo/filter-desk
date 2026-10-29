@@ -10,7 +10,7 @@ count or release changes.
 [v0.28.2](https://github.com/fsclavo/filter-desk/releases/tag/v0.28.2) ·
 **Next:** v0.29.1 release (data-driven plot refit, pending CI/tag).
 
-**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.10 %**.
+**Verification:** local suite **1100 passed**, 4 skipped (ngspice unavailable); coverage **84.09 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40799362840
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40800624996
 
