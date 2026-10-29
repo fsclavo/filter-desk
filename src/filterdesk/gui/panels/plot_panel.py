@@ -475,6 +475,8 @@ class PlotPanel(QWidget):
 
     def auto_range(self) -> None:
         """Fit every Cartesian plot once without leaving auto-range latched."""
+        if not self.isVisible():
+            return
         for plot in self._plots:
             plot.getViewBox().autoRange(padding=0.05)
 
