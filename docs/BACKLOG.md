@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.43.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.44.0 · **Released:**
 [v0.43.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.43.0) ·
 **Previous:**
 [v0.42.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.42.0) ·
-**Next:** v0.44.0 planning.
+**Next:** v0.44.0 release (N-port core, pending CI/tag).
 
-**Verification:** local suite **1133 passed**, 4 skipped (ngspice unavailable); coverage **82.25 %**.
+**Verification:** local suite **1142 passed**, 4 skipped (ngspice unavailable); coverage **82.31 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41087153689 (Windows 3.12 rerun green)
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41091795271
 
@@ -591,6 +591,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       JSON, separate from the differential 2-port.
 - [x] **Mixed-mode 3-port + Guanella SPICE:** block-diagonal `Sdd/Scc`, GUI/CLI
       reporting and ngspice-validated Guanella differential export.
+- [x] **N-port core:** S-matrix container, port renumbering, termination,
+      parallel branch combination, generic `.sNp` I/O and CLI (ADR-027).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

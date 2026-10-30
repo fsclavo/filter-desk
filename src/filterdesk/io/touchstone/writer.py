@@ -1,4 +1,4 @@
-"""Minimal Touchstone (.s2p / .s1p) writer from AnalysisResult."""
+"""Minimal Touchstone (.sNp / .s2p / .s1p) writers."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
+from filterdesk.analysis.multiport import SParameters
 from filterdesk.analysis.types import AnalysisResult
 
 
@@ -47,6 +48,32 @@ def write_touchstone_s2p(
             f"{s12.real:.12g} {s12.imag:.12g} "
             f"{s22.real:.12g} {s22.imag:.12g}"
         )
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_touchstone_snp(
+    network: SParameters,
+    path: Path | str,
+    *,
+    comment: str | None = None,
+) -> None:
+    """Write a generic Touchstone 1.0 ``.sNp`` in RI format and Hz."""
+    out = Path(path)
+    lines: list[str] = ["! FilterDesk Touchstone N-port export"]
+    if comment:
+        lines.append(f"! {comment}")
+    if network.source:
+        lines.append(f"! source={network.source}")
+    lines.append(f"# HZ S RI R {network.z0_ohm:.12g}")
+    ports = network.n_ports
+    for index, frequency in enumerate(network.frequency_hz):
+        values = [f"{float(frequency):.15g}"]
+        for in_port in range(ports):
+            for out_port in range(ports):
+                value = complex(network.s[index, out_port, in_port])
+                values.append(f"{value.real:.15g}")
+                values.append(f"{value.imag:.15g}")
+        lines.append(" ".join(values))
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

@@ -486,7 +486,8 @@ command's options.
 
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
-            optimize,to-csv,estimate-order,touchstone-info,compare} ...
+            optimize,to-csv,estimate-order,touchstone-info,network,mixed-mode,
+            compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -590,6 +591,25 @@ Most commands accept `--json` for machine-readable output.
     --f-pass 1M --f-stop 2M --ap 0.1 --as 40
   ```
 - **`touchstone-info`** — summarize a Touchstone file.
+- **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
+  - `network info FILE [--json]` — ports, points, range, reference impedance
+    and maximum `|S|`.
+  - `network renumber FILE --order OLD1,OLD2,… --output OUT` — permute ports;
+    new port 1 is the old port named first.
+  - `network terminate FILE --port N --load Z --output OUT` — connect a load
+    (`50`, SI suffix such as `1k`, `open` or `short`) and write the reduced
+    network.
+  - `network combine A.s2p B.s2p … --output OUT.s3p` — parallel-combine two or
+    more grounded 2-port branches at a common input. Port 1 is common, followed
+    by each branch output in argument order.
+
+  The combination uses an ideal common node: branch input voltages are equal
+  and their currents add. It does not insert an isolation network, and all
+  files must share one frequency grid and one real reference impedance.
+  ```bash
+  filterdesk network combine lpf.s2p hpf.s2p --output diplexer.s3p
+  filterdesk network terminate diplexer.s3p --port 3 --load open       --output diplexer_2port.s2p
+  ```
 - **`mixed-mode`** — transform a 4-port `.s4p` into differential, common-mode
   and cross-mode S-parameters. Ports are paired as (1,2) and (3,4); mixed-mode
   references are `Zd = 2·Z0` and `Zc = Z0/2`. `--json` emits the full matrices.

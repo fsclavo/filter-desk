@@ -29,3 +29,4 @@
 - [ADR-024](ADR-024-mixed-mode-tlt.md) — mixed-mode 3-port model and Guanella SPICE export
 - [ADR-025](ADR-025-microstrip-dispersion.md) — Kirschning-Jansen microstrip dispersion
 - [ADR-026](ADR-026-open-end-discontinuity.md) — open-end/stub fringing correction
+- [ADR-027](ADR-027-multiport-core.md) — N-port core and parallel branch combination

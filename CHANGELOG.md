@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.44.0 — 2026-10-30
+
+### Added
+
+- N-port S-parameter core with port renumbering, port termination and parallel
+  combination of grounded 2-port branches.
+- Generic Touchstone `.sNp` reader/writer plus the
+  `network info|renumber|terminate|combine` CLI commands.
+- ADR-027 documents the supported interconnection model and its limits.
+
 ## v0.43.0 — 2026-10-30
 
 ### Changed

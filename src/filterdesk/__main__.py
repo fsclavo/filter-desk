@@ -33,6 +33,7 @@ from filterdesk.analysis.harmonics import (
     compute_harmonics,
 )
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
+from filterdesk.analysis.multiport import MultiportError, SParameters
 from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
 from filterdesk.analysis.stress import (
@@ -119,7 +120,9 @@ from filterdesk.io.spice import (
 )
 from filterdesk.io.touchstone import (
     TouchstoneError,
+    read_sparameters,
     read_touchstone,
+    write_sparameters,
     write_touchstone_s2p,
 )
 from filterdesk.montecarlo import (
@@ -943,6 +946,44 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Emit machine-readable JSON",
     )
+
+    network = sub.add_parser(
+        "network",
+        help="N-port file operations (info, renumber, terminate, combine)",
+    )
+    network_sub = network.add_subparsers(dest="network_command", required=True)
+    net_info = network_sub.add_parser("info", help="Inspect an .sNp file")
+    net_info.add_argument("path", type=Path, help="Touchstone file path")
+    net_info.add_argument("--json", action="store_true", help="Emit JSON")
+    net_renumber = network_sub.add_parser(
+        "renumber", help="Permute the ports of an .sNp file"
+    )
+    net_renumber.add_argument("path", type=Path, help="Input .sNp file")
+    net_renumber.add_argument(
+        "--order",
+        required=True,
+        help="Old port for each new port, e.g. 2,1 or 3,1,2",
+    )
+    net_renumber.add_argument("--output", type=Path, required=True)
+    net_terminate = network_sub.add_parser(
+        "terminate", help="Terminate one port and write the reduced .sNp"
+    )
+    net_terminate.add_argument("path", type=Path, help="Input .sNp file")
+    net_terminate.add_argument("--port", type=int, required=True)
+    net_terminate.add_argument(
+        "--load",
+        default="50",
+        help="Load in ohm (SI suffix allowed), 'open' or 'short'",
+    )
+    net_terminate.add_argument("--output", type=Path, required=True)
+    net_combine = network_sub.add_parser(
+        "combine",
+        help="Parallel-combine 2-port branches at a common input port",
+    )
+    net_combine.add_argument(
+        "branches", type=Path, nargs="+", help="Two or more 2-port .sNp files"
+    )
+    net_combine.add_argument("--output", type=Path, required=True)
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3122,6 +3163,62 @@ def main(argv: list[str] | None = None) -> int:
                 f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "network":
+        try:
+            if args.network_command == "info":
+                network = read_sparameters(args.path)
+                if args.json:
+                    print(
+                        json.dumps(
+                            {
+                                "source": network.source,
+                                "n_ports": network.n_ports,
+                                "n_points": network.n_points,
+                                "f_min_hz": float(network.frequency_hz[0]),
+                                "f_max_hz": float(network.frequency_hz[-1]),
+                                "z0_ohm": network.z0_ohm,
+                                "max_abs_s": float(np.max(np.abs(network.s))),
+                            },
+                            indent=2,
+                        )
+                    )
+                else:
+                    print(network.summary())
+                    if network.source:
+                        print(f"source: {network.source}")
+                    print(f"max |S|: {float(np.max(np.abs(network.s))):.6g}")
+                return 0
+            if args.network_command == "renumber":
+                network = read_sparameters(args.path)
+                order = tuple(
+                    int(part.strip()) for part in args.order.split(",") if part.strip()
+                )
+                network_result = network.port_renumber(order)
+            elif args.network_command == "terminate":
+                network = read_sparameters(args.path)
+                text = args.load.strip().lower()
+                if text in {"open", "inf", "infinity"}:
+                    load = complex(math.inf)
+                elif text in {"short", "0"}:
+                    load = 0j
+                else:
+                    load = complex(parse_si(text))
+                network_result = network.terminate(
+                    args.port, z_load_ohm=load
+                )
+            elif args.network_command == "combine":
+                network_result = SParameters.parallel_branches(
+                    [read_sparameters(path) for path in args.branches]
+                )
+            else:  # pragma: no cover - argparse enforces the subcommand
+                raise MultiportError(f"unknown network command: {args.network_command}")
+            write_sparameters(network_result, args.output)
+            print(f"Wrote {args.output}", file=sys.stderr)
+        except (MultiportError, TouchstoneError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
         return 0
 
     if args.command == "touchstone-info":
