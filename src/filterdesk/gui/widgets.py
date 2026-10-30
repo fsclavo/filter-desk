@@ -3087,43 +3087,6 @@ class DiplexerDialog(QDialog):
         self._tri_high_center.setText("28M")
         self._tri_high_bw = EngineeringLineEdit()
         self._tri_high_bw.setText("500k")
-        self._lp_page = QWidget()
-        lp_form = QFormLayout(self._lp_page)
-        lp_form.setContentsMargins(0, 0, 0, 0)
-        lp_form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
-        lp_form.addRow(tr("High-pass cutoff"), self._high_cutoff)
-        self._bp_page = QWidget()
-        bp_form = QFormLayout(self._bp_page)
-        bp_form.setContentsMargins(0, 0, 0, 0)
-        bp_form.addRow(tr("Low band center"), self._low_center)
-        bp_form.addRow(tr("Low band bandwidth"), self._low_bw)
-        bp_form.addRow(tr("High band center"), self._high_center)
-        bp_form.addRow(tr("High band bandwidth"), self._high_bw)
-        self._duplexer_page = QWidget()
-        dx_form = QFormLayout(self._duplexer_page)
-        dx_form.setContentsMargins(0, 0, 0, 0)
-        dx_form.addRow(tr("TX center"), self._tx_center)
-        dx_form.addRow(tr("TX bandwidth"), self._tx_bw)
-        dx_form.addRow(tr("RX center"), self._rx_center)
-        dx_form.addRow(tr("RX bandwidth"), self._rx_bw)
-        dx_form.addRow(tr("Minimum isolation (dB)"), self._min_isolation)
-        dx_form.addRow(tr("Maximum insertion loss (dB)"), self._max_il)
-        dx_form.addRow(self._auto_order)
-        dx_form.addRow(tr("Max order"), self._max_order)
-        self._triplexer_page = QWidget()
-        tri_form = QFormLayout(self._triplexer_page)
-        tri_form.setContentsMargins(0, 0, 0, 0)
-        tri_form.addRow(tr("Low band center"), self._tri_low_center)
-        tri_form.addRow(tr("Low band bandwidth"), self._tri_low_bw)
-        tri_form.addRow(tr("Mid band center"), self._tri_mid_center)
-        tri_form.addRow(tr("Mid band bandwidth"), self._tri_mid_bw)
-        tri_form.addRow(tr("High band center"), self._tri_high_center)
-        tri_form.addRow(tr("High band bandwidth"), self._tri_high_bw)
-        self._band_fields = QStackedWidget()
-        self._band_fields.addWidget(self._lp_page)
-        self._band_fields.addWidget(self._bp_page)
-        self._band_fields.addWidget(self._duplexer_page)
-        self._band_fields.addWidget(self._triplexer_page)
         self._order = QSpinBox()
         self._order.setRange(1, 12)
         self._order.setValue(5)
@@ -3171,6 +3134,38 @@ class DiplexerDialog(QDialog):
         self._samples.horizontalHeader().setSectionResizeMode(
             QHeaderView.ResizeMode.Stretch
         )
+        self._metrics.setMinimumHeight(150)
+        self._samples.setMinimumHeight(180)
+        self._metrics_page = QWidget()
+        metrics_layout = QVBoxLayout(self._metrics_page)
+        metrics_layout.setContentsMargins(0, 0, 0, 0)
+        metrics_layout.addWidget(self._metrics)
+        metrics_layout.addWidget(self._samples)
+        self._plot = freq_plot(tr("Magnitude"))
+        self._plot.setLogMode(x=True, y=False)
+        self._plot.setLabel("left", tr("Magnitude"), units="dB")
+        self._plot.addLegend()
+        self._plot.setFixedHeight(300)
+        self._curve_low = self._plot.plot(pen=pg.mkPen("#1f77b4", width=2))
+        self._curve_mid = self._plot.plot(pen=pg.mkPen("#ff7f0e", width=2))
+        self._curve_high = self._plot.plot(pen=pg.mkPen("#2ca02c", width=2))
+        self._curve_input = self._plot.plot(pen=pg.mkPen("#d62728", width=2))
+        self._curve_isolation = self._plot.plot(
+            pen=pg.mkPen("#7f7f7f", width=1, style=Qt.PenStyle.DashLine)
+        )
+        self._plot_page = QWidget()
+        plot_layout = QVBoxLayout(self._plot_page)
+        plot_layout.setContentsMargins(0, 0, 0, 0)
+        plot_layout.addWidget(self._plot, 1)
+        self._plot_note = QLabel(
+            tr("Ideal combined-network response; plot floor -160 dB.")
+        )
+        self._plot_note.setWordWrap(True)
+        plot_layout.addWidget(self._plot_note)
+        self._results_tabs = QTabWidget()
+        self._results_tabs.addTab(self._metrics_page, tr("Metrics"))
+        self._results_tabs.addTab(self._plot_page, tr("Magnitude"))
+        self._results_tabs.setMinimumHeight(340)
         self._note = QLabel(
             tr(
                 "Ideal common-node LC model: no antenna, cavity, isolation "
@@ -3211,26 +3206,87 @@ class DiplexerDialog(QDialog):
         ):
             buttons.addButton(button, QDialogButtonBox.ButtonRole.ActionRole)
         form = QFormLayout(self)
+        self._form = form
+        form.setVerticalSpacing(6)
         form.addRow(tr("Type"), self._mode)
-        form.addRow(self._band_fields)
-        form.addRow(tr("Order"), self._order)
-        form.addRow(tr("Family"), self._family)
-        form.addRow(tr("Ripple (dB)"), self._ripple)
-        form.addRow(tr("Stopband attenuation (dB)"), self._stopband)
-        form.addRow(tr("Reference Z0 (Ohm)"), self._z0)
-        form.addRow(tr("Sweep start"), self._f_start)
-        form.addRow(tr("Sweep stop"), self._f_stop)
-        form.addRow(tr("Points"), self._points)
+        self._lp_rows = (self._low_cutoff, self._high_cutoff)
+        self._bp_rows = (
+            self._low_center,
+            self._low_bw,
+            self._high_center,
+            self._high_bw,
+        )
+        self._dx_rows = (
+            self._tx_center,
+            self._tx_bw,
+            self._rx_center,
+            self._rx_bw,
+            self._min_isolation,
+            self._max_il,
+            self._auto_order,
+            self._max_order,
+        )
+        self._tri_rows = (
+            self._tri_low_center,
+            self._tri_low_bw,
+            self._tri_mid_center,
+            self._tri_mid_bw,
+            self._tri_high_center,
+            self._tri_high_bw,
+        )
+        form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
+        form.addRow(tr("High-pass cutoff"), self._high_cutoff)
+        form.addRow(tr("Low band center"), self._low_center)
+        form.addRow(tr("Low band bandwidth"), self._low_bw)
+        form.addRow(tr("High band center"), self._high_center)
+        form.addRow(tr("High band bandwidth"), self._high_bw)
+        form.addRow(tr("TX center"), self._tx_center)
+        form.addRow(tr("TX bandwidth"), self._tx_bw)
+        form.addRow(tr("RX center"), self._rx_center)
+        form.addRow(tr("RX bandwidth"), self._rx_bw)
+        form.addRow(tr("Minimum isolation (dB)"), self._min_isolation)
+        form.addRow(tr("Maximum insertion loss (dB)"), self._max_il)
+        form.addRow(self._auto_order)
+        form.addRow(tr("Max order"), self._max_order)
+        form.addRow(tr("Low band center"), self._tri_low_center)
+        form.addRow(tr("Low band bandwidth"), self._tri_low_bw)
+        form.addRow(tr("Mid band center"), self._tri_mid_center)
+        form.addRow(tr("Mid band bandwidth"), self._tri_mid_bw)
+        form.addRow(tr("High band center"), self._tri_high_center)
+        form.addRow(tr("High band bandwidth"), self._tri_high_bw)
+        form.addRow(
+            _form_pair(tr("Order"), self._order, tr("Family"), self._family)
+        )
+        form.addRow(
+            _form_pair(
+                tr("Ripple (dB)"),
+                self._ripple,
+                tr("Stopband attenuation (dB)"),
+                self._stopband,
+            )
+        )
+        form.addRow(
+            _form_pair(
+                tr("Reference Z0 (Ohm)"),
+                self._z0,
+                tr("Points"),
+                self._points,
+            )
+        )
+        form.addRow(
+            _form_pair(
+                tr("Sweep start"), self._f_start, tr("Sweep stop"), self._f_stop
+            )
+        )
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
-        form.addRow(self._metrics)
-        form.addRow(self._samples)
+        form.addRow(self._results_tabs)
         form.addRow(self._note)
         form.addRow(self._status)
         form.addRow(buttons)
         self._mode.currentIndexChanged.connect(self._on_mode_changed)
         self._auto_order.toggled.connect(self._update_order_enabled)
-        self._update_order_enabled()
+        self._on_mode_changed()
 
     def current_design(
         self,
@@ -3240,12 +3296,10 @@ class DiplexerDialog(QDialog):
         return self._design
 
     def _on_mode_changed(self) -> None:
-        self._band_fields.setCurrentIndex(self._mode.currentIndex())
         mode = self._mode.currentData()
         is_duplexer = mode == "duplexer"
         is_triplexer = mode == "triplexer"
-        self._auto_order.setVisible(is_duplexer)
-        self._max_order.setVisible(is_duplexer)
+        self._set_visible_rows(str(mode))
         self._export_mid_button.setVisible(is_triplexer)
         self._update_order_enabled()
         if is_duplexer:
@@ -3285,6 +3339,18 @@ class DiplexerDialog(QDialog):
         self._samples.setRowCount(0)
         self._branch_summary.setText("-")
         self._status.setText("")
+        self._clear_plot()
+        self._results_tabs.setCurrentIndex(0)
+
+    def _set_visible_rows(self, mode: str) -> None:
+        for lp_widget in self._lp_rows:
+            self._form.setRowVisible(lp_widget, mode == "lp-hp")
+        for bp_widget in self._bp_rows:
+            self._form.setRowVisible(bp_widget, mode == "bp-bp")
+        for dx_widget in self._dx_rows:
+            self._form.setRowVisible(dx_widget, mode == "duplexer")
+        for tri_widget in self._tri_rows:
+            self._form.setRowVisible(tri_widget, mode == "triplexer")
 
     def _update_order_enabled(self) -> None:
         is_duplexer = self._mode.currentData() == "duplexer"
@@ -3388,10 +3454,12 @@ class DiplexerDialog(QDialog):
         ) as exc:
             self._design = None
             self._set_export_enabled(False)
+            self._clear_plot()
             self._status.setText(str(exc))
             return False
         self._design = design
         self._populate(design)
+        self._update_plot(design)
         self._set_export_enabled(True)
         self._status.setText(tr("Design complete."))
         return True
@@ -3663,6 +3731,89 @@ class DiplexerDialog(QDialog):
             self._samples.setUpdatesEnabled(True)
         self._samples.resizeRowsToContents()
 
+    def _clear_plot(self) -> None:
+        empty = np.array([], dtype=float)
+        for curve in (
+            self._curve_low,
+            self._curve_mid,
+            self._curve_high,
+            self._curve_input,
+            self._curve_isolation,
+        ):
+            curve.setData(empty, empty)
+        legend = self._plot.plotItem.legend
+        if legend is not None:
+            legend.clear()
+
+    def _update_plot(
+        self,
+        design: (
+            DiplexerDesign
+            | BandDiplexerDesign
+            | DuplexerDesign
+            | MultiplexerDesign
+        ),
+    ) -> None:
+        network = design.network
+        frequencies = network.frequency_hz
+        active: tuple[tuple[object, np.ndarray, str], ...]
+        if isinstance(design, MultiplexerDesign):
+            low = network.s[:, 1, 0]
+            mid = network.s[:, 2, 0]
+            high = network.s[:, 3, 0]
+            input_s = network.s[:, 0, 0]
+            isolation = np.maximum.reduce(
+                [
+                    np.abs(network.s[:, 2, 1]),
+                    np.abs(network.s[:, 3, 1]),
+                    np.abs(network.s[:, 3, 2]),
+                ]
+            )
+            active = (
+                (self._curve_low, low, tr("S21 (low)")),
+                (self._curve_mid, mid, tr("S31 (mid)")),
+                (self._curve_high, high, tr("S41 (high)")),
+                (self._curve_input, input_s, tr("S11 (input)")),
+                (self._curve_isolation, isolation, tr("Worst isolation")),
+            )
+        else:
+            low = network.s[:, 1, 0]
+            mid = np.array([], dtype=complex)
+            high = network.s[:, 2, 0]
+            input_s = network.s[:, 0, 0]
+            isolation = np.abs(network.s[:, 2, 1])
+            if isinstance(design, DuplexerDesign):
+                low_label = tr("S21 (TX)")
+                high_label = tr("S31 (RX)")
+            else:
+                low_label = tr("S21 (low)")
+                high_label = tr("S31 (high)")
+            active = (
+                (self._curve_low, low, low_label),
+                (self._curve_high, high, high_label),
+                (self._curve_input, input_s, tr("S11 (input)")),
+                (self._curve_isolation, isolation, tr("Worst isolation")),
+            )
+        curves = (
+            (self._curve_low, low),
+            (self._curve_mid, mid),
+            (self._curve_high, high),
+            (self._curve_input, input_s),
+            (self._curve_isolation, isolation),
+        )
+        for curve, values in curves:
+            if values.size == 0:
+                curve.setData(np.array([], dtype=float), np.array([], dtype=float))
+            else:
+                curve.setData(frequencies, _db_array(values))
+        legend = self._plot.plotItem.legend
+        if legend is not None:
+            legend.clear()
+            for curve, _values, label in active:
+                legend.addItem(curve, label)
+        self._plot.autoRange()
+        self._plot.setYRange(-160.0, 5.0, padding=0.0)
+
     def _set_export_enabled(self, enabled: bool) -> None:
         for button in (
             self._export_network_button,
@@ -3708,6 +3859,27 @@ class DiplexerDialog(QDialog):
             if not path.lower().endswith(".s2p"):
                 path += ".s2p"
             self.export_branch(branch, path)
+
+
+def _form_pair(
+    label_a: str, widget_a: QWidget, label_b: str, widget_b: QWidget
+) -> QWidget:
+    container = QWidget()
+    layout = QHBoxLayout(container)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.addWidget(QLabel(label_a))
+    layout.addWidget(widget_a, 1)
+    layout.addSpacing(12)
+    layout.addWidget(QLabel(label_b))
+    layout.addWidget(widget_b, 1)
+    return container
+
+
+def _db_array(values: np.ndarray) -> np.ndarray:
+    return np.asarray(
+        20.0 * np.log10(np.maximum(np.abs(values), 1e-15)),
+        dtype=np.float64,
+    )
 
 
 def _optional_float(text: str) -> float | None:

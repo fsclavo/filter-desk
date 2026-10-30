@@ -1169,6 +1169,12 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._metrics.rowCount() == 9
     assert dialog._samples.rowCount() == 21
     assert dialog._export_network_button.isEnabled()
+    assert dialog._curve_low.getData()[0].size > 0
+    assert dialog._curve_high.getData()[0].size > 0
+    assert dialog._curve_input.getData()[0].size > 0
+    assert dialog._curve_isolation.getData()[0].size > 0
+    mid_data = dialog._curve_mid.getData()[0]
+    assert mid_data is None or mid_data.size == 0
 
     network_path = tmp_path / "diplexer.s3p"
     assert dialog.export_network(network_path)
@@ -1238,6 +1244,9 @@ def test_duplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._metrics.rowCount() == 10
     assert dialog._samples.rowCount() == 21
     assert dialog._samples.horizontalHeaderItem(1).text() == "TX out S21 (dB)"
+    assert dialog._curve_low.getData()[0].size > 0
+    assert dialog._curve_high.getData()[0].size > 0
+    assert dialog._curve_isolation.getData()[0].size > 0
     network_path = tmp_path / "duplexer.s3p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 3
@@ -1277,8 +1286,11 @@ def test_triplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._metrics.rowCount() == 14
     assert dialog._samples.columnCount() == 5
     assert dialog._samples.rowCount() == 21
-    assert dialog._export_mid_button.isVisible() is False  # no parent shown yet
     assert dialog._export_mid_button.isEnabled()
+    assert dialog._curve_low.getData()[0].size > 0
+    assert dialog._curve_mid.getData()[0].size > 0
+    assert dialog._curve_high.getData()[0].size > 0
+    assert dialog._curve_isolation.getData()[0].size > 0
     network_path = tmp_path / "triplexer.s4p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 4
@@ -1286,6 +1298,38 @@ def test_triplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
         branch_path = tmp_path / f"{label}.s2p"
         assert dialog.export_branch(label, branch_path)
         assert read_sparameters(branch_path).n_ports == 2
+    dialog.close()
+    assert app is not None
+
+
+def test_diplexer_dialog_mode_rows_and_plot_tabs() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    assert dialog._form.isRowVisible(dialog._low_cutoff)
+    assert not dialog._form.isRowVisible(dialog._low_center)
+    assert dialog._export_mid_button.isHidden()
+    assert dialog._results_tabs.count() == 2
+    assert dialog._results_tabs.tabText(0) == "Metrics"
+    assert dialog._results_tabs.tabText(1) == "Magnitude"
+
+    dialog._mode.setCurrentIndex(1)
+    assert dialog._form.isRowVisible(dialog._low_center)
+    assert not dialog._form.isRowVisible(dialog._low_cutoff)
+    assert dialog._export_mid_button.isHidden()
+
+    dialog._mode.setCurrentIndex(2)
+    assert dialog._form.isRowVisible(dialog._tx_center)
+    assert dialog._form.isRowVisible(dialog._auto_order)
+    assert dialog._export_mid_button.isHidden()
+
+    dialog._mode.setCurrentIndex(3)
+    assert dialog._form.isRowVisible(dialog._tri_mid_center)
+    assert not dialog._form.isRowVisible(dialog._tx_center)
+    assert not dialog._export_mid_button.isHidden()
     dialog.close()
     assert app is not None
 

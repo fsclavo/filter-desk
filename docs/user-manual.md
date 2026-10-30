@@ -1003,6 +1003,12 @@ loss, out-of-band transmission, input return loss and crossover, plus a
 `.s2p`; the same engines are available as `filterdesk diplexer` and
 `filterdesk band-diplexer` (see [§10](#10-command-line-reference)).
 
+Results are split into **Metrics** and **Magnitude** tabs. **Magnitude** plots
+the combined-network S-parameters versus frequency on a logarithmic frequency
+axis and a dB vertical axis: output paths (S21/S31/S41), input return loss
+(S11) and the worst output-to-output isolation. The plot uses a −160 dB floor so
+the passbands and skirts remain readable; exact deeper nulls are not physical.
+
 In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
 Isolation is the combined `|S32|` in each band; the dialog reports TX/RX
 isolation, worst isolation, insertion loss and return loss, and flags whether

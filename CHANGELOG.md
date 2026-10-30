@@ -3,6 +3,22 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.50.0 — 2026-10-30
+
+### Added
+
+- **Magnitude** tab in the diplexer / multiplexer designer: log-frequency,
+  dB S-parameter curves for output paths, input return loss and worst
+  output-to-output isolation, with a −160 dB plot floor.
+
+### Fixed
+
+- The band-specific input rows no longer reserve the height of the tallest mode,
+  removing the large blank gap in LPF+HPF and BPF+BPF modes.
+- The **Export mid .s2p…** button is hidden outside the triplexer mode, including
+  at initial dialog construction.
+- Common input fields are paired into two-column rows for a more compact dialog.
+
 ## v0.49.0 — 2026-10-30
 
 ### Added

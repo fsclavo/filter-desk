@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.49.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.50.0 · **Released:**
 [v0.49.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.49.0) ·
 **Previous:**
 [v0.48.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.48.0) ·
-**Next:** v0.50.0 planning.
+**Next:** v0.50.0 release (designer layout + magnitude plot, pending CI/tag).
 
-**Verification:** local suite **1165 passed**, 4 skipped (ngspice unavailable); coverage **82.60 %**.
+**Verification:** local suite **1166 passed**, 4 skipped (ngspice unavailable); coverage **82.67 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41129139237
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41130224572
 
@@ -687,6 +687,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       target search, CLI and GUI mode (ADR-030).
 - [x] **Multi-band multiplexer:** labelled BPF branches, triplexer GUI/CLI,
       per-band metrics and `.s4p` export (ADR-031).
+- [x] **Designer layout/plot:** mode-specific row visibility, compact common
+      fields, fixed mid-button visibility and a Magnitude tab.
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain
