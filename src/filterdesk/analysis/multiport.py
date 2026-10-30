@@ -17,6 +17,8 @@ from dataclasses import dataclass, replace
 import numpy as np
 from numpy.typing import NDArray
 
+from filterdesk.analysis.types import AnalysisResult
+
 
 class MultiportError(ValueError):
     """Raised when an N-port network cannot be built or reduced."""
@@ -56,6 +58,33 @@ class SParameters:
             self, "frequency_hz", np.ascontiguousarray(frequency)
         )
         object.__setattr__(self, "s", np.ascontiguousarray(s))
+
+    @classmethod
+    def from_analysis(cls, result: AnalysisResult) -> SParameters:
+        """Build a 2-port network from an ``AnalysisResult``."""
+        z0_source = float(result.z0_source_ohm)
+        z0_load = float(result.z0_load_ohm)
+        if not np.isclose(z0_source, z0_load, rtol=1e-12):
+            raise MultiportError(
+                "a 2-port AnalysisResult with unequal port impedances cannot be "
+                "represented by one scalar z0"
+            )
+        frequency = np.asarray(result.frequency_hz, dtype=float)
+        s11 = np.asarray(result.s11, dtype=np.complex128)
+        s21 = np.asarray(result.s21, dtype=np.complex128)
+        s12 = np.asarray(result.s12, dtype=np.complex128)
+        s22 = np.asarray(result.s22, dtype=np.complex128)
+        s = np.empty((frequency.size, 2, 2), dtype=np.complex128)
+        s[:, 0, 0] = s11
+        s[:, 1, 0] = s21
+        s[:, 0, 1] = s12
+        s[:, 1, 1] = s22
+        return cls(
+            frequency_hz=frequency,
+            s=s,
+            z0_ohm=z0_source,
+            source=result.backend or None,
+        )
 
     @property
     def n_ports(self) -> int:

@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.45.0 — 2026-10-30
+
+### Added
+
+- LPF+HPF diplexer service and `filterdesk diplexer` command. The combined
+  3-port uses port 1 as common, port 2 as low-pass and port 3 as high-pass.
+- Passband insertion loss, out-of-band transmission, input return loss and
+  crossover reporting, plus optional per-branch `.s2p` exports.
+- ADR-028 documents the v1 model and its limits.
+
 ## v0.44.0 — 2026-10-30
 
 ### Added

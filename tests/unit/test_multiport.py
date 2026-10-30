@@ -10,6 +10,7 @@ import pytest
 
 from filterdesk.__main__ import main
 from filterdesk.analysis.multiport import MultiportError, SParameters
+from filterdesk.analysis.types import AnalysisResult
 from filterdesk.io.touchstone import read_sparameters, write_sparameters
 
 
@@ -36,6 +37,29 @@ def test_sparameters_validation() -> None:
         SParameters(np.array([1.0, 2.0]), s, z0_ohm=0.0)
     with pytest.raises(MultiportError):
         SParameters(np.array([1.0, 2.0]), np.full((2, 2, 2), np.nan))
+
+
+def test_from_analysis_result_keeps_port_order() -> None:
+    frequency = _frequencies()
+    zeros = np.zeros_like(frequency)
+    result = AnalysisResult(
+        frequency_hz=frequency,
+        s11=zeros + 0.1,
+        s21=zeros + 0.2,
+        s12=zeros + 0.3,
+        s22=zeros + 0.4,
+        zin_ohm=zeros + 50.0,
+        zout_ohm=zeros + 50.0,
+        z0_source_ohm=50.0,
+        z0_load_ohm=50.0,
+        backend="test",
+    )
+    network = SParameters.from_analysis(result)
+    assert network.s[:, 0, 0] == pytest.approx(0.1)
+    assert network.s[:, 1, 0] == pytest.approx(0.2)
+    assert network.s[:, 0, 1] == pytest.approx(0.3)
+    assert network.s[:, 1, 1] == pytest.approx(0.4)
+    assert network.source == "test"
 
 
 def test_port_renumber_maps_new_ports_to_old_ports() -> None:

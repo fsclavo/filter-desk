@@ -158,6 +158,11 @@ from filterdesk.services.design_sweep import (
     parse_values,
     run_design_sweep,
 )
+from filterdesk.services.diplexer import (
+    DiplexerConfig,
+    DiplexerError,
+    design_diplexer,
+)
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.services.vna_measurement import (
     metadata_path_for,
@@ -984,6 +989,33 @@ def build_parser() -> argparse.ArgumentParser:
         "branches", type=Path, nargs="+", help="Two or more 2-port .sNp files"
     )
     net_combine.add_argument("--output", type=Path, required=True)
+
+    diplexer = sub.add_parser(
+        "diplexer",
+        help="Design an LPF+HPF diplexer and write its 3-port network",
+    )
+    diplexer.add_argument("--low-cutoff", required=True, help="Low-pass cutoff")
+    diplexer.add_argument("--high-cutoff", required=True, help="High-pass cutoff")
+    diplexer.add_argument("--order", type=int, default=5)
+    diplexer.add_argument(
+        "--family",
+        choices=[family.value for family in ApproximationFamily],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    diplexer.add_argument("--ripple", type=float, default=None)
+    diplexer.add_argument("--stopband-att", type=float, default=None)
+    diplexer.add_argument("--z0", default="50")
+    diplexer.add_argument("--f-start", default=None)
+    diplexer.add_argument("--f-stop", default=None)
+    diplexer.add_argument("--points", type=int, default=2001)
+    diplexer.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    diplexer.add_argument("--backend", choices=["abcd", "skrf"], default="abcd")
+    diplexer.add_argument("--output", type=Path, required=True)
+    diplexer.add_argument("--low-output", type=Path, default=None)
+    diplexer.add_argument("--high-output", type=Path, default=None)
+    diplexer.add_argument("--json", action="store_true")
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3163,6 +3195,100 @@ def main(argv: list[str] | None = None) -> int:
                 f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "diplexer":
+        try:
+            low_cutoff = parse_si(str(args.low_cutoff))
+            high_cutoff = parse_si(str(args.high_cutoff))
+            f_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else low_cutoff / 10.0
+            )
+            f_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else high_cutoff * 10.0
+            )
+            diplexer_config = DiplexerConfig(
+                low_cutoff_hz=low_cutoff,
+                high_cutoff_hz=high_cutoff,
+                order=int(args.order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=args.ripple,
+                stopband_attenuation_db=args.stopband_att,
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            diplexer_design = design_diplexer(
+                diplexer_config,
+                SweepConfig(
+                    f_start_hz=f_start,
+                    f_stop_hz=f_stop,
+                    n_points=int(args.points),
+                    spacing=SweepSpacing(str(args.spacing)),
+                ),
+                backend=str(args.backend),
+            )
+            write_sparameters(diplexer_design.network, args.output)
+            if args.low_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(diplexer_design.low_analysis),
+                    args.low_output,
+                )
+            if args.high_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(diplexer_design.high_analysis),
+                    args.high_output,
+                )
+        except (
+            DiplexerError,
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        metrics = diplexer_design.metrics
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "network": {
+                            "n_ports": diplexer_design.network.n_ports,
+                            "n_points": diplexer_design.network.n_points,
+                            "f_min_hz": float(diplexer_design.network.frequency_hz[0]),
+                            "f_max_hz": float(diplexer_design.network.frequency_hz[-1]),
+                            "z0_ohm": diplexer_design.network.z0_ohm,
+                        },
+                        "low_spec": filter_spec_to_mapping(diplexer_design.low_spec),
+                        "high_spec": filter_spec_to_mapping(diplexer_design.high_spec),
+                        "metrics": {
+                            "low_band_hz": list(metrics.low_band_hz),
+                            "high_band_hz": list(metrics.high_band_hz),
+                            "low_insertion_loss_db": metrics.low_insertion_loss_db,
+                            "low_out_of_band_db": metrics.low_out_of_band_db,
+                            "low_return_loss_db": metrics.low_return_loss_db,
+                            "high_insertion_loss_db": metrics.high_insertion_loss_db,
+                            "high_out_of_band_db": metrics.high_out_of_band_db,
+                            "high_return_loss_db": metrics.high_return_loss_db,
+                            "crossover_hz": metrics.crossover_hz,
+                        },
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            low_text = format_engineering(diplexer_config.low_cutoff_hz, "Hz")
+            high_text = format_engineering(diplexer_config.high_cutoff_hz, "Hz")
+            print(
+                f"Diplexer {low_text} LPF + {high_text} HPF, "
+                f"{diplexer_config.order}th order, "
+                f"Z0={diplexer_config.z0_ohm:g} Ohm"
+            )
+            print(f"  {metrics.summary()}")
+            print(f"  Wrote {args.output}")
         return 0
 
     if args.command == "network":

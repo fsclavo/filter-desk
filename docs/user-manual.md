@@ -486,8 +486,8 @@ command's options.
 
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
-            optimize,to-csv,estimate-order,touchstone-info,network,mixed-mode,
-            compare} ...
+            optimize,to-csv,estimate-order,touchstone-info,network,diplexer,
+            mixed-mode,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -590,6 +590,20 @@ Most commands accept `--json` for machine-readable output.
   filterdesk estimate-order --family butterworth --response low_pass \
     --f-pass 1M --f-stop 2M --ap 0.1 --as 40
   ```
+- **`diplexer`** — synthesize an LPF+HPF diplexer and write a 3-port network.
+  Ports are **1 = common**, **2 = low-pass**, **3 = high-pass**. Required:
+  `--low-cutoff`, `--high-cutoff`, `--output`. Options: `--order` (default 5),
+  `--family`, `--ripple`, `--stopband-att`, `--z0` (default 50), `--f-start`,
+  `--f-stop`, `--points`, `--spacing`, `--backend`, `--low-output`,
+  `--high-output`, `--json`.
+  ```bash
+  filterdesk diplexer --low-cutoff 30M --high-cutoff 40M --order 5       --ripple 0.1 --f-start 1M --f-stop 200M --output diplexer.s3p
+  ```
+  The report gives worst insertion loss, out-of-band transmission and input
+  return loss in each passband, plus the crossover. These are metrics of the
+  combined network, not of each branch in isolation. The model is an ideal
+  common-node LC diplexer: no antenna, cavity, isolation network, thermal or
+  high-power validation.
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
   - `network info FILE [--json]` — ports, points, range, reference impedance
