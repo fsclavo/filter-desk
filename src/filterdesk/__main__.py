@@ -170,6 +170,12 @@ from filterdesk.services.duplexer import (
     DuplexerError,
     design_duplexer,
 )
+from filterdesk.services.multiplexer import (
+    MultiplexerBand,
+    MultiplexerConfig,
+    MultiplexerError,
+    design_multiplexer,
+)
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.services.vna_measurement import (
     metadata_path_for,
@@ -1085,6 +1091,38 @@ def build_parser() -> argparse.ArgumentParser:
     duplexer.add_argument("--tx-output", type=Path, default=None)
     duplexer.add_argument("--rx-output", type=Path, default=None)
     duplexer.add_argument("--json", action="store_true")
+
+    triplexer = sub.add_parser(
+        "triplexer",
+        help="Design a three-band BPF triplexer and write its 4-port network",
+    )
+    triplexer.add_argument("--low-center", required=True)
+    triplexer.add_argument("--low-bw", required=True)
+    triplexer.add_argument("--mid-center", required=True)
+    triplexer.add_argument("--mid-bw", required=True)
+    triplexer.add_argument("--high-center", required=True)
+    triplexer.add_argument("--high-bw", required=True)
+    triplexer.add_argument("--order", type=int, default=5)
+    triplexer.add_argument(
+        "--family",
+        choices=[family.value for family in ApproximationFamily],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    triplexer.add_argument("--ripple", type=float, default=None)
+    triplexer.add_argument("--stopband-att", type=float, default=None)
+    triplexer.add_argument("--z0", default="50")
+    triplexer.add_argument("--f-start", default=None)
+    triplexer.add_argument("--f-stop", default=None)
+    triplexer.add_argument("--points", type=int, default=4001)
+    triplexer.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    triplexer.add_argument("--backend", choices=["abcd", "skrf"], default="abcd")
+    triplexer.add_argument("--output", type=Path, required=True)
+    triplexer.add_argument("--low-output", type=Path, default=None)
+    triplexer.add_argument("--mid-output", type=Path, default=None)
+    triplexer.add_argument("--high-output", type=Path, default=None)
+    triplexer.add_argument("--json", action="store_true")
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3264,6 +3302,120 @@ def main(argv: list[str] | None = None) -> int:
                 f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "triplexer":
+        try:
+            low_center = parse_si(str(args.low_center))
+            high_center = parse_si(str(args.high_center))
+            f_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else low_center / 2.0
+            )
+            f_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else high_center * 2.0
+            )
+            triplexer_config = MultiplexerConfig(
+                bands=(
+                    MultiplexerBand(
+                        "low", low_center, parse_si(str(args.low_bw))
+                    ),
+                    MultiplexerBand(
+                        "mid",
+                        parse_si(str(args.mid_center)),
+                        parse_si(str(args.mid_bw)),
+                    ),
+                    MultiplexerBand(
+                        "high", high_center, parse_si(str(args.high_bw))
+                    ),
+                ),
+                order=int(args.order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=args.ripple,
+                stopband_attenuation_db=args.stopband_att,
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            triplexer_design = design_multiplexer(
+                triplexer_config,
+                SweepConfig(
+                    f_start_hz=f_start,
+                    f_stop_hz=f_stop,
+                    n_points=int(args.points),
+                    spacing=SweepSpacing(str(args.spacing)),
+                ),
+                backend=str(args.backend),
+            )
+            write_sparameters(triplexer_design.network, args.output)
+            branch_paths = {
+                "low": args.low_output,
+                "mid": args.mid_output,
+                "high": args.high_output,
+            }
+            for label, path in branch_paths.items():
+                if path is None:
+                    continue
+                branch_analysis = triplexer_design.analysis_for(label)
+                if branch_analysis is not None:
+                    write_sparameters(
+                        SParameters.from_analysis(branch_analysis), path
+                    )
+        except (
+            MultiplexerError,
+            DiplexerError,
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        triplexer_metrics = triplexer_design.metrics
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "network": {
+                            "n_ports": triplexer_design.network.n_ports,
+                            "n_points": triplexer_design.network.n_points,
+                            "f_min_hz": float(
+                                triplexer_design.network.frequency_hz[0]
+                            ),
+                            "f_max_hz": float(
+                                triplexer_design.network.frequency_hz[-1]
+                            ),
+                            "z0_ohm": triplexer_design.network.z0_ohm,
+                        },
+                        "bands": [
+                            {
+                                "label": band.label,
+                                "center_hz": band.center_hz,
+                                "bandwidth_hz": band.bandwidth_hz,
+                                "band_hz": list(metrics.band_hz),
+                                "insertion_loss_db": metrics.insertion_loss_db,
+                                "out_of_band_db": metrics.out_of_band_db,
+                                "return_loss_db": metrics.return_loss_db,
+                            }
+                            for band, metrics in zip(
+                                triplexer_design.bands,
+                                triplexer_metrics.bands,
+                                strict=True,
+                            )
+                        ],
+                        "crossovers_hz": list(triplexer_metrics.crossovers_hz),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"LC triplexer, order {triplexer_design.config.order}, "
+                f"{len(triplexer_design.bands)} bands"
+            )
+            print(f"  {triplexer_metrics.summary()}")
+            print(f"  Wrote {args.output}")
         return 0
 
     if args.command == "duplexer":

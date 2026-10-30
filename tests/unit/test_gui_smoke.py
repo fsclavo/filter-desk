@@ -484,7 +484,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Microstrip line",
         "Coaxial stub notch",
         "4-port mixed-mode",
-        "Diplexer / duplexer designer",
+        "Diplexer / multiplexer designer",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)
@@ -1247,6 +1247,45 @@ def test_duplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog.export_branch("rx", rx_path)
     assert read_sparameters(tx_path).n_ports == 2
     assert read_sparameters(rx_path).n_ports == 2
+    dialog.close()
+    assert app is not None
+
+
+def test_triplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.io.touchstone import read_sparameters
+    from filterdesk.services.multiplexer import MultiplexerDesign
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._mode.setCurrentIndex(3)
+    dialog._tri_low_center.setText("14M")
+    dialog._tri_low_bw.setText("300k")
+    dialog._tri_mid_center.setText("21M")
+    dialog._tri_mid_bw.setText("500k")
+    dialog._tri_high_center.setText("28M")
+    dialog._tri_high_bw.setText("500k")
+    dialog._f_start.setText("5M")
+    dialog._f_stop.setText("40M")
+    dialog._points.setValue(401)
+    assert dialog.design()
+    design = dialog.current_design()
+    assert isinstance(design, MultiplexerDesign)
+    assert design.network.n_ports == 4
+    assert dialog._metrics.rowCount() == 14
+    assert dialog._samples.columnCount() == 5
+    assert dialog._samples.rowCount() == 21
+    assert dialog._export_mid_button.isVisible() is False  # no parent shown yet
+    assert dialog._export_mid_button.isEnabled()
+    network_path = tmp_path / "triplexer.s4p"
+    assert dialog.export_network(network_path)
+    assert read_sparameters(network_path).n_ports == 4
+    for label in ("low", "mid", "high"):
+        branch_path = tmp_path / f"{label}.s2p"
+        assert dialog.export_branch(label, branch_path)
+        assert read_sparameters(branch_path).n_ports == 2
     dialog.close()
     assert app is not None
 

@@ -1084,6 +1084,28 @@ _ES.update(
             "Rama TX: {tx} componentes; rama RX: {rx} componentes; "
             "orden {order}."
         ),
+        "Diplexer / multiplexer designer": (
+            "Diseñador de diplexer / multiplexer"
+        ),
+        "&Diplexer / multiplexer designer…": (
+            "&Diseñador de diplexer / multiplexer…"
+        ),
+        "Design a diplexer, TX/RX duplexer or triplexer.": (
+            "Diseñar un diplexer, duplexer TX/RX o triplexer."
+        ),
+        "Triplexer (3 bands)": "Triplexer (3 bandas)",
+        "Mid band center": "Centro de banda media",
+        "Mid band bandwidth": "Ancho de banda media",
+        "Mid out S31 (dB)": "Salida media S31 (dB)",
+        "High out S41 (dB)": "Salida alta S41 (dB)",
+        "Export mid .s2p…": "Exportar .s2p medio…",
+        "Export mid branch .s2p": "Exportar rama media .s2p",
+        "Branch components: {counts}.": "Componentes por rama: {counts}.",
+        "{label} band": "Banda {label}",
+        "{label} insertion loss": "Pérdida de inserción {label}",
+        "{label} out-of-band": "Fuera de banda {label}",
+        "{label} return loss": "Pérdida de retorno {label}",
+        "{first}/{second} crossover": "Cruce {first}/{second}",
         "Export .s3p…": "Exportar .s3p…",
         "Export diplexer .s3p": "Exportar diplexer .s3p",
         "Export diplexer branch .s2p": "Exportar rama del diplexer .s2p",

@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.49.0 — 2026-10-30
+
+### Added
+
+- Multi-band BPF multiplexer service with labelled bands, per-band insertion
+  loss, worst out-of-band transmission, return loss and adjacent crossovers.
+- Three-band **Triplexer** mode in the GUI and `filterdesk triplexer` CLI.
+  Ports: **1 = common, 2 = low, 3 = mid, 4 = high**.
+- ADR-031 documents the general multiplexer model.
+
 ## v0.48.0 — 2026-10-30
 
 ### Added

@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.48.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.49.0 · **Released:**
 [v0.48.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.48.0) ·
 **Previous:**
 [v0.47.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.47.0) ·
-**Next:** v0.49.0 planning (triplexer / multiplexer).
+**Next:** v0.49.0 release (triplexer/multiplexer, pending CI/tag).
 
-**Verification:** local suite **1160 passed**, 4 skipped (ngspice unavailable); coverage **82.51 %**.
+**Verification:** local suite **1165 passed**, 4 skipped (ngspice unavailable); coverage **82.60 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41123742060
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41125226869
 
@@ -670,6 +670,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       GUI mode (ADR-029).
 - [x] **LC TX/RX duplexer:** common antenna port, TX/RX isolation metrics,
       target search, CLI and GUI mode (ADR-030).
+- [x] **Multi-band multiplexer:** labelled BPF branches, triplexer GUI/CLI,
+      per-band metrics and `.s4p` export (ADR-031).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

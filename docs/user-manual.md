@@ -66,8 +66,9 @@ projects**. A good first path is:
 | Reject AM or FM broadcast | **Design → Band filter wizard…** → Band-stop |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Analyze a measured 4-port balun | **Tools → 4-port mixed-mode…** |
-| Combine low/high bands into one antenna port | **Tools → Diplexer / duplexer designer…** |
-| Share an antenna between TX and RX | **Tools → Diplexer / duplexer designer…** → Duplexer TX/RX |
+| Combine low/high bands into one antenna port | **Tools → Diplexer / multiplexer designer…** |
+| Share an antenna between TX and RX | **Tools → Diplexer / multiplexer designer…** → Duplexer TX/RX |
+| Combine three bands into one port | **Tools → Diplexer / multiplexer designer…** → Triplexer (3 bands) |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
 | Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
@@ -351,7 +352,7 @@ specification edits require an explicit **Synthesize**.
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
-| **Diplexer / duplexer designer** | **Tools → Diplexer / duplexer designer…** | LPF+HPF, BPF+BPF or TX/RX duplexer; combined 3-port metrics and samples, `.s3p` plus optional branch `.s2p` exports |
+| **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or 3-band triplexer; combined metrics and samples, `.s3p`/`.s4p` plus optional branch `.s2p` exports |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -490,7 +491,7 @@ command's options.
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
             optimize,to-csv,estimate-order,touchstone-info,network,diplexer,
-            band-diplexer,duplexer,mixed-mode,compare} ...
+            band-diplexer,duplexer,triplexer,mixed-mode,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -629,6 +630,18 @@ Most commands accept `--json` for machine-readable output.
   filterdesk duplexer --tx-center 145M --tx-bw 1M \
       --rx-center 147M --rx-bw 1M --min-isolation 60 \
       --f-start 140M --f-stop 152M --output duplexer.s3p
+  ```
+- **`triplexer`** — design a three-band BPF triplexer. Required:
+  `--low-center`, `--low-bw`, `--mid-center`, `--mid-bw`, `--high-center`,
+  `--high-bw`, `--output`. Ports are **1 = common**, **2 = low**, **3 = mid**,
+  **4 = high**. Adjacent passbands must not overlap and the sweep must cover
+  all three. The output is a `.s4p`; `--low-output`/`--mid-output`/
+  `--high-output` add branch `.s2p` files.
+  ```bash
+  filterdesk triplexer --low-center 14M --low-bw 300k \
+      --mid-center 21M --mid-bw 500k --high-center 28M --high-bw 500k \
+      --order 5 --ripple 0.1 --f-start 5M --f-stop 40M \
+      --output triplexer.s4p
   ```
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
@@ -971,14 +984,16 @@ temperature/DC-bias derating on hardware. SPICE/LTspice/Qucs exports represent
 the ideal transformer part; SPICE adds the scalar leakage/core-loss terms, but
 the TLT line section is not exported.
 
-### Diplexer / duplexer designer
+### Diplexer / multiplexer designer
 
-**Tools → Diplexer / duplexer designer…** supports three modes:
+**Tools → Diplexer / multiplexer designer…** supports four modes:
 
 - **LPF + HPF** — low-pass cutoff and high-pass cutoff.
 - **BPF + BPF** — independent center and bandwidth for the low and high bands.
 - **Duplexer TX/RX** — independent TX/RX center frequencies and bandwidths,
   with a minimum isolation target and optional automatic order search.
+- **Triplexer (3 bands)** — low/mid/high band-pass branches combined at a
+  common input; ports are **1 = common**, **2 = low**, **3 = mid**, **4 = high**.
 
 The first two modes share family, order, ripple/stopband rules and reference
 impedance, then combine at a common input. Ports are **1 = common**, **2 = low
@@ -1002,6 +1017,12 @@ ideal common-node LC duplexer: it does not include an antenna, cavity resonators
 a circulator, isolation network, component parasitics beyond the selected
 models, thermal behavior or high-power validation. Do not treat it as a repeater
 duplexer without the required isolation analysis.
+
+**Triplexer (3 bands)** uses the same common-node model with three band-pass
+branches. It reports each band's insertion loss, worst out-of-band transmission
+to the other outputs and input return loss, plus the low/mid and mid/high
+crossovers. Adjacent passbands must not overlap and the sweep must cover all
+three. The triplexer is available in the GUI and as `filterdesk triplexer`.
 
 ### Microstrip / distributed calculators
 

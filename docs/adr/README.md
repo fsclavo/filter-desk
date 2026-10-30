@@ -33,3 +33,4 @@
 - [ADR-028](ADR-028-diplexer-v1.md) — LPF+HPF diplexer on the N-port core
 - [ADR-029](ADR-029-bpf-bpf-diplexer.md) — BPF+BPF diplexer extension
 - [ADR-030](ADR-030-lc-duplexer-tx-rx.md) — LC TX/RX duplexer with isolation target
+- [ADR-031](ADR-031-multiband-multiplexer.md) — multi-band BPF multiplexer/triplexer

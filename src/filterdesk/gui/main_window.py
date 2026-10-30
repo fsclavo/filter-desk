@@ -597,7 +597,7 @@ class MainWindow(QMainWindow):
         act_four_port = QAction(tr("&4-port mixed-mode…"), self)
         act_four_port.triggered.connect(self._run_four_port_mixed)
         tools_menu.addAction(act_four_port)
-        act_diplexer = QAction(tr("&Diplexer / duplexer designer…"), self)
+        act_diplexer = QAction(tr("&Diplexer / multiplexer designer…"), self)
         act_diplexer.triggered.connect(self._run_diplexer)
         tools_menu.addAction(act_diplexer)
 
@@ -670,7 +670,7 @@ class MainWindow(QMainWindow):
             act_microstrip: tr("Microstrip line, stub and quarter-wave calculators."),
             act_coax: tr("Design a shunt coax stub notch."),
             act_four_port: tr("Import an .s4p and inspect mixed-mode S data."),
-            act_diplexer: tr("Design an LPF+HPF, BPF+BPF or TX/RX duplexer."),
+            act_diplexer: tr("Design a diplexer, TX/RX duplexer or triplexer."),
             act_docs: tr("Open the user manual in a browser."),
             act_confidence: tr("Inspect model validation and confidence levels."),
             act_about: tr("Show version and license information."),

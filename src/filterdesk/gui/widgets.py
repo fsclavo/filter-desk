@@ -148,6 +148,13 @@ from filterdesk.services.inductor_realization import (
     realize_from_toroid_design,
 )
 from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.services.multiplexer import (
+    MultiplexerBand,
+    MultiplexerConfig,
+    MultiplexerDesign,
+    MultiplexerError,
+    design_multiplexer,
+)
 from filterdesk.services.vna_measurement import VnaMeasurementMetadata
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
@@ -3029,13 +3036,16 @@ class DiplexerDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Diplexer / duplexer designer"))
+        self.setWindowTitle(tr("Diplexer / multiplexer designer"))
         self.setMinimumWidth(760)
-        self._design: DiplexerDesign | BandDiplexerDesign | DuplexerDesign | None = None
+        self._design: (
+        DiplexerDesign | BandDiplexerDesign | DuplexerDesign | MultiplexerDesign | None
+    ) = None
         self._mode = QComboBox()
         self._mode.addItem(tr("LPF + HPF"), "lp-hp")
         self._mode.addItem(tr("BPF + BPF"), "bp-bp")
         self._mode.addItem(tr("Duplexer TX/RX"), "duplexer")
+        self._mode.addItem(tr("Triplexer (3 bands)"), "triplexer")
         self._low_cutoff = EngineeringLineEdit()
         self._low_cutoff.setText("30M")
         self._high_cutoff = EngineeringLineEdit()
@@ -3065,6 +3075,18 @@ class DiplexerDialog(QDialog):
         self._max_order = QSpinBox()
         self._max_order.setRange(1, 12)
         self._max_order.setValue(9)
+        self._tri_low_center = EngineeringLineEdit()
+        self._tri_low_center.setText("14M")
+        self._tri_low_bw = EngineeringLineEdit()
+        self._tri_low_bw.setText("300k")
+        self._tri_mid_center = EngineeringLineEdit()
+        self._tri_mid_center.setText("21M")
+        self._tri_mid_bw = EngineeringLineEdit()
+        self._tri_mid_bw.setText("500k")
+        self._tri_high_center = EngineeringLineEdit()
+        self._tri_high_center.setText("28M")
+        self._tri_high_bw = EngineeringLineEdit()
+        self._tri_high_bw.setText("500k")
         self._lp_page = QWidget()
         lp_form = QFormLayout(self._lp_page)
         lp_form.setContentsMargins(0, 0, 0, 0)
@@ -3088,10 +3110,20 @@ class DiplexerDialog(QDialog):
         dx_form.addRow(tr("Maximum insertion loss (dB)"), self._max_il)
         dx_form.addRow(self._auto_order)
         dx_form.addRow(tr("Max order"), self._max_order)
+        self._triplexer_page = QWidget()
+        tri_form = QFormLayout(self._triplexer_page)
+        tri_form.setContentsMargins(0, 0, 0, 0)
+        tri_form.addRow(tr("Low band center"), self._tri_low_center)
+        tri_form.addRow(tr("Low band bandwidth"), self._tri_low_bw)
+        tri_form.addRow(tr("Mid band center"), self._tri_mid_center)
+        tri_form.addRow(tr("Mid band bandwidth"), self._tri_mid_bw)
+        tri_form.addRow(tr("High band center"), self._tri_high_center)
+        tri_form.addRow(tr("High band bandwidth"), self._tri_high_bw)
         self._band_fields = QStackedWidget()
         self._band_fields.addWidget(self._lp_page)
         self._band_fields.addWidget(self._bp_page)
         self._band_fields.addWidget(self._duplexer_page)
+        self._band_fields.addWidget(self._triplexer_page)
         self._order = QSpinBox()
         self._order.setRange(1, 12)
         self._order.setValue(5)
@@ -3154,15 +3186,19 @@ class DiplexerDialog(QDialog):
         self._export_network_button = QPushButton(tr("Export .s3p…"))
         self._export_low_button = QPushButton(tr("Export low .s2p…"))
         self._export_high_button = QPushButton(tr("Export high .s2p…"))
+        self._export_mid_button = QPushButton(tr("Export mid .s2p…"))
+        self._export_mid_button.setVisible(False)
         for button in (
             self._export_network_button,
             self._export_low_button,
+            self._export_mid_button,
             self._export_high_button,
         ):
             button.setEnabled(False)
         self._export_network_button.clicked.connect(self._export_network)
         self._export_low_button.clicked.connect(lambda: self._export_branch("low"))
         self._export_high_button.clicked.connect(lambda: self._export_branch("high"))
+        self._export_mid_button.clicked.connect(self._export_mid)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
@@ -3170,6 +3206,7 @@ class DiplexerDialog(QDialog):
             self._design_button,
             self._export_network_button,
             self._export_low_button,
+            self._export_mid_button,
             self._export_high_button,
         ):
             buttons.addButton(button, QDialogButtonBox.ButtonRole.ActionRole)
@@ -3197,29 +3234,51 @@ class DiplexerDialog(QDialog):
 
     def current_design(
         self,
-    ) -> DiplexerDesign | BandDiplexerDesign | DuplexerDesign | None:
+    ) -> (
+        DiplexerDesign | BandDiplexerDesign | DuplexerDesign | MultiplexerDesign | None
+    ):
         return self._design
 
     def _on_mode_changed(self) -> None:
         self._band_fields.setCurrentIndex(self._mode.currentIndex())
-        is_duplexer = self._mode.currentData() == "duplexer"
+        mode = self._mode.currentData()
+        is_duplexer = mode == "duplexer"
+        is_triplexer = mode == "triplexer"
         self._auto_order.setVisible(is_duplexer)
         self._max_order.setVisible(is_duplexer)
+        self._export_mid_button.setVisible(is_triplexer)
         self._update_order_enabled()
-        self._export_low_button.setText(
-            tr("Export TX .s2p…") if is_duplexer else tr("Export low .s2p…")
-        )
-        self._export_high_button.setText(
-            tr("Export RX .s2p…") if is_duplexer else tr("Export high .s2p…")
-        )
-        self._samples.setHorizontalHeaderLabels(
-            [
+        if is_duplexer:
+            low_label = tr("Export TX .s2p…")
+            high_label = tr("Export RX .s2p…")
+        else:
+            low_label = tr("Export low .s2p…")
+            high_label = tr("Export high .s2p…")
+        self._export_low_button.setText(low_label)
+        self._export_high_button.setText(high_label)
+        self._samples.setColumnCount(5 if is_triplexer else 4)
+        headers = [
+            tr("Frequency"),
+            tr("Low out S21 (dB)"),
+            tr("High out S31 (dB)"),
+            tr("Input S11 (dB)"),
+        ]
+        if is_duplexer:
+            headers = [
                 tr("Frequency"),
-                tr("TX out S21 (dB)" if is_duplexer else "Low out S21 (dB)"),
-                tr("RX out S31 (dB)" if is_duplexer else "High out S31 (dB)"),
+                tr("TX out S21 (dB)"),
+                tr("RX out S31 (dB)"),
                 tr("Input S11 (dB)"),
             ]
-        )
+        elif is_triplexer:
+            headers = [
+                tr("Frequency"),
+                tr("Low out S21 (dB)"),
+                tr("Mid out S31 (dB)"),
+                tr("High out S41 (dB)"),
+                tr("Input S11 (dB)"),
+            ]
+        self._samples.setHorizontalHeaderLabels(headers)
         self._design = None
         self._set_export_enabled(False)
         self._metrics.setRowCount(0)
@@ -3244,8 +3303,39 @@ class DiplexerDialog(QDialog):
                 n_points=int(self._points.value()),
                 spacing=SweepSpacing.LOGARITHMIC,
             )
-            design: DiplexerDesign | BandDiplexerDesign | DuplexerDesign
-            if self._mode.currentData() == "duplexer":
+            design: (
+                DiplexerDesign
+                | BandDiplexerDesign
+                | DuplexerDesign
+                | MultiplexerDesign
+            )
+            if self._mode.currentData() == "triplexer":
+                multiplexer_config = MultiplexerConfig(
+                    bands=(
+                        MultiplexerBand(
+                            "low",
+                            parse_si(self._tri_low_center.text()),
+                            parse_si(self._tri_low_bw.text()),
+                        ),
+                        MultiplexerBand(
+                            "mid",
+                            parse_si(self._tri_mid_center.text()),
+                            parse_si(self._tri_mid_bw.text()),
+                        ),
+                        MultiplexerBand(
+                            "high",
+                            parse_si(self._tri_high_center.text()),
+                            parse_si(self._tri_high_bw.text()),
+                        ),
+                    ),
+                    order=order,
+                    family=family,
+                    ripple_db=ripple,
+                    stopband_attenuation_db=stopband,
+                    z0_ohm=z0,
+                )
+                design = design_multiplexer(multiplexer_config, sweep)
+            elif self._mode.currentData() == "duplexer":
                 duplexer_config = DuplexerConfig(
                     tx_center_hz=parse_si(self._tx_center.text()),
                     tx_bandwidth_hz=parse_si(self._tx_bw.text()),
@@ -3290,7 +3380,12 @@ class DiplexerDialog(QDialog):
                     z0_ohm=z0,
                 )
                 design = design_diplexer(config, sweep)
-        except (DiplexerError, DuplexerError, ValueError) as exc:
+        except (
+            DiplexerError,
+            DuplexerError,
+            MultiplexerError,
+            ValueError,
+        ) as exc:
             self._design = None
             self._set_export_enabled(False)
             self._status.setText(str(exc))
@@ -3313,9 +3408,19 @@ class DiplexerDialog(QDialog):
         return True
 
     def export_branch(self, branch: str, path: str | Path) -> bool:
-        if self._design is None or branch not in {"low", "high", "tx", "rx"}:
+        if self._design is None or branch not in {
+            "low",
+            "mid",
+            "high",
+            "tx",
+            "rx",
+        }:
             return False
-        if isinstance(self._design, DuplexerDesign):
+        if isinstance(self._design, MultiplexerDesign):
+            analysis = self._design.analysis_for(branch)
+            if analysis is None:
+                return False
+        elif isinstance(self._design, DuplexerDesign):
             analysis = (
                 self._design.tx_analysis
                 if branch in {"low", "tx"}
@@ -3336,8 +3441,17 @@ class DiplexerDialog(QDialog):
         return True
 
     def _populate(
-        self, design: DiplexerDesign | BandDiplexerDesign | DuplexerDesign
+        self,
+        design: (
+            DiplexerDesign
+            | BandDiplexerDesign
+            | DuplexerDesign
+            | MultiplexerDesign
+        ),
     ) -> None:
+        if isinstance(design, MultiplexerDesign):
+            self._populate_multiplexer(design)
+            return
         if isinstance(design, DuplexerDesign):
             self._populate_duplexer(design)
             return
@@ -3468,10 +3582,92 @@ class DiplexerDialog(QDialog):
             self._samples.setUpdatesEnabled(True)
         self._samples.resizeRowsToContents()
 
+    def _populate_multiplexer(self, design: MultiplexerDesign) -> None:
+        metrics = design.metrics
+        rows: list[tuple[str, str]] = []
+        for band in metrics.bands:
+            rows.extend(
+                [
+                    (
+                        tr("{label} band").format(label=band.label.capitalize()),
+                        f"{format_engineering(band.band_hz[0], 'Hz')}–"
+                        f"{format_engineering(band.band_hz[1], 'Hz')}",
+                    ),
+                    (
+                        tr("{label} insertion loss").format(
+                            label=band.label.capitalize()
+                        ),
+                        _db_text(band.insertion_loss_db),
+                    ),
+                    (
+                        tr("{label} out-of-band").format(
+                            label=band.label.capitalize()
+                        ),
+                        _db_text(band.out_of_band_db),
+                    ),
+                    (
+                        tr("{label} return loss").format(
+                            label=band.label.capitalize()
+                        ),
+                        _db_text(band.return_loss_db),
+                    ),
+                ]
+            )
+        for index, crossover in enumerate(metrics.crossovers_hz):
+            first = metrics.bands[index].label.capitalize()
+            second = metrics.bands[index + 1].label.capitalize()
+            rows.append(
+                (
+                    tr("{first}/{second} crossover").format(
+                        first=first, second=second
+                    ),
+                    "n/a"
+                    if crossover is None
+                    else format_engineering(crossover, "Hz"),
+                )
+            )
+        self._metrics.setUpdatesEnabled(False)
+        try:
+            self._metrics.setRowCount(len(rows))
+            for row, (label, value) in enumerate(rows):
+                self._metrics.setItem(row, 0, QTableWidgetItem(label))
+                self._metrics.setItem(row, 1, QTableWidgetItem(value))
+        finally:
+            self._metrics.setUpdatesEnabled(True)
+        self._metrics.resizeRowsToContents()
+        counts = ", ".join(
+            f"{band.label}: {len(circuit.elements)}"
+            for band, circuit in zip(design.bands, design.circuits, strict=True)
+        )
+        self._branch_summary.setText(
+            tr("Branch components: {counts}.", counts=counts)
+        )
+        network = design.network
+        indices = np.linspace(
+            0, network.n_points - 1, min(21, network.n_points), dtype=int
+        )
+        self._samples.setUpdatesEnabled(False)
+        try:
+            self._samples.setRowCount(indices.size)
+            for row, index in enumerate(indices):
+                values = [
+                    format_engineering(float(network.frequency_hz[index]), "Hz"),
+                    _db_text(_db(network.s[index, 1, 0])),
+                    _db_text(_db(network.s[index, 2, 0])),
+                    _db_text(_db(network.s[index, 3, 0])),
+                    _db_text(_db(network.s[index, 0, 0])),
+                ]
+                for column, value in enumerate(values):
+                    self._samples.setItem(row, column, QTableWidgetItem(value))
+        finally:
+            self._samples.setUpdatesEnabled(True)
+        self._samples.resizeRowsToContents()
+
     def _set_export_enabled(self, enabled: bool) -> None:
         for button in (
             self._export_network_button,
             self._export_low_button,
+            self._export_mid_button,
             self._export_high_button,
         ):
             button.setEnabled(enabled)
@@ -3487,6 +3683,18 @@ class DiplexerDialog(QDialog):
             if not path.lower().endswith(".s3p"):
                 path += ".s3p"
             self.export_network(path)
+
+    def _export_mid(self) -> None:
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export mid branch .s2p"),
+            "triplexer_mid.s2p",
+            "Touchstone 2-port (*.s2p);;All files (*)",
+        )
+        if path:
+            if not path.lower().endswith(".s2p"):
+                path += ".s2p"
+            self.export_branch("mid", path)
 
     def _export_branch(self, branch: str) -> None:
         suffix = "_low" if branch == "low" else "_high"
