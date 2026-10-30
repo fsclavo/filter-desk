@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.42.0 — 2026-10-30
+
+### Added
+
+- Markdown/HTML build sheets now include the TX harmonic-rejection table when a
+  harmonic reference is available, both from the GUI and from
+  `analyze --harmonics --export-build-sheet`.
+
 ## v0.41.0 — 2026-10-29
 
 ### Added

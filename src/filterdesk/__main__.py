@@ -2191,6 +2191,7 @@ def main(argv: list[str] | None = None) -> int:
                 spec=spec,
                 stress=stress,
                 power_w=args.power,
+                harmonics=harmonics,
                 title=f"{spec.family.value} n={spec.order} {spec.response.value}",
                 series=bom_series,
                 group=bool(args.bom_group),

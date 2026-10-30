@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from filterdesk.__main__ import main
+from filterdesk.analysis.harmonics import Harmonic, HarmonicReport
 from filterdesk.analysis.stress import compute_stress
 from filterdesk.components_std import ESeries
 from filterdesk.domain.circuit import (
@@ -160,6 +161,58 @@ def test_write_build_sheet_markdown(tmp_path: Path) -> None:
     assert "Forward power | 5 W" in text
     assert "- Use 1% parts." in text
     assert "- Toroid T50-2" in text
+
+
+def test_build_sheet_includes_harmonic_rejection() -> None:
+    report = HarmonicReport(
+        fundamental_hz=100e6,
+        fundamental_s21_db=-0.2,
+        harmonics=(
+            Harmonic(2, 200e6, -45.0, 44.8),
+            Harmonic(3, 300e6, -62.0, 61.8),
+        ),
+    )
+    text = render_build_sheet_markdown(
+        build_sheet_rows(_series_lc_circuit()), harmonics=report
+    )
+    assert "## Harmonic rejection" in text
+    assert "| 2 | 200 MHz | -45.000 dB | 44.8 dB |" in text
+    assert "Worst harmonic: order 2 (44.8 dB)." in text
+
+    html = render_build_sheet_html(
+        build_sheet_rows(_series_lc_circuit()), harmonics=report
+    )
+    assert "<h2>Harmonic rejection</h2>" in html
+    assert "<td>200 MHz</td>" in html
+    assert "Worst harmonic: order 2" in html
+
+
+def test_cli_build_sheet_includes_harmonics(
+    tmp_path: Path,
+) -> None:
+    out = tmp_path / "tx_sheet.md"
+    code = main(
+        [
+            "analyze",
+            "--family",
+            "butterworth",
+            "--response",
+            "low_pass",
+            "--order",
+            "3",
+            "--cutoff",
+            "7M",
+            "--points",
+            "256",
+            "--harmonics",
+            "--export-build-sheet",
+            str(out),
+        ]
+    )
+    assert code == 0
+    text = out.read_text(encoding="utf-8")
+    assert "## Harmonic rejection" in text
+    assert "Worst harmonic: order" in text
 
 
 def test_html_renderer_escapes_text() -> None:

@@ -2618,6 +2618,7 @@ class MainWindow(QMainWindow):
                 tolerances=tolerances,
                 stress=self._session.compute_stress(),
                 power_w=self._session.power_w,
+                harmonics=self._session.compute_harmonics(),
                 title=self._export_title(),
                 series=series,
                 group=group,

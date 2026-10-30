@@ -742,8 +742,9 @@ The format follows the extension:
   `wire_awg`, `v_peak_v`, `i_peak_a`. Use `--bom-columns` to pick a subset.
 - `.md` / `.html` — printable build sheet with the specification summary, the
   BOM table (values, tolerance, parasitics, DCR/SRF, winding, peak V/I) and
-  optional notes. HTML has no external assets, so it prints or exports to PDF
-  from a browser.
+  optional notes. When a TX harmonic reference is available, these formats also
+  include the harmonic-rejection table and the worst order. HTML has no
+  external assets, so it prints or exports to PDF from a browser.
 
 Options: `--bom-series E24` snaps L/C to a preferred series (showing the nearest
 value and the relative change), and `--bom-group` merges identical parts into one

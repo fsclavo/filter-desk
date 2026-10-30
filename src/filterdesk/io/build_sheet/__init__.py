@@ -18,6 +18,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from filterdesk.analysis.harmonics import HarmonicReport
 from filterdesk.analysis.stress import StressReport
 from filterdesk.components_std import ESeries, nearest_e_series
 from filterdesk.confidence import assumptions_for_circuit
@@ -463,11 +464,24 @@ def _table_cells(row: BuildSheetRow) -> list[str]:
     return [_column_value(row, column, human=True) for column in _SHEET_COLUMNS]
 
 
+def _harmonic_rows(report: HarmonicReport) -> list[tuple[str, str, str, str]]:
+    return [
+        (
+            str(h.order),
+            format_engineering(h.frequency_hz, "Hz", digits=6),
+            f"{h.s21_db:.3f} dB",
+            f"{h.suppression_db:.1f} dB",
+        )
+        for h in report.harmonics
+    ]
+
+
 def render_build_sheet_markdown(
     rows: Sequence[BuildSheetRow],
     *,
     spec: FilterSpec | None = None,
     power_w: float = 0.0,
+    harmonics: HarmonicReport | None = None,
     title: str = "",
     notes: Sequence[str] = (),
     assumptions: Sequence[str] = (),
@@ -479,6 +493,27 @@ def render_build_sheet_markdown(
     if pairs:
         lines += ["", "## Specification", "", "| Item | Value |", "| --- | --- |"]
         lines += [f"| {key} | {value} |" for key, value in pairs]
+
+    if harmonics is not None and harmonics.harmonics:
+        lines += [
+            "",
+            "## Harmonic rejection",
+            "",
+            f"Fundamental: {format_engineering(harmonics.fundamental_hz, 'Hz')} "
+            f"({harmonics.fundamental_s21_db:.3f} dB)",
+            "",
+            "| Order | Frequency | S21 | Suppression |",
+            "| --- | --- | --- | --- |",
+        ]
+        lines += [
+            f"| {order} | {freq} | {s21} | {suppression} |"
+            for order, freq, s21, suppression in _harmonic_rows(harmonics)
+        ]
+        lines += [
+            "",
+            f"Worst harmonic: order {harmonics.worst_order} "
+            f"({harmonics.min_suppression_db:.1f} dB).",
+        ]
 
     lines += [
         "",
@@ -506,6 +541,7 @@ def render_build_sheet_html(
     *,
     spec: FilterSpec | None = None,
     power_w: float = 0.0,
+    harmonics: HarmonicReport | None = None,
     title: str = "",
     notes: Sequence[str] = (),
     assumptions: Sequence[str] = (),
@@ -538,6 +574,30 @@ def render_build_sheet_html(
             for key, value in pairs
         ]
         parts.append("</table>")
+
+    if harmonics is not None and harmonics.harmonics:
+        fundamental = html.escape(
+            format_engineering(harmonics.fundamental_hz, "Hz")
+        )
+        parts += [
+            "<h2>Harmonic rejection</h2>",
+            (
+                f"<p>Fundamental: {fundamental} "
+                f"({harmonics.fundamental_s21_db:.3f} dB)</p>"
+            ),
+            "<table>",
+            "<tr><th>Order</th><th>Frequency</th><th>S21</th><th>Suppression</th></tr>",
+        ]
+        for order, freq, s21, suppression in _harmonic_rows(harmonics):
+            parts.append(
+                f"<tr><td>{html.escape(order)}</td><td>{html.escape(freq)}</td>"
+                f"<td>{html.escape(s21)}</td><td>{html.escape(suppression)}</td></tr>"
+            )
+        parts.append("</table>")
+        parts.append(
+            f"<p>Worst harmonic: order {harmonics.worst_order} "
+            f"({harmonics.min_suppression_db:.1f} dB).</p>"
+        )
 
     parts += ["<h2>Bill of materials</h2>", "<table>", "<tr>"]
     parts += [f"<th>{head}</th>" for head in _SHEET_HEADERS]
@@ -572,6 +632,7 @@ def write_build_sheet(
     tolerances: Mapping[str, float] | None = None,
     stress: StressReport | None = None,
     power_w: float = 0.0,
+    harmonics: HarmonicReport | None = None,
     title: str = "",
     notes: Sequence[str] = (),
     series: ESeries | None = None,
@@ -604,6 +665,7 @@ def write_build_sheet(
             rows,
             spec=spec,
             power_w=power_w,
+            harmonics=harmonics,
             title=title,
             notes=notes,
             assumptions=assumption_items,
@@ -613,6 +675,7 @@ def write_build_sheet(
             rows,
             spec=spec,
             power_w=power_w,
+            harmonics=harmonics,
             title=title,
             notes=notes,
             assumptions=assumption_items,
