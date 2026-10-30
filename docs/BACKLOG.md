@@ -5,14 +5,14 @@ decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
 **Last verified:** 2026-10-30 · **App version:** 0.43.0 · **Released:**
-[v0.42.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.42.0) ·
+[v0.43.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.43.0) ·
 **Previous:**
-[v0.41.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.41.0) ·
-**Next:** v0.43.0 release (worst-case power stress, pending CI/tag).
+[v0.42.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.42.0) ·
+**Next:** v0.44.0 planning.
 
 **Verification:** local suite **1133 passed**, 4 skipped (ngspice unavailable); coverage **82.25 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41081749438
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41083497613
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41087153689 (Windows 3.12 rerun green)
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41091795271
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -103,7 +103,19 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.42.0 release
+## 3. v0.43.0 release
+
+- [x] Report worst-case Vpk/Ipk over up to 25 sweep points.
+- [x] Track voltage and current maxima independently with their frequencies.
+- [x] Show the swept range in the status-bar tooltip; note worst-case values in build sheets.
+- [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.43.0.
+- [x] CHANGELOG/manual/backlog updated.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
+
+---
+
+## 4. v0.42.0 release
 
 - [x] Add TX harmonic-rejection table to Markdown/HTML build sheets.
 - [x] Pass harmonics from GUI and `analyze --harmonics --export-build-sheet`.
@@ -114,7 +126,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.41.0 release
+## 5. v0.41.0 release
 
 - [x] Add **Tune…** to the Measurements dock.
 - [x] Reuse the existing VNA tuning workflow after activating the capture.
@@ -125,7 +137,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.40.0 release
+## 6. v0.40.0 release
 
 - [x] Make measurement metadata editable with validation.
 - [x] Persist edited metadata in the project.
@@ -136,7 +148,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.39.0 release
+## 7. v0.39.0 release
 
 - [x] Add measurement details/provenance view.
 - [x] Add per-capture comparison against the current analysis.
@@ -147,7 +159,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.38.0 release
+## 8. v0.38.0 release
 
 - [x] Add persistent measurement history per project.
 - [x] Store VNA/calibration/reference metadata and active overlay.
@@ -159,7 +171,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.37.1 release
+## 9. v0.37.1 release
 
 - [x] Reuse the main S21/S11 SI/log-frequency axis in the coax notch plot.
 - [x] Show plain tick numbers without exponent notation.
@@ -170,7 +182,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.37.0 release
+## 10. v0.37.0 release
 
 - [x] Plot estimated S21/S11 in the coax notch dialog.
 - [x] Export full notch response to CSV with design metadata.
@@ -181,7 +193,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.36.0 release
+## 11. v0.36.0 release
 
 - [x] Add typical coax cable presets with frequency-dependent loss.
 - [x] Add estimated notch response, depth, −3 dB bandwidth and loaded Q.
@@ -192,7 +204,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.35.0 release
+## 12. v0.35.0 release
 
 - [x] Add coax stub notch calculator and CLI (`open λ/4`, `short λ/2`).
 - [x] Add Tools dialog with velocity factor, cable loss and physical length.
@@ -203,7 +215,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.34.1 release
+## 13. v0.34.1 release
 
 - [x] Write `.deb` output under `dist/`.
 - [x] Remove the staging tree after each build; keep it only with `KEEP_DEB_STAGE=1`.
@@ -215,7 +227,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.34.0 release
+## 14. v0.34.0 release
 
 - [x] Add Specification field and plot-tab tooltips.
 - [x] Add status tips for main menu actions.
@@ -227,7 +239,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. v0.33.0 release
+## 15. v0.33.0 release
 
 - [x] Add CSV/JSON export for 4-port mixed-mode results.
 - [x] Export full frequency set with dB metrics and JSON references.
@@ -238,7 +250,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. v0.32.0 release
+## 16. v0.32.0 release
 
 - [x] Add mixed-mode plot tab to the 4-port dialog.
 - [x] Keep the table and sampled-view behavior.
@@ -249,7 +261,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 16. v0.31.1 release
+## 17. v0.31.1 release
 
 - [x] Ask Save / Discard / Cancel when closing with unsaved changes.
 - [x] Cancel a failed/cancelled save and keep the application open.
@@ -261,7 +273,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 17. v0.31.0 release
+## 18. v0.31.0 release
 
 - [x] Add **Tools → 4-port mixed-mode…** with `.s4p` import and table.
 - [x] Show Sdd21/Sdc21/Scd21/Scc21 and mixed-mode reference impedances.
@@ -272,7 +284,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 18. v0.30.0 release
+## 19. v0.30.0 release
 
 - [x] Add 4-port `.s4p` mixed-mode transform and `filterdesk mixed-mode`.
 - [x] Expose Sdd/Sdc/Scd/Scc with differential/common reference impedances.
@@ -283,7 +295,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 19. v0.29.4 release
+## 20. v0.29.4 release
 
 - [x] Add all-preset plot-state regression matrix.
 - [x] Verify current harmonics, hidden cursors and data range at auto-fit.
@@ -294,7 +306,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 20. v0.29.3 release
+## 21. v0.29.3 release
 
 - [x] Hide stale cursor lines before the auto plot fit.
 - [x] Add regression coverage for a cursor outside the new sweep.
@@ -305,7 +317,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 21. v0.29.2 release
+## 22. v0.29.2 release
 
 - [x] Refresh harmonic markers before running the auto plot fit.
 - [x] Add regression coverage for sequential presets with stale harmonics.
@@ -316,7 +328,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 22. v0.29.1 release
+## 23. v0.29.1 release
 
 - [x] Refit the plot when the data frequency span changes and Auto is on.
 - [x] Keep zoom when reanalysing the same sweep; skip fitting hidden panels.
@@ -327,7 +339,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 23. v0.29.0 release
+## 24. v0.29.0 release
 
 - [x] Add Auto sweep mode with suggested ranges per filter response.
 - [x] Preserve custom ranges and band-wizard sweeps; infer Auto on project load.
@@ -338,7 +350,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 24. v0.28.2 release
+## 25. v0.28.2 release
 
 - [x] Refit plots after deliberate synthesis, wizard apply, scale or project load.
 - [x] Keep manual zoom for tuning until the next deliberate synthesis.
@@ -349,7 +361,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 25. v0.28.1 release
+## 26. v0.28.1 release
 
 - [x] Use resonance-preserving snap in the wizard with E24/E48/E96 choice.
 - [x] Default to E96 above 100 MHz and warn when the snapped response misses target.
@@ -360,7 +372,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 26. v0.28.0 release
+## 27. v0.28.0 release
 
 - [x] Add 2 m, 1.25 m (Region 2) and 70 cm band presets.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.28.0.
@@ -370,7 +382,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 27. v0.27.1 release
+## 28. v0.27.1 release
 
 - [x] Apply the wizard band sweep to the visible range controls and undo.
 - [x] Restrict AM/FM broadcast presets to Band-stop in the GUI.
@@ -381,7 +393,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 28. v0.27.0 release
+## 29. v0.27.0 release
 
 - [x] Add unified Band filter wizard (Quick and Guided LP/HP/BP/BS).
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.27.0.
@@ -391,7 +403,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 29. v0.26.0 release
+## 30. v0.26.0 release
 
 - [x] Add self-contained Debian/Ubuntu amd64 package and clean-container check.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.26.0.
@@ -401,7 +413,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 30. v0.25.1 release
+## 31. v0.25.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -410,7 +422,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 31. v0.25.0 release
+## 32. v0.25.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -419,7 +431,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 32. v0.24.1 release
+## 33. v0.24.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -428,7 +440,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 33. v0.24.0 release
+## 34. v0.24.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -437,7 +449,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 34. v0.23.0 release
+## 35. v0.23.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -446,7 +458,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 35. v0.22.0 release
+## 36. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -455,7 +467,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 36. v0.21.0 release
+## 37. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -464,7 +476,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 37. v0.20.0 release
+## 38. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -473,7 +485,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 38. v0.19.0 release
+## 39. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -482,7 +494,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 39. v0.18.0 release
+## 40. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -491,7 +503,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 40. v0.17.0 release
+## 41. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -500,7 +512,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 41. v0.16.0 release
+## 42. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -509,7 +521,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 42. v0.15.0 release
+## 43. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -518,7 +530,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 43. v0.14.0 release
+## 44. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -527,7 +539,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 44. v0.13.0 release
+## 45. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -536,7 +548,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 45. v0.12.0 release
+## 46. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -545,7 +557,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 46. Open backlog
+## 47. Open backlog
 
 ### P0 — release quality
 
@@ -696,7 +708,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 47. Ham-radio onboarding and discoverability
+## 48. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -704,7 +716,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 48. Maintenance rule
+## 49. Maintenance rule
 
 Every change must update, in the same commit:
 
