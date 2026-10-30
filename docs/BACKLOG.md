@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.39.0 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.40.0 · **Released:**
 [v0.39.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.39.0) ·
 **Previous:**
 [v0.38.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.38.0) ·
-**Next:** v0.40.0 planning.
+**Next:** v0.40.0 release (editable measurement metadata, pending CI/tag).
 
-**Verification:** local suite **1129 passed**, 4 skipped (ngspice unavailable); coverage **82.45 %**.
+**Verification:** local suite **1129 passed**, 4 skipped (ngspice unavailable); coverage **82.29 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41060654356
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41062105111
 
@@ -76,6 +76,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Measurement history: persistent captures, metadata, active overlay and
       history controls.
 - [x] Measurement details: provenance and comparison per stored capture.
+- [x] Editable measurement metadata with validation and project persistence.
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.

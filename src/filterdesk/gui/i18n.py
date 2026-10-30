@@ -814,6 +814,11 @@ _ES.update(
         "Terminations": "Terminaciones",
         "Fixture": "Montaje",
         "Temperature (C)": "Temperatura (C)",
+        "optional, °C": "opcional, °C",
+        "Temperature must be a number.": "La temperatura debe ser un número.",
+        "Updated measurement metadata: {name}": (
+            "Metadatos de medición actualizados: {name}"
+        ),
         "Measured at": "Medido el",
         "Operator": "Operador",
         "Comparison": "Comparación",

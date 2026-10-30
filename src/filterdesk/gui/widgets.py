@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -127,6 +128,7 @@ from filterdesk.services.inductor_realization import (
     realize_from_toroid_design,
 )
 from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.services.vna_measurement import VnaMeasurementMetadata
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
     VnaTuningConfig,
@@ -2673,7 +2675,7 @@ class BandFilterWizardDialog(QDialog):
 
 
 class MeasurementDetailsDialog(QDialog):
-    """Read-only provenance and comparison for one stored measurement."""
+    """Editable provenance and comparison for one stored measurement."""
 
     def __init__(
         self,
@@ -2684,26 +2686,36 @@ class MeasurementDetailsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(tr("Measurement details"))
         self.setMinimumWidth(620)
+        self._record = record
         metadata = record.metadata
+        self._vna = QLineEdit(metadata.vna_model)
+        self._calibration = QLineEdit(metadata.calibration)
+        self._reference = QLineEdit(metadata.reference_plane)
+        self._cables = QLineEdit(metadata.cables)
+        self._connectors = QLineEdit(metadata.connectors)
+        self._terminations = QLineEdit(metadata.terminations)
+        self._fixture = QLineEdit(metadata.fixture)
+        self._temperature = QLineEdit(
+            "" if metadata.temperature_c is None else f"{metadata.temperature_c:g}"
+        )
+        self._temperature.setPlaceholderText(tr("optional, °C"))
+        self._measured_at = QLineEdit(metadata.measured_at)
+        self._operator = QLineEdit(metadata.operator)
+        self._notes = QLineEdit(metadata.notes)
         form = QFormLayout(self)
         form.addRow(tr("Name"), QLabel(record.name))
         form.addRow(tr("Source"), QLabel(record.source or "—"))
-        form.addRow(tr("VNA model"), QLabel(metadata.vna_model or "—"))
-        form.addRow(tr("Calibration"), QLabel(metadata.calibration or "—"))
-        form.addRow(tr("Reference plane"), QLabel(metadata.reference_plane or "—"))
-        form.addRow(tr("Cables"), QLabel(metadata.cables or "—"))
-        form.addRow(tr("Connectors"), QLabel(metadata.connectors or "—"))
-        form.addRow(tr("Terminations"), QLabel(metadata.terminations or "—"))
-        form.addRow(tr("Fixture"), QLabel(metadata.fixture or "—"))
-        temperature = (
-            "—"
-            if metadata.temperature_c is None
-            else f"{metadata.temperature_c:g}"
-        )
-        form.addRow(tr("Temperature (C)"), QLabel(temperature))
-        form.addRow(tr("Measured at"), QLabel(metadata.measured_at or "—"))
-        form.addRow(tr("Operator"), QLabel(metadata.operator or "—"))
-        form.addRow(tr("Notes"), QLabel(metadata.notes or "—"))
+        form.addRow(tr("VNA model"), self._vna)
+        form.addRow(tr("Calibration"), self._calibration)
+        form.addRow(tr("Reference plane"), self._reference)
+        form.addRow(tr("Cables"), self._cables)
+        form.addRow(tr("Connectors"), self._connectors)
+        form.addRow(tr("Terminations"), self._terminations)
+        form.addRow(tr("Fixture"), self._fixture)
+        form.addRow(tr("Temperature (C)"), self._temperature)
+        form.addRow(tr("Measured at"), self._measured_at)
+        form.addRow(tr("Operator"), self._operator)
+        form.addRow(tr("Notes"), self._notes)
         if analysis is None:
             comparison = tr("Analyze a design to compare against this measurement.")
         else:
@@ -2716,10 +2728,42 @@ class MeasurementDetailsDialog(QDialog):
         compare_label = QLabel(comparison)
         compare_label.setWordWrap(True)
         form.addRow(tr("Comparison"), compare_label)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        buttons.rejected.connect(self.reject)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
         form.addRow(buttons)
+
+    def updated_record(self) -> MeasurementRecord:
+        temperature_text = self._temperature.text().strip()
+        try:
+            temperature = float(temperature_text) if temperature_text else None
+        except ValueError as exc:
+            raise ValueError(tr("Temperature must be a number.")) from exc
+        metadata = VnaMeasurementMetadata(
+            vna_model=self._vna.text().strip(),
+            calibration=self._calibration.text().strip(),
+            reference_plane=self._reference.text().strip(),
+            cables=self._cables.text().strip(),
+            connectors=self._connectors.text().strip(),
+            terminations=self._terminations.text().strip(),
+            fixture=self._fixture.text().strip(),
+            temperature_c=temperature,
+            measured_at=self._measured_at.text().strip(),
+            operator=self._operator.text().strip(),
+            notes=self._notes.text().strip(),
+        )
+        return replace(self._record, metadata=metadata)
+
+    def accept(self) -> None:
+        try:
+            self.updated_record()
+        except ValueError as exc:
+            QMessageBox.warning(self, tr("Measurement details"), str(exc))
+            return
+        super().accept()
 
 
 class FourPortMixedModeDialog(QDialog):

@@ -2356,7 +2356,20 @@ class MainWindow(QMainWindow):
             self._session.analysis,
             self,
         )
-        dialog.exec()
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        updated = dialog.updated_record()
+        self._session.measurements[index] = updated
+        if self._session.active_measurement == index:
+            self._session.activate_measurement(index)
+        else:
+            self._session.dirty = True
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
+        self._status.setText(
+            tr("Updated measurement metadata: {name}", name=updated.name)
+        )
 
     def _delete_measurement(self, index: int) -> None:
         try:

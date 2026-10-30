@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.40.0 — 2026-10-29
+
+### Added
+
+- Measurement metadata is now editable from **Measurements → Details…**:
+  VNA, calibration, reference plane, cables, connectors, terminations, fixture,
+  temperature, date, operator and notes.
+
 ## v0.39.0 — 2026-10-29
 
 ### Added
