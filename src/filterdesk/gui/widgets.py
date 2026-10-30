@@ -122,9 +122,12 @@ from filterdesk.services.bands import (
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
 from filterdesk.services.diplexer import (
+    BandDiplexerConfig,
+    BandDiplexerDesign,
     DiplexerConfig,
     DiplexerDesign,
     DiplexerError,
+    design_band_diplexer,
     design_diplexer,
 )
 from filterdesk.services.hf_band import (
@@ -3016,17 +3019,43 @@ class FourPortMixedModeDialog(QDialog):
 
 
 class DiplexerDialog(QDialog):
-    """Design and export an LPF+HPF diplexer as a 3-port network."""
+    """Design and export an LPF+HPF or BPF+BPF diplexer as a 3-port network."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle(tr("Diplexer LPF+HPF"))
+        self.setWindowTitle(tr("Diplexer designer"))
         self.setMinimumWidth(760)
-        self._design: DiplexerDesign | None = None
+        self._design: DiplexerDesign | BandDiplexerDesign | None = None
+        self._mode = QComboBox()
+        self._mode.addItem(tr("LPF + HPF"), "lp-hp")
+        self._mode.addItem(tr("BPF + BPF"), "bp-bp")
         self._low_cutoff = EngineeringLineEdit()
         self._low_cutoff.setText("30M")
         self._high_cutoff = EngineeringLineEdit()
         self._high_cutoff.setText("40M")
+        self._low_center = EngineeringLineEdit()
+        self._low_center.setText("14M")
+        self._low_bw = EngineeringLineEdit()
+        self._low_bw.setText("300k")
+        self._high_center = EngineeringLineEdit()
+        self._high_center.setText("21M")
+        self._high_bw = EngineeringLineEdit()
+        self._high_bw.setText("500k")
+        self._lp_page = QWidget()
+        lp_form = QFormLayout(self._lp_page)
+        lp_form.setContentsMargins(0, 0, 0, 0)
+        lp_form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
+        lp_form.addRow(tr("High-pass cutoff"), self._high_cutoff)
+        self._bp_page = QWidget()
+        bp_form = QFormLayout(self._bp_page)
+        bp_form.setContentsMargins(0, 0, 0, 0)
+        bp_form.addRow(tr("Low band center"), self._low_center)
+        bp_form.addRow(tr("Low band bandwidth"), self._low_bw)
+        bp_form.addRow(tr("High band center"), self._high_center)
+        bp_form.addRow(tr("High band bandwidth"), self._high_bw)
+        self._band_fields = QStackedWidget()
+        self._band_fields.addWidget(self._lp_page)
+        self._band_fields.addWidget(self._bp_page)
         self._order = QSpinBox()
         self._order.setRange(1, 12)
         self._order.setValue(5)
@@ -3048,7 +3077,7 @@ class DiplexerDialog(QDialog):
         self._points.setSingleStep(100)
         self._points.setValue(2001)
         self._summary = QLabel(
-            tr("Port 1 = common, port 2 = low-pass, port 3 = high-pass.")
+            tr("Port 1 = common, port 2 = low band, port 3 = high band.")
         )
         self._summary.setWordWrap(True)
         self._branch_summary = QLabel("-")
@@ -3101,21 +3130,16 @@ class DiplexerDialog(QDialog):
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
-        buttons.addButton(
-            self._design_button, QDialogButtonBox.ButtonRole.ActionRole
-        )
-        buttons.addButton(
-            self._export_network_button, QDialogButtonBox.ButtonRole.ActionRole
-        )
-        buttons.addButton(
-            self._export_low_button, QDialogButtonBox.ButtonRole.ActionRole
-        )
-        buttons.addButton(
-            self._export_high_button, QDialogButtonBox.ButtonRole.ActionRole
-        )
+        for button in (
+            self._design_button,
+            self._export_network_button,
+            self._export_low_button,
+            self._export_high_button,
+        ):
+            buttons.addButton(button, QDialogButtonBox.ButtonRole.ActionRole)
         form = QFormLayout(self)
-        form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
-        form.addRow(tr("High-pass cutoff"), self._high_cutoff)
+        form.addRow(tr("Type"), self._mode)
+        form.addRow(self._band_fields)
         form.addRow(tr("Order"), self._order)
         form.addRow(tr("Family"), self._family)
         form.addRow(tr("Ripple (dB)"), self._ripple)
@@ -3131,28 +3155,58 @@ class DiplexerDialog(QDialog):
         form.addRow(self._note)
         form.addRow(self._status)
         form.addRow(buttons)
+        self._mode.currentIndexChanged.connect(self._on_mode_changed)
 
-    def current_design(self) -> DiplexerDesign | None:
+    def current_design(self) -> DiplexerDesign | BandDiplexerDesign | None:
         return self._design
+
+    def _on_mode_changed(self) -> None:
+        self._band_fields.setCurrentIndex(self._mode.currentIndex())
+        self._design = None
+        self._set_export_enabled(False)
+        self._metrics.setRowCount(0)
+        self._samples.setRowCount(0)
+        self._branch_summary.setText("-")
+        self._status.setText("")
 
     def design(self) -> bool:
         try:
-            config = DiplexerConfig(
-                low_cutoff_hz=parse_si(self._low_cutoff.text()),
-                high_cutoff_hz=parse_si(self._high_cutoff.text()),
-                order=int(self._order.value()),
-                family=ApproximationFamily(str(self._family.currentData())),
-                ripple_db=_optional_float(self._ripple.text()),
-                stopband_attenuation_db=_optional_float(self._stopband.text()),
-                z0_ohm=parse_si(self._z0.text()),
-            )
+            family = ApproximationFamily(str(self._family.currentData()))
+            order = int(self._order.value())
+            ripple = _optional_float(self._ripple.text())
+            stopband = _optional_float(self._stopband.text())
+            z0 = parse_si(self._z0.text())
             sweep = SweepConfig(
                 f_start_hz=parse_si(self._f_start.text()),
                 f_stop_hz=parse_si(self._f_stop.text()),
                 n_points=int(self._points.value()),
                 spacing=SweepSpacing.LOGARITHMIC,
             )
-            design = design_diplexer(config, sweep)
+            design: DiplexerDesign | BandDiplexerDesign
+            if self._mode.currentData() == "bp-bp":
+                band_config = BandDiplexerConfig(
+                    low_center_hz=parse_si(self._low_center.text()),
+                    high_center_hz=parse_si(self._high_center.text()),
+                    low_bandwidth_hz=parse_si(self._low_bw.text()),
+                    high_bandwidth_hz=parse_si(self._high_bw.text()),
+                    order=order,
+                    family=family,
+                    ripple_db=ripple,
+                    stopband_attenuation_db=stopband,
+                    z0_ohm=z0,
+                )
+                design = design_band_diplexer(band_config, sweep)
+            else:
+                config = DiplexerConfig(
+                    low_cutoff_hz=parse_si(self._low_cutoff.text()),
+                    high_cutoff_hz=parse_si(self._high_cutoff.text()),
+                    order=order,
+                    family=family,
+                    ripple_db=ripple,
+                    stopband_attenuation_db=stopband,
+                    z0_ohm=z0,
+                )
+                design = design_diplexer(config, sweep)
         except (DiplexerError, ValueError) as exc:
             self._design = None
             self._set_export_enabled(False)
@@ -3191,7 +3245,7 @@ class DiplexerDialog(QDialog):
         self._status.setText(tr("Wrote {path}", path=path))
         return True
 
-    def _populate(self, design: DiplexerDesign) -> None:
+    def _populate(self, design: DiplexerDesign | BandDiplexerDesign) -> None:
         metrics = design.metrics
         rows = (
             (

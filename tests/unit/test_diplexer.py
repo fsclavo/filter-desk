@@ -8,12 +8,16 @@ from pathlib import Path
 import pytest
 
 from filterdesk.__main__ import main
+from filterdesk.analysis.metrics import band_edges
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.domain.enums import ApproximationFamily, FilterResponse
 from filterdesk.io.touchstone import read_sparameters
 from filterdesk.services.diplexer import (
+    BandDiplexerConfig,
     DiplexerConfig,
     DiplexerError,
+    band_diplexer_specs,
+    design_band_diplexer,
     design_diplexer,
 )
 
@@ -135,3 +139,108 @@ def test_cli_diplexer_errors(
     )
     assert code == 2
     assert "error:" in capsys.readouterr().err
+
+
+def _band_config(**overrides: object) -> BandDiplexerConfig:
+    values: dict[str, object] = {
+        "low_center_hz": 14e6,
+        "high_center_hz": 21e6,
+        "low_bandwidth_hz": 0.3e6,
+        "high_bandwidth_hz": 0.5e6,
+        "order": 5,
+        "family": ApproximationFamily.CHEBYSHEV_TYPE_I,
+        "ripple_db": 0.1,
+    }
+    values.update(overrides)
+    return BandDiplexerConfig(**values)  # type: ignore[arg-type]
+
+
+def test_band_diplexer_routes_two_passbands() -> None:
+    design = design_band_diplexer(
+        _band_config(),
+        SweepConfig(5e6, 40e6, 2001, SweepSpacing.LOGARITHMIC),
+    )
+    assert design.network.n_ports == 3
+    assert design.low_spec.response is FilterResponse.BAND_PASS
+    assert design.high_spec.response is FilterResponse.BAND_PASS
+    low_band = band_edges(design.low_spec)
+    high_band = band_edges(design.high_spec)
+    assert design.metrics.low_band_hz == pytest.approx(low_band)
+    assert design.metrics.high_band_hz == pytest.approx(high_band)
+    assert design.metrics.low_insertion_loss_db is not None
+    assert design.metrics.high_insertion_loss_db is not None
+    assert design.metrics.low_insertion_loss_db > -0.5
+    assert design.metrics.high_insertion_loss_db > -0.5
+    assert design.metrics.low_out_of_band_db is not None
+    assert design.metrics.high_out_of_band_db is not None
+    assert design.metrics.low_out_of_band_db < -60.0
+    assert design.metrics.high_out_of_band_db < -60.0
+    assert design.metrics.low_return_loss_db is not None
+    assert design.metrics.high_return_loss_db is not None
+    assert design.metrics.low_return_loss_db > 10.0
+    assert design.metrics.high_return_loss_db > 10.0
+    assert design.metrics.crossover_hz is not None
+    assert high_band[0] > low_band[1]
+    assert low_band[1] < design.metrics.crossover_hz < high_band[0]
+
+
+def test_band_diplexer_rejects_overlap_and_short_sweep() -> None:
+    with pytest.raises(DiplexerError, match="overlap"):
+        band_diplexer_specs(
+            _band_config(
+                high_center_hz=15e6,
+                low_bandwidth_hz=3e6,
+                high_bandwidth_hz=3e6,
+            )
+        )
+    with pytest.raises(DiplexerError, match="sweep"):
+        design_band_diplexer(
+            _band_config(),
+            SweepConfig(13.9e6, 14.1e6, 101, SweepSpacing.LINEAR),
+        )
+
+
+def test_cli_band_diplexer_writes_three_port(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "band_diplexer.s3p"
+    low = tmp_path / "low.s2p"
+    high = tmp_path / "high.s2p"
+    code = main(
+        [
+            "band-diplexer",
+            "--low-center",
+            "14M",
+            "--low-bw",
+            "300k",
+            "--high-center",
+            "21M",
+            "--high-bw",
+            "500k",
+            "--order",
+            "5",
+            "--ripple",
+            "0.1",
+            "--f-start",
+            "5M",
+            "--f-stop",
+            "40M",
+            "--points",
+            "1001",
+            "--output",
+            str(output),
+            "--low-output",
+            str(low),
+            "--high-output",
+            str(high),
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["network"]["n_ports"] == 3
+    assert payload["low_spec"]["response"] == "band_pass"
+    assert payload["metrics"]["crossover_hz"] is not None
+    assert read_sparameters(output).n_ports == 3
+    assert read_sparameters(low).n_ports == 2
+    assert read_sparameters(high).n_ports == 2

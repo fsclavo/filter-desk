@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.46.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.47.0 · **Released:**
 [v0.46.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.46.0) ·
 **Previous:**
 [v0.45.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.45.0) ·
-**Next:** v0.47.0 planning.
+**Next:** v0.47.0 release (BPF+BPF diplexer, pending CI/tag).
 
-**Verification:** local suite **1150 passed**, 4 skipped (ngspice unavailable); coverage **82.39 %**.
+**Verification:** local suite **1154 passed**, 4 skipped (ngspice unavailable); coverage **82.38 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41112365621
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41113564528
 
@@ -637,6 +637,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Diplexer v1:** LPF+HPF synthesis, 3-port combination, metrics and
       `.s3p` export (ADR-028).
 - [x] **Diplexer GUI:** Tools dialog with metrics, sample table and exports.
+- [x] **BPF+BPF diplexer:** independent passbands, overlap validation, CLI and
+      GUI mode (ADR-029).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

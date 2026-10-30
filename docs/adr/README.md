@@ -31,3 +31,4 @@
 - [ADR-026](ADR-026-open-end-discontinuity.md) — open-end/stub fringing correction
 - [ADR-027](ADR-027-multiport-core.md) — N-port core and parallel branch combination
 - [ADR-028](ADR-028-diplexer-v1.md) — LPF+HPF diplexer on the N-port core
+- [ADR-029](ADR-029-bpf-bpf-diplexer.md) — BPF+BPF diplexer extension

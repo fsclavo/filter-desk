@@ -484,7 +484,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Microstrip line",
         "Coaxial stub notch",
         "4-port mixed-mode",
-        "Diplexer LPF+HPF",
+        "Diplexer designer",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)
@@ -1176,6 +1176,36 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     low_path = tmp_path / "low.s2p"
     assert dialog.export_branch("low", low_path)
     assert read_sparameters(low_path).n_ports == 2
+    dialog.close()
+    assert app is not None
+
+
+def test_diplexer_dialog_designs_bpf_pair(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.io.touchstone import read_sparameters
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._mode.setCurrentIndex(1)
+    dialog._low_center.setText("14M")
+    dialog._low_bw.setText("300k")
+    dialog._high_center.setText("21M")
+    dialog._high_bw.setText("500k")
+    dialog._f_start.setText("5M")
+    dialog._f_stop.setText("40M")
+    dialog._points.setValue(401)
+    assert dialog.design()
+    design = dialog.current_design()
+    assert design is not None
+    assert design.network.n_ports == 3
+    assert design.low_spec.response.value == "band_pass"
+    assert design.high_spec.response.value == "band_pass"
+    assert "Cruce" not in dialog._metrics.item(8, 1).text()
+    network_path = tmp_path / "band_diplexer.s3p"
+    assert dialog.export_network(network_path)
+    assert read_sparameters(network_path).n_ports == 3
     dialog.close()
     assert app is not None
 

@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.47.0 — 2026-10-30
+
+### Added
+
+- BPF+BPF diplexer with independent center/bandwidth per branch, overlap and
+  sweep-coverage validation, and the same combined 3-port metrics.
+- `filterdesk band-diplexer` CLI and a **BPF + BPF** mode in
+  **Tools → Diplexer designer…**.
+- ADR-029 documents the extension.
+
 ## v0.46.0 — 2026-10-30
 
 ### Added

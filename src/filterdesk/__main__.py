@@ -159,8 +159,10 @@ from filterdesk.services.design_sweep import (
     run_design_sweep,
 )
 from filterdesk.services.diplexer import (
+    BandDiplexerConfig,
     DiplexerConfig,
     DiplexerError,
+    design_band_diplexer,
     design_diplexer,
 )
 from filterdesk.services.session import default_sweep_for_spec
@@ -1016,6 +1018,35 @@ def build_parser() -> argparse.ArgumentParser:
     diplexer.add_argument("--low-output", type=Path, default=None)
     diplexer.add_argument("--high-output", type=Path, default=None)
     diplexer.add_argument("--json", action="store_true")
+
+    band_diplexer = sub.add_parser(
+        "band-diplexer",
+        help="Design a BPF+BPF diplexer and write its 3-port network",
+    )
+    band_diplexer.add_argument("--low-center", required=True)
+    band_diplexer.add_argument("--low-bw", required=True)
+    band_diplexer.add_argument("--high-center", required=True)
+    band_diplexer.add_argument("--high-bw", required=True)
+    band_diplexer.add_argument("--order", type=int, default=5)
+    band_diplexer.add_argument(
+        "--family",
+        choices=[family.value for family in ApproximationFamily],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    band_diplexer.add_argument("--ripple", type=float, default=None)
+    band_diplexer.add_argument("--stopband-att", type=float, default=None)
+    band_diplexer.add_argument("--z0", default="50")
+    band_diplexer.add_argument("--f-start", default=None)
+    band_diplexer.add_argument("--f-stop", default=None)
+    band_diplexer.add_argument("--points", type=int, default=2001)
+    band_diplexer.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    band_diplexer.add_argument("--backend", choices=["abcd", "skrf"], default="abcd")
+    band_diplexer.add_argument("--output", type=Path, required=True)
+    band_diplexer.add_argument("--low-output", type=Path, default=None)
+    band_diplexer.add_argument("--high-output", type=Path, default=None)
+    band_diplexer.add_argument("--json", action="store_true")
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3195,6 +3226,107 @@ def main(argv: list[str] | None = None) -> int:
                 f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "band-diplexer":
+        try:
+            low_center = parse_si(str(args.low_center))
+            high_center = parse_si(str(args.high_center))
+            f_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else low_center / 2.0
+            )
+            f_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else high_center * 2.0
+            )
+            band_config = BandDiplexerConfig(
+                low_center_hz=low_center,
+                high_center_hz=high_center,
+                low_bandwidth_hz=parse_si(str(args.low_bw)),
+                high_bandwidth_hz=parse_si(str(args.high_bw)),
+                order=int(args.order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=args.ripple,
+                stopband_attenuation_db=args.stopband_att,
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            band_design = design_band_diplexer(
+                band_config,
+                SweepConfig(
+                    f_start_hz=f_start,
+                    f_stop_hz=f_stop,
+                    n_points=int(args.points),
+                    spacing=SweepSpacing(str(args.spacing)),
+                ),
+                backend=str(args.backend),
+            )
+            write_sparameters(band_design.network, args.output)
+            if args.low_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(band_design.low_analysis),
+                    args.low_output,
+                )
+            if args.high_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(band_design.high_analysis),
+                    args.high_output,
+                )
+        except (
+            DiplexerError,
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        band_metrics = band_design.metrics
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "network": {
+                            "n_ports": band_design.network.n_ports,
+                            "n_points": band_design.network.n_points,
+                            "f_min_hz": float(band_design.network.frequency_hz[0]),
+                            "f_max_hz": float(band_design.network.frequency_hz[-1]),
+                            "z0_ohm": band_design.network.z0_ohm,
+                        },
+                        "low_spec": filter_spec_to_mapping(band_design.low_spec),
+                        "high_spec": filter_spec_to_mapping(band_design.high_spec),
+                        "metrics": {
+                            "low_band_hz": list(band_metrics.low_band_hz),
+                            "high_band_hz": list(band_metrics.high_band_hz),
+                            "low_insertion_loss_db": (
+                                band_metrics.low_insertion_loss_db
+                            ),
+                            "low_out_of_band_db": band_metrics.low_out_of_band_db,
+                            "low_return_loss_db": band_metrics.low_return_loss_db,
+                            "high_insertion_loss_db": (
+                                band_metrics.high_insertion_loss_db
+                            ),
+                            "high_out_of_band_db": band_metrics.high_out_of_band_db,
+                            "high_return_loss_db": band_metrics.high_return_loss_db,
+                            "crossover_hz": band_metrics.crossover_hz,
+                        },
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            low_text = format_engineering(band_config.low_center_hz, "Hz")
+            high_text = format_engineering(band_config.high_center_hz, "Hz")
+            low_bw = format_engineering(band_config.low_bandwidth_hz, "Hz")
+            high_bw = format_engineering(band_config.high_bandwidth_hz, "Hz")
+            print(
+                f"Band diplexer {low_text} ({low_bw}) + {high_text} ({high_bw}), "
+                f"{band_config.order}th order, Z0={band_config.z0_ohm:g} Ohm"
+            )
+            print(f"  {band_metrics.summary()}")
+            print(f"  Wrote {args.output}")
         return 0
 
     if args.command == "diplexer":

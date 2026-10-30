@@ -1034,6 +1034,21 @@ _ES.update(
         "Diplexer LPF+HPF": "Diplexer LPF+HPF",
         "&Diplexer LPF+HPF…": "&Diplexer LPF+HPF…",
         "Design an LPF+HPF diplexer.": "Diseñar un diplexer LPF+HPF.",
+        "Diplexer designer": "Diseñador de diplexer",
+        "&Diplexer designer…": "&Diseñador de diplexer…",
+        "Design an LPF+HPF or BPF+BPF diplexer.": (
+            "Diseñar un diplexer LPF+HPF o BPF+BPF."
+        ),
+        "LPF + HPF": "LPF + HPF",
+        "BPF + BPF": "BPF + BPF",
+        "Type": "Tipo",
+        "Low band center": "Centro de banda baja",
+        "Low band bandwidth": "Ancho de banda baja",
+        "High band center": "Centro de banda alta",
+        "High band bandwidth": "Ancho de banda alta",
+        "Port 1 = common, port 2 = low band, port 3 = high band.": (
+            "Puerto 1 = común, puerto 2 = banda baja, puerto 3 = banda alta."
+        ),
         "Export .s3p…": "Exportar .s3p…",
         "Export diplexer .s3p": "Exportar diplexer .s3p",
         "Export diplexer branch .s2p": "Exportar rama del diplexer .s2p",
