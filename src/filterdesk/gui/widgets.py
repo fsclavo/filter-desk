@@ -99,6 +99,7 @@ from filterdesk.domain.enums import FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
+from filterdesk.gui.plot_axes import freq_plot
 from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
 from filterdesk.io.spice import write_tlt_spice_netlist
@@ -1959,10 +1960,8 @@ class CoaxStubDialog(QDialog):
         self._bandwidth = QLabel("-")
         self._loaded_q = QLabel("-")
         self._response: CoaxStubResponse | None = None
-        self._plot = pg.PlotWidget(title=tr("Notch response"))
+        self._plot = freq_plot(tr("Notch response"))
         self._plot.setLogMode(x=True, y=False)
-        self._plot.showGrid(x=True, y=True, alpha=0.3)
-        self._plot.setLabel("bottom", tr("Frequency"), units="Hz")
         self._plot.setLabel("left", tr("Magnitude"), units="dB")
         self._plot.addLegend()
         self._plot.setMinimumHeight(260)

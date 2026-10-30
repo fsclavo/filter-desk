@@ -16,6 +16,7 @@ from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.i18n import tr
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
+from filterdesk.gui.plot_axes import freq_plot as _freq_plot
 from filterdesk.gui.theme import ThemeColors, apply_plot_theme
 from filterdesk.gui.widgets import ConfidenceStrip
 from filterdesk.services.compare import measured_at_frequency, wrap_degrees
@@ -23,47 +24,6 @@ from filterdesk.services.compare import measured_at_frequency, wrap_degrees
 if TYPE_CHECKING:
     from filterdesk.montecarlo import MonteCarloResult
 
-
-def _plain_decimal(value: float) -> str:
-    """Format a tick without scientific notation (unit lives in the axis label)."""
-    if not np.isfinite(value):
-        return ""
-    if value == 0.0:
-        return "0"
-    mag = abs(value)
-    if mag >= 100.0:
-        text = f"{value:.0f}"
-    elif mag >= 10.0:
-        text = f"{value:.1f}"
-    elif mag >= 1.0:
-        text = f"{value:.2f}"
-    elif mag >= 0.1:
-        text = f"{value:.2f}"
-    else:
-        text = f"{value:.3f}"
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return text
-
-
-class FreqAxisItem(pg.AxisItem):  # type: ignore[misc]
-    """Log-frequency axis: SI-prefixed unit in the label, plain tick numbers."""
-
-    def logTickStrings(
-        self, values: list[float], scale: float, spacing: float
-    ) -> list[str]:
-        del spacing
-        return [_plain_decimal((10.0 ** float(v)) * float(scale)) for v in values]
-
-
-def _freq_plot(title: str) -> pg.PlotWidget:
-    plot = pg.PlotWidget(
-        title=title,
-        axisItems={"bottom": FreqAxisItem(orientation="bottom")},
-    )
-    plot.showGrid(x=True, y=True, alpha=0.3)
-    plot.setLabel("bottom", "Frequency", units="Hz")
-    return plot
 
 
 _MARKER_COLORS = (

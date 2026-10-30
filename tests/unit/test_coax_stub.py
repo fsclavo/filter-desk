@@ -142,3 +142,11 @@ def test_coax_notch_csv_export() -> None:
     assert lines[0] == "# cable=custom"
     assert lines[6] == "frequency_hz,s21_db,s11_db"
     assert len(lines) == 7 + 101
+
+
+def test_shared_frequency_axis_uses_plain_numbers() -> None:
+    from filterdesk.gui.plot_axes import plain_decimal
+
+    assert plain_decimal(146_000_000.0) == "146000000"
+    assert "e" not in plain_decimal(146_000_000.0).lower()
+    assert plain_decimal(2_500_000_000.0) == "2500000000"

@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.37.1 — 2026-10-29
+
+### Fixed
+
+- The coax notch plot now uses the same SI/log-frequency axis as the main
+  S21/S11 plot, with plain tick numbers instead of exponent notation.
+
 ## v0.37.0 — 2026-10-29
 
 ### Added
