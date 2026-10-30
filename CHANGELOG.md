@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.41.0 — 2026-10-29
+
+### Added
+
+- **Tune…** in the Measurements dock activates a stored capture and opens the
+  existing VNA tuning workflow directly from the history.
+
 ## v0.40.0 — 2026-10-29
 
 ### Added

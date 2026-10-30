@@ -20,6 +20,7 @@ class MeasurementsPanel(QWidget):
     import_requested = Signal()
     use_requested = Signal(int)
     details_requested = Signal(int)
+    tune_requested = Signal(int)
     delete_requested = Signal(int)
     clear_requested = Signal()
 
@@ -49,6 +50,8 @@ class MeasurementsPanel(QWidget):
         btn_use.clicked.connect(self._use_selected)
         btn_details = QPushButton(tr("Details…"))
         btn_details.clicked.connect(self._details_selected)
+        btn_tune = QPushButton(tr("Tune…"))
+        btn_tune.clicked.connect(self._tune_selected)
         btn_delete = QPushButton(tr("Delete"))
         btn_delete.clicked.connect(self._delete_selected)
         btn_clear = QPushButton(tr("Clear"))
@@ -57,6 +60,7 @@ class MeasurementsPanel(QWidget):
         row.addWidget(btn_import)
         row.addWidget(btn_use)
         row.addWidget(btn_details)
+        row.addWidget(btn_tune)
         row.addWidget(btn_delete)
         row.addWidget(btn_clear)
         layout = QVBoxLayout(self)
@@ -103,6 +107,11 @@ class MeasurementsPanel(QWidget):
         index = self._selected_index()
         if index is not None:
             self.details_requested.emit(index)
+
+    def _tune_selected(self) -> None:
+        index = self._selected_index()
+        if index is not None:
+            self.tune_requested.emit(index)
 
     def _delete_selected(self) -> None:
         index = self._selected_index()

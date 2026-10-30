@@ -807,6 +807,7 @@ _ES.update(
         ),
         "Active measurement: {name}": "Medición activa: {name}",
         "Details…": "Detalles…",
+        "Tune…": "Ajustar…",
         "Measurement details": "Detalles de medición",
         "VNA model": "Modelo de VNA",
         "Cables": "Cables",

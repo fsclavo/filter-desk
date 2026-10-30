@@ -459,7 +459,8 @@ reloadable and editable. Each imported Touchstone capture is added to the
 **Measurements** dock with its VNA/calibration/reference metadata when the
 `.vna.json` sidecar is present; select one to make it the active overlay.
 **Details…** shows and edits the complete provenance and compares that capture
-with the current analyzed design.
+with the current analyzed design. **Tune…** activates the capture and opens the
+existing VNA tuning workflow for the current circuit.
 Closing with unsaved changes asks **Save / Discard / Cancel**; cancelling the
 save dialog leaves the application open.
 
