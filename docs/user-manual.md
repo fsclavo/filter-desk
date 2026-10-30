@@ -214,6 +214,7 @@ hide any dock from the **View** menu; drag docks to rearrange them.
 | **Schematic** | top | read-only ladder drawing |
 | **Components** | right | component values, parasitics, tolerances |
 | **Markers** | right | measurement cursors |
+| **Measurements** | right | stored Touchstone captures, active overlay and provenance |
 | **Limits** | right | pass/fail mask regions |
 | **Harmonics** | right | `|S21|`/suppression at 2f, 3f, … of a fundamental |
 
@@ -452,8 +453,11 @@ are hidden until a file is loaded and while the overlay is disabled.
 | Export build sheet / BOM | File → Export → build sheet / BOM… | — | `.md`, `.csv`, `.html` |
 
 The native project file stores the specification, circuit, sweep settings,
-markers, limits, per-component tolerances and tune steps, the TX Power setting,
-the harmonic-readout fundamental, and metadata; it is reloadable and editable.
+markers, limits, stored measurements, per-component tolerances and tune steps,
+the TX Power setting, the harmonic-readout fundamental, and metadata; it is
+reloadable and editable. Each imported Touchstone capture is added to the
+**Measurements** dock with its VNA/calibration/reference metadata when the
+`.vna.json` sidecar is present; select one to make it the active overlay.
 Closing with unsaved changes asks **Save / Discard / Cancel**; cancelling the
 save dialog leaves the application open.
 

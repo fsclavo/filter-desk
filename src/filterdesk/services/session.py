@@ -71,6 +71,7 @@ from filterdesk.optimization import (
     OptimizationResult,
     optimize_circuit,
 )
+from filterdesk.services.measurements import MeasurementRecord
 from filterdesk.services.retune import (
     RetuneRequest,
     nudge_value,
@@ -202,6 +203,8 @@ class DesignSession:
     limits: list[LimitRegion] = field(default_factory=list)
     measured: AnalysisResult | None = None
     measured_name: str | None = None
+    measurements: list[MeasurementRecord] = field(default_factory=list)
+    active_measurement: int | None = None
     element_steps: dict[str, float] = field(default_factory=dict)
     element_tolerances: dict[str, ElementTolerance] = field(default_factory=dict)
     power_w: float = 0.0
@@ -620,6 +623,60 @@ class DesignSession:
         self.limits = list(limits)
         self.dirty = True
 
+    def add_measurement(self, record: MeasurementRecord) -> int:
+        """Append a measurement and make it the active overlay."""
+        names = {item.name for item in self.measurements}
+        base = record.name
+        candidate = base
+        suffix = 2
+        while candidate in names:
+            candidate = f"{base} ({suffix})"
+            suffix += 1
+        if candidate != record.name:
+            record = replace(record, name=candidate)
+        self.measurements.append(record)
+        index = len(self.measurements) - 1
+        self.active_measurement = index
+        self._sync_active_measurement()
+        self.dirty = True
+        return index
+
+    def activate_measurement(self, index: int) -> None:
+        if not 0 <= index < len(self.measurements):
+            raise IndexError("measurement index out of range")
+        self.active_measurement = index
+        self._sync_active_measurement()
+        self.dirty = True
+
+    def remove_measurement(self, index: int) -> None:
+        if not 0 <= index < len(self.measurements):
+            raise IndexError("measurement index out of range")
+        del self.measurements[index]
+        if not self.measurements:
+            self.active_measurement = None
+        elif self.active_measurement is None or index < self.active_measurement:
+            pass
+        elif index == self.active_measurement:
+            self.active_measurement = min(index, len(self.measurements) - 1)
+        self._sync_active_measurement()
+        self.dirty = True
+
+    def clear_measurements(self) -> None:
+        self.measurements.clear()
+        self.active_measurement = None
+        self._sync_active_measurement()
+        self.dirty = True
+
+    def _sync_active_measurement(self) -> None:
+        index = self.active_measurement
+        if index is None or not 0 <= index < len(self.measurements):
+            self.measured = None
+            self.measured_name = None
+            return
+        record = self.measurements[index]
+        self.measured = record.to_analysis_result()
+        self.measured_name = record.name
+
     def set_measured(self, result: AnalysisResult | None, name: str = "") -> None:
         """Store imported measured data (Touchstone) for compare/overlay."""
         self.measured = result
@@ -648,6 +705,11 @@ class DesignSession:
             extensions["power_w"] = float(self.power_w)
         if self.harmonics_f0_hz is not None:
             extensions["harmonics_f0_hz"] = float(self.harmonics_f0_hz)
+        if self.measurements:
+            extensions["measurements"] = [
+                record.to_mapping() for record in self.measurements
+            ]
+            extensions["active_measurement"] = self.active_measurement
         return Project(
             specification=self.spec,
             circuit=self.circuit,
@@ -693,6 +755,24 @@ class DesignSession:
         self.harmonics_f0_hz = (
             float(raw_f0) if isinstance(raw_f0, (int, float)) else None
         )
+        raw_measurements = ext.get("measurements")
+        self.measurements = []
+        if isinstance(raw_measurements, list):
+            for item in raw_measurements:
+                if not isinstance(item, dict):
+                    continue
+                try:
+                    self.measurements.append(MeasurementRecord.from_mapping(item))
+                except (TypeError, ValueError, IndexError):
+                    continue
+        raw_active = ext.get("active_measurement")
+        self.active_measurement = (
+            int(raw_active)
+            if isinstance(raw_active, int)
+            and 0 <= raw_active < len(self.measurements)
+            else (0 if self.measurements else None)
+        )
+        self._sync_active_measurement()
         if self.circuit is None:
             self.synthesize()
 

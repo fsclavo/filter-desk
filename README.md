@@ -116,6 +116,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   model limits.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
   measured S11/S21 magnitude with bounded least squares.
+- **Measurement history**: store multiple captures per project, keep their
+  VNA/calibration/reference metadata and switch the active overlay.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.

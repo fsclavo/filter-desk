@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-29 · **App version:** 0.37.1 · **Released:**
+**Last verified:** 2026-10-29 · **App version:** 0.38.0 · **Released:**
 [v0.37.1](https://github.com/fsclavo/filter-desk/releases/tag/v0.37.1) ·
 **Previous:**
 [v0.37.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.37.0) ·
-**Next:** v0.38.0 planning.
+**Next:** v0.38.0 release (measurement history, pending CI/tag).
 
-**Verification:** local suite **1123 passed**, 4 skipped (ngspice unavailable); coverage **82.85 %**.
+**Verification:** local suite **1128 passed**, 4 skipped (ngspice unavailable); coverage **82.62 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/40988648575
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/40989557477
 
@@ -73,6 +73,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Coax cable presets and estimated notch depth/bandwidth/Q.
 - [x] Coax notch response plot and CSV export.
 - [x] Coax plot uses the shared SI/log-frequency axis with plain tick numbers.
+- [x] Measurement history: persistent captures, metadata, active overlay and
+      history controls.
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.

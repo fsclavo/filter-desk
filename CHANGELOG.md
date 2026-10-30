@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.38.0 — 2026-10-29
+
+### Added
+
+- Persistent **measurement history** per project: import multiple Touchstone
+  captures, keep VNA/calibration/reference-plane metadata, select the active
+  overlay, delete individual records or clear the history.
+- Stored measurements survive project save/load and are available to the VNA
+  comparison/tuning workflow.
+
 ## v0.37.1 — 2026-10-29
 
 ### Fixed

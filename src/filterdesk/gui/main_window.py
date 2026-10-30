@@ -74,6 +74,7 @@ from filterdesk.gui.panels.component_table import ComponentTablePanel
 from filterdesk.gui.panels.harmonics_panel import HarmonicsPanel
 from filterdesk.gui.panels.limits_panel import LimitsPanel
 from filterdesk.gui.panels.markers_panel import MarkersPanel
+from filterdesk.gui.panels.measurements_panel import MeasurementsPanel
 from filterdesk.gui.panels.plot_panel import PlotPanel
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.panels.spec_panel import SpecPanel
@@ -142,6 +143,7 @@ from filterdesk.services.design_sweep import (
     run_design_sweep,
 )
 from filterdesk.services.hf_band import evaluate_band_filter_response
+from filterdesk.services.measurements import MeasurementRecord
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import (
     DEFAULT_TITLE,
@@ -150,6 +152,10 @@ from filterdesk.services.session import (
     suggested_sweep_for_spec,
 )
 from filterdesk.services.spec_update import SpecUpdateError, update_spec_from_response
+from filterdesk.services.vna_measurement import (
+    VnaMeasurementMetadata,
+    read_vna_metadata,
+)
 
 
 def _exc_text(exc: BaseException) -> str:
@@ -244,6 +250,7 @@ class MainWindow(QMainWindow):
         self._plots = PlotPanel()
         self._markers_panel = MarkersPanel()
         self._limits_panel = LimitsPanel()
+        self._measurements_panel = MeasurementsPanel()
         self._harmonics_panel = HarmonicsPanel()
         self._docks: list[QDockWidget] = []
         self.setCentralWidget(self._plots)
@@ -260,6 +267,11 @@ class MainWindow(QMainWindow):
         )
         self._add_dock(
             "Limits", self._limits_panel, Qt.DockWidgetArea.RightDockWidgetArea
+        )
+        self._add_dock(
+            "Measurements",
+            self._measurements_panel,
+            Qt.DockWidgetArea.RightDockWidgetArea,
         )
         self._add_dock(
             "Harmonics",
@@ -290,6 +302,10 @@ class MainWindow(QMainWindow):
         self._table.element_selected.connect(self._on_table_element_selected)
         self._markers_panel.markers_changed.connect(self._on_markers_edited)
         self._markers_panel.add_at_cursor_requested.connect(self._add_marker_at_cursor)
+        self._measurements_panel.import_requested.connect(self._import_touchstone)
+        self._measurements_panel.use_requested.connect(self._use_measurement)
+        self._measurements_panel.delete_requested.connect(self._delete_measurement)
+        self._measurements_panel.clear_requested.connect(self._clear_measurements)
         self._plots.markers_changed.connect(self._on_markers_dragged)
         self._limits_panel.limits_changed.connect(self._on_limits_edited)
         self._build_menus()
@@ -680,6 +696,9 @@ class MainWindow(QMainWindow):
         )
         self._markers_panel.set_markers(self._session.markers)
         self._limits_panel.set_limits(self._session.limits)
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
@@ -1661,6 +1680,9 @@ class MainWindow(QMainWindow):
     def _after_overlays_change(self) -> None:
         self._markers_panel.set_markers(self._session.markers)
         self._limits_panel.set_limits(self._session.limits)
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
         self._plots.set_markers(self._session.markers)
         self._plots.set_limits(self._session.limits)
         self._refresh_limit_status()
@@ -2265,10 +2287,34 @@ class MainWindow(QMainWindow):
                 f"Compare/overlay currently supports 2-port data only ({exc}).",
             )
             return
-        self._session.set_measured(result, name)
-        self._plots.set_measured(result, name)
+        metadata = VnaMeasurementMetadata()
+        if data.source:
+            try:
+                metadata = read_vna_metadata(data.source)
+            except (OSError, ValueError):
+                pass
+        record = MeasurementRecord.from_arrays(
+            name=name,
+            source=data.source or "",
+            z0_ohm=data.z0_ohm,
+            frequency_hz=data.frequency_hz,
+            s11=data.s[:, 0, 0],
+            s21=data.s[:, 1, 0],
+            s12=data.s[:, 0, 1],
+            s22=data.s[:, 1, 1],
+            metadata=metadata,
+        )
+        self._session.add_measurement(record)
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
+        self._plots.set_measured(
+            self._session.measured, self._session.measured_name or ""
+        )
         self._act_measured.setChecked(True)
         detail = f"Imported measured data from {name}\n{data.summary()}"
+        if metadata.summary():
+            detail += f"\n{metadata.summary()}"
         if self._session.analysis is not None:
             try:
                 cmp = compare_results(self._session.analysis, result)
@@ -2278,6 +2324,54 @@ class MainWindow(QMainWindow):
                 detail += f"\n\nCompare (overlap band):\n{cmp.summary()}"
         self._status.setText(f"Imported {name}: {data.summary()}")
         QMessageBox.information(self, tr("Import Touchstone"), detail)
+
+    def _use_measurement(self, index: int) -> None:
+        try:
+            self._session.activate_measurement(index)
+        except IndexError:
+            return
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
+        self._plots.set_measured(
+            self._session.measured, self._session.measured_name or ""
+        )
+        self._act_measured.setChecked(True)
+        self._status.setText(
+            tr(
+                "Active measurement: {name}",
+                name=self._session.measured_name or "",
+            )
+        )
+
+    def _delete_measurement(self, index: int) -> None:
+        try:
+            self._session.remove_measurement(index)
+        except IndexError:
+            return
+        self._measurements_panel.set_records(
+            self._session.measurements, self._session.active_measurement
+        )
+        self._plots.set_measured(
+            self._session.measured, self._session.measured_name or ""
+        )
+
+    def _clear_measurements(self) -> None:
+        if not self._session.measurements:
+            return
+        answer = QMessageBox.question(
+            self,
+            tr("Clear measurements"),
+            tr("Delete all stored measurements from this project?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        self._session.clear_measurements()
+        self._measurements_panel.set_records([], None)
+        self._plots.set_measured(None, "")
+        self._act_measured.setChecked(False)
 
     def _on_touchstone_failed(self, message: str) -> None:
         QMessageBox.critical(self, tr("Import Touchstone"), message)
