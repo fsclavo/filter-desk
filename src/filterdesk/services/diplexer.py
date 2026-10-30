@@ -6,6 +6,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 from filterdesk.analysis.multiport import SParameters
 from filterdesk.analysis.service import analyze_circuit
@@ -217,8 +218,11 @@ def evaluate_diplexer(
     )
 
 
-def _db(values: np.ndarray) -> np.ndarray:
-    return 20.0 * np.log10(np.maximum(np.abs(values), 1e-15))
+def _db(values: np.ndarray) -> NDArray[np.float64]:
+    return np.asarray(
+        20.0 * np.log10(np.maximum(np.abs(values), 1e-15)),
+        dtype=np.float64,
+    )
 
 
 def _max(values: np.ndarray, mask: np.ndarray) -> float | None:
