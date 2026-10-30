@@ -101,6 +101,7 @@ from filterdesk.domain.enums import ApproximationFamily, FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import family_label, tr
+from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.plot_axes import freq_plot
 from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
@@ -3162,15 +3163,35 @@ class DiplexerDialog(QDialog):
         )
         self._plot_note.setWordWrap(True)
         plot_layout.addWidget(self._plot_note)
+        self._schematic_low = SchematicPanel()
+        self._schematic_mid = SchematicPanel()
+        self._schematic_high = SchematicPanel()
+        for panel in (
+            self._schematic_low,
+            self._schematic_mid,
+            self._schematic_high,
+        ):
+            panel.setMinimumHeight(220)
+        self._schematic_tabs = QTabWidget()
+        self._schematic_tabs.addTab(self._schematic_low, tr("Low"))
+        self._schematic_tabs.addTab(self._schematic_mid, tr("Mid"))
+        self._schematic_tabs.addTab(self._schematic_high, tr("High"))
+        self._schematic_page = QWidget()
+        schematic_layout = QVBoxLayout(self._schematic_page)
+        schematic_layout.setContentsMargins(0, 0, 0, 0)
+        schematic_layout.addWidget(self._schematic_tabs)
         self._results_tabs = QTabWidget()
         self._results_tabs.addTab(self._metrics_page, tr("Metrics"))
         self._results_tabs.addTab(self._plot_page, tr("Magnitude"))
+        self._results_tabs.addTab(self._schematic_page, tr("Schematic"))
         self._results_tabs.setMinimumHeight(340)
+        self._schematic_tabs.currentChanged.connect(self._fit_current_schematic)
+        self._results_tabs.currentChanged.connect(self._fit_current_schematic)
         self._note = QLabel(
             tr(
                 "Ideal common-node LC model: no antenna, cavity, isolation "
                 "network, thermal or high-power validation. Check the combined "
-                "3-port response, not each branch alone."
+                "network response, not each branch alone."
             )
         )
         self._note.setWordWrap(True)
@@ -3299,6 +3320,18 @@ class DiplexerDialog(QDialog):
         mode = self._mode.currentData()
         is_duplexer = mode == "duplexer"
         is_triplexer = mode == "triplexer"
+        if is_duplexer:
+            self._summary.setText(
+                tr("Port 1 = antenna, port 2 = TX, port 3 = RX.")
+            )
+        elif is_triplexer:
+            self._summary.setText(
+                tr("Port 1 = common, port 2 = low, port 3 = mid, port 4 = high.")
+            )
+        else:
+            self._summary.setText(
+                tr("Port 1 = common, port 2 = low band, port 3 = high band.")
+            )
         self._set_visible_rows(str(mode))
         self._export_mid_button.setVisible(is_triplexer)
         self._update_order_enabled()
@@ -3340,6 +3373,7 @@ class DiplexerDialog(QDialog):
         self._branch_summary.setText("-")
         self._status.setText("")
         self._clear_plot()
+        self._clear_schematic()
         self._results_tabs.setCurrentIndex(0)
 
     def _set_visible_rows(self, mode: str) -> None:
@@ -3455,11 +3489,13 @@ class DiplexerDialog(QDialog):
             self._design = None
             self._set_export_enabled(False)
             self._clear_plot()
+            self._clear_schematic()
             self._status.setText(str(exc))
             return False
         self._design = design
         self._populate(design)
         self._update_plot(design)
+        self._update_schematic(design)
         self._set_export_enabled(True)
         self._status.setText(tr("Design complete."))
         return True
@@ -3813,6 +3849,67 @@ class DiplexerDialog(QDialog):
                 legend.addItem(curve, label)
         self._plot.autoRange()
         self._plot.setYRange(-160.0, 5.0, padding=0.0)
+
+    def _fit_current_schematic(self, *_args: object) -> None:
+        if self._results_tabs.currentWidget() is not self._schematic_page:
+            return
+        panel = self._schematic_tabs.currentWidget()
+        if isinstance(panel, SchematicPanel):
+            panel.fit_view()
+
+    def _clear_schematic(self) -> None:
+        for panel in (
+            self._schematic_low,
+            self._schematic_mid,
+            self._schematic_high,
+        ):
+            panel.set_circuit(None)
+        for index in range(self._schematic_tabs.count()):
+            self._schematic_tabs.setTabVisible(index, index == 0)
+        self._schematic_tabs.setTabText(0, tr("Low"))
+        self._schematic_tabs.setTabText(1, tr("Mid"))
+        self._schematic_tabs.setTabText(2, tr("High"))
+
+    def _update_schematic(
+        self,
+        design: (
+            DiplexerDesign
+            | BandDiplexerDesign
+            | DuplexerDesign
+            | MultiplexerDesign
+        ),
+    ) -> None:
+        for panel in (
+            self._schematic_low,
+            self._schematic_mid,
+            self._schematic_high,
+        ):
+            panel.set_circuit(None)
+        targets: tuple[tuple[int, SchematicPanel, Circuit, str], ...]
+        if isinstance(design, MultiplexerDesign):
+            targets = (
+                (0, self._schematic_low, design.circuits[0], tr("Low")),
+                (1, self._schematic_mid, design.circuits[1], tr("Mid")),
+                (2, self._schematic_high, design.circuits[2], tr("High")),
+            )
+        elif isinstance(design, DuplexerDesign):
+            targets = (
+                (0, self._schematic_low, design.tx_circuit, tr("TX")),
+                (1, self._schematic_mid, design.rx_circuit, tr("RX")),
+            )
+        else:
+            targets = (
+                (0, self._schematic_low, design.low_circuit, tr("Low")),
+                (1, self._schematic_mid, design.high_circuit, tr("High")),
+            )
+        visible_tabs = {index for index, _panel, _circuit, _label in targets}
+        for index, panel, circuit, label in targets:
+            panel.set_circuit(circuit)
+            self._schematic_tabs.setTabText(index, label)
+        for index in range(self._schematic_tabs.count()):
+            self._schematic_tabs.setTabVisible(index, index in visible_tabs)
+        self._schematic_tabs.setCurrentIndex(0)
+        self._fit_current_schematic()
 
     def _set_export_enabled(self, enabled: bool) -> None:
         for button in (

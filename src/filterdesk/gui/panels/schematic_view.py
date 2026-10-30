@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, Signal
+from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -13,6 +13,7 @@ from PySide6.QtGui import (
     QPalette,
     QPen,
     QResizeEvent,
+    QShowEvent,
 )
 from PySide6.QtWidgets import (
     QGraphicsItem,
@@ -132,6 +133,12 @@ class SchematicPanel(QWidget):
         self._view.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._view.setMinimumHeight(220)
         self._view.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self._view.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self._view.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
         self._view.context_requested.connect(self._on_context_menu_requested)
         self._scene = QGraphicsScene(self)
         self._view.setScene(self._scene)
@@ -155,6 +162,10 @@ class SchematicPanel(QWidget):
         super().resizeEvent(event)
         self._fit_view()
 
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802
+        super().showEvent(event)
+        QTimer.singleShot(0, self._fit_view)
+
     def _fg_color(self) -> QColor:
         return self.palette().color(QPalette.ColorRole.Text)
 
@@ -172,6 +183,10 @@ class SchematicPanel(QWidget):
         pal.setColor(QPalette.ColorRole.Text, fg)
         pal.setColor(QPalette.ColorRole.WindowText, fg)
         self._view.setPalette(pal)
+
+    def fit_view(self) -> None:
+        """Fit the current circuit into the visible viewport."""
+        self._fit_view()
 
     def refresh_theme(self) -> None:
         """Reapply palette-derived colours (after an app theme change)."""

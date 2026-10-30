@@ -1049,6 +1049,19 @@ _ES.update(
         "Port 1 = common, port 2 = low band, port 3 = high band.": (
             "Puerto 1 = común, puerto 2 = banda baja, puerto 3 = banda alta."
         ),
+        "Port 1 = antenna, port 2 = TX, port 3 = RX.": (
+            "Puerto 1 = antena, puerto 2 = TX, puerto 3 = RX."
+        ),
+        "Port 1 = common, port 2 = low, port 3 = mid, port 4 = high.": (
+            "Puerto 1 = común, puerto 2 = baja, puerto 3 = media, puerto 4 = alta."
+        ),
+        "Ideal common-node LC model: no antenna, cavity, isolation "
+        "network, thermal or high-power validation. Check the combined "
+        "network response, not each branch alone.": (
+            "Modelo LC ideal con nodo común: sin antena, cavidad, red de "
+            "aislamiento, validación térmica ni de alta potencia. Verifique la "
+            "respuesta de la red combinada, no cada rama por separado."
+        ),
         "Diplexer / duplexer designer": "Diseñador de diplexer / duplexer",
         "&Diplexer / duplexer designer…": "&Diseñador de diplexer / duplexer…",
         "Design an LPF+HPF, BPF+BPF or TX/RX duplexer.": (
@@ -1117,6 +1130,11 @@ _ES.update(
         "S41 (high)": "S41 (alta)",
         "S21 (TX)": "S21 (TX)",
         "S31 (RX)": "S31 (RX)",
+        "Low": "Baja",
+        "Mid": "Media",
+        "High": "Alta",
+        "TX": "TX",
+        "RX": "RX",
         "Ideal combined-network response; plot floor -160 dB.": (
             "Respuesta ideal de la red combinada; piso del gráfico -160 dB."
         ),

@@ -1175,6 +1175,10 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._curve_isolation.getData()[0].size > 0
     mid_data = dialog._curve_mid.getData()[0]
     assert mid_data is None or mid_data.size == 0
+    assert dialog._schematic_low._circuit is not None
+    assert dialog._schematic_mid._circuit is not None
+    assert dialog._schematic_high._circuit is None
+    assert not dialog._schematic_tabs.isTabVisible(2)
 
     network_path = tmp_path / "diplexer.s3p"
     assert dialog.export_network(network_path)
@@ -1247,6 +1251,11 @@ def test_duplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._curve_low.getData()[0].size > 0
     assert dialog._curve_high.getData()[0].size > 0
     assert dialog._curve_isolation.getData()[0].size > 0
+    assert dialog._schematic_low._circuit is not None
+    assert dialog._schematic_mid._circuit is not None
+    assert dialog._schematic_tabs.tabText(0) == "TX"
+    assert dialog._schematic_tabs.tabText(1) == "RX"
+    assert not dialog._schematic_tabs.isTabVisible(2)
     network_path = tmp_path / "duplexer.s3p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 3
@@ -1291,6 +1300,10 @@ def test_triplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._curve_mid.getData()[0].size > 0
     assert dialog._curve_high.getData()[0].size > 0
     assert dialog._curve_isolation.getData()[0].size > 0
+    assert dialog._schematic_low._circuit is not None
+    assert dialog._schematic_mid._circuit is not None
+    assert dialog._schematic_high._circuit is not None
+    assert dialog._schematic_tabs.isTabVisible(2)
     network_path = tmp_path / "triplexer.s4p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 4
@@ -1312,9 +1325,13 @@ def test_diplexer_dialog_mode_rows_and_plot_tabs() -> None:
     assert dialog._form.isRowVisible(dialog._low_cutoff)
     assert not dialog._form.isRowVisible(dialog._low_center)
     assert dialog._export_mid_button.isHidden()
-    assert dialog._results_tabs.count() == 2
+    assert dialog._results_tabs.count() == 3
     assert dialog._results_tabs.tabText(0) == "Metrics"
     assert dialog._results_tabs.tabText(1) == "Magnitude"
+    assert dialog._results_tabs.tabText(2) == "Schematic"
+    assert dialog._schematic_low._circuit is None
+    assert not dialog._schematic_tabs.isTabVisible(2)
+    assert "low band" in dialog._summary.text()
 
     dialog._mode.setCurrentIndex(1)
     assert dialog._form.isRowVisible(dialog._low_center)
@@ -1325,11 +1342,14 @@ def test_diplexer_dialog_mode_rows_and_plot_tabs() -> None:
     assert dialog._form.isRowVisible(dialog._tx_center)
     assert dialog._form.isRowVisible(dialog._auto_order)
     assert dialog._export_mid_button.isHidden()
+    assert "antenna" in dialog._summary.text()
 
     dialog._mode.setCurrentIndex(3)
     assert dialog._form.isRowVisible(dialog._tri_mid_center)
     assert not dialog._form.isRowVisible(dialog._tx_center)
     assert not dialog._export_mid_button.isHidden()
+    assert "mid" in dialog._summary.text()
+    dialog._schematic_low.fit_view()
     dialog.close()
     assert app is not None
 

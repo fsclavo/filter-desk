@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.51.0 — 2026-10-30
+
+### Added
+
+- **Schematic** tab in the diplexer / multiplexer designer, reusing the main
+  filter designer's ladder view with one sub-tab per branch (Low/High, TX/RX or
+  Low/Mid/High).
+
+### Fixed
+
+- Mode-specific port summaries (LPF/HPF, duplexer, triplexer) and the generic
+  “combined network” wording in the model note.
+- Schematic views fit their branch and hide scrollbars when shown in the
+  designer tabs.
+
 ## v0.50.0 — 2026-10-30
 
 ### Added
