@@ -42,6 +42,7 @@ from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
+    COAX_CABLES,
     AirCoilError,
     AttenuatorDesign,
     AttenuatorError,
@@ -49,6 +50,7 @@ from filterdesk.components_std import (
     BalunDesign,
     BalunError,
     BalunKind,
+    CoaxCable,
     CoaxStubDesign,
     CoaxStubError,
     CoaxStubKind,
@@ -57,6 +59,7 @@ from filterdesk.components_std import (
     MatchingError,
     MatchingTopology,
     SnapStrategy,
+    coax_stub_response,
     design_air_coil,
     design_attenuator,
     design_balun_options,
@@ -1929,6 +1932,11 @@ class CoaxStubDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(tr("Coaxial stub notch"))
         self._design: CoaxStubDesign | None = None
+        self._cables: tuple[CoaxCable | None, ...] = (None, *COAX_CABLES)
+        self._cable = QComboBox()
+        self._cable.addItem(tr("Custom"))
+        for cable in COAX_CABLES:
+            self._cable.addItem(cable.name)
         self._z0 = EngineeringLineEdit()
         self._z0.setText("50")
         self._frequency = EngineeringLineEdit()
@@ -1940,9 +1948,14 @@ class CoaxStubDialog(QDialog):
             self._kind.addItem(label)
         self._loss = EngineeringLineEdit()
         self._loss.setText("0")
+        self._line_z0 = EngineeringLineEdit()
+        self._line_z0.setText("50")
         self._length = QLabel("-")
         self._wavelength = QLabel("-")
         self._loss_result = QLabel("-")
+        self._depth = QLabel("-")
+        self._bandwidth = QLabel("-")
+        self._loaded_q = QLabel("-")
         self._note = QLabel(
             tr(
                 "Shunt stub across the feedline. Ideal narrowband notch; "
@@ -1951,46 +1964,94 @@ class CoaxStubDialog(QDialog):
         )
         self._note.setWordWrap(True)
         form = QFormLayout(self)
+        form.addRow(tr("Cable preset"), self._cable)
         form.addRow(tr("Cable Z0 (Ohm)"), self._z0)
         form.addRow(tr("Notch frequency"), self._frequency)
         form.addRow(tr("Velocity factor"), self._vf)
         form.addRow(tr("Stub type"), self._kind)
         form.addRow(tr("Cable loss (dB/m)"), self._loss)
+        form.addRow(tr("Through-line Z0 (Ohm)"), self._line_z0)
         form.addRow(tr("Physical length"), self._length)
         form.addRow(tr("Guided wavelength"), self._wavelength)
         form.addRow(tr("Estimated loss"), self._loss_result)
+        form.addRow(tr("Notch depth"), self._depth)
+        form.addRow(tr("−3 dB bandwidth"), self._bandwidth)
+        form.addRow(tr("Loaded Q"), self._loaded_q)
         form.addRow(self._note)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         form.addRow(buttons)
-        for field in (self._z0, self._frequency, self._vf, self._loss):
+        for field in (self._z0, self._frequency, self._vf, self._loss, self._line_z0):
             field.editingFinished.connect(self._recompute)
         self._kind.currentIndexChanged.connect(self._recompute)
+        self._cable.currentIndexChanged.connect(self._on_cable_changed)
+        self._on_cable_changed()
         self._recompute()
 
     def current_design(self) -> CoaxStubDesign | None:
         return self._design
 
+    def _selected_cable(self) -> CoaxCable | None:
+        return self._cables[self._cable.currentIndex()]
+
+    def _on_cable_changed(self) -> None:
+        cable = self._selected_cable()
+        custom = cable is None
+        for field in (self._z0, self._vf, self._loss):
+            field.setEnabled(custom)
+        if cable is not None:
+            self._z0.setText(f"{cable.z0_ohm:g}")
+            self._vf.setText(f"{cable.velocity_factor:g}")
+        self._recompute()
+
     def _recompute(self) -> None:
+        cable = self._selected_cable()
         try:
+            frequency = parse_si(self._frequency.text().strip() or "0")
+            if cable is not None:
+                self._loss.setText(f"{cable.loss_db_per_m(frequency):.4g}")
             design = design_coax_stub(
                 parse_si(self._z0.text().strip() or "0"),
-                parse_si(self._frequency.text().strip() or "0"),
+                frequency,
                 float(self._vf.text().strip() or "0"),
                 kind=self._KINDS[self._kind.currentIndex()][0],
                 loss_db_per_m=float(self._loss.text().strip() or "0"),
+                cable=cable,
+            )
+            response = coax_stub_response(
+                design,
+                line_z0_ohm=parse_si(self._line_z0.text().strip() or "0"),
             )
         except (CoaxStubError, ValueError):
             self._design = None
-            self._length.setText("-")
-            self._wavelength.setText("-")
-            self._loss_result.setText("-")
+            for label in (
+                self._length,
+                self._wavelength,
+                self._loss_result,
+                self._depth,
+                self._bandwidth,
+                self._loaded_q,
+            ):
+                label.setText("-")
             return
         self._design = design
         self._length.setText(f"{design.length_m * 1000.0:.2f} mm")
         self._wavelength.setText(f"{design.wavelength_m * 1000.0:.2f} mm")
         self._loss_result.setText(f"{design.loss_db:.4f} dB")
+        self._depth.setText(
+            "≥120 dB"
+            if response.notch_depth_db >= 120.0
+            else f"{response.notch_depth_db:.1f} dB"
+        )
+        self._bandwidth.setText(
+            "-"
+            if response.bandwidth_3db_hz is None
+            else format_engineering(response.bandwidth_3db_hz, "Hz")
+        )
+        self._loaded_q.setText(
+            "-" if response.loaded_q is None else f"{response.loaded_q:.2f}"
+        )
 
 
 class DistributedSynthesisDialog(QDialog):

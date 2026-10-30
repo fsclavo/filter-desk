@@ -344,7 +344,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
-| **Coaxial stub notch** | **Tools → Coaxial stub notch…** | sizes a shunt λ/4 open or λ/2 shorted coax stub for a narrowband notch |
+| **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4 open or λ/2 shorted stub, and estimated notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
@@ -613,9 +613,12 @@ Most commands accept `--json` for machine-readable output.
   `--er`, `--h`, `--tan-delta`, `--t`, `--roughness`). Example:
   `filterdesk microstrip --z0 50 --substrate FR4 --frequency 1G --length 50m`.
 - **`coax-stub`** — shunt coaxial notch stub. Use `--frequency`, `--z0`,
-  `--vf`, `--kind open_quarter|short_half` and optional `--loss` (dB/m).
+  `--vf`, `--kind open_quarter|short_half`, optional `--loss` (dB/m), or
+  `--cable RG-58|RG-8X|RG-213|RG-174|RG-316|LMR-400|LMR-600` for typical
+  Z0/vf/loss data. `--line-z0` sets the through-line impedance for the response
+  estimate.
   ```bash
-  filterdesk coax-stub --frequency 146M --vf 0.66 --kind open_quarter
+  filterdesk coax-stub --frequency 146M --cable RG-58 --kind open_quarter
   ```
 - **`distributed`** — experimental microstrip stepped-impedance low-pass
   realization (Butterworth/Chebyshev-I, order ≤ 3):
@@ -910,10 +913,12 @@ input reactance of an open or short stub at a chosen electrical angle.
 
 **Tools → Coaxial stub notch…** (`filterdesk coax-stub`) is a separate TEM
 calculator for a shunt cable stub: an open λ/4 stub or a shorted λ/2 stub whose
-input is a short at the chosen notch frequency. It reports the physical length,
-guided wavelength and optional cable-loss estimate. It is a narrowband notch
-starting point, not a complete filter synthesis; verify the cable velocity
-factor, connectors and real loss with a VNA.
+input is a short at the chosen notch frequency. It offers typical cable presets
+(`RG-58`, `RG-8X`, `RG-213`, `RG-174`, `RG-316`, `LMR-400`, `LMR-600`) or a
+Custom cable, and reports the physical length, guided wavelength, loss estimate,
+notch depth, −3 dB bandwidth and loaded Q. It is a narrowband notch starting
+point, not a complete filter synthesis; verify the cable velocity factor,
+connectors and real loss with a VNA.
 
 Limitations: strip thickness is not included in `Z0`; conductor loss uses a
 surface-resistance/skin-depth approximation and dielectric loss the standard

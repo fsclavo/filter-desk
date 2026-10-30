@@ -55,6 +55,7 @@ from filterdesk.components_std import (
     Substrate,
     ToroidError,
     TransformerTopology,
+    coax_stub_response,
     design_air_coil,
     design_attenuator,
     design_balun,
@@ -583,6 +584,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     coax.add_argument(
         "--loss", type=float, default=0.0, help="Cable loss in dB/m"
+    )
+    coax.add_argument(
+        "--cable",
+        default=None,
+        help="Typical cable preset: RG-58, RG-8X, RG-213, RG-174, "
+        "RG-316, LMR-400 or LMR-600",
+    )
+    coax.add_argument(
+        "--line-z0",
+        default="50",
+        help="Through-line Z0 for the response estimate",
     )
     coax.add_argument("--json", action="store_true", help="Emit JSON")
 
@@ -2703,12 +2715,17 @@ def main(argv: list[str] | None = None) -> int:
                 float(args.vf),
                 kind=CoaxStubKind(str(args.kind)),
                 loss_db_per_m=float(args.loss),
+                cable=args.cable,
+            )
+            coax_response = coax_stub_response(
+                coax_design, line_z0_ohm=parse_si(str(args.line_z0))
             )
         except (CoaxStubError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         payload = {
             "kind": coax_design.kind.value,
+            "cable": coax_design.cable.name if coax_design.cable else None,
             "frequency_hz": coax_design.frequency_hz,
             "z0_ohm": coax_design.z0_ohm,
             "velocity_factor": coax_design.velocity_factor,
@@ -2717,6 +2734,10 @@ def main(argv: list[str] | None = None) -> int:
             "length_m": coax_design.length_m,
             "loss_db_per_m": coax_design.loss_db_per_m,
             "loss_db": coax_design.loss_db,
+            "line_z0_ohm": coax_response.line_z0_ohm,
+            "notch_depth_db": coax_response.notch_depth_db,
+            "bandwidth_3db_hz": coax_response.bandwidth_3db_hz,
+            "loaded_q": coax_response.loaded_q,
         }
         if args.json:
             print(json.dumps(payload, indent=2))
@@ -2735,6 +2756,16 @@ def main(argv: list[str] | None = None) -> int:
             f"lambda = {coax_design.wavelength_m * 1000.0:.2f} mm"
         )
         print(f"  Loss estimate = {coax_design.loss_db:.4f} dB")
+        if coax_design.cable is not None:
+            print(f"  Cable preset = {coax_design.cable.name}")
+        print(
+            f"  Notch depth = {coax_response.notch_depth_db:.1f} dB, "
+            f"-3 dB BW = "
+            f"{format_engineering(coax_response.bandwidth_3db_hz or 0.0, 'Hz')}, "
+            f"Q = {coax_response.loaded_q:.2f}"
+            if coax_response.loaded_q is not None
+            else f"  Notch depth = {coax_response.notch_depth_db:.1f} dB"
+        )
         return 0
 
     if args.command in {"microstrip", "qwt", "stub"}:

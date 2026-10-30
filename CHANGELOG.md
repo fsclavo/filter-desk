@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.36.0 — 2026-10-29
+
+### Added
+
+- Coax stub notch cable presets (`RG-58`, `RG-8X`, `RG-213`, `RG-174`,
+  `RG-316`, `LMR-400`, `LMR-600`) with typical frequency-dependent loss.
+- Estimated S21/S11 notch response, notch depth, −3 dB bandwidth and loaded Q,
+  with a selectable through-line impedance.
+
 ## v0.35.0 — 2026-10-29
 
 ### Added

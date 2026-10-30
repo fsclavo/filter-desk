@@ -263,7 +263,12 @@ _ES.update(
         "Design a shunt coax stub notch.": (
             "Diseñar un notch con stub coaxil en paralelo."
         ),
+        "Cable preset": "Preset de cable",
+        "Custom": "Personalizado",
         "Cable Z0 (Ohm)": "Z0 del cable (Ω)",
+        "Through-line Z0 (Ohm)": "Z0 de la línea (Ω)",
+        "Notch depth": "Profundidad del notch",
+        "−3 dB bandwidth": "Ancho de banda a −3 dB",
         "Notch frequency": "Frecuencia de notch",
         "Velocity factor": "Factor de velocidad",
         "Stub type": "Tipo de stub",
