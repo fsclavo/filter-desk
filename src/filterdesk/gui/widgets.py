@@ -54,6 +54,7 @@ from filterdesk.components_std import (
     CoaxStubDesign,
     CoaxStubError,
     CoaxStubKind,
+    CoaxStubResponse,
     ESeries,
     MatchingDesign,
     MatchingError,
@@ -98,6 +99,7 @@ from filterdesk.domain.enums import FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import tr
+from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
 from filterdesk.io.spice import write_tlt_spice_netlist
 from filterdesk.io.touchstone import TouchstoneError, read_touchstone
@@ -1956,6 +1958,21 @@ class CoaxStubDialog(QDialog):
         self._depth = QLabel("-")
         self._bandwidth = QLabel("-")
         self._loaded_q = QLabel("-")
+        self._response: CoaxStubResponse | None = None
+        self._plot = pg.PlotWidget(title=tr("Notch response"))
+        self._plot.setLogMode(x=True, y=False)
+        self._plot.showGrid(x=True, y=True, alpha=0.3)
+        self._plot.setLabel("bottom", tr("Frequency"), units="Hz")
+        self._plot.setLabel("left", tr("Magnitude"), units="dB")
+        self._plot.addLegend()
+        self._plot.setMinimumHeight(260)
+        self._curve_s21 = self._plot.plot(
+            pen=pg.mkPen("#1f77b4", width=2), name="S21"
+        )
+        self._curve_s11 = self._plot.plot(
+            pen=pg.mkPen("#d62728", width=2), name="S11"
+        )
+        self._export_status = QLabel("")
         self._note = QLabel(
             tr(
                 "Shunt stub across the feedline. Ideal narrowband notch; "
@@ -1978,7 +1995,14 @@ class CoaxStubDialog(QDialog):
         form.addRow(tr("−3 dB bandwidth"), self._bandwidth)
         form.addRow(tr("Loaded Q"), self._loaded_q)
         form.addRow(self._note)
+        form.addRow(self._plot)
+        form.addRow(self._export_status)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        self._export_button = buttons.addButton(
+            tr("Export coax CSV…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        self._export_button.setEnabled(False)
+        self._export_button.clicked.connect(self._export_csv)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         form.addRow(buttons)
@@ -1991,6 +2015,28 @@ class CoaxStubDialog(QDialog):
 
     def current_design(self) -> CoaxStubDesign | None:
         return self._design
+
+    def _export_csv(self) -> None:
+        if self._design is None or self._response is None:
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export coax notch CSV"),
+            "coax_notch.csv",
+            "CSV (*.csv);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".csv"):
+            path += ".csv"
+        try:
+            Path(path).write_text(
+                coax_notch_csv(self._design, self._response), encoding="utf-8"
+            )
+        except OSError as exc:
+            QMessageBox.critical(self, tr("Export failed"), str(exc))
+            return
+        self._export_status.setText(tr("Wrote {path}", path=path))
 
     def _selected_cable(self) -> CoaxCable | None:
         return self._cables[self._cable.currentIndex()]
@@ -2025,6 +2071,11 @@ class CoaxStubDialog(QDialog):
             )
         except (CoaxStubError, ValueError):
             self._design = None
+            self._response = None
+            empty = np.array([], dtype=float)
+            self._curve_s21.setData(empty, empty)
+            self._curve_s11.setData(empty, empty)
+            self._export_button.setEnabled(False)
             for label in (
                 self._length,
                 self._wavelength,
@@ -2036,6 +2087,7 @@ class CoaxStubDialog(QDialog):
                 label.setText("-")
             return
         self._design = design
+        self._response = response
         self._length.setText(f"{design.length_m * 1000.0:.2f} mm")
         self._wavelength.setText(f"{design.wavelength_m * 1000.0:.2f} mm")
         self._loss_result.setText(f"{design.loss_db:.4f} dB")
@@ -2052,6 +2104,10 @@ class CoaxStubDialog(QDialog):
         self._loaded_q.setText(
             "-" if response.loaded_q is None else f"{response.loaded_q:.2f}"
         )
+        self._curve_s21.setData(response.frequency_hz, response.s21_db)
+        self._curve_s11.setData(response.frequency_hz, response.s11_db)
+        self._plot.autoRange()
+        self._export_button.setEnabled(True)
 
 
 class DistributedSynthesisDialog(QDialog):

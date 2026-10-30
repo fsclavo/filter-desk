@@ -344,7 +344,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
-| **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4 open or λ/2 shorted stub, and estimated notch depth/bandwidth/Q |
+| **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
@@ -916,7 +916,8 @@ calculator for a shunt cable stub: an open λ/4 stub or a shorted λ/2 stub whos
 input is a short at the chosen notch frequency. It offers typical cable presets
 (`RG-58`, `RG-8X`, `RG-213`, `RG-174`, `RG-316`, `LMR-400`, `LMR-600`) or a
 Custom cable, and reports the physical length, guided wavelength, loss estimate,
-notch depth, −3 dB bandwidth and loaded Q. It is a narrowband notch starting
+notch depth, −3 dB bandwidth and loaded Q. The response tab plots S21/S11 and
+the dialog exports the full response to CSV. It is a narrowband notch starting
 point, not a complete filter synthesis; verify the cable velocity factor,
 connectors and real loss with a VNA.
 

@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.37.0 — 2026-10-29
+
+### Added
+
+- The coaxial-stub notch dialog now plots estimated S21/S11 and exports the
+  response (including metadata) to CSV.
+
 ## v0.36.0 — 2026-10-29
 
 ### Added

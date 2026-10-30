@@ -260,6 +260,9 @@ _ES.update(
         "Export mixed-mode CSV": "Exportar CSV de modo mixto",
         "Coaxial &stub notch…": "Notch con &stub coaxil…",
         "Coaxial stub notch": "Notch con stub coaxil",
+        "Notch response": "Respuesta del notch",
+        "Export coax CSV…": "Exportar CSV coaxil…",
+        "Export coax notch CSV": "Exportar CSV de notch coaxil",
         "Design a shunt coax stub notch.": (
             "Diseñar un notch con stub coaxil en paralelo."
         ),

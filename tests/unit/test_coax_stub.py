@@ -129,3 +129,16 @@ def test_cli_coax_cable_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert payload["notch_depth_db"] > 20.0
     assert payload["bandwidth_3db_hz"] > 0.0
     assert payload["loaded_q"] > 0.0
+
+
+def test_coax_notch_csv_export() -> None:
+    from filterdesk.components_std import coax_stub_response
+    from filterdesk.io.coax_export import coax_notch_csv
+
+    design = design_coax_stub(50.0, 146e6, 0.66)
+    response = coax_stub_response(design, points=101)
+    text = coax_notch_csv(design, response)
+    lines = text.splitlines()
+    assert lines[0] == "# cable=custom"
+    assert lines[6] == "frequency_hz,s21_db,s11_db"
+    assert len(lines) == 7 + 101
