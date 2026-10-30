@@ -694,6 +694,8 @@ _ES.update(
         "Export Touchstone": "Exportar Touchstone",
         "Export Touchstone (.s2p)": "Exportar Touchstone (.s2p)",
         "Export build sheet": "Exportar hoja de montaje",
+        "Export build sheet…": "Exportar hoja de montaje…",
+        "Export system build sheet": "Exportar hoja de montaje del sistema",
         "Export build sheet / BOM": "Exportar hoja de montaje / BOM",
         "Export failed": "Exportación fallida",
         "Import Touchstone": "Importar Touchstone",

@@ -84,8 +84,8 @@ LGPL-3.0 is compliant.
 To cut a release (bump `pyproject.toml` + `src/filterdesk/__init__.py` first):
 
 ```bash
-git tag v0.51.0
-git push origin v0.51.0
+git tag v0.52.0
+git push origin v0.52.0
 ```
 
 ## AppImage
@@ -108,7 +108,7 @@ Build it after the PyInstaller and license steps:
 
 ```bash
 bash packaging/debian/build_deb.sh
-sudo apt install ./dist/FilterDesk-0.51.0-amd64.deb
+sudo apt install ./dist/FilterDesk-0.52.0-amd64.deb
 filterdesk --self-test
 sudo apt remove filterdesk
 ```

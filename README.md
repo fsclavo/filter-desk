@@ -144,8 +144,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   Touchstone `.sNp` networks from the CLI.
 - **Diplexer / multiplexer designer**: LPF+HPF or BPF+BPF branches, an LC
   TX/RX duplexer with isolation target and automatic order search, plus a
-  3-band triplexer; combined metrics, magnitude plots, branch schematics and
-  `.s3p`/`.s4p` export in the GUI and CLI.
+  3-band triplexer; combined metrics, magnitude plots, branch schematics,
+  `.s3p`/`.s4p` export and a combined system BOM in the GUI and CLI.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

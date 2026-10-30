@@ -1169,6 +1169,7 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._metrics.rowCount() == 9
     assert dialog._samples.rowCount() == 21
     assert dialog._export_network_button.isEnabled()
+    assert dialog._export_build_button.isEnabled()
     assert dialog._curve_low.getData()[0].size > 0
     assert dialog._curve_high.getData()[0].size > 0
     assert dialog._curve_input.getData()[0].size > 0
@@ -1183,6 +1184,12 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     network_path = tmp_path / "diplexer.s3p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 3
+    bom_path = tmp_path / "diplexer_bom.md"
+    assert dialog.export_build_sheet(bom_path)
+    bom = bom_path.read_text(encoding="utf-8")
+    assert "# LPF + HPF diplexer" in bom
+    assert "| Low |" in bom and "| High |" in bom
+    assert "Low insertion loss" in bom
     low_path = tmp_path / "low.s2p"
     assert dialog.export_branch("low", low_path)
     assert read_sparameters(low_path).n_ports == 2
@@ -1307,6 +1314,11 @@ def test_triplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     network_path = tmp_path / "triplexer.s4p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 4
+    bom_path = tmp_path / "triplexer_bom.md"
+    assert dialog.export_build_sheet(bom_path)
+    bom = bom_path.read_text(encoding="utf-8")
+    assert "3-band BPF multiplexer" in bom
+    assert "| Low |" in bom and "| Mid |" in bom and "| High |" in bom
     for label in ("low", "mid", "high"):
         branch_path = tmp_path / f"{label}.s2p"
         assert dialog.export_branch(label, branch_path)

@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.52.0 — 2026-10-30
+
+### Added
+
+- Combined system BOM/build sheet for diplexer, band-diplexer, duplexer and
+  triplexer: system metrics, branch column, component rows, assumptions and
+  CSV/Markdown/HTML output.
+- **Export build sheet…** in the designer and `--export-build-sheet`,
+  `--bom-series`, `--bom-group` on the four system CLI commands.
+
 ## v0.51.0 — 2026-10-30
 
 ### Added

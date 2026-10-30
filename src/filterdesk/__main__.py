@@ -105,7 +105,10 @@ from filterdesk.domain.specs import (
     filter_spec_to_mapping,
 )
 from filterdesk.domain.units import format_engineering, parse_si
-from filterdesk.io.build_sheet import write_build_sheet
+from filterdesk.io.build_sheet import (
+    write_build_sheet,
+    write_multiplexer_build_sheet,
+)
 from filterdesk.io.csv_export import (
     COLUMNS,
     CsvExportError,
@@ -176,6 +179,7 @@ from filterdesk.services.multiplexer import (
     MultiplexerError,
     design_multiplexer,
 )
+from filterdesk.services.report import system_report
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.services.vna_measurement import (
     metadata_path_for,
@@ -1029,6 +1033,13 @@ def build_parser() -> argparse.ArgumentParser:
     diplexer.add_argument("--low-output", type=Path, default=None)
     diplexer.add_argument("--high-output", type=Path, default=None)
     diplexer.add_argument("--json", action="store_true")
+    diplexer.add_argument("--export-build-sheet", type=Path, default=None)
+    diplexer.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+    )
+    diplexer.add_argument("--bom-group", action="store_true")
 
     band_diplexer = sub.add_parser(
         "band-diplexer",
@@ -1058,6 +1069,13 @@ def build_parser() -> argparse.ArgumentParser:
     band_diplexer.add_argument("--low-output", type=Path, default=None)
     band_diplexer.add_argument("--high-output", type=Path, default=None)
     band_diplexer.add_argument("--json", action="store_true")
+    band_diplexer.add_argument("--export-build-sheet", type=Path, default=None)
+    band_diplexer.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+    )
+    band_diplexer.add_argument("--bom-group", action="store_true")
 
     duplexer = sub.add_parser(
         "duplexer",
@@ -1091,6 +1109,13 @@ def build_parser() -> argparse.ArgumentParser:
     duplexer.add_argument("--tx-output", type=Path, default=None)
     duplexer.add_argument("--rx-output", type=Path, default=None)
     duplexer.add_argument("--json", action="store_true")
+    duplexer.add_argument("--export-build-sheet", type=Path, default=None)
+    duplexer.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+    )
+    duplexer.add_argument("--bom-group", action="store_true")
 
     triplexer = sub.add_parser(
         "triplexer",
@@ -1123,6 +1148,13 @@ def build_parser() -> argparse.ArgumentParser:
     triplexer.add_argument("--mid-output", type=Path, default=None)
     triplexer.add_argument("--high-output", type=Path, default=None)
     triplexer.add_argument("--json", action="store_true")
+    triplexer.add_argument("--export-build-sheet", type=Path, default=None)
+    triplexer.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+    )
+    triplexer.add_argument("--bom-group", action="store_true")
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3304,6 +3336,24 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Notes:         {estimate.notes}")
         return 0
 
+    def _write_system_build_sheet(
+        system_design: object,
+        path: Path,
+        series: ESeries | None,
+        group: bool,
+    ) -> None:
+        report = system_report(system_design)  # type: ignore[arg-type]
+        write_multiplexer_build_sheet(
+            [(branch.label, branch.circuit) for branch in report.branches],
+            path,
+            summary=report.summary,
+            title=report.title,
+            notes=report.notes,
+            series=series,
+            group=group,
+        )
+        print(f"Wrote {path}", file=sys.stderr)
+
     if args.command == "triplexer":
         try:
             low_center = parse_si(str(args.low_center))
@@ -3362,6 +3412,13 @@ def main(argv: list[str] | None = None) -> int:
                     write_sparameters(
                         SParameters.from_analysis(branch_analysis), path
                     )
+            if args.export_build_sheet is not None:
+                _write_system_build_sheet(
+                    triplexer_design,
+                    args.export_build_sheet,
+                    ESeries(args.bom_series) if args.bom_series else None,
+                    bool(args.bom_group),
+                )
         except (
             MultiplexerError,
             DiplexerError,
@@ -3467,6 +3524,13 @@ def main(argv: list[str] | None = None) -> int:
                 write_sparameters(
                     SParameters.from_analysis(duplexer_design.rx_analysis),
                     args.rx_output,
+                )
+            if args.export_build_sheet is not None:
+                _write_system_build_sheet(
+                    duplexer_design,
+                    args.export_build_sheet,
+                    ESeries(args.bom_series) if args.bom_series else None,
+                    bool(args.bom_group),
                 )
         except (
             DuplexerError,
@@ -3595,6 +3659,13 @@ def main(argv: list[str] | None = None) -> int:
                     SParameters.from_analysis(band_design.high_analysis),
                     args.high_output,
                 )
+            if args.export_build_sheet is not None:
+                _write_system_build_sheet(
+                    band_design,
+                    args.export_build_sheet,
+                    ESeries(args.bom_series) if args.bom_series else None,
+                    bool(args.bom_group),
+                )
         except (
             DiplexerError,
             SpecValidationError,
@@ -3693,6 +3764,13 @@ def main(argv: list[str] | None = None) -> int:
                 write_sparameters(
                     SParameters.from_analysis(diplexer_design.high_analysis),
                     args.high_output,
+                )
+            if args.export_build_sheet is not None:
+                _write_system_build_sheet(
+                    diplexer_design,
+                    args.export_build_sheet,
+                    ESeries(args.bom_series) if args.bom_series else None,
+                    bool(args.bom_group),
                 )
         except (
             DiplexerError,

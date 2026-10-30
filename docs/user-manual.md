@@ -643,6 +643,10 @@ Most commands accept `--json` for machine-readable output.
       --order 5 --ripple 0.1 --f-start 5M --f-stop 40M \
       --output triplexer.s4p
   ```
+
+  `diplexer`, `band-diplexer`, `duplexer` and `triplexer` also accept
+  `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}` and
+  `--bom-group` for the combined system BOM.
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
   - `network info FILE [--json]` — ports, points, range, reference impedance
@@ -1014,6 +1018,12 @@ are not physical.
 shows one sub-tab per branch: Low/High for LPF+HPF and BPF+BPF, TX/RX for the
 duplexer, and Low/Mid/High for the triplexer. It is a read-only display; image
 export is not included in this version.
+
+**Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
+It includes the system metrics, one row per physical component with a leading
+**Branch** column, optional E-series snapping/grouping, and the ideal-model
+assumptions. CSV always starts with `branch,ref,qty,…` so duplicate refs in
+different branches remain unambiguous.
 
 In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
 Isolation is the combined `|S32|` in each band; the dialog reports TX/RX

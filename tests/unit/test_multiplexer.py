@@ -102,6 +102,7 @@ def test_cli_triplexer_writes_four_port(
     low = tmp_path / "low.s2p"
     mid = tmp_path / "mid.s2p"
     high = tmp_path / "high.s2p"
+    bom = tmp_path / "triplexer_bom.md"
     code = main(
         [
             "triplexer",
@@ -135,6 +136,8 @@ def test_cli_triplexer_writes_four_port(
             str(mid),
             "--high-output",
             str(high),
+            "--export-build-sheet",
+            str(bom),
             "--json",
         ]
     )
@@ -147,3 +150,6 @@ def test_cli_triplexer_writes_four_port(
     assert read_sparameters(low).n_ports == 2
     assert read_sparameters(mid).n_ports == 2
     assert read_sparameters(high).n_ports == 2
+    bom_text = bom.read_text(encoding="utf-8")
+    assert "# 3-band BPF multiplexer" in bom_text
+    assert "| Low |" in bom_text and "| Mid |" in bom_text and "| High |" in bom_text

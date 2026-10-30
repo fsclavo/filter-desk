@@ -624,6 +624,228 @@ def render_build_sheet_html(
     return "\n".join(parts)
 
 
+MULTIPLEXER_BOM_COLUMNS: tuple[str, ...] = ("branch", *BOM_COLUMNS)
+
+
+def multiplexer_build_rows(
+    branches: Sequence[tuple[str, Circuit]],
+    *,
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+) -> list[tuple[str, BuildSheetRow]]:
+    """Expand each labelled branch into combined BOM rows."""
+    tol = tolerances or {}
+    rows: list[tuple[str, BuildSheetRow]] = []
+    for label, circuit in branches:
+        for row in build_sheet_rows(
+            circuit,
+            tolerances=tol.get(label, {}),
+            series=series,
+            group=group,
+        ):
+            rows.append((label, row))
+    return rows
+
+
+def _multiplexer_assumptions(
+    branches: Sequence[tuple[str, Circuit]],
+) -> list[str]:
+    items: list[str] = []
+    for _label, circuit in branches:
+        for item in assumptions_for_circuit(circuit):
+            if item not in items:
+                items.append(item)
+    return items
+
+
+def render_multiplexer_bom_csv(
+    branches: Sequence[tuple[str, Circuit]],
+    *,
+    columns: Sequence[str] | None = None,
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+) -> str:
+    """Render a combined BOM with a leading ``branch`` column."""
+    selected = tuple(columns) if columns is not None else BOM_COLUMNS
+    rows = multiplexer_build_rows(
+        branches, tolerances=tolerances, series=series, group=group
+    )
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(("branch", *selected))
+    for label, row in rows:
+        writer.writerow([label, *[_column_value(row, column) for column in selected]])
+    return buf.getvalue()
+
+
+def render_multiplexer_build_sheet_markdown(
+    branches: Sequence[tuple[str, Circuit]],
+    *,
+    summary: Sequence[tuple[str, str]] = (),
+    title: str = "",
+    notes: Sequence[str] = (),
+    assumptions: Sequence[str] = (),
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+) -> str:
+    """Render a combined Markdown system build sheet."""
+    lines: list[str] = [f"# {title.strip() or 'Multiplexer build sheet'}"]
+    if summary:
+        lines += ["", "## System", "", "| Item | Value |", "| --- | --- |"]
+        lines += [f"| {key} | {value} |" for key, value in summary]
+    rows = multiplexer_build_rows(
+        branches, tolerances=tolerances, series=series, group=group
+    )
+    headers = ("Branch", *_SHEET_HEADERS)
+    lines += [
+        "",
+        "## Bill of materials",
+        "",
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    lines += [
+        "| " + " | ".join((label, *_table_cells(row))) + " |"
+        for label, row in rows
+    ]
+    if assumptions:
+        lines += ["", "## Assumptions", ""]
+        lines += [f"- {item}" for item in assumptions]
+    if notes:
+        lines += ["", "## Notes", ""]
+        lines += [f"- {note}" for note in notes]
+    lines.append("")
+    return "\n".join(lines)
+
+
+def render_multiplexer_build_sheet_html(
+    branches: Sequence[tuple[str, Circuit]],
+    *,
+    summary: Sequence[tuple[str, str]] = (),
+    title: str = "",
+    notes: Sequence[str] = (),
+    assumptions: Sequence[str] = (),
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+) -> str:
+    """Render a combined printable HTML system build sheet."""
+    heading = html.escape(title.strip() or "Multiplexer build sheet")
+    parts: list[str] = [
+        "<!DOCTYPE html>",
+        '<html lang="en">',
+        "<head>",
+        '<meta charset="utf-8">',
+        f"<title>{heading}</title>",
+        "<style>",
+        "body{font-family:sans-serif;margin:2rem;color:#111}",
+        "table{border-collapse:collapse;margin-top:.5rem}",
+        "th,td{border:1px solid #999;padding:.3rem .5rem;text-align:left}",
+        "th{background:#eee}",
+        "h1{margin-bottom:.2rem}",
+        "</style>",
+        "</head>",
+        "<body>",
+        f"<h1>{heading}</h1>",
+    ]
+    if summary:
+        parts += ["<h2>System</h2>", "<table>"]
+        parts += [
+            f"<tr><th>{html.escape(key)}</th><td>{html.escape(value)}</td></tr>"
+            for key, value in summary
+        ]
+        parts.append("</table>")
+    rows = multiplexer_build_rows(
+        branches, tolerances=tolerances, series=series, group=group
+    )
+    headers = ("Branch", *_SHEET_HEADERS)
+    parts += ["<h2>Bill of materials</h2>", "<table>", "<tr>"]
+    parts += [f"<th>{html.escape(head)}</th>" for head in headers]
+    parts += ["</tr>"]
+    for label, row in rows:
+        parts.append("<tr>")
+        parts += [
+            f"<td>{html.escape(cell)}</td>"
+            for cell in (label, *_table_cells(row))
+        ]
+        parts.append("</tr>")
+    parts.append("</table>")
+    if assumptions:
+        parts.append("<h2>Assumptions</h2>")
+        parts.append("<ul>")
+        parts += [f"<li>{html.escape(item)}</li>" for item in assumptions]
+        parts.append("</ul>")
+    if notes:
+        parts.append("<h2>Notes</h2>")
+        parts.append("<ul>")
+        parts += [f"<li>{html.escape(note)}</li>" for note in notes]
+        parts.append("</ul>")
+    parts += ["</body>", "</html>", ""]
+    return "\n".join(parts)
+
+
+def write_multiplexer_build_sheet(
+    branches: Sequence[tuple[str, Circuit]],
+    path: Path | str,
+    *,
+    summary: Sequence[tuple[str, str]] = (),
+    title: str = "",
+    notes: Sequence[str] = (),
+    assumptions: Sequence[str] | None = None,
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+    columns: Sequence[str] | None = None,
+) -> Path:
+    """Write a combined system BOM/build sheet (CSV, Markdown or HTML)."""
+    target = Path(path)
+    assumption_items = (
+        _multiplexer_assumptions(branches)
+        if assumptions is None
+        else list(assumptions)
+    )
+    suffix = target.suffix.lower()
+    if suffix == ".csv":
+        text = render_multiplexer_bom_csv(
+            branches,
+            columns=columns,
+            tolerances=tolerances,
+            series=series,
+            group=group,
+        )
+    elif suffix in {".md", ".markdown"}:
+        text = render_multiplexer_build_sheet_markdown(
+            branches,
+            summary=summary,
+            title=title,
+            notes=notes,
+            assumptions=assumption_items,
+            tolerances=tolerances,
+            series=series,
+            group=group,
+        )
+    elif suffix in {".html", ".htm"}:
+        text = render_multiplexer_build_sheet_html(
+            branches,
+            summary=summary,
+            title=title,
+            notes=notes,
+            assumptions=assumption_items,
+            tolerances=tolerances,
+            series=series,
+            group=group,
+        )
+    else:
+        raise BuildSheetError(
+            f"unsupported build-sheet extension {suffix!r} (use .csv, .md or .html)"
+        )
+    target.write_text(text, encoding="utf-8")
+    return target
+
+
 def write_build_sheet(
     circuit: Circuit,
     path: Path | str,
@@ -699,12 +921,18 @@ def write_build_sheet(
 
 __all__ = [
     "BOM_COLUMNS",
+    "MULTIPLEXER_BOM_COLUMNS",
     "BuildSheetError",
     "BuildSheetRow",
     "build_sheet_rows",
+    "multiplexer_build_rows",
     "render_bom_csv",
     "render_build_sheet_html",
     "render_build_sheet_markdown",
+    "render_multiplexer_bom_csv",
+    "render_multiplexer_build_sheet_html",
+    "render_multiplexer_build_sheet_markdown",
     "summary_pairs",
     "write_build_sheet",
+    "write_multiplexer_build_sheet",
 ]

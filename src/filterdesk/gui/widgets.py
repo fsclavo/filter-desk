@@ -103,6 +103,7 @@ from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import family_label, tr
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.plot_axes import freq_plot
+from filterdesk.io.build_sheet import write_multiplexer_build_sheet
 from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
 from filterdesk.io.spice import write_tlt_spice_netlist
@@ -156,6 +157,7 @@ from filterdesk.services.multiplexer import (
     MultiplexerError,
     design_multiplexer,
 )
+from filterdesk.services.report import system_report
 from filterdesk.services.vna_measurement import VnaMeasurementMetadata
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
@@ -3200,18 +3202,21 @@ class DiplexerDialog(QDialog):
         self._design_button = QPushButton(tr("Design"))
         self._design_button.clicked.connect(self.design)
         self._export_network_button = QPushButton(tr("Export .s3p…"))
+        self._export_build_button = QPushButton(tr("Export build sheet…"))
         self._export_low_button = QPushButton(tr("Export low .s2p…"))
         self._export_high_button = QPushButton(tr("Export high .s2p…"))
         self._export_mid_button = QPushButton(tr("Export mid .s2p…"))
         self._export_mid_button.setVisible(False)
         for button in (
             self._export_network_button,
+            self._export_build_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
         ):
             button.setEnabled(False)
         self._export_network_button.clicked.connect(self._export_network)
+        self._export_build_button.clicked.connect(self._export_build_sheet)
         self._export_low_button.clicked.connect(lambda: self._export_branch("low"))
         self._export_high_button.clicked.connect(lambda: self._export_branch("high"))
         self._export_mid_button.clicked.connect(self._export_mid)
@@ -3221,6 +3226,7 @@ class DiplexerDialog(QDialog):
         for button in (
             self._design_button,
             self._export_network_button,
+            self._export_build_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
@@ -3499,6 +3505,59 @@ class DiplexerDialog(QDialog):
         self._set_export_enabled(True)
         self._status.setText(tr("Design complete."))
         return True
+
+    def export_build_sheet(
+        self,
+        path: str | Path,
+        *,
+        series: ESeries | None = None,
+        group: bool = False,
+    ) -> bool:
+        if self._design is None:
+            return False
+        report = system_report(self._design)
+        branches = [(branch.label, branch.circuit) for branch in report.branches]
+        try:
+            write_multiplexer_build_sheet(
+                branches,
+                path,
+                summary=report.summary,
+                title=report.title,
+                notes=report.notes,
+                series=series,
+                group=group,
+            )
+        except OSError as exc:
+            self._status.setText(str(exc))
+            return False
+        self._status.setText(tr("Wrote {path}", path=path))
+        return True
+
+    def _export_build_sheet(self) -> None:
+        if self._design is None:
+            return
+        options = BuildSheetDialog.ask(self)
+        if options is None:
+            return
+        series, group = options
+        path, selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export system build sheet"),
+            "diplexer_bom.md",
+            "Build sheet (*.md);;BOM CSV (*.csv);;HTML (*.html);;All files (*)",
+        )
+        if not path:
+            return
+        suffix = (
+            ".csv"
+            if "CSV" in selected
+            else ".html"
+            if "HTML" in selected
+            else ".md"
+        )
+        if not path.lower().endswith(suffix):
+            path += suffix
+        self.export_build_sheet(path, series=series, group=group)
 
     def export_network(self, path: str | Path) -> bool:
         if self._design is None:
@@ -3914,6 +3973,7 @@ class DiplexerDialog(QDialog):
     def _set_export_enabled(self, enabled: bool) -> None:
         for button in (
             self._export_network_button,
+            self._export_build_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
