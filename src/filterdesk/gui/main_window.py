@@ -833,10 +833,25 @@ class MainWindow(QMainWindow):
         if report is None:
             self._stress_label.setText("")
             return
-        self._stress_label.setText(
-            f"Peak {report.max_v_peak_v:.0f} V / {report.max_i_peak_a:.2f} A"
-            f" @ {self._eng_freq(report.frequency_hz)}"
-        )
+        if report.is_sweep:
+            v_frequency = report.max_v_frequency_hz or report.frequency_hz
+            i_frequency = report.max_i_frequency_hz or report.frequency_hz
+            self._stress_label.setText(
+                f"Peak {report.max_v_peak_v:.0f} V @ {self._eng_freq(v_frequency)}"
+                f" / {report.max_i_peak_a:.2f} A @ {self._eng_freq(i_frequency)}"
+            )
+            if report.sweep_start_hz is not None and report.sweep_stop_hz is not None:
+                self._stress_label.setToolTip(
+                    "Worst-case peak voltage/current over "
+                    f"{self._eng_freq(report.sweep_start_hz)}–"
+                    f"{self._eng_freq(report.sweep_stop_hz)} "
+                    f"({report.points} points)"
+                )
+        else:
+            self._stress_label.setText(
+                f"Peak {report.max_v_peak_v:.0f} V / {report.max_i_peak_a:.2f} A"
+                f" @ {self._eng_freq(report.frequency_hz)}"
+            )
 
     def _on_power_changed(self, value: float) -> None:
         self._session.power_w = float(value)

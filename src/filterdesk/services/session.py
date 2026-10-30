@@ -15,7 +15,12 @@ from filterdesk.analysis.harmonics import (
 from filterdesk.analysis.metrics import band_edges
 from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
-from filterdesk.analysis.stress import StressError, StressReport, compute_stress
+from filterdesk.analysis.stress import (
+    StressError,
+    StressReport,
+    compute_stress,
+    compute_stress_sweep,
+)
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     ESeries,
@@ -542,16 +547,47 @@ class DesignSession:
         cutoff = self.spec.cutoff_hz
         return cutoff if cutoff > 0.0 else None
 
+    def stress_frequencies_hz(self) -> tuple[float, ...]:
+        """Reference plus up to 25 samples across the current analysis sweep."""
+        reference = self.stress_frequency_hz()
+        if reference is None or reference <= 0.0:
+            return ()
+        if self.analysis is None or self.analysis.frequency_hz.size < 2:
+            return (reference,)
+        frequencies = [float(f) for f in self.analysis.frequency_hz if f > 0.0]
+        if not frequencies:
+            return (reference,)
+        count = min(25, len(frequencies))
+        if count == 1:
+            return (reference,)
+        indices = {
+            round(index * (len(frequencies) - 1) / (count - 1))
+            for index in range(count)
+        }
+        selected = [frequencies[index] for index in sorted(indices)]
+        selected.append(reference)
+        return tuple(sorted(set(selected)))
+
     def compute_stress(self) -> StressReport | None:
-        """Per-element peak V/I at the reference frequency, or ``None`` (power off)."""
+        """Worst per-element peak V/I over the analysis sweep (or reference)."""
         if self.power_w <= 0.0 or self.circuit is None:
             return None
-        frequency = self.stress_frequency_hz()
-        if frequency is None or frequency <= 0.0:
+        frequencies = self.stress_frequencies_hz()
+        if not frequencies:
             return None
+        reference = self.stress_frequency_hz()
         try:
-            return compute_stress(
-                self.circuit, power_w=self.power_w, frequency_hz=frequency
+            if len(frequencies) == 1:
+                return compute_stress(
+                    self.circuit,
+                    power_w=self.power_w,
+                    frequency_hz=frequencies[0],
+                )
+            return compute_stress_sweep(
+                self.circuit,
+                power_w=self.power_w,
+                frequencies_hz=frequencies,
+                reference_hz=reference,
             )
         except StressError:
             return None

@@ -10,7 +10,7 @@ import pytest
 
 from filterdesk.__main__ import main
 from filterdesk.analysis.harmonics import Harmonic, HarmonicReport
-from filterdesk.analysis.stress import compute_stress
+from filterdesk.analysis.stress import compute_stress, compute_stress_sweep
 from filterdesk.components_std import ESeries
 from filterdesk.domain.circuit import (
     Circuit,
@@ -271,6 +271,18 @@ def test_cli_export_build_sheet(
     assert "## Bill of materials" in text
     assert "Forward power | 10 W" in text
     assert "Wrote" in capsys.readouterr().err
+
+
+def test_build_sheet_notes_sweep_stress_range(tmp_path: Path) -> None:
+    circuit = synthesize(_spec()).circuit
+    stress = compute_stress_sweep(
+        circuit, power_w=100.0, frequencies_hz=(50e6, 100e6), reference_hz=100e6
+    )
+    out = tmp_path / "sweep.md"
+    write_build_sheet(circuit, out, stress=stress)
+    text = out.read_text(encoding="utf-8")
+    assert "Peak V/I are worst-case over" in text
+    assert "2 points" in text
 
 
 def test_rows_snap_to_e_series() -> None:

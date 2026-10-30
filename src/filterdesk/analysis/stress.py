@@ -1,4 +1,4 @@
-"""Nodal power-stress analysis at one reference frequency.
+"""Nodal power-stress analysis at one reference frequency or a frequency sweep.
 
 The circuit is solved as a linear two-port network with a Thevenin source
 (``port_in`` impedance and the requested available power) and the actual
@@ -14,6 +14,7 @@ those RMS values.  The reported power is the source available power.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -47,6 +48,8 @@ class ElementStress:
     impedance_ohm: complex
     v_peak_v: float
     i_peak_a: float
+    voltage_frequency_hz: float | None = None
+    current_frequency_hz: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +58,9 @@ class StressReport:
     z0_ohm: float
     frequency_hz: float
     entries: tuple[ElementStress, ...]
+    sweep_start_hz: float | None = None
+    sweep_stop_hz: float | None = None
+    points: int = 1
 
     @property
     def max_v_peak_v(self) -> float:
@@ -75,6 +81,24 @@ class StressReport:
         if not self.entries:
             return None
         return max(self.entries, key=lambda e: e.i_peak_a).ref
+
+    @property
+    def is_sweep(self) -> bool:
+        return self.points > 1 and self.sweep_start_hz is not None
+
+    @property
+    def max_v_frequency_hz(self) -> float | None:
+        if not self.entries:
+            return None
+        worst = max(self.entries, key=lambda e: e.v_peak_v)
+        return worst.voltage_frequency_hz or self.frequency_hz
+
+    @property
+    def max_i_frequency_hz(self) -> float | None:
+        if not self.entries:
+            return None
+        worst = max(self.entries, key=lambda e: e.i_peak_a)
+        return worst.current_frequency_hz or self.frequency_hz
 
 
 def _load_impedance(circuit: Circuit, frequency_hz: float) -> complex:
@@ -319,4 +343,73 @@ def compute_stress(
     )
 
 
-__all__ = ["ElementStress", "StressError", "StressReport", "compute_stress"]
+def compute_stress_sweep(
+    circuit: Circuit,
+    *,
+    power_w: float,
+    frequencies_hz: Sequence[float],
+    z0_ohm: float | None = None,
+    reference_hz: float | None = None,
+) -> StressReport:
+    """Return the worst per-element V/I over a frequency sweep.
+
+    Voltage and current maxima may occur at different frequencies; each entry
+    records both locations. ``frequency_hz`` keeps the reference frequency for
+    backward-compatible labels, while ``max_v_frequency_hz`` and
+    ``max_i_frequency_hz`` identify the actual worst points.
+    """
+    frequencies = tuple(
+        float(f) for f in frequencies_hz if math.isfinite(float(f)) and f > 0.0
+    )
+    if not frequencies:
+        raise StressError("stress sweep needs at least one positive frequency")
+    reports = [
+        compute_stress(
+            circuit, power_w=power_w, frequency_hz=frequency, z0_ohm=z0_ohm
+        )
+        for frequency in frequencies
+    ]
+    entries: list[ElementStress] = []
+    for index, first in enumerate(reports[0].entries):
+        voltage_report = max(
+            reports, key=lambda report: report.entries[index].v_peak_v
+        )
+        current_report = max(
+            reports, key=lambda report: report.entries[index].i_peak_a
+        )
+        entries.append(
+            ElementStress(
+                ref=first.ref,
+                role=first.role,
+                impedance_ohm=voltage_report.entries[index].impedance_ohm,
+                v_peak_v=voltage_report.entries[index].v_peak_v,
+                i_peak_a=current_report.entries[index].i_peak_a,
+                voltage_frequency_hz=voltage_report.frequency_hz,
+                current_frequency_hz=current_report.frequency_hz,
+            )
+        )
+    start = min(frequencies)
+    stop = max(frequencies)
+    reference = (
+        reference_hz
+        if reference_hz is not None
+        else frequencies[len(frequencies) // 2]
+    )
+    return StressReport(
+        power_w=power_w,
+        z0_ohm=reports[0].z0_ohm,
+        frequency_hz=float(reference),
+        entries=tuple(entries),
+        sweep_start_hz=start,
+        sweep_stop_hz=stop,
+        points=len(frequencies),
+    )
+
+
+__all__ = [
+    "ElementStress",
+    "StressError",
+    "StressReport",
+    "compute_stress",
+    "compute_stress_sweep",
+]

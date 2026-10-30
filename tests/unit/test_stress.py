@@ -8,11 +8,16 @@ import math
 import pytest
 
 from filterdesk.__main__ import main
-from filterdesk.analysis.stress import StressError, compute_stress
-from filterdesk.domain.circuit import Circuit, IdealResistor, Port
+from filterdesk.analysis.stress import (
+    StressError,
+    compute_stress,
+    compute_stress_sweep,
+)
+from filterdesk.domain.circuit import Circuit, IdealCapacitor, IdealResistor, Port
 from filterdesk.domain.enums import (
     ApproximationFamily,
     CutoffDefinition,
+    ElementRole,
     FilterResponse,
     TopologyId,
 )
@@ -69,6 +74,35 @@ def test_bpf_stress_at_center_is_not_constant_arm_current() -> None:
     assert all(math.isfinite(e.i_peak_a) for e in report.entries)
 
 
+def test_stress_sweep_reports_worst_voltage_and_current_points() -> None:
+    circuit = Circuit(
+        [
+            IdealResistor("R1", 50.0, "in", "out"),
+            IdealCapacitor("C1", 1e-9, "out", "gnd", ElementRole.SHUNT),
+        ],
+        Port("P1", "in", 50.0),
+        Port("P2", "out", 50.0),
+        ground="gnd",
+    )
+    report = compute_stress_sweep(
+        circuit,
+        power_w=100.0,
+        frequencies_hz=(1e3, 1e6, 1e9),
+        reference_hz=1e6,
+    )
+    assert report.is_sweep
+    assert report.points == 3
+    assert report.sweep_start_hz == pytest.approx(1e3)
+    assert report.sweep_stop_hz == pytest.approx(1e9)
+    assert report.frequency_hz == pytest.approx(1e6)
+    by_ref = {entry.ref: entry for entry in report.entries}
+    capacitor = by_ref["C1"]
+    assert capacitor.voltage_frequency_hz == pytest.approx(1e3)
+    assert capacitor.current_frequency_hz == pytest.approx(1e9)
+    assert capacitor.v_peak_v == pytest.approx(66.667, abs=0.1)
+    assert capacitor.i_peak_a == pytest.approx(2.0, abs=0.01)
+
+
 def test_compute_stress_validation() -> None:
     circuit = synthesize(_spec()).circuit
     with pytest.raises(StressError):
@@ -81,11 +115,14 @@ def test_session_stress_none_when_power_off() -> None:
     session = DesignSession()
     session.set_spec(_spec())
     session.synthesize()
+    session.analyze()
     assert session.compute_stress() is None
     session.power_w = 100.0
     report = session.compute_stress()
     assert report is not None
     assert report.frequency_hz == pytest.approx(100e6)
+    assert report.is_sweep
+    assert 2 <= report.points <= 26
 
 
 def test_stress_supports_distributed_and_output_transformer() -> None:
@@ -165,4 +202,6 @@ def test_cli_analyze_power_json(capsys: pytest.CaptureFixture[str]) -> None:
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["stress"]["power_w"] == 100.0
+    assert payload["stress"]["points"] > 1
+    assert payload["stress"]["sweep_start_hz"] is not None
     assert len(payload["stress"]["elements"]) == 5

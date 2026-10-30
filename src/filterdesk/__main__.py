@@ -35,8 +35,12 @@ from filterdesk.analysis.harmonics import (
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
 from filterdesk.analysis.sensitivity import SensitivityReport, sensitivity
 from filterdesk.analysis.service import analyze_circuit
-from filterdesk.analysis.stress import StressError, StressReport, compute_stress
-from filterdesk.analysis.types import SweepConfig, SweepSpacing
+from filterdesk.analysis.stress import (
+    StressError,
+    StressReport,
+    compute_stress_sweep,
+)
+from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     AirCoilError,
     AttenuatorError,
@@ -1373,9 +1377,31 @@ def _stress_frequency(spec: FilterSpec) -> float | None:
     return spec.cutoff_hz if spec.cutoff_hz > 0.0 else None
 
 
+def _stress_sweep_frequencies(analysis: AnalysisResult) -> tuple[float, ...]:
+    frequencies = [float(f) for f in analysis.frequency_hz if float(f) > 0.0]
+    if not frequencies:
+        return ()
+    count = min(25, len(frequencies))
+    if count == 1:
+        return (frequencies[0],)
+    indices = {
+        round(index * (len(frequencies) - 1) / (count - 1))
+        for index in range(count)
+    }
+    return tuple(sorted({frequencies[index] for index in indices}))
+
+
 def _print_stress(report: StressReport) -> None:
+    if report.is_sweep and report.sweep_start_hz is not None:
+        span = (
+            f"{format_engineering(report.sweep_start_hz, 'Hz', digits=6)}–"
+            f"{format_engineering(report.sweep_stop_hz or 0.0, 'Hz', digits=6)}"
+        )
+        where = f"sweep {span}, {report.points} points"
+    else:
+        where = f"@ {format_engineering(report.frequency_hz, 'Hz', digits=6)}"
     print(
-        f"Power stress @ {format_engineering(report.frequency_hz, 'Hz', digits=6)} "
+        f"Power stress {where} "
         f"(P={report.power_w:g} W, Z0={report.z0_ohm:g} Ohm):"
     )
     for entry in report.entries:
@@ -1395,8 +1421,13 @@ def _stress_to_json(report: StressReport) -> dict[str, object]:
         "power_w": report.power_w,
         "z0_ohm": report.z0_ohm,
         "frequency_hz": report.frequency_hz,
+        "sweep_start_hz": report.sweep_start_hz,
+        "sweep_stop_hz": report.sweep_stop_hz,
+        "points": report.points,
         "max_v_peak_v": report.max_v_peak_v,
         "max_i_peak_a": report.max_i_peak_a,
+        "max_v_frequency_hz": report.max_v_frequency_hz,
+        "max_i_frequency_hz": report.max_i_frequency_hz,
         "elements": [
             {
                 "ref": e.ref,
@@ -1404,6 +1435,8 @@ def _stress_to_json(report: StressReport) -> dict[str, object]:
                 "impedance_ohm": abs(e.impedance_ohm),
                 "v_peak_v": e.v_peak_v,
                 "i_peak_a": e.i_peak_a,
+                "voltage_frequency_hz": e.voltage_frequency_hz,
+                "current_frequency_hz": e.current_frequency_hz,
             }
             for e in report.entries
         ],
@@ -2101,8 +2134,11 @@ def main(argv: list[str] | None = None) -> int:
             stress_freq = _stress_frequency(spec)
             if stress_freq is not None:
                 try:
-                    stress = compute_stress(
-                        synth.circuit, power_w=args.power, frequency_hz=stress_freq
+                    stress = compute_stress_sweep(
+                        synth.circuit,
+                        power_w=args.power,
+                        frequencies_hz=_stress_sweep_frequencies(analysis),
+                        reference_hz=stress_freq,
                     )
                 except StressError:
                     stress = None

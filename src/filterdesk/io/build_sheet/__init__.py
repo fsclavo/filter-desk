@@ -657,6 +657,15 @@ def write_build_sheet(
     assumption_items = (
         assumptions_for_circuit(circuit) if assumptions is None else tuple(assumptions)
     )
+    note_items = list(notes)
+    if stress is not None and stress.is_sweep and stress.sweep_start_hz is not None:
+        note_items.append(
+            "Peak V/I are worst-case over "
+            f"{format_engineering(stress.sweep_start_hz, 'Hz')}–"
+            f"{format_engineering(stress.sweep_stop_hz or 0.0, 'Hz')} "
+            f"({stress.points} points); the two maxima may occur at different "
+            "frequencies."
+        )
     suffix = target.suffix.lower()
     if suffix == ".csv":
         text = render_bom_csv(rows, columns=columns)
@@ -667,7 +676,7 @@ def write_build_sheet(
             power_w=power_w,
             harmonics=harmonics,
             title=title,
-            notes=notes,
+            notes=note_items,
             assumptions=assumption_items,
         )
     elif suffix in {".html", ".htm"}:
@@ -677,7 +686,7 @@ def write_build_sheet(
             power_w=power_w,
             harmonics=harmonics,
             title=title,
-            notes=notes,
+            notes=note_items,
             assumptions=assumption_items,
         )
     else:

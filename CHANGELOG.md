@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.43.0 — 2026-10-30
+
+### Changed
+
+- Power-stress analysis now reports the worst per-element Vpk/Ipk across up to
+  25 points of the current sweep instead of a single landmark frequency. Voltage
+  and current maxima are tracked independently and shown with their frequencies.
+- Build sheets note that peak V/I are worst-case values when a sweep was used.
+
 ## v0.42.0 — 2026-10-30
 
 ### Added

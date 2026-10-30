@@ -290,10 +290,12 @@ the schematic, and vice versa.
 **Vpk/Ipk** show the peak voltage/current per part from the **nodal
 power-stress analysis**: set the **TX Power** field in the toolbar (0 = off). The
 circuit is solved at the passband landmark (cutoff for LP/HP, center for BP/BS)
-with the actual source/load impedances and the boundary T1/BAL1, so resonances
-and mismatch are included. `TX Power` is the source **available** power; a
-matched 50 Ω load receives that power, while a mismatched load receives less.
-The worst case is summarised in the status bar. Use it to pick voltage/current
+and at up to 25 points across the current analysis sweep, with the actual
+source/load impedances and the boundary T1/BAL1, so resonances and mismatch are
+included. The reported Vpk and Ipk are independent worst cases and may occur at
+different frequencies; the status-bar tooltip shows the swept range.
+`TX Power` is the source **available** power; a matched 50 Ω load receives that
+power, while a mismatched load receives less. Use it to pick voltage/current
 ratings (e.g. capacitor voltage) for transmit filters. This is a linear
 frequency-domain result, not a thermal or nonlinear stress simulation.
 
@@ -742,7 +744,8 @@ The format follows the extension:
   `wire_awg`, `v_peak_v`, `i_peak_a`. Use `--bom-columns` to pick a subset.
 - `.md` / `.html` — printable build sheet with the specification summary, the
   BOM table (values, tolerance, parasitics, DCR/SRF, winding, peak V/I) and
-  optional notes. When a TX harmonic reference is available, these formats also
+  optional notes. Peak V/I are marked as worst-case over the stress sweep when
+  applicable. When a TX harmonic reference is available, these formats also
   include the harmonic-rejection table and the worst order. HTML has no
   external assets, so it prints or exports to PDF from a browser.
 

@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.42.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.43.0 · **Released:**
 [v0.42.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.42.0) ·
 **Previous:**
 [v0.41.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.41.0) ·
-**Next:** v0.43.0 planning.
+**Next:** v0.43.0 release (worst-case power stress, pending CI/tag).
 
-**Verification:** local suite **1131 passed**, 4 skipped (ngspice unavailable); coverage **82.28 %**.
+**Verification:** local suite **1133 passed**, 4 skipped (ngspice unavailable); coverage **82.25 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41081749438
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41083497613
 
@@ -79,6 +79,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Editable measurement metadata with validation and project persistence.
 - [x] Tune directly from a stored measurement in the history dock.
 - [x] Include TX harmonic rejection in Markdown/HTML build sheets.
+- [x] Worst-case power stress across the analysis sweep (25 samples).
 - [x] Unsaved-changes close guard with Save / Discard / Cancel.
 - [x] Measured-overlay legends are hidden until a Touchstone file is loaded;
       Smith chart and response plots no longer advertise empty `meas` traces.
