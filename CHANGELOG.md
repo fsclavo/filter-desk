@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.39.0 — 2026-10-29
+
+### Added
+
+- **Measurement details** dialog: full provenance (VNA, calibration, reference
+  plane, cables, connectors, fixture, temperature, operator, notes) and a
+  comparison against the current analyzed design.
+
 ## v0.38.0 — 2026-10-29
 
 ### Added

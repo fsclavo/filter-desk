@@ -806,6 +806,20 @@ _ES.update(
             "¿Eliminar todas las mediciones guardadas de este proyecto?"
         ),
         "Active measurement: {name}": "Medición activa: {name}",
+        "Details…": "Detalles…",
+        "Measurement details": "Detalles de medición",
+        "VNA model": "Modelo de VNA",
+        "Cables": "Cables",
+        "Connectors": "Conectores",
+        "Terminations": "Terminaciones",
+        "Fixture": "Montaje",
+        "Temperature (C)": "Temperatura (C)",
+        "Measured at": "Medido el",
+        "Operator": "Operador",
+        "Comparison": "Comparación",
+        "Analyze a design to compare against this measurement.": (
+            "Analizá un diseño para comparar con esta medición."
+        ),
         "Edit circuit": "Editar circuito",
         "Edit {ref}": "Editar {ref}",
         "Tune marker": "Ajustar marcador",

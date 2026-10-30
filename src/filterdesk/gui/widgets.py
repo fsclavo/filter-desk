@@ -113,6 +113,7 @@ from filterdesk.services.bands import (
     BandKind,
     band_preset_spec,
 )
+from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
 from filterdesk.services.hf_band import (
     BandFilterDesign,
@@ -125,6 +126,7 @@ from filterdesk.services.inductor_realization import (
     realize_from_air_design,
     realize_from_toroid_design,
 )
+from filterdesk.services.measurements import MeasurementRecord
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
     VnaTuningConfig,
@@ -2668,6 +2670,56 @@ class BandFilterWizardDialog(QDialog):
         self._result.setText(self._describe_spec(spec))
         self._notes.setText("; ".join(design.notes))
         self._apply_button.setEnabled(True)
+
+
+class MeasurementDetailsDialog(QDialog):
+    """Read-only provenance and comparison for one stored measurement."""
+
+    def __init__(
+        self,
+        record: MeasurementRecord,
+        analysis: AnalysisResult | None,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Measurement details"))
+        self.setMinimumWidth(620)
+        metadata = record.metadata
+        form = QFormLayout(self)
+        form.addRow(tr("Name"), QLabel(record.name))
+        form.addRow(tr("Source"), QLabel(record.source or "—"))
+        form.addRow(tr("VNA model"), QLabel(metadata.vna_model or "—"))
+        form.addRow(tr("Calibration"), QLabel(metadata.calibration or "—"))
+        form.addRow(tr("Reference plane"), QLabel(metadata.reference_plane or "—"))
+        form.addRow(tr("Cables"), QLabel(metadata.cables or "—"))
+        form.addRow(tr("Connectors"), QLabel(metadata.connectors or "—"))
+        form.addRow(tr("Terminations"), QLabel(metadata.terminations or "—"))
+        form.addRow(tr("Fixture"), QLabel(metadata.fixture or "—"))
+        temperature = (
+            "—"
+            if metadata.temperature_c is None
+            else f"{metadata.temperature_c:g}"
+        )
+        form.addRow(tr("Temperature (C)"), QLabel(temperature))
+        form.addRow(tr("Measured at"), QLabel(metadata.measured_at or "—"))
+        form.addRow(tr("Operator"), QLabel(metadata.operator or "—"))
+        form.addRow(tr("Notes"), QLabel(metadata.notes or "—"))
+        if analysis is None:
+            comparison = tr("Analyze a design to compare against this measurement.")
+        else:
+            try:
+                comparison = compare_results(
+                    analysis, record.to_analysis_result()
+                ).summary()
+            except CompareError as exc:
+                comparison = str(exc)
+        compare_label = QLabel(comparison)
+        compare_label.setWordWrap(True)
+        form.addRow(tr("Comparison"), compare_label)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        form.addRow(buttons)
 
 
 class FourPortMixedModeDialog(QDialog):

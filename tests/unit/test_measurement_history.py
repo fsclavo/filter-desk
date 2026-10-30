@@ -7,6 +7,7 @@ import pytest
 
 from filterdesk.services.measurements import MeasurementRecord
 from filterdesk.services.session import DesignSession
+from filterdesk.services.vna_measurement import VnaMeasurementMetadata
 
 
 def _record(name: str, offset: float = 0.0) -> MeasurementRecord:
@@ -92,3 +93,20 @@ def test_measurement_mapping_roundtrip() -> None:
         restored.to_analysis_result().s11,
         record.to_analysis_result().s11,
     )
+
+
+def test_measurement_metadata_roundtrip() -> None:
+    record = _record("capture.s2p")
+    record.metadata = VnaMeasurementMetadata(
+        vna_model="NanoVNA",
+        calibration="SOLT",
+        reference_plane="connector",
+        cables="RG-58",
+        operator="Tester",
+    )
+    restored = MeasurementRecord.from_mapping(record.to_mapping())
+    assert restored.metadata.vna_model == "NanoVNA"
+    assert restored.metadata.calibration == "SOLT"
+    assert restored.metadata.reference_plane == "connector"
+    assert restored.metadata.cables == "RG-58"
+    assert restored.metadata.operator == "Tester"

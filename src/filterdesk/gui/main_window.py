@@ -106,6 +106,7 @@ from filterdesk.gui.widgets import (
     EngineeringLineEdit,
     FourPortMixedModeDialog,
     MatchingDialog,
+    MeasurementDetailsDialog,
     MicrostripDialog,
     MonteCarloDialog,
     NonIdealDialog,
@@ -304,6 +305,9 @@ class MainWindow(QMainWindow):
         self._markers_panel.add_at_cursor_requested.connect(self._add_marker_at_cursor)
         self._measurements_panel.import_requested.connect(self._import_touchstone)
         self._measurements_panel.use_requested.connect(self._use_measurement)
+        self._measurements_panel.details_requested.connect(
+            self._show_measurement_details
+        )
         self._measurements_panel.delete_requested.connect(self._delete_measurement)
         self._measurements_panel.clear_requested.connect(self._clear_measurements)
         self._plots.markers_changed.connect(self._on_markers_dragged)
@@ -2343,6 +2347,16 @@ class MainWindow(QMainWindow):
                 name=self._session.measured_name or "",
             )
         )
+
+    def _show_measurement_details(self, index: int) -> None:
+        if not 0 <= index < len(self._session.measurements):
+            return
+        dialog = MeasurementDetailsDialog(
+            self._session.measurements[index],
+            self._session.analysis,
+            self,
+        )
+        dialog.exec()
 
     def _delete_measurement(self, index: int) -> None:
         try:

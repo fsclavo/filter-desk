@@ -458,6 +458,8 @@ the TX Power setting, the harmonic-readout fundamental, and metadata; it is
 reloadable and editable. Each imported Touchstone capture is added to the
 **Measurements** dock with its VNA/calibration/reference metadata when the
 `.vna.json` sidecar is present; select one to make it the active overlay.
+**Details…** shows the complete provenance and compares that capture with the
+current analyzed design.
 Closing with unsaved changes asks **Save / Discard / Cancel**; cancelling the
 save dialog leaves the application open.
 
