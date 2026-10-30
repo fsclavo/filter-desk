@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.48.0 — 2026-10-30
+
+### Added
+
+- LC TX/RX duplexer with fixed ports **1 = antenna, 2 = TX, 3 = RX**,
+  insertion/return-loss metrics and TX↔RX isolation in both bands.
+- Automatic order search to meet a minimum isolation target; reports clearly
+  when the target is not met.
+- `filterdesk duplexer` CLI and a **Duplexer TX/RX** mode in the GUI.
+- ADR-030 documents the model and its limits.
+
 ## v0.47.0 — 2026-10-30
 
 ### Added

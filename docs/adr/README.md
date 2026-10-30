@@ -32,3 +32,4 @@
 - [ADR-027](ADR-027-multiport-core.md) — N-port core and parallel branch combination
 - [ADR-028](ADR-028-diplexer-v1.md) — LPF+HPF diplexer on the N-port core
 - [ADR-029](ADR-029-bpf-bpf-diplexer.md) — BPF+BPF diplexer extension
+- [ADR-030](ADR-030-lc-duplexer-tx-rx.md) — LC TX/RX duplexer with isolation target

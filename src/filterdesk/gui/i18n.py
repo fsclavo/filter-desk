@@ -1049,6 +1049,41 @@ _ES.update(
         "Port 1 = common, port 2 = low band, port 3 = high band.": (
             "Puerto 1 = común, puerto 2 = banda baja, puerto 3 = banda alta."
         ),
+        "Diplexer / duplexer designer": "Diseñador de diplexer / duplexer",
+        "&Diplexer / duplexer designer…": "&Diseñador de diplexer / duplexer…",
+        "Design an LPF+HPF, BPF+BPF or TX/RX duplexer.": (
+            "Diseñar un diplexer LPF+HPF, BPF+BPF o duplexer TX/RX."
+        ),
+        "Duplexer TX/RX": "Duplexer TX/RX",
+        "TX center": "Centro TX",
+        "TX bandwidth": "Ancho de banda TX",
+        "RX center": "Centro RX",
+        "RX bandwidth": "Ancho de banda RX",
+        "Minimum isolation (dB)": "Aislamiento mínimo (dB)",
+        "Maximum insertion loss (dB)": "Pérdida de inserción máxima (dB)",
+        "Auto order": "Orden automático",
+        "Max order": "Orden máximo",
+        "TX band": "Banda TX",
+        "TX insertion loss": "Pérdida de inserción TX",
+        "TX return loss": "Pérdida de retorno TX",
+        "TX-band isolation": "Aislamiento en banda TX",
+        "RX band": "Banda RX",
+        "RX insertion loss": "Pérdida de inserción RX",
+        "RX return loss": "Pérdida de retorno RX",
+        "RX-band isolation": "Aislamiento en banda RX",
+        "Worst isolation": "Peor aislamiento",
+        "Target ({target} dB)": "Objetivo ({target} dB)",
+        "met": "cumplido",
+        "NOT met": "NO cumplido",
+        "TX out S21 (dB)": "Salida TX S21 (dB)",
+        "RX out S31 (dB)": "Salida RX S31 (dB)",
+        "Export TX .s2p…": "Exportar .s2p TX…",
+        "Export RX .s2p…": "Exportar .s2p RX…",
+        "TX branch: {tx} components; RX branch: {rx} components; "
+        "order {order}.": (
+            "Rama TX: {tx} componentes; rama RX: {rx} componentes; "
+            "orden {order}."
+        ),
         "Export .s3p…": "Exportar .s3p…",
         "Export diplexer .s3p": "Exportar diplexer .s3p",
         "Export diplexer branch .s2p": "Exportar rama del diplexer .s2p",

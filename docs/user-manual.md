@@ -66,7 +66,8 @@ projects**. A good first path is:
 | Reject AM or FM broadcast | **Design → Band filter wizard…** → Band-stop |
 | 1:1 choke, 1:4 balun, 1:49 unun | **Tools → Transformer / balun / unun…** |
 | Analyze a measured 4-port balun | **Tools → 4-port mixed-mode…** |
-| Combine low/high bands into one antenna port | **Tools → Diplexer designer…** |
+| Combine low/high bands into one antenna port | **Tools → Diplexer / duplexer designer…** |
+| Share an antenna between TX and RX | **Tools → Diplexer / duplexer designer…** → Duplexer TX/RX |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
 | Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
@@ -350,7 +351,7 @@ specification edits require an explicit **Synthesize**.
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
-| **Diplexer designer** | **Tools → Diplexer designer…** | LPF+HPF or BPF+BPF branches, combined 3-port metrics and samples, `.s3p` plus optional branch `.s2p` exports |
+| **Diplexer / duplexer designer** | **Tools → Diplexer / duplexer designer…** | LPF+HPF, BPF+BPF or TX/RX duplexer; combined 3-port metrics and samples, `.s3p` plus optional branch `.s2p` exports |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -489,7 +490,7 @@ command's options.
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
             optimize,to-csv,estimate-order,touchstone-info,network,diplexer,
-            band-diplexer,mixed-mode,compare} ...
+            band-diplexer,duplexer,mixed-mode,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -599,7 +600,8 @@ Most commands accept `--json` for machine-readable output.
   `--f-stop`, `--points`, `--spacing`, `--backend`, `--low-output`,
   `--high-output`, `--json`.
   ```bash
-  filterdesk diplexer --low-cutoff 30M --high-cutoff 40M --order 5       --ripple 0.1 --f-start 1M --f-stop 200M --output diplexer.s3p
+  filterdesk diplexer --low-cutoff 30M --high-cutoff 40M --order 5 \
+      --ripple 0.1 --f-start 1M --f-stop 200M --output diplexer.s3p
   ```
   The report gives worst insertion loss, out-of-band transmission and input
   return loss in each passband, plus the crossover. These are metrics of the
@@ -612,7 +614,21 @@ Most commands accept `--json` for machine-readable output.
   **1 = common**, **2 = low band**, **3 = high band**. Passbands must not
   overlap and the sweep must cover both.
   ```bash
-  filterdesk band-diplexer --low-center 14M --low-bw 300k       --high-center 21M --high-bw 500k --order 5 --ripple 0.1       --f-start 5M --f-stop 40M --output band_diplexer.s3p
+  filterdesk band-diplexer --low-center 14M --low-bw 300k \
+      --high-center 21M --high-bw 500k --order 5 --ripple 0.1 \
+      --f-start 5M --f-stop 40M --output band_diplexer.s3p
+  ```
+- **`duplexer`** — design an LC TX/RX duplexer. Required: `--tx-center`,
+  `--tx-bw`, `--rx-center`, `--rx-bw`, `--output`. Ports are **1 = antenna**,
+  **2 = TX**, **3 = RX**. `--min-isolation` (default 60 dB) and `--max-il`
+  (default 3 dB) define the target; without `--order`, orders
+  `--min-order…--max-order` (default 3…9) are searched. `--json` reports the
+  selected/attempted orders and whether the target was met. The output is a
+  `.s3p`; `--tx-output`/`--rx-output` add branch `.s2p` files.
+  ```bash
+  filterdesk duplexer --tx-center 145M --tx-bw 1M \
+      --rx-center 147M --rx-bw 1M --min-isolation 60 \
+      --f-start 140M --f-stop 152M --output duplexer.s3p
   ```
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
@@ -955,14 +971,16 @@ temperature/DC-bias derating on hardware. SPICE/LTspice/Qucs exports represent
 the ideal transformer part; SPICE adds the scalar leakage/core-loss terms, but
 the TLT line section is not exported.
 
-### Diplexer designer
+### Diplexer / duplexer designer
 
-**Tools → Diplexer designer…** supports two modes:
+**Tools → Diplexer / duplexer designer…** supports three modes:
 
 - **LPF + HPF** — low-pass cutoff and high-pass cutoff.
 - **BPF + BPF** — independent center and bandwidth for the low and high bands.
+- **Duplexer TX/RX** — independent TX/RX center frequencies and bandwidths,
+  with a minimum isolation target and optional automatic order search.
 
-Both branches share the family, order, ripple/stopband rules and reference
+The first two modes share family, order, ripple/stopband rules and reference
 impedance, then combine at a common input. Ports are **1 = common**, **2 = low
 band**, **3 = high band**. The dialog reports the two passbands, worst insertion
 loss, out-of-band transmission, input return loss and crossover, plus a
@@ -970,13 +988,20 @@ loss, out-of-band transmission, input return loss and crossover, plus a
 `.s2p`; the same engines are available as `filterdesk diplexer` and
 `filterdesk band-diplexer` (see [§10](#10-command-line-reference)).
 
+In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
+Isolation is the combined `|S32|` in each band; the dialog reports TX/RX
+isolation, worst isolation, insertion loss and return loss, and flags whether
+the target was met. With **Auto order** enabled, the lowest order in the selected
+range that meets the isolation and insertion-loss targets is chosen. If none
+meets them, the best attempt is shown with a clear warning.
+
 BPF passbands use the family's cutoff convention and must not overlap; the sweep
 must cover both passbands. The metrics belong to the **combined** network,
 including the interaction between both branch input admittances. The model is an
-ideal common-node LC diplexer: it does not include an antenna, cavity resonators,
-an isolation network, component parasitics beyond the selected models, thermal
-behavior or high-power validation. Do not treat it as a repeater duplexer
-without the required isolation analysis.
+ideal common-node LC duplexer: it does not include an antenna, cavity resonators,
+a circulator, isolation network, component parasitics beyond the selected
+models, thermal behavior or high-power validation. Do not treat it as a repeater
+duplexer without the required isolation analysis.
 
 ### Microstrip / distributed calculators
 

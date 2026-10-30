@@ -170,14 +170,19 @@ def band_diplexer_specs(
     return low, high
 
 
-def _band_spec(
-    config: BandDiplexerConfig,
+def make_bandpass_spec(
+    *,
+    family: ApproximationFamily,
+    order: int,
     center_hz: float,
     bandwidth_hz: float,
+    z0_ohm: float,
+    ripple_db: float | None = None,
+    stopband_attenuation_db: float | None = None,
 ) -> FilterSpec:
-    family = config.family
-    ripple = config.ripple_db
-    stopband = config.stopband_attenuation_db
+    """Build and validate one band-pass branch specification."""
+    ripple = ripple_db
+    stopband = stopband_attenuation_db
     if family in (
         ApproximationFamily.CHEBYSHEV_TYPE_I,
         ApproximationFamily.ELLIPTIC,
@@ -197,11 +202,11 @@ def _band_spec(
     spec = FilterSpec(
         family=family,
         response=FilterResponse.BAND_PASS,
-        order=config.order,
+        order=order,
         f_center_hz=center_hz,
         bandwidth_hz=bandwidth_hz,
-        z_source_ohm=config.z0_ohm,
-        z_load_ohm=config.z0_ohm,
+        z_source_ohm=z0_ohm,
+        z_load_ohm=z0_ohm,
         topology_id=default_topology(FilterResponse.BAND_PASS),
         cutoff_definition=default_cutoff_definition(family),
         passband_ripple_db=ripple,
@@ -212,6 +217,22 @@ def _band_spec(
     except SpecValidationError as exc:
         raise DiplexerError(str(exc)) from exc
     return spec
+
+
+def _band_spec(
+    config: BandDiplexerConfig,
+    center_hz: float,
+    bandwidth_hz: float,
+) -> FilterSpec:
+    return make_bandpass_spec(
+        family=config.family,
+        order=config.order,
+        center_hz=center_hz,
+        bandwidth_hz=bandwidth_hz,
+        z0_ohm=config.z0_ohm,
+        ripple_db=config.ripple_db,
+        stopband_attenuation_db=config.stopband_attenuation_db,
+    )
 
 
 def _branch_spec(
@@ -441,6 +462,7 @@ __all__ = [
     "design_band_diplexer",
     "design_diplexer",
     "diplexer_specs",
+    "make_bandpass_spec",
     "evaluate_band_diplexer",
     "evaluate_diplexer",
     "evaluate_diplexer_bands",

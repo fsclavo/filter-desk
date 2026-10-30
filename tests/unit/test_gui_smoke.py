@@ -484,7 +484,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Microstrip line",
         "Coaxial stub notch",
         "4-port mixed-mode",
-        "Diplexer designer",
+        "Diplexer / duplexer designer",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)
@@ -1206,6 +1206,47 @@ def test_diplexer_dialog_designs_bpf_pair(tmp_path: Path) -> None:
     network_path = tmp_path / "band_diplexer.s3p"
     assert dialog.export_network(network_path)
     assert read_sparameters(network_path).n_ports == 3
+    dialog.close()
+    assert app is not None
+
+
+def test_duplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.io.touchstone import read_sparameters
+    from filterdesk.services.duplexer import DuplexerDesign
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._mode.setCurrentIndex(2)
+    dialog._tx_center.setText("145M")
+    dialog._tx_bw.setText("1M")
+    dialog._rx_center.setText("147M")
+    dialog._rx_bw.setText("1M")
+    dialog._min_isolation.setText("60")
+    dialog._max_order.setValue(6)
+    dialog._f_start.setText("140M")
+    dialog._f_stop.setText("152M")
+    dialog._points.setValue(401)
+    assert dialog.design()
+    design = dialog.current_design()
+    assert isinstance(design, DuplexerDesign)
+    assert design.network.n_ports == 3
+    assert design.selected_order == 6
+    assert design.metrics.meets_target
+    assert dialog._metrics.rowCount() == 10
+    assert dialog._samples.rowCount() == 21
+    assert dialog._samples.horizontalHeaderItem(1).text() == "TX out S21 (dB)"
+    network_path = tmp_path / "duplexer.s3p"
+    assert dialog.export_network(network_path)
+    assert read_sparameters(network_path).n_ports == 3
+    tx_path = tmp_path / "tx.s2p"
+    rx_path = tmp_path / "rx.s2p"
+    assert dialog.export_branch("tx", tx_path)
+    assert dialog.export_branch("rx", rx_path)
+    assert read_sparameters(tx_path).n_ports == 2
+    assert read_sparameters(rx_path).n_ports == 2
     dialog.close()
     assert app is not None
 

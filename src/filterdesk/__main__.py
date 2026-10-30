@@ -165,6 +165,11 @@ from filterdesk.services.diplexer import (
     design_band_diplexer,
     design_diplexer,
 )
+from filterdesk.services.duplexer import (
+    DuplexerConfig,
+    DuplexerError,
+    design_duplexer,
+)
 from filterdesk.services.session import default_sweep_for_spec
 from filterdesk.services.vna_measurement import (
     metadata_path_for,
@@ -1047,6 +1052,39 @@ def build_parser() -> argparse.ArgumentParser:
     band_diplexer.add_argument("--low-output", type=Path, default=None)
     band_diplexer.add_argument("--high-output", type=Path, default=None)
     band_diplexer.add_argument("--json", action="store_true")
+
+    duplexer = sub.add_parser(
+        "duplexer",
+        help="Design an LC TX/RX duplexer with isolation metrics",
+    )
+    duplexer.add_argument("--tx-center", required=True)
+    duplexer.add_argument("--tx-bw", required=True)
+    duplexer.add_argument("--rx-center", required=True)
+    duplexer.add_argument("--rx-bw", required=True)
+    duplexer.add_argument("--min-isolation", type=float, default=60.0)
+    duplexer.add_argument("--max-il", type=float, default=3.0)
+    duplexer.add_argument("--order", type=int, default=None)
+    duplexer.add_argument("--min-order", type=int, default=3)
+    duplexer.add_argument("--max-order", type=int, default=9)
+    duplexer.add_argument(
+        "--family",
+        choices=[family.value for family in ApproximationFamily],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    duplexer.add_argument("--ripple", type=float, default=None)
+    duplexer.add_argument("--stopband-att", type=float, default=None)
+    duplexer.add_argument("--z0", default="50")
+    duplexer.add_argument("--f-start", default=None)
+    duplexer.add_argument("--f-stop", default=None)
+    duplexer.add_argument("--points", type=int, default=4001)
+    duplexer.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    duplexer.add_argument("--backend", choices=["abcd", "skrf"], default="abcd")
+    duplexer.add_argument("--output", type=Path, required=True)
+    duplexer.add_argument("--tx-output", type=Path, default=None)
+    duplexer.add_argument("--rx-output", type=Path, default=None)
+    duplexer.add_argument("--json", action="store_true")
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3226,6 +3264,137 @@ def main(argv: list[str] | None = None) -> int:
                 f"Natural f:     {format_engineering(estimate.natural_freq_hz, 'Hz')}"
             )
             print(f"Notes:         {estimate.notes}")
+        return 0
+
+    if args.command == "duplexer":
+        try:
+            tx_center = parse_si(str(args.tx_center))
+            rx_center = parse_si(str(args.rx_center))
+            f_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else min(tx_center, rx_center) / 2.0
+            )
+            f_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else max(tx_center, rx_center) * 2.0
+            )
+            duplexer_config = DuplexerConfig(
+                tx_center_hz=tx_center,
+                tx_bandwidth_hz=parse_si(str(args.tx_bw)),
+                rx_center_hz=rx_center,
+                rx_bandwidth_hz=parse_si(str(args.rx_bw)),
+                order=None if args.order is None else int(args.order),
+                min_order=int(args.min_order),
+                max_order=int(args.max_order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=args.ripple,
+                stopband_attenuation_db=args.stopband_att,
+                z0_ohm=parse_si(str(args.z0)),
+                min_isolation_db=float(args.min_isolation),
+                max_insertion_loss_db=float(args.max_il),
+            )
+            duplexer_design = design_duplexer(
+                duplexer_config,
+                SweepConfig(
+                    f_start_hz=f_start,
+                    f_stop_hz=f_stop,
+                    n_points=int(args.points),
+                    spacing=SweepSpacing(str(args.spacing)),
+                ),
+                backend=str(args.backend),
+            )
+            write_sparameters(duplexer_design.network, args.output)
+            if args.tx_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(duplexer_design.tx_analysis),
+                    args.tx_output,
+                )
+            if args.rx_output is not None:
+                write_sparameters(
+                    SParameters.from_analysis(duplexer_design.rx_analysis),
+                    args.rx_output,
+                )
+        except (
+            DuplexerError,
+            DiplexerError,
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        duplexer_metrics = duplexer_design.metrics
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "network": {
+                            "n_ports": duplexer_design.network.n_ports,
+                            "n_points": duplexer_design.network.n_points,
+                            "f_min_hz": float(
+                                duplexer_design.network.frequency_hz[0]
+                            ),
+                            "f_max_hz": float(
+                                duplexer_design.network.frequency_hz[-1]
+                            ),
+                            "z0_ohm": duplexer_design.network.z0_ohm,
+                        },
+                        "selected_order": duplexer_design.selected_order,
+                        "attempted_orders": list(
+                            duplexer_design.attempted_orders
+                        ),
+                        "tx_spec": filter_spec_to_mapping(
+                            duplexer_design.tx_spec
+                        ),
+                        "rx_spec": filter_spec_to_mapping(
+                            duplexer_design.rx_spec
+                        ),
+                        "metrics": {
+                            "tx_band_hz": list(duplexer_metrics.tx_band_hz),
+                            "rx_band_hz": list(duplexer_metrics.rx_band_hz),
+                            "tx_insertion_loss_db": (
+                                duplexer_metrics.tx_insertion_loss_db
+                            ),
+                            "rx_insertion_loss_db": (
+                                duplexer_metrics.rx_insertion_loss_db
+                            ),
+                            "tx_return_loss_db": (
+                                duplexer_metrics.tx_return_loss_db
+                            ),
+                            "rx_return_loss_db": (
+                                duplexer_metrics.rx_return_loss_db
+                            ),
+                            "tx_band_isolation_db": (
+                                duplexer_metrics.tx_band_isolation_db
+                            ),
+                            "rx_band_isolation_db": (
+                                duplexer_metrics.rx_band_isolation_db
+                            ),
+                            "worst_isolation_db": (
+                                duplexer_metrics.worst_isolation_db
+                            ),
+                            "target_isolation_db": (
+                                duplexer_metrics.target_isolation_db
+                            ),
+                            "max_insertion_loss_db": (
+                                duplexer_metrics.max_insertion_loss_db
+                            ),
+                            "meets_target": duplexer_metrics.meets_target,
+                        },
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"LC duplexer, order {duplexer_design.selected_order} "
+                f"(attempted {', '.join(map(str, duplexer_design.attempted_orders))})"
+            )
+            print(f"  {duplexer_metrics.summary()}")
+            print(f"  Wrote {args.output}")
         return 0
 
     if args.command == "band-diplexer":
