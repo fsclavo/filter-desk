@@ -40,6 +40,7 @@ from filterdesk.analysis.four_port import (
     mixed_mode_4port,
 )
 from filterdesk.analysis.mixed_mode import MixedModeError, mixed_mode_balun
+from filterdesk.analysis.multiport import SParameters
 from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
@@ -96,15 +97,19 @@ from filterdesk.domain.circuit import (
     MicrostripLineElement,
     NonIdealInductor,
 )
-from filterdesk.domain.enums import FilterResponse
+from filterdesk.domain.enums import ApproximationFamily, FilterResponse
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
-from filterdesk.gui.i18n import tr
+from filterdesk.gui.i18n import family_label, tr
 from filterdesk.gui.plot_axes import freq_plot
 from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
 from filterdesk.io.spice import write_tlt_spice_netlist
-from filterdesk.io.touchstone import TouchstoneError, read_touchstone
+from filterdesk.io.touchstone import (
+    TouchstoneError,
+    read_touchstone,
+    write_sparameters,
+)
 from filterdesk.montecarlo import MonteCarloConfig, ToleranceDistribution
 from filterdesk.optimization import OptimizationConfig, OptimizeMethod
 from filterdesk.services.bands import (
@@ -116,6 +121,12 @@ from filterdesk.services.bands import (
 )
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.design_sweep import DesignSweepRow, SweepAxis
+from filterdesk.services.diplexer import (
+    DiplexerConfig,
+    DiplexerDesign,
+    DiplexerError,
+    design_diplexer,
+)
 from filterdesk.services.hf_band import (
     BandFilterDesign,
     BandFilterDesignError,
@@ -3002,3 +3013,288 @@ class FourPortMixedModeDialog(QDialog):
             curve.setData(freq, np.asarray([self._db(complex(v)) for v in series]))
         self._plot.autoRange()
         return True
+
+
+class DiplexerDialog(QDialog):
+    """Design and export an LPF+HPF diplexer as a 3-port network."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Diplexer LPF+HPF"))
+        self.setMinimumWidth(760)
+        self._design: DiplexerDesign | None = None
+        self._low_cutoff = EngineeringLineEdit()
+        self._low_cutoff.setText("30M")
+        self._high_cutoff = EngineeringLineEdit()
+        self._high_cutoff.setText("40M")
+        self._order = QSpinBox()
+        self._order.setRange(1, 12)
+        self._order.setValue(5)
+        self._family = QComboBox()
+        for family in ApproximationFamily:
+            self._family.addItem(family_label(family), family.value)
+        self._ripple = EngineeringLineEdit()
+        self._ripple.setText("0.1")
+        self._stopband = EngineeringLineEdit()
+        self._stopband.setText("40")
+        self._z0 = EngineeringLineEdit()
+        self._z0.setText("50")
+        self._f_start = EngineeringLineEdit()
+        self._f_start.setText("1M")
+        self._f_stop = EngineeringLineEdit()
+        self._f_stop.setText("200M")
+        self._points = QSpinBox()
+        self._points.setRange(101, 20001)
+        self._points.setSingleStep(100)
+        self._points.setValue(2001)
+        self._summary = QLabel(
+            tr("Port 1 = common, port 2 = low-pass, port 3 = high-pass.")
+        )
+        self._summary.setWordWrap(True)
+        self._branch_summary = QLabel("-")
+        self._branch_summary.setWordWrap(True)
+        self._metrics = QTableWidget(0, 2)
+        self._metrics.setHorizontalHeaderLabels([tr("Metric"), tr("Value")])
+        self._metrics.verticalHeader().setVisible(False)
+        self._metrics.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._metrics.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._samples = QTableWidget(0, 4)
+        self._samples.setHorizontalHeaderLabels(
+            [
+                tr("Frequency"),
+                tr("Low out S21 (dB)"),
+                tr("High out S31 (dB)"),
+                tr("Input S11 (dB)"),
+            ]
+        )
+        self._samples.verticalHeader().setVisible(False)
+        self._samples.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._samples.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._note = QLabel(
+            tr(
+                "Ideal common-node LC model: no antenna, cavity, isolation "
+                "network, thermal or high-power validation. Check the combined "
+                "3-port response, not each branch alone."
+            )
+        )
+        self._note.setWordWrap(True)
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        self._design_button = QPushButton(tr("Design"))
+        self._design_button.clicked.connect(self.design)
+        self._export_network_button = QPushButton(tr("Export .s3p…"))
+        self._export_low_button = QPushButton(tr("Export low .s2p…"))
+        self._export_high_button = QPushButton(tr("Export high .s2p…"))
+        for button in (
+            self._export_network_button,
+            self._export_low_button,
+            self._export_high_button,
+        ):
+            button.setEnabled(False)
+        self._export_network_button.clicked.connect(self._export_network)
+        self._export_low_button.clicked.connect(lambda: self._export_branch("low"))
+        self._export_high_button.clicked.connect(lambda: self._export_branch("high"))
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        buttons.addButton(
+            self._design_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        buttons.addButton(
+            self._export_network_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        buttons.addButton(
+            self._export_low_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        buttons.addButton(
+            self._export_high_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        form = QFormLayout(self)
+        form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
+        form.addRow(tr("High-pass cutoff"), self._high_cutoff)
+        form.addRow(tr("Order"), self._order)
+        form.addRow(tr("Family"), self._family)
+        form.addRow(tr("Ripple (dB)"), self._ripple)
+        form.addRow(tr("Stopband attenuation (dB)"), self._stopband)
+        form.addRow(tr("Reference Z0 (Ohm)"), self._z0)
+        form.addRow(tr("Sweep start"), self._f_start)
+        form.addRow(tr("Sweep stop"), self._f_stop)
+        form.addRow(tr("Points"), self._points)
+        form.addRow(self._summary)
+        form.addRow(self._branch_summary)
+        form.addRow(self._metrics)
+        form.addRow(self._samples)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+
+    def current_design(self) -> DiplexerDesign | None:
+        return self._design
+
+    def design(self) -> bool:
+        try:
+            config = DiplexerConfig(
+                low_cutoff_hz=parse_si(self._low_cutoff.text()),
+                high_cutoff_hz=parse_si(self._high_cutoff.text()),
+                order=int(self._order.value()),
+                family=ApproximationFamily(str(self._family.currentData())),
+                ripple_db=_optional_float(self._ripple.text()),
+                stopband_attenuation_db=_optional_float(self._stopband.text()),
+                z0_ohm=parse_si(self._z0.text()),
+            )
+            sweep = SweepConfig(
+                f_start_hz=parse_si(self._f_start.text()),
+                f_stop_hz=parse_si(self._f_stop.text()),
+                n_points=int(self._points.value()),
+                spacing=SweepSpacing.LOGARITHMIC,
+            )
+            design = design_diplexer(config, sweep)
+        except (DiplexerError, ValueError) as exc:
+            self._design = None
+            self._set_export_enabled(False)
+            self._status.setText(str(exc))
+            return False
+        self._design = design
+        self._populate(design)
+        self._set_export_enabled(True)
+        self._status.setText(tr("Design complete."))
+        return True
+
+    def export_network(self, path: str | Path) -> bool:
+        if self._design is None:
+            return False
+        try:
+            write_sparameters(self._design.network, path)
+        except OSError as exc:
+            self._status.setText(str(exc))
+            return False
+        self._status.setText(tr("Wrote {path}", path=path))
+        return True
+
+    def export_branch(self, branch: str, path: str | Path) -> bool:
+        if self._design is None or branch not in {"low", "high"}:
+            return False
+        analysis = (
+            self._design.low_analysis
+            if branch == "low"
+            else self._design.high_analysis
+        )
+        try:
+            write_sparameters(SParameters.from_analysis(analysis), path)
+        except OSError as exc:
+            self._status.setText(str(exc))
+            return False
+        self._status.setText(tr("Wrote {path}", path=path))
+        return True
+
+    def _populate(self, design: DiplexerDesign) -> None:
+        metrics = design.metrics
+        rows = (
+            (
+                tr("Low band"),
+                f"{format_engineering(metrics.low_band_hz[0], 'Hz')}–"
+                f"{format_engineering(metrics.low_band_hz[1], 'Hz')}",
+            ),
+            (tr("Low insertion loss"), _db_text(metrics.low_insertion_loss_db)),
+            (tr("Low out-of-band"), _db_text(metrics.low_out_of_band_db)),
+            (tr("Low return loss"), _db_text(metrics.low_return_loss_db)),
+            (
+                tr("High band"),
+                f"{format_engineering(metrics.high_band_hz[0], 'Hz')}–"
+                f"{format_engineering(metrics.high_band_hz[1], 'Hz')}",
+            ),
+            (tr("High insertion loss"), _db_text(metrics.high_insertion_loss_db)),
+            (tr("High out-of-band"), _db_text(metrics.high_out_of_band_db)),
+            (tr("High return loss"), _db_text(metrics.high_return_loss_db)),
+            (
+                tr("Crossover"),
+                "n/a"
+                if metrics.crossover_hz is None
+                else format_engineering(metrics.crossover_hz, "Hz"),
+            ),
+        )
+        self._metrics.setUpdatesEnabled(False)
+        try:
+            self._metrics.setRowCount(len(rows))
+            for row, (label, value) in enumerate(rows):
+                self._metrics.setItem(row, 0, QTableWidgetItem(label))
+                self._metrics.setItem(row, 1, QTableWidgetItem(value))
+        finally:
+            self._metrics.setUpdatesEnabled(True)
+        self._metrics.resizeRowsToContents()
+        self._branch_summary.setText(
+            tr(
+                "Low branch: {low} components; high branch: {high} components.",
+                low=len(design.low_circuit.elements),
+                high=len(design.high_circuit.elements),
+            )
+        )
+        network = design.network
+        indices = np.linspace(
+            0, network.n_points - 1, min(21, network.n_points), dtype=int
+        )
+        self._samples.setUpdatesEnabled(False)
+        try:
+            self._samples.setRowCount(indices.size)
+            for row, index in enumerate(indices):
+                values = (
+                    format_engineering(float(network.frequency_hz[index]), "Hz"),
+                    _db_text(_db(network.s[index, 1, 0])),
+                    _db_text(_db(network.s[index, 2, 0])),
+                    _db_text(_db(network.s[index, 0, 0])),
+                )
+                for column, value in enumerate(values):
+                    self._samples.setItem(row, column, QTableWidgetItem(value))
+        finally:
+            self._samples.setUpdatesEnabled(True)
+        self._samples.resizeRowsToContents()
+
+    def _set_export_enabled(self, enabled: bool) -> None:
+        for button in (
+            self._export_network_button,
+            self._export_low_button,
+            self._export_high_button,
+        ):
+            button.setEnabled(enabled)
+
+    def _export_network(self) -> None:
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export diplexer .s3p"),
+            "diplexer.s3p",
+            "Touchstone 3-port (*.s3p);;All files (*)",
+        )
+        if path:
+            if not path.lower().endswith(".s3p"):
+                path += ".s3p"
+            self.export_network(path)
+
+    def _export_branch(self, branch: str) -> None:
+        suffix = "_low" if branch == "low" else "_high"
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export diplexer branch .s2p"),
+            f"diplexer{suffix}.s2p",
+            "Touchstone 2-port (*.s2p);;All files (*)",
+        )
+        if path:
+            if not path.lower().endswith(".s2p"):
+                path += ".s2p"
+            self.export_branch(branch, path)
+
+
+def _optional_float(text: str) -> float | None:
+    value = text.strip()
+    return None if not value else float(value)
+
+
+def _db(value: complex) -> float:
+    return 20.0 * math.log10(max(abs(value), 1e-15))
+
+
+def _db_text(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f} dB"

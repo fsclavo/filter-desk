@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.46.0 — 2026-10-30
+
+### Added
+
+- **Tools → Diplexer LPF+HPF…** GUI: branch requirements, combined 3-port
+  metrics, a 21-point response sample table and `.s3p`/branch `.s2p` exports.
+- English/Spanish strings for the diplexer dialog.
+
 ## v0.45.0 — 2026-10-30
 
 ### Added

@@ -102,6 +102,7 @@ from filterdesk.gui.widgets import (
     ConfidenceDialog,
     DesignSweepDialog,
     DesignSweepResultDialog,
+    DiplexerDialog,
     DistributedSynthesisDialog,
     EngineeringLineEdit,
     FourPortMixedModeDialog,
@@ -596,6 +597,9 @@ class MainWindow(QMainWindow):
         act_four_port = QAction(tr("&4-port mixed-mode…"), self)
         act_four_port.triggered.connect(self._run_four_port_mixed)
         tools_menu.addAction(act_four_port)
+        act_diplexer = QAction(tr("&Diplexer LPF+HPF…"), self)
+        act_diplexer.triggered.connect(self._run_diplexer)
+        tools_menu.addAction(act_diplexer)
 
         help_menu = self.menuBar().addMenu(tr("&Help"))
         act_about = QAction(tr("&About FilterDesk"), self)
@@ -666,6 +670,7 @@ class MainWindow(QMainWindow):
             act_microstrip: tr("Microstrip line, stub and quarter-wave calculators."),
             act_coax: tr("Design a shunt coax stub notch."),
             act_four_port: tr("Import an .s4p and inspect mixed-mode S data."),
+            act_diplexer: tr("Design an LPF+HPF diplexer."),
             act_docs: tr("Open the user manual in a browser."),
             act_confidence: tr("Inspect model validation and confidence levels."),
             act_about: tr("Show version and license information."),
@@ -1214,6 +1219,9 @@ class MainWindow(QMainWindow):
     def _run_four_port_mixed(self) -> None:
         dialog = FourPortMixedModeDialog(self)
         dialog.exec()
+
+    def _run_diplexer(self) -> None:
+        DiplexerDialog(self).exec()
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()

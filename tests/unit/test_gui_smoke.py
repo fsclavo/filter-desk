@@ -484,6 +484,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Microstrip line",
         "Coaxial stub notch",
         "4-port mixed-mode",
+        "Diplexer LPF+HPF",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)
@@ -1149,6 +1150,49 @@ def test_matching_dialog_live_summary() -> None:
     dialog = MatchingDialog()
     dialog._recompute()
     assert "Zin=50" in dialog._summary.text()
+    assert app is not None
+
+
+def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.io.touchstone import read_sparameters
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._points.setValue(201)
+    assert dialog.design()
+    design = dialog.current_design()
+    assert design is not None
+    assert design.network.n_ports == 3
+    assert dialog._metrics.rowCount() == 9
+    assert dialog._samples.rowCount() == 21
+    assert dialog._export_network_button.isEnabled()
+
+    network_path = tmp_path / "diplexer.s3p"
+    assert dialog.export_network(network_path)
+    assert read_sparameters(network_path).n_ports == 3
+    low_path = tmp_path / "low.s2p"
+    assert dialog.export_branch("low", low_path)
+    assert read_sparameters(low_path).n_ports == 2
+    dialog.close()
+    assert app is not None
+
+
+def test_diplexer_dialog_reports_invalid_input() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._low_cutoff.setText("50M")
+    dialog._high_cutoff.setText("40M")
+    assert not dialog.design()
+    assert "above" in dialog._status.text()
+    assert not dialog._export_network_button.isEnabled()
+    dialog.close()
     assert app is not None
 
 

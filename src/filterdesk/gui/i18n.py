@@ -1029,6 +1029,46 @@ _ES.update(
         "Undo, redo and measurement markers.": (
             "Deshacer, rehacer y marcadores de medición."
         ),
+        "Crossover": "Cruce",
+        "Design complete.": "Diseño completado.",
+        "Diplexer LPF+HPF": "Diplexer LPF+HPF",
+        "&Diplexer LPF+HPF…": "&Diplexer LPF+HPF…",
+        "Design an LPF+HPF diplexer.": "Diseñar un diplexer LPF+HPF.",
+        "Export .s3p…": "Exportar .s3p…",
+        "Export diplexer .s3p": "Exportar diplexer .s3p",
+        "Export diplexer branch .s2p": "Exportar rama del diplexer .s2p",
+        "Export high .s2p…": "Exportar .s2p alto…",
+        "Export low .s2p…": "Exportar .s2p bajo…",
+        "High band": "Banda alta",
+        "High insertion loss": "Pérdida de inserción alta",
+        "High out S31 (dB)": "Salida alta S31 (dB)",
+        "High out-of-band": "Fuera de banda alta",
+        "High return loss": "Pérdida de retorno alta",
+        "High-pass cutoff": "Corte paso-alto",
+        "Ideal common-node LC model: no antenna, cavity, isolation "
+        "network, thermal or high-power validation. Check the combined "
+        "3-port response, not each branch alone.": (
+            "Modelo LC ideal con nodo común: sin antena, cavidad, red de "
+            "aislamiento, validación térmica ni de alta potencia. Verifique "
+            "la respuesta combinada de 3 puertos, no cada rama por separado."
+        ),
+        "Input S11 (dB)": "Entrada S11 (dB)",
+        "Low band": "Banda baja",
+        "Low branch: {low} components; high branch: {high} components.": (
+            "Rama baja: {low} componentes; rama alta: {high} componentes."
+        ),
+        "Low insertion loss": "Pérdida de inserción baja",
+        "Low out S21 (dB)": "Salida baja S21 (dB)",
+        "Low out-of-band": "Fuera de banda baja",
+        "Low return loss": "Pérdida de retorno baja",
+        "Low-pass cutoff": "Corte paso-bajo",
+        "Port 1 = common, port 2 = low-pass, port 3 = high-pass.": (
+            "Puerto 1 = común, puerto 2 = paso-bajo, puerto 3 = paso-alto."
+        ),
+        "Reference Z0 (Ohm)": "Z0 de referencia (Ohm)",
+        "Ripple (dB)": "Rizado (dB)",
+        "Sweep start": "Inicio del barrido",
+        "Sweep stop": "Fin del barrido",
     }
 )
 

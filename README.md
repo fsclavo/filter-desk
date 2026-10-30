@@ -143,7 +143,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Multiport file tools**: inspect, renumber, terminate and parallel-combine
   Touchstone `.sNp` networks from the CLI.
 - **LPF+HPF diplexer**: synthesize both branches, build the combined 3-port,
-  report insertion loss/rejection/return loss and export `.s3p`.
+  report insertion loss/rejection/return loss and export `.s3p`; available in
+  the GUI (**Tools → Diplexer LPF+HPF…**) and CLI.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.
