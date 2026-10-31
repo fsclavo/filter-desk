@@ -3341,6 +3341,10 @@ class DiplexerDialog(QDialog):
         schematic_layout = QVBoxLayout(self._schematic_page)
         schematic_layout.setContentsMargins(0, 0, 0, 0)
         schematic_layout.addWidget(self._schematic_tabs)
+        self._export_schematic_button = QPushButton(tr("Export schematic…"))
+        self._export_schematic_button.clicked.connect(self._export_schematic)
+        self._export_schematic_button.setEnabled(False)
+        schematic_layout.addWidget(self._export_schematic_button)
         self._results_tabs = QTabWidget()
         self._results_tabs.addTab(self._metrics_page, tr("Metrics"))
         self._results_tabs.addTab(self._plot_page, tr("Magnitude"))
@@ -4050,6 +4054,40 @@ class DiplexerDialog(QDialog):
             path += suffix
         self.export_build_sheet(path, series=None, group=group)
 
+    def export_schematic(
+        self,
+        path: str | Path,
+        *,
+        width: int = 1600,
+        height: int = 900,
+    ) -> bool:
+        panel = self._schematic_tabs.currentWidget()
+        if not isinstance(panel, SchematicPanel):
+            return False
+        try:
+            panel.render_image(path, width=width, height=height)
+        except (OSError, ValueError) as exc:
+            self._status.setText(str(exc))
+            return False
+        self._status.setText(tr("Wrote {path}", path=path))
+        return True
+
+    def _export_schematic(self) -> None:
+        panel = self._schematic_tabs.currentWidget()
+        if not isinstance(panel, SchematicPanel):
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export schematic"),
+            "schematic.png",
+            "PNG (*.png);;SVG (*.svg);;PDF (*.pdf);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith((".png", ".svg", ".pdf")):
+            path += ".png"
+        self.export_schematic(path)
+
     def export_network(self, path: str | Path) -> bool:
         if self._design is None:
             return False
@@ -4441,6 +4479,7 @@ class DiplexerDialog(QDialog):
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
+            self._export_schematic_button,
         ):
             button.setEnabled(enabled)
 

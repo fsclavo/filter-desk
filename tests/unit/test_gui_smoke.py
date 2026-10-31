@@ -1503,6 +1503,28 @@ def test_system_project_save_open_round_trip(tmp_path: Path) -> None:
     assert app is not None
 
 
+def test_schematic_image_export(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._points.setValue(201)
+    assert dialog.design()
+    png = tmp_path / "schematic.png"
+    svg = tmp_path / "schematic.svg"
+    pdf = tmp_path / "schematic.pdf"
+    assert dialog.export_schematic(png)
+    assert dialog.export_schematic(svg)
+    assert dialog.export_schematic(pdf)
+    assert png.read_bytes().startswith(b"\x89PNG")
+    assert b"<svg" in svg.read_bytes()
+    assert pdf.read_bytes().startswith(b"%PDF")
+    dialog.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

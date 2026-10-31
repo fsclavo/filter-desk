@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.57.0 — 2026-10-30
+
+### Added
+
+- **Export schematic…** for the current branch as PNG, SVG or PDF.
+- Printable light rendering (white background, black lines) independent of the
+  application theme.
+- Export button lives in the Schematic tab and follows the selected branch.
+
 ## v0.56.0 — 2026-10-30
 
 ### Added

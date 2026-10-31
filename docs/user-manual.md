@@ -1061,8 +1061,9 @@ are not physical.
 
 **Schematic** reuses the same ladder drawing as the main filter designer and
 shows one sub-tab per branch: Low/High for LPF+HPF and BPF+BPF, TX/RX for the
-duplexer, and Low/Mid/High for the triplexer. It is a read-only display; image
-export is not included in this version.
+duplexer, and one tab per band for triplexer/multiplexer. It is a read-only
+display. **Export schematic…** writes the current branch to **PNG, SVG or PDF**
+with a white background and black lines, independent of the application theme.
 
 **E-series snap** (None/E24/E48/E96) snaps every branch, reanalyzes the combined
 network and updates the curves, metrics, schematic and BOM together. The default

@@ -2,19 +2,35 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, Qt, QTimer, Signal
+from pathlib import Path
+
+from PySide6.QtCore import (
+    QEvent,
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    QSize,
+    Qt,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import (
     QBrush,
     QColor,
     QContextMenuEvent,
     QFont,
+    QImage,
     QMouseEvent,
+    QPageSize,
     QPainter,
     QPalette,
+    QPdfWriter,
     QPen,
     QResizeEvent,
     QShowEvent,
 )
+from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import (
     QGraphicsItem,
     QGraphicsItemGroup,
@@ -146,6 +162,7 @@ class SchematicPanel(QWidget):
         self._groups: dict[str, ElementGroup] = {}
         self._block_sel = False
         self._highlighted: str | None = None
+        self._export_light = False
         self._scene.selectionChanged.connect(self._on_selection_changed)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -167,9 +184,13 @@ class SchematicPanel(QWidget):
         QTimer.singleShot(0, self._fit_view)
 
     def _fg_color(self) -> QColor:
+        if self._export_light:
+            return QColor("#000000")
         return self.palette().color(QPalette.ColorRole.Text)
 
     def _bg_color(self) -> QColor:
+        if self._export_light:
+            return QColor("#ffffff")
         return self.palette().color(QPalette.ColorRole.Base)
 
     def _apply_theme_colors(self) -> None:
@@ -192,6 +213,82 @@ class SchematicPanel(QWidget):
         """Reapply palette-derived colours (after an app theme change)."""
         self._apply_theme_colors()
         if self._circuit is not None:
+            self.set_circuit(self._circuit)
+
+    def render_image(
+        self,
+        path: Path | str,
+        *,
+        width: int = 1600,
+        height: int = 900,
+        light: bool = True,
+    ) -> None:
+        """Render the current schematic to PNG, SVG or PDF.
+
+        The default light style uses a white background and black lines so the
+        export is printable independently of the application theme.
+        """
+        target = Path(path)
+        suffix = target.suffix.lower()
+        if suffix not in {".png", ".svg", ".pdf"}:
+            raise ValueError("schematic image must be .png, .svg or .pdf")
+        if self._circuit is None or not self._circuit.elements:
+            raise ValueError("no schematic to export")
+        scene_rect = self._scene.itemsBoundingRect().adjusted(-30, -24, 30, 24)
+        if scene_rect.isEmpty():
+            raise ValueError("no schematic to export")
+        previous = self._export_light
+        self._export_light = light
+        try:
+            self.set_circuit(self._circuit)
+            if suffix == ".png":
+                image = QImage(width, height, QImage.Format.Format_ARGB32)
+                image.fill(QColor("#ffffff") if light else self._bg_color())
+                painter = QPainter(image)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                self._scene.render(
+                    painter,
+                    QRectF(0, 0, width, height),
+                    scene_rect,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                )
+                painter.end()
+                if not image.save(str(target)):
+                    raise OSError(f"cannot write {target}")
+            elif suffix == ".svg":
+                generator = QSvgGenerator()
+                generator.setFileName(str(target))
+                generator.setSize(QSize(width, height))
+                generator.setViewBox(QRect(0, 0, width, height))
+                painter = QPainter(generator)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                if light:
+                    painter.fillRect(QRect(0, 0, width, height), QColor("#ffffff"))
+                self._scene.render(
+                    painter,
+                    QRectF(0, 0, width, height),
+                    scene_rect,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                )
+                painter.end()
+            else:
+                writer = QPdfWriter(str(target))
+                writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+                writer.setResolution(300)
+                painter = QPainter(writer)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                rect = QRectF(0, 0, writer.width(), writer.height())
+                if light:
+                    painter.fillRect(rect, QColor("#ffffff"))
+                self._scene.render(
+                    painter,
+                    rect,
+                    scene_rect,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                )
+                painter.end()
+        finally:
+            self._export_light = previous
             self.set_circuit(self._circuit)
 
     def _fit_view(self) -> None:
