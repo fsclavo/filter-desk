@@ -491,7 +491,8 @@ command's options.
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
             optimize,to-csv,estimate-order,touchstone-info,network,diplexer,
-            band-diplexer,duplexer,triplexer,mixed-mode,compare} ...
+            band-diplexer,duplexer,triplexer,multiplexer,mixed-mode,
+            compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -643,8 +644,20 @@ Most commands accept `--json` for machine-readable output.
       --order 5 --ripple 0.1 --f-start 5M --f-stop 40M \
       --output triplexer.s4p
   ```
+- **`multiplexer`** — general N-band BPF multiplexer. Repeat
+  `--band LABEL:CENTER:BANDWIDTH` at least twice; `--output` receives the
+  `.sNp` file. Ports are **1 = common**, then bands in frequency order.
+  `--branch-output LABEL=PATH` is repeatable. The other options mirror
+  `triplexer`, including `--export-build-sheet`, `--bom-series` and
+  `--bom-group`.
+  ```bash
+  filterdesk multiplexer --band low:14M:300k --band mid:21M:500k \
+      --band high:28M:500k --band top:35M:500k --order 5 --ripple 0.1 \
+      --f-start 5M --f-stop 50M --output quad.s5p
+  ```
 
-  `diplexer`, `band-diplexer`, `duplexer` and `triplexer` also accept
+  `diplexer`, `band-diplexer`, `duplexer`, `triplexer` and `multiplexer`
+  also accept
   `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}` and
   `--bom-group` for the combined system BOM. In these system commands
   `--bom-series` snaps the branches and reanalyzes the combined network, so the
@@ -992,7 +1005,7 @@ the TLT line section is not exported.
 
 ### Diplexer / multiplexer designer
 
-**Tools → Diplexer / multiplexer designer…** supports four modes:
+**Tools → Diplexer / multiplexer designer…** supports five modes:
 
 - **LPF + HPF** — low-pass cutoff and high-pass cutoff.
 - **BPF + BPF** — independent center and bandwidth for the low and high bands.
@@ -1000,6 +1013,9 @@ the TLT line section is not exported.
   with a minimum isolation target and optional automatic order search.
 - **Triplexer (3 bands)** — low/mid/high band-pass branches combined at a
   common input; ports are **1 = common**, **2 = low**, **3 = mid**, **4 = high**.
+- **Multiplexer (N bands)** — editable table of label/center/bandwidth rows;
+  add or remove bands. Ports are **1 = common**, then outputs in frequency
+  order. Metrics, plot, branch schematics and BOM scale with the band count.
 
 The first two modes share family, order, ripple/stopband rules and reference
 impedance, then combine at a common input. Ports are **1 = common**, **2 = low

@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.55.0 — 2026-10-30
+
+### Added
+
+- Configurable **Multiplexer (N bands)** mode in the designer with an editable
+  label/center/bandwidth table and add/remove controls.
+- Dynamic sample table, magnitude curves and branch schematics for any band
+  count; ports are common followed by bands in frequency order.
+- General `filterdesk multiplexer --band LABEL:CENTER:BANDWIDTH` CLI with
+  `.sNp`, repeatable `--branch-output`, BOM and E-series snap support.
+
 ## v0.54.0 — 2026-10-30
 
 ### Added

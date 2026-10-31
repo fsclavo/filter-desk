@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.54.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.55.0 · **Released:**
 [v0.54.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.54.0) ·
 **Previous:**
 [v0.53.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.53.0) ·
-**Next:** v0.55.0 planning.
+**Next:** v0.55.0 release (N-band multiplexer, pending CI/tag).
 
-**Verification:** local suite **1177 passed**, 4 skipped (ngspice unavailable); coverage **82.55 %**.
+**Verification:** local suite **1180 passed**, 4 skipped (ngspice unavailable); coverage **82.53 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41155635524
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41156390666
 
@@ -767,6 +767,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       schematic and BOM stay consistent (ADR-032).
 - [x] **System parasitics:** finite Q/DCR/Cp/SRF/ESR/ESL with combined
       reanalysis and BOM consistency (ADR-033).
+- [x] **N-band multiplexer:** dynamic GUI band table, dynamic plot/schematics
+      and general `multiplexer --band` CLI.
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

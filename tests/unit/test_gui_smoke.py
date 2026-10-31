@@ -1171,11 +1171,11 @@ def test_diplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._export_network_button.isEnabled()
     assert dialog._export_build_button.isEnabled()
     assert dialog._curve_low.getData()[0].size > 0
-    assert dialog._curve_high.getData()[0].size > 0
+    assert dialog._curve_mid.getData()[0].size > 0
     assert dialog._curve_input.getData()[0].size > 0
     assert dialog._curve_isolation.getData()[0].size > 0
-    mid_data = dialog._curve_mid.getData()[0]
-    assert mid_data is None or mid_data.size == 0
+    high_data = dialog._curve_high.getData()[0]
+    assert high_data is None or high_data.size == 0
     assert dialog._schematic_low._circuit is not None
     assert dialog._schematic_mid._circuit is not None
     assert dialog._schematic_high._circuit is None
@@ -1256,7 +1256,7 @@ def test_duplexer_dialog_designs_and_exports(tmp_path: Path) -> None:
     assert dialog._samples.rowCount() == 21
     assert dialog._samples.horizontalHeaderItem(1).text() == "TX out S21 (dB)"
     assert dialog._curve_low.getData()[0].size > 0
-    assert dialog._curve_high.getData()[0].size > 0
+    assert dialog._curve_mid.getData()[0].size > 0
     assert dialog._curve_isolation.getData()[0].size > 0
     assert dialog._schematic_low._circuit is not None
     assert dialog._schematic_mid._circuit is not None
@@ -1422,6 +1422,45 @@ def test_diplexer_dialog_applies_parasitics(tmp_path: Path) -> None:
     bom = bom_path.read_text(encoding="utf-8")
     assert "Parasitics:" in bom
     assert "Q=100" in bom
+    dialog.close()
+    assert app is not None
+
+
+def test_multiplexer_dialog_handles_four_bands(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.io.touchstone import read_sparameters
+    from filterdesk.services.multiplexer import MultiplexerDesign
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._mode.setCurrentIndex(4)
+    dialog._add_band_row()
+    dialog._multiplexer_table.item(3, 0).setText("top")
+    dialog._multiplexer_table.item(3, 1).setText("35M")
+    dialog._multiplexer_table.item(3, 2).setText("500k")
+    dialog._f_start.setText("5M")
+    dialog._f_stop.setText("50M")
+    dialog._points.setValue(401)
+    assert dialog.design()
+    design = dialog.current_design()
+    assert isinstance(design, MultiplexerDesign)
+    assert design.network.n_ports == 5
+    assert len(design.bands) == 4
+    assert dialog._samples.columnCount() == 6
+    assert dialog._schematic_tabs.count() == 4
+    assert dialog._output_curves[3].getData()[0].size > 0
+    assert dialog._curve_input.getData()[0].size > 0
+    network_path = tmp_path / "quad.s5p"
+    assert dialog.export_network(network_path)
+    assert read_sparameters(network_path).n_ports == 5
+    top_path = tmp_path / "top.s2p"
+    assert dialog.export_branch("top", top_path)
+    assert read_sparameters(top_path).n_ports == 2
+    bom_path = tmp_path / "quad_bom.md"
+    assert dialog.export_build_sheet(bom_path)
+    assert "| Top |" in bom_path.read_text(encoding="utf-8")
     dialog.close()
     assert app is not None
 

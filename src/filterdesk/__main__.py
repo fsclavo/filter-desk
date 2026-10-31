@@ -1169,6 +1169,49 @@ def build_parser() -> argparse.ArgumentParser:
     )
     triplexer.add_argument("--bom-group", action="store_true")
 
+    multiplexer = sub.add_parser(
+        "multiplexer",
+        help="Design an N-band BPF multiplexer and write its .sNp network",
+    )
+    multiplexer.add_argument(
+        "--band",
+        action="append",
+        required=True,
+        help="Band as LABEL:CENTER:BANDWIDTH, repeat 2+ times",
+    )
+    multiplexer.add_argument("--order", type=int, default=5)
+    multiplexer.add_argument(
+        "--family",
+        choices=[family.value for family in ApproximationFamily],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    multiplexer.add_argument("--ripple", type=float, default=None)
+    multiplexer.add_argument("--stopband-att", type=float, default=None)
+    multiplexer.add_argument("--z0", default="50")
+    multiplexer.add_argument("--f-start", default=None)
+    multiplexer.add_argument("--f-stop", default=None)
+    multiplexer.add_argument("--points", type=int, default=4001)
+    multiplexer.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    multiplexer.add_argument("--backend", choices=["abcd", "skrf"], default="abcd")
+    multiplexer.add_argument("--output", type=Path, required=True)
+    multiplexer.add_argument(
+        "--branch-output",
+        action="append",
+        default=[],
+        help="Optional branch output as LABEL=PATH, repeatable",
+    )
+    multiplexer.add_argument("--export-build-sheet", type=Path, default=None)
+    multiplexer.add_argument(
+        "--bom-series",
+        choices=[s.value for s in ESeries],
+        default=None,
+        help="Snap branches and reanalyze the combined system",
+    )
+    multiplexer.add_argument("--bom-group", action="store_true")
+    multiplexer.add_argument("--json", action="store_true")
+
     mixed = sub.add_parser(
         "mixed-mode",
         help="Mixed-mode analysis of a 4-port Touchstone file",
@@ -3373,6 +3416,134 @@ def main(argv: list[str] | None = None) -> int:
             group=group,
         )
         print(f"Wrote {path}", file=sys.stderr)
+
+    if args.command == "multiplexer":
+        try:
+            bands: list[MultiplexerBand] = []
+            for raw in args.band:
+                parts = str(raw).split(":", 2)
+                if len(parts) != 3 or not parts[0].strip():
+                    raise MultiplexerError(
+                        f"invalid --band {raw!r}; use LABEL:CENTER:BANDWIDTH"
+                    )
+                bands.append(
+                    MultiplexerBand(
+                        parts[0].strip(),
+                        parse_si(parts[1].strip()),
+                        parse_si(parts[2].strip()),
+                    )
+                )
+            centers = [band.center_hz for band in bands]
+            f_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else min(centers) / 2.0
+            )
+            f_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else max(centers) * 2.0
+            )
+            multiplexer_config = MultiplexerConfig(
+                bands=tuple(bands),
+                order=int(args.order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=args.ripple,
+                stopband_attenuation_db=args.stopband_att,
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            multiplexer_design = design_multiplexer(
+                multiplexer_config,
+                SweepConfig(
+                    f_start_hz=f_start,
+                    f_stop_hz=f_stop,
+                    n_points=int(args.points),
+                    spacing=SweepSpacing(str(args.spacing)),
+                ),
+                backend=str(args.backend),
+            )
+            mux_snap: SystemSnapResult | None = None
+            if args.bom_series is not None:
+                mux_snap = snap_system_design(
+                    multiplexer_design, ESeries(args.bom_series)
+                )
+                multiplexer_design = cast(MultiplexerDesign, mux_snap.design)
+            write_sparameters(multiplexer_design.network, args.output)
+            for raw in args.branch_output:
+                if "=" not in str(raw):
+                    raise MultiplexerError(
+                        f"invalid --branch-output {raw!r}; use LABEL=PATH"
+                    )
+                label, path_text = str(raw).split("=", 1)
+                branch_analysis = multiplexer_design.analysis_for(label.strip())
+                if branch_analysis is None:
+                    raise MultiplexerError(f"unknown branch label {label!r}")
+                write_sparameters(
+                    SParameters.from_analysis(branch_analysis), Path(path_text)
+                )
+            if args.export_build_sheet is not None:
+                _write_system_build_sheet(
+                    multiplexer_design,
+                    args.export_build_sheet,
+                    bool(args.bom_group),
+                    mux_snap,
+                )
+        except (
+            MultiplexerError,
+            DiplexerError,
+            SpecValidationError,
+            AnalysisError,
+            OSError,
+            ValueError,
+        ) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        mux_metrics = multiplexer_design.metrics
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "network": {
+                            "n_ports": multiplexer_design.network.n_ports,
+                            "n_points": multiplexer_design.network.n_points,
+                            "f_min_hz": float(
+                                multiplexer_design.network.frequency_hz[0]
+                            ),
+                            "f_max_hz": float(
+                                multiplexer_design.network.frequency_hz[-1]
+                            ),
+                            "z0_ohm": multiplexer_design.network.z0_ohm,
+                        },
+                        "bands": [
+                            {
+                                "label": band.label,
+                                "center_hz": band.center_hz,
+                                "bandwidth_hz": band.bandwidth_hz,
+                                "band_hz": list(metrics.band_hz),
+                                "insertion_loss_db": metrics.insertion_loss_db,
+                                "out_of_band_db": metrics.out_of_band_db,
+                                "return_loss_db": metrics.return_loss_db,
+                            }
+                            for band, metrics in zip(
+                                multiplexer_design.bands,
+                                mux_metrics.bands,
+                                strict=True,
+                            )
+                        ],
+                        "crossovers_hz": list(mux_metrics.crossovers_hz),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            labels = ", ".join(band.label for band in multiplexer_design.bands)
+            print(
+                f"LC multiplexer, order {multiplexer_design.config.order}, "
+                f"{len(multiplexer_design.bands)} bands ({labels})"
+            )
+            print(f"  {mux_metrics.summary()}")
+            print(f"  Wrote {args.output}")
+        return 0
 
     if args.command == "triplexer":
         try:

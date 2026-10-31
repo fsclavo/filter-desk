@@ -156,3 +156,68 @@ def test_cli_triplexer_writes_four_port(
     assert "# 3-band BPF multiplexer" in bom_text
     assert "| Low |" in bom_text and "| Mid |" in bom_text and "| High |" in bom_text
     assert "Component values snapped to E24" in bom_text
+
+
+def test_cli_multiplexer_handles_four_bands(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "quad.s5p"
+    bom = tmp_path / "quad_bom.md"
+    code = main(
+        [
+            "multiplexer",
+            "--band",
+            "low:14M:300k",
+            "--band",
+            "mid:21M:500k",
+            "--band",
+            "high:28M:500k",
+            "--band",
+            "top:35M:500k",
+            "--order",
+            "5",
+            "--ripple",
+            "0.1",
+            "--f-start",
+            "5M",
+            "--f-stop",
+            "50M",
+            "--points",
+            "801",
+            "--output",
+            str(output),
+            "--branch-output",
+            f"low={tmp_path / 'low.s2p'}",
+            "--export-build-sheet",
+            str(bom),
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["network"]["n_ports"] == 5
+    assert [band["label"] for band in payload["bands"]] == [
+        "low",
+        "mid",
+        "high",
+        "top",
+    ]
+    assert read_sparameters(output).n_ports == 5
+    assert read_sparameters(tmp_path / "low.s2p").n_ports == 2
+    assert "| Top |" in bom.read_text(encoding="utf-8")
+
+
+def test_cli_multiplexer_rejects_bad_band(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(
+        [
+            "multiplexer",
+            "--band",
+            "bad-spec",
+            "--output",
+            str(tmp_path / "bad.s2p"),
+        ]
+    )
+    assert code == 2
+    assert "error:" in capsys.readouterr().err

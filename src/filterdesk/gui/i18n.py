@@ -1150,6 +1150,14 @@ _ES.update(
         "{label} out-of-band": "Fuera de banda {label}",
         "{label} return loss": "Pérdida de retorno {label}",
         "{first}/{second} crossover": "Cruce {first}/{second}",
+        "Multiplexer (N bands)": "Multiplexer (N bandas)",
+        "Bands": "Bandas",
+        "Add band": "Agregar banda",
+        "Remove band": "Quitar banda",
+        "Port 1 = common; ports 2…N = bands in frequency order.": (
+            "Puerto 1 = común; puertos 2…N = bandas en orden de frecuencia."
+        ),
+        "{label} out (dB)": "Salida {label} (dB)",
         "Metrics": "Métricas",
         "S21 (out 1)": "S21 (salida 1)",
         "S31 (out 2)": "S31 (salida 2)",

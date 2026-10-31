@@ -3150,6 +3150,7 @@ class DiplexerDialog(QDialog):
         self._mode.addItem(tr("BPF + BPF"), "bp-bp")
         self._mode.addItem(tr("Duplexer TX/RX"), "duplexer")
         self._mode.addItem(tr("Triplexer (3 bands)"), "triplexer")
+        self._mode.addItem(tr("Multiplexer (N bands)"), "multiplexer")
         self._low_cutoff = EngineeringLineEdit()
         self._low_cutoff.setText("30M")
         self._high_cutoff = EngineeringLineEdit()
@@ -3191,6 +3192,31 @@ class DiplexerDialog(QDialog):
         self._tri_high_center.setText("28M")
         self._tri_high_bw = EngineeringLineEdit()
         self._tri_high_bw.setText("500k")
+        self._multiplexer_table = QTableWidget(3, 3)
+        self._multiplexer_table.setHorizontalHeaderLabels(
+            [tr("Label"), tr("Center"), tr("Bandwidth")]
+        )
+        self._multiplexer_table.verticalHeader().setVisible(False)
+        self._multiplexer_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._multiplexer_table.setMinimumHeight(130)
+        for row, (label, center, bandwidth) in enumerate(
+            (("low", "14M", "300k"), ("mid", "21M", "500k"), ("high", "28M", "500k"))
+        ):
+            self._multiplexer_table.setItem(row, 0, QTableWidgetItem(label))
+            self._multiplexer_table.setItem(row, 1, QTableWidgetItem(center))
+            self._multiplexer_table.setItem(row, 2, QTableWidgetItem(bandwidth))
+        self._add_band_button = QPushButton(tr("Add band"))
+        self._remove_band_button = QPushButton(tr("Remove band"))
+        self._add_band_button.clicked.connect(self._add_band_row)
+        self._remove_band_button.clicked.connect(self._remove_band_row)
+        self._multiplexer_buttons = QWidget()
+        mx_buttons_layout = QHBoxLayout(self._multiplexer_buttons)
+        mx_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        mx_buttons_layout.addWidget(self._add_band_button)
+        mx_buttons_layout.addWidget(self._remove_band_button)
+        mx_buttons_layout.addStretch(1)
         self._order = QSpinBox()
         self._order.setRange(1, 12)
         self._order.setValue(5)
@@ -3261,9 +3287,21 @@ class DiplexerDialog(QDialog):
         self._plot.setLabel("left", tr("Magnitude"), units="dB")
         self._plot.addLegend()
         self._plot.setFixedHeight(300)
-        self._curve_low = self._plot.plot(pen=pg.mkPen("#1f77b4", width=2))
-        self._curve_mid = self._plot.plot(pen=pg.mkPen("#ff7f0e", width=2))
-        self._curve_high = self._plot.plot(pen=pg.mkPen("#2ca02c", width=2))
+        self._output_colors = (
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#9467bd",
+            "#8c564b",
+            "#17becf",
+        )
+        self._output_curves = [
+            self._plot.plot(pen=pg.mkPen(color, width=2))
+            for color in self._output_colors
+        ]
+        self._curve_low = self._output_curves[0]
+        self._curve_mid = self._output_curves[1]
+        self._curve_high = self._output_curves[2]
         self._curve_input = self._plot.plot(pen=pg.mkPen("#d62728", width=2))
         self._curve_isolation = self._plot.plot(
             pen=pg.mkPen("#7f7f7f", width=1, style=Qt.PenStyle.DashLine)
@@ -3277,19 +3315,13 @@ class DiplexerDialog(QDialog):
         )
         self._plot_note.setWordWrap(True)
         plot_layout.addWidget(self._plot_note)
-        self._schematic_low = SchematicPanel()
-        self._schematic_mid = SchematicPanel()
-        self._schematic_high = SchematicPanel()
-        for panel in (
-            self._schematic_low,
-            self._schematic_mid,
-            self._schematic_high,
-        ):
+        self._schematic_panels = [SchematicPanel() for _ in range(6)]
+        self._schematic_low = self._schematic_panels[0]
+        self._schematic_mid = self._schematic_panels[1]
+        self._schematic_high = self._schematic_panels[2]
+        for panel in self._schematic_panels:
             panel.setMinimumHeight(220)
         self._schematic_tabs = QTabWidget()
-        self._schematic_tabs.addTab(self._schematic_low, tr("Low"))
-        self._schematic_tabs.addTab(self._schematic_mid, tr("Mid"))
-        self._schematic_tabs.addTab(self._schematic_high, tr("High"))
         self._schematic_page = QWidget()
         schematic_layout = QVBoxLayout(self._schematic_page)
         schematic_layout.setContentsMargins(0, 0, 0, 0)
@@ -3373,6 +3405,7 @@ class DiplexerDialog(QDialog):
             self._tri_high_center,
             self._tri_high_bw,
         )
+        self._mx_rows = (self._multiplexer_table, self._multiplexer_buttons)
         form.addRow(tr("Low-pass cutoff"), self._low_cutoff)
         form.addRow(tr("High-pass cutoff"), self._high_cutoff)
         form.addRow(tr("Low band center"), self._low_center)
@@ -3393,6 +3426,8 @@ class DiplexerDialog(QDialog):
         form.addRow(tr("Mid band bandwidth"), self._tri_mid_bw)
         form.addRow(tr("High band center"), self._tri_high_center)
         form.addRow(tr("High band bandwidth"), self._tri_high_bw)
+        form.addRow(tr("Bands"), self._multiplexer_table)
+        form.addRow(self._multiplexer_buttons)
         form.addRow(
             _form_pair(tr("Order"), self._order, tr("Family"), self._family)
         )
@@ -3441,10 +3476,46 @@ class DiplexerDialog(QDialog):
     ):
         return self._design
 
+    def _add_band_row(self) -> None:
+        row = self._multiplexer_table.rowCount()
+        self._multiplexer_table.insertRow(row)
+        self._multiplexer_table.setItem(row, 0, QTableWidgetItem(f"band{row + 1}"))
+        self._multiplexer_table.setItem(row, 1, QTableWidgetItem("14M"))
+        self._multiplexer_table.setItem(row, 2, QTableWidgetItem("500k"))
+
+    def _remove_band_row(self) -> None:
+        if self._multiplexer_table.rowCount() <= 2:
+            return
+        row = self._multiplexer_table.currentRow()
+        if row < 0:
+            row = self._multiplexer_table.rowCount() - 1
+        self._multiplexer_table.removeRow(row)
+
+    def _multiplexer_bands(self) -> tuple[MultiplexerBand, ...]:
+        bands: list[MultiplexerBand] = []
+        for row in range(self._multiplexer_table.rowCount()):
+            label_item = self._multiplexer_table.item(row, 0)
+            center_item = self._multiplexer_table.item(row, 1)
+            bandwidth_item = self._multiplexer_table.item(row, 2)
+            if label_item is None or center_item is None or bandwidth_item is None:
+                raise ValueError("every band needs a label, center and bandwidth")
+            label = label_item.text().strip()
+            if not label:
+                raise ValueError("band labels must not be empty")
+            bands.append(
+                MultiplexerBand(
+                    label,
+                    parse_si(center_item.text()),
+                    parse_si(bandwidth_item.text()),
+                )
+            )
+        return tuple(bands)
+
     def _on_mode_changed(self) -> None:
         mode = self._mode.currentData()
         is_duplexer = mode == "duplexer"
         is_triplexer = mode == "triplexer"
+        is_multiplexer = mode == "multiplexer"
         if is_duplexer:
             self._summary.setText(
                 tr("Port 1 = antenna, port 2 = TX, port 3 = RX.")
@@ -3453,11 +3524,17 @@ class DiplexerDialog(QDialog):
             self._summary.setText(
                 tr("Port 1 = common, port 2 = low, port 3 = mid, port 4 = high.")
             )
+        elif is_multiplexer:
+            self._summary.setText(
+                tr("Port 1 = common; ports 2…N = bands in frequency order.")
+            )
         else:
             self._summary.setText(
                 tr("Port 1 = common, port 2 = low band, port 3 = high band.")
             )
         self._set_visible_rows(str(mode))
+        self._export_low_button.setVisible(not is_multiplexer)
+        self._export_high_button.setVisible(not is_multiplexer)
         self._export_mid_button.setVisible(is_triplexer)
         self._update_order_enabled()
         if is_duplexer:
@@ -3512,6 +3589,8 @@ class DiplexerDialog(QDialog):
             self._form.setRowVisible(dx_widget, mode == "duplexer")
         for tri_widget in self._tri_rows:
             self._form.setRowVisible(tri_widget, mode == "triplexer")
+        for mx_widget in self._mx_rows:
+            self._form.setRowVisible(mx_widget, mode == "multiplexer")
 
     def _update_order_enabled(self) -> None:
         is_duplexer = self._mode.currentData() == "duplexer"
@@ -3545,7 +3624,17 @@ class DiplexerDialog(QDialog):
                 | DuplexerDesign
                 | MultiplexerDesign
             )
-            if self._mode.currentData() == "triplexer":
+            if self._mode.currentData() == "multiplexer":
+                multiplexer_config = MultiplexerConfig(
+                    bands=self._multiplexer_bands(),
+                    order=order,
+                    family=family,
+                    ripple_db=ripple,
+                    stopband_attenuation_db=stopband,
+                    z0_ohm=z0,
+                )
+                design = design_multiplexer(multiplexer_config, sweep)
+            elif self._mode.currentData() == "triplexer":
                 multiplexer_config = MultiplexerConfig(
                     bands=(
                         MultiplexerBand(
@@ -3757,18 +3846,14 @@ class DiplexerDialog(QDialog):
         return True
 
     def export_branch(self, branch: str, path: str | Path) -> bool:
-        if self._design is None or branch not in {
-            "low",
-            "mid",
-            "high",
-            "tx",
-            "rx",
-        }:
+        if self._design is None:
             return False
         if isinstance(self._design, MultiplexerDesign):
             analysis = self._design.analysis_for(branch)
             if analysis is None:
                 return False
+        elif branch not in {"low", "high", "tx", "rx"}:
+            return False
         elif isinstance(self._design, DuplexerDesign):
             analysis = (
                 self._design.tx_analysis
@@ -3992,6 +4077,14 @@ class DiplexerDialog(QDialog):
             tr("Branch components: {counts}.", counts=counts)
         )
         network = design.network
+        headers = [tr("Frequency")]
+        headers += [
+            tr("{label} out (dB)").format(label=band.label.capitalize())
+            for band in design.bands
+        ]
+        headers.append(tr("Input S11 (dB)"))
+        self._samples.setColumnCount(len(headers))
+        self._samples.setHorizontalHeaderLabels(headers)
         indices = np.linspace(
             0, network.n_points - 1, min(21, network.n_points), dtype=int
         )
@@ -4001,9 +4094,10 @@ class DiplexerDialog(QDialog):
             for row, index in enumerate(indices):
                 values = [
                     format_engineering(float(network.frequency_hz[index]), "Hz"),
-                    _db_text(_db(network.s[index, 1, 0])),
-                    _db_text(_db(network.s[index, 2, 0])),
-                    _db_text(_db(network.s[index, 3, 0])),
+                    *[
+                        _db_text(_db(network.s[index, band_index + 1, 0]))
+                        for band_index in range(len(design.bands))
+                    ],
                     _db_text(_db(network.s[index, 0, 0])),
                 ]
                 for column, value in enumerate(values):
@@ -4012,15 +4106,16 @@ class DiplexerDialog(QDialog):
             self._samples.setUpdatesEnabled(True)
         self._samples.resizeRowsToContents()
 
+    def _ensure_output_curves(self, count: int) -> None:
+        while len(self._output_curves) < count:
+            color = self._output_colors[
+                len(self._output_curves) % len(self._output_colors)
+            ]
+            self._output_curves.append(self._plot.plot(pen=pg.mkPen(color, width=2)))
+
     def _clear_plot(self) -> None:
         empty = np.array([], dtype=float)
-        for curve in (
-            self._curve_low,
-            self._curve_mid,
-            self._curve_high,
-            self._curve_input,
-            self._curve_isolation,
-        ):
+        for curve in (*self._output_curves, self._curve_input, self._curve_isolation):
             curve.setData(empty, empty)
         legend = self._plot.plotItem.legend
         if legend is not None:
@@ -4037,61 +4132,46 @@ class DiplexerDialog(QDialog):
     ) -> None:
         network = design.network
         frequencies = network.frequency_hz
-        active: tuple[tuple[object, np.ndarray, str], ...]
         if isinstance(design, MultiplexerDesign):
-            low = network.s[:, 1, 0]
-            mid = network.s[:, 2, 0]
-            high = network.s[:, 3, 0]
-            input_s = network.s[:, 0, 0]
-            isolation = np.maximum.reduce(
-                [
-                    np.abs(network.s[:, 2, 1]),
-                    np.abs(network.s[:, 3, 1]),
-                    np.abs(network.s[:, 3, 2]),
-                ]
-            )
-            active = (
-                (self._curve_low, low, tr("S21 (low)")),
-                (self._curve_mid, mid, tr("S31 (mid)")),
-                (self._curve_high, high, tr("S41 (high)")),
-                (self._curve_input, input_s, tr("S11 (input)")),
-                (self._curve_isolation, isolation, tr("Worst isolation")),
+            outputs = [
+                network.s[:, index + 1, 0] for index in range(len(design.bands))
+            ]
+            labels = [
+                tr(f"S{index + 2}1 ({band.label})")
+                for index, band in enumerate(design.bands)
+            ]
+            pairs = [
+                np.abs(network.s[:, column, row])
+                for row in range(1, network.n_ports)
+                for column in range(row + 1, network.n_ports)
+            ]
+            isolation = (
+                np.maximum.reduce(pairs)
+                if pairs
+                else np.array([], dtype=float)
             )
         else:
-            low = network.s[:, 1, 0]
-            mid = np.array([], dtype=complex)
-            high = network.s[:, 2, 0]
-            input_s = network.s[:, 0, 0]
-            isolation = np.abs(network.s[:, 2, 1])
+            outputs = [network.s[:, 1, 0], network.s[:, 2, 0]]
             if isinstance(design, DuplexerDesign):
-                low_label = tr("S21 (TX)")
-                high_label = tr("S31 (RX)")
+                labels = [tr("S21 (TX)"), tr("S31 (RX)")]
             else:
-                low_label = tr("S21 (low)")
-                high_label = tr("S31 (high)")
-            active = (
-                (self._curve_low, low, low_label),
-                (self._curve_high, high, high_label),
-                (self._curve_input, input_s, tr("S11 (input)")),
-                (self._curve_isolation, isolation, tr("Worst isolation")),
-            )
-        curves = (
-            (self._curve_low, low),
-            (self._curve_mid, mid),
-            (self._curve_high, high),
-            (self._curve_input, input_s),
-            (self._curve_isolation, isolation),
-        )
-        for curve, values in curves:
-            if values.size == 0:
+                labels = [tr("S21 (low)"), tr("S31 (high)")]
+            isolation = np.abs(network.s[:, 2, 1])
+        self._ensure_output_curves(len(outputs))
+        for index, curve in enumerate(self._output_curves):
+            if index < len(outputs):
+                curve.setData(frequencies, _db_array(outputs[index]))
+            else:
                 curve.setData(np.array([], dtype=float), np.array([], dtype=float))
-            else:
-                curve.setData(frequencies, _db_array(values))
+        self._curve_input.setData(frequencies, _db_array(network.s[:, 0, 0]))
+        self._curve_isolation.setData(frequencies, _db_array(isolation))
         legend = self._plot.plotItem.legend
         if legend is not None:
             legend.clear()
-            for curve, _values, label in active:
-                legend.addItem(curve, label)
+            for index, label in enumerate(labels):
+                legend.addItem(self._output_curves[index], label)
+            legend.addItem(self._curve_input, tr("S11 (input)"))
+            legend.addItem(self._curve_isolation, tr("Worst isolation"))
         self._plot.autoRange()
         self._plot.setYRange(-160.0, 5.0, padding=0.0)
 
@@ -4103,17 +4183,9 @@ class DiplexerDialog(QDialog):
             panel.fit_view()
 
     def _clear_schematic(self) -> None:
-        for panel in (
-            self._schematic_low,
-            self._schematic_mid,
-            self._schematic_high,
-        ):
+        for panel in self._schematic_panels:
             panel.set_circuit(None)
-        for index in range(self._schematic_tabs.count()):
-            self._schematic_tabs.setTabVisible(index, index == 0)
-        self._schematic_tabs.setTabText(0, tr("Low"))
-        self._schematic_tabs.setTabText(1, tr("Mid"))
-        self._schematic_tabs.setTabText(2, tr("High"))
+        self._schematic_tabs.clear()
 
     def _update_schematic(
         self,
@@ -4124,35 +4196,25 @@ class DiplexerDialog(QDialog):
             | MultiplexerDesign
         ),
     ) -> None:
-        for panel in (
-            self._schematic_low,
-            self._schematic_mid,
-            self._schematic_high,
-        ):
-            panel.set_circuit(None)
-        targets: tuple[tuple[int, SchematicPanel, Circuit, str], ...]
         if isinstance(design, MultiplexerDesign):
-            targets = (
-                (0, self._schematic_low, design.circuits[0], tr("Low")),
-                (1, self._schematic_mid, design.circuits[1], tr("Mid")),
-                (2, self._schematic_high, design.circuits[2], tr("High")),
-            )
+            circuits = list(design.circuits)
+            labels = [band.label.capitalize() for band in design.bands]
         elif isinstance(design, DuplexerDesign):
-            targets = (
-                (0, self._schematic_low, design.tx_circuit, tr("TX")),
-                (1, self._schematic_mid, design.rx_circuit, tr("RX")),
-            )
+            circuits = [design.tx_circuit, design.rx_circuit]
+            labels = [tr("TX"), tr("RX")]
         else:
-            targets = (
-                (0, self._schematic_low, design.low_circuit, tr("Low")),
-                (1, self._schematic_mid, design.high_circuit, tr("High")),
-            )
-        visible_tabs = {index for index, _panel, _circuit, _label in targets}
-        for index, panel, circuit, label in targets:
+            circuits = [design.low_circuit, design.high_circuit]
+            labels = [tr("Low"), tr("High")]
+        for panel in self._schematic_panels:
+            panel.set_circuit(None)
+        self._schematic_tabs.clear()
+        while len(self._schematic_panels) < len(circuits):
+            self._schematic_panels.append(SchematicPanel())
+        for panel, circuit, label in zip(
+            self._schematic_panels, circuits, labels, strict=False
+        ):
             panel.set_circuit(circuit)
-            self._schematic_tabs.setTabText(index, label)
-        for index in range(self._schematic_tabs.count()):
-            self._schematic_tabs.setTabVisible(index, index in visible_tabs)
+            self._schematic_tabs.addTab(panel, label)
         self._schematic_tabs.setCurrentIndex(0)
         self._fit_current_schematic()
 
