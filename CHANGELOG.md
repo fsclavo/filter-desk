@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.53.0 — 2026-10-30
+
+### Added
+
+- **E-series snap** in the system designer (None/E24/E48/E96): snap every
+  branch, reanalyze the combined network and update curves, metrics, schematic
+  and BOM together.
+- `snap_system_design` with preserved LC resonances and per-branch snap reports.
+- System CLI `--bom-series` now snaps and reanalyzes, with a BOM note recording
+  the series and maximum delta.
+
+### Fixed
+
+- Removed the mismatch between ideal-only metrics and a separately snapped BOM.
+
 ## v0.52.0 — 2026-10-30
 
 ### Added

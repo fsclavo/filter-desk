@@ -1033,6 +1033,13 @@ _ES.update(
         ),
         "Crossover": "Cruce",
         "Design complete.": "Diseño completado.",
+        "Design complete (E-series snapped).": (
+            "Diseño completado (ajustado a serie E)."
+        ),
+        "E-series snap": "Ajuste a serie E",
+        "Snapped to {series} (max delta {pct:.2f}%).": (
+            "Ajustado a {series} (delta máx {pct:.2f}%)."
+        ),
         "Diplexer LPF+HPF": "Diplexer LPF+HPF",
         "&Diplexer LPF+HPF…": "&Diplexer LPF+HPF…",
         "Design an LPF+HPF diplexer.": "Diseñar un diplexer LPF+HPF.",

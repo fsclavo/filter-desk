@@ -105,6 +105,7 @@ class DuplexerDesign:
     network: SParameters
     metrics: DuplexerMetrics
     attempted_orders: tuple[int, ...]
+    sweep: SweepConfig
 
     @property
     def selected_order(self) -> int:
@@ -217,6 +218,7 @@ def _design_at_order(
         network=network,
         metrics=metrics,
         attempted_orders=(order,),
+        sweep=sweep,
     )
 
 

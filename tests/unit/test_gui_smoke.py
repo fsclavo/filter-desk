@@ -1366,6 +1366,30 @@ def test_diplexer_dialog_mode_rows_and_plot_tabs() -> None:
     assert app is not None
 
 
+def test_diplexer_dialog_snaps_to_e_series_and_reports_bom(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    index = dialog._snap_series.findData("E24")
+    assert index >= 0
+    dialog._snap_series.setCurrentIndex(index)
+    dialog._points.setValue(401)
+    assert dialog.design()
+    assert dialog._snap_info is not None
+    assert dialog._snap_info.series.value == "E24"
+    assert dialog.current_design() is not None
+    assert "E-series snapped" in dialog._status.text()
+    bom_path = tmp_path / "snapped_bom.md"
+    assert dialog.export_build_sheet(bom_path)
+    bom = bom_path.read_text(encoding="utf-8")
+    assert "Component values snapped to E24" in bom
+    dialog.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

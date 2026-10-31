@@ -158,6 +158,10 @@ from filterdesk.services.multiplexer import (
     design_multiplexer,
 )
 from filterdesk.services.report import system_report
+from filterdesk.services.system_snap import (
+    SystemSnapResult,
+    snap_system_design,
+)
 from filterdesk.services.vna_measurement import VnaMeasurementMetadata
 from filterdesk.services.vna_tuning import (
     VnaBoundMode,
@@ -1256,6 +1260,30 @@ class BuildSheetDialog(QDialog):
         dialog = cls(parent)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog.selection()
+        return None
+
+
+class BuildSheetGroupDialog(QDialog):
+    """Grouping-only options for a system build-sheet export."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Build sheet options"))
+        self._group = QCheckBox(tr("Group identical parts (combine refs and quantity)"))
+        form = QFormLayout(self)
+        form.addRow(self._group)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    @classmethod
+    def ask(cls, parent: QWidget | None = None) -> bool | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog._group.isChecked()
         return None
 
 
@@ -3110,6 +3138,11 @@ class DiplexerDialog(QDialog):
         self._points.setRange(101, 20001)
         self._points.setSingleStep(100)
         self._points.setValue(2001)
+        self._snap_series = QComboBox()
+        self._snap_series.addItem(tr("None"), None)
+        for series in ESeries:
+            self._snap_series.addItem(series.value, series.value)
+        self._snap_info: SystemSnapResult | None = None
         self._summary = QLabel(
             tr("Port 1 = common, port 2 = low band, port 3 = high band.")
         )
@@ -3305,6 +3338,7 @@ class DiplexerDialog(QDialog):
                 tr("Sweep start"), self._f_start, tr("Sweep stop"), self._f_stop
             )
         )
+        form.addRow(tr("E-series snap"), self._snap_series)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -3373,6 +3407,7 @@ class DiplexerDialog(QDialog):
             ]
         self._samples.setHorizontalHeaderLabels(headers)
         self._design = None
+        self._snap_info = None
         self._set_export_enabled(False)
         self._metrics.setRowCount(0)
         self._samples.setRowCount(0)
@@ -3486,6 +3521,13 @@ class DiplexerDialog(QDialog):
                     z0_ohm=z0,
                 )
                 design = design_diplexer(config, sweep)
+            series_data = self._snap_series.currentData()
+            if series_data is not None:
+                snap_result = snap_system_design(design, ESeries(str(series_data)))
+                design = snap_result.design
+                self._snap_info = snap_result
+            else:
+                self._snap_info = None
         except (
             DiplexerError,
             DuplexerError,
@@ -3493,6 +3535,7 @@ class DiplexerDialog(QDialog):
             ValueError,
         ) as exc:
             self._design = None
+            self._snap_info = None
             self._set_export_enabled(False)
             self._clear_plot()
             self._clear_schematic()
@@ -3500,10 +3543,24 @@ class DiplexerDialog(QDialog):
             return False
         self._design = design
         self._populate(design)
+        if self._snap_info is not None:
+            self._branch_summary.setText(
+                self._branch_summary.text()
+                + " "
+                + tr(
+                    "Snapped to {series} (max delta {pct:.2f}%).",
+                    series=self._snap_info.series.value,
+                    pct=self._snap_info.max_delta_pct,
+                )
+            )
         self._update_plot(design)
         self._update_schematic(design)
         self._set_export_enabled(True)
-        self._status.setText(tr("Design complete."))
+        self._status.setText(
+            tr("Design complete (E-series snapped).")
+            if self._snap_info is not None
+            else tr("Design complete.")
+        )
         return True
 
     def export_build_sheet(
@@ -3517,13 +3574,20 @@ class DiplexerDialog(QDialog):
             return False
         report = system_report(self._design)
         branches = [(branch.label, branch.circuit) for branch in report.branches]
+        notes = list(report.notes)
+        if self._snap_info is not None:
+            notes.append(
+                "Component values snapped to "
+                f"{self._snap_info.series.value} "
+                f"(max delta {self._snap_info.max_delta_pct:.2f}%)."
+            )
         try:
             write_multiplexer_build_sheet(
                 branches,
                 path,
                 summary=report.summary,
                 title=report.title,
-                notes=report.notes,
+                notes=notes,
                 series=series,
                 group=group,
             )
@@ -3536,10 +3600,9 @@ class DiplexerDialog(QDialog):
     def _export_build_sheet(self) -> None:
         if self._design is None:
             return
-        options = BuildSheetDialog.ask(self)
-        if options is None:
+        group = BuildSheetGroupDialog.ask(self)
+        if group is None:
             return
-        series, group = options
         path, selected = QFileDialog.getSaveFileName(
             self,
             tr("Export system build sheet"),
@@ -3557,7 +3620,7 @@ class DiplexerDialog(QDialog):
         )
         if not path.lower().endswith(suffix):
             path += suffix
-        self.export_build_sheet(path, series=series, group=group)
+        self.export_build_sheet(path, series=None, group=group)
 
     def export_network(self, path: str | Path) -> bool:
         if self._design is None:

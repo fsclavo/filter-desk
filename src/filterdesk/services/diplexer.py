@@ -124,6 +124,7 @@ class DiplexerDesign:
     high_analysis: AnalysisResult
     network: SParameters
     metrics: DiplexerMetrics
+    sweep: SweepConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +138,7 @@ class BandDiplexerDesign:
     high_analysis: AnalysisResult
     network: SParameters
     metrics: DiplexerMetrics
+    sweep: SweepConfig
 
 
 def diplexer_specs(config: DiplexerConfig) -> tuple[FilterSpec, FilterSpec]:
@@ -300,6 +302,7 @@ def design_diplexer(
         high_analysis=high_analysis,
         network=network,
         metrics=metrics,
+        sweep=sweep,
     )
 
 
@@ -332,6 +335,7 @@ def design_band_diplexer(
         high_analysis=high_analysis,
         network=network,
         metrics=metrics,
+        sweep=sweep,
     )
 
 

@@ -138,6 +138,8 @@ def test_cli_triplexer_writes_four_port(
             str(high),
             "--export-build-sheet",
             str(bom),
+            "--bom-series",
+            "E24",
             "--json",
         ]
     )
@@ -153,3 +155,4 @@ def test_cli_triplexer_writes_four_port(
     bom_text = bom.read_text(encoding="utf-8")
     assert "# 3-band BPF multiplexer" in bom_text
     assert "| Low |" in bom_text and "| Mid |" in bom_text and "| High |" in bom_text
+    assert "Component values snapped to E24" in bom_text

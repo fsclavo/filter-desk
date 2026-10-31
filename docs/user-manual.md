@@ -646,7 +646,9 @@ Most commands accept `--json` for machine-readable output.
 
   `diplexer`, `band-diplexer`, `duplexer` and `triplexer` also accept
   `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}` and
-  `--bom-group` for the combined system BOM.
+  `--bom-group` for the combined system BOM. In these system commands
+  `--bom-series` snaps the branches and reanalyzes the combined network, so the
+  exported `.s3p`/`.s4p`, metrics and BOM stay consistent.
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
   - `network info FILE [--json]` — ports, points, range, reference impedance
@@ -1019,11 +1021,19 @@ shows one sub-tab per branch: Low/High for LPF+HPF and BPF+BPF, TX/RX for the
 duplexer, and Low/Mid/High for the triplexer. It is a read-only display; image
 export is not included in this version.
 
+**E-series snap** (None/E24/E48/E96) snaps every branch, reanalyzes the combined
+network and updates the curves, metrics, schematic and BOM together. The default
+strategy preserves each L·C resonance as closely as possible. If snapping makes
+a duplexer miss its isolation target, the table shows **NOT met**; it is not
+hidden. Narrow-band BPF branches are sensitive: E24 can detune them severely, so
+use E48/E96 or no snap and check the recomputed metrics before exporting the BOM.
+
 **Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
 It includes the system metrics, one row per physical component with a leading
-**Branch** column, optional E-series snapping/grouping, and the ideal-model
-assumptions. CSV always starts with `branch,ref,qty,…` so duplicate refs in
-different branches remain unambiguous.
+**Branch** column, optional grouping, and the ideal-model assumptions. CSV always
+starts with `branch,ref,qty,…` so duplicate refs in different branches remain
+unambiguous. Because the BOM uses the already-analyzed snapped circuits, its
+values match the displayed response.
 
 In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
 Isolation is the combined `|S32|` in each band; the dialog reports TX/RX

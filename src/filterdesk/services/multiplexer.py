@@ -96,6 +96,7 @@ class MultiplexerDesign:
     analyses: tuple[AnalysisResult, ...]
     network: SParameters
     metrics: MultiplexerMetrics
+    sweep: SweepConfig
 
     def analysis_for(self, label: str) -> AnalysisResult | None:
         for band, analysis in zip(self.bands, self.analyses, strict=True):
@@ -174,6 +175,7 @@ def design_multiplexer(
         analyses=tuple(analyses),
         network=network,
         metrics=metrics,
+        sweep=sweep,
     )
 
 

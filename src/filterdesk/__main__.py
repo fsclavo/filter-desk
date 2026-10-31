@@ -8,6 +8,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -163,24 +164,32 @@ from filterdesk.services.design_sweep import (
 )
 from filterdesk.services.diplexer import (
     BandDiplexerConfig,
+    BandDiplexerDesign,
     DiplexerConfig,
+    DiplexerDesign,
     DiplexerError,
     design_band_diplexer,
     design_diplexer,
 )
 from filterdesk.services.duplexer import (
     DuplexerConfig,
+    DuplexerDesign,
     DuplexerError,
     design_duplexer,
 )
 from filterdesk.services.multiplexer import (
     MultiplexerBand,
     MultiplexerConfig,
+    MultiplexerDesign,
     MultiplexerError,
     design_multiplexer,
 )
 from filterdesk.services.report import system_report
 from filterdesk.services.session import default_sweep_for_spec
+from filterdesk.services.system_snap import (
+    SystemSnapResult,
+    snap_system_design,
+)
 from filterdesk.services.vna_measurement import (
     metadata_path_for,
     read_vna_metadata,
@@ -1038,6 +1047,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--bom-series",
         choices=[s.value for s in ESeries],
         default=None,
+        help="Snap branches and reanalyze the combined system",
     )
     diplexer.add_argument("--bom-group", action="store_true")
 
@@ -1074,6 +1084,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--bom-series",
         choices=[s.value for s in ESeries],
         default=None,
+        help="Snap branches and reanalyze the combined system",
     )
     band_diplexer.add_argument("--bom-group", action="store_true")
 
@@ -1114,6 +1125,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--bom-series",
         choices=[s.value for s in ESeries],
         default=None,
+        help="Snap branches and reanalyze the combined system",
     )
     duplexer.add_argument("--bom-group", action="store_true")
 
@@ -1153,6 +1165,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--bom-series",
         choices=[s.value for s in ESeries],
         default=None,
+        help="Snap branches and reanalyze the combined system",
     )
     triplexer.add_argument("--bom-group", action="store_true")
 
@@ -3339,17 +3352,24 @@ def main(argv: list[str] | None = None) -> int:
     def _write_system_build_sheet(
         system_design: object,
         path: Path,
-        series: ESeries | None,
         group: bool,
+        snap_result: SystemSnapResult | None = None,
     ) -> None:
         report = system_report(system_design)  # type: ignore[arg-type]
+        notes = list(report.notes)
+        if snap_result is not None:
+            notes.append(
+                "Component values snapped to "
+                f"{snap_result.series.value} "
+                f"(max delta {snap_result.max_delta_pct:.2f}%)."
+            )
         write_multiplexer_build_sheet(
             [(branch.label, branch.circuit) for branch in report.branches],
             path,
             summary=report.summary,
             title=report.title,
-            notes=report.notes,
-            series=series,
+            notes=notes,
+            series=None,
             group=group,
         )
         print(f"Wrote {path}", file=sys.stderr)
@@ -3398,6 +3418,12 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 backend=str(args.backend),
             )
+            tri_snap: SystemSnapResult | None = None
+            if args.bom_series is not None:
+                tri_snap = snap_system_design(
+                    triplexer_design, ESeries(args.bom_series)
+                )
+                triplexer_design = cast(MultiplexerDesign, tri_snap.design)
             write_sparameters(triplexer_design.network, args.output)
             branch_paths = {
                 "low": args.low_output,
@@ -3416,8 +3442,8 @@ def main(argv: list[str] | None = None) -> int:
                 _write_system_build_sheet(
                     triplexer_design,
                     args.export_build_sheet,
-                    ESeries(args.bom_series) if args.bom_series else None,
                     bool(args.bom_group),
+                    tri_snap,
                 )
         except (
             MultiplexerError,
@@ -3514,6 +3540,12 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 backend=str(args.backend),
             )
+            dx_snap: SystemSnapResult | None = None
+            if args.bom_series is not None:
+                dx_snap = snap_system_design(
+                    duplexer_design, ESeries(args.bom_series)
+                )
+                duplexer_design = cast(DuplexerDesign, dx_snap.design)
             write_sparameters(duplexer_design.network, args.output)
             if args.tx_output is not None:
                 write_sparameters(
@@ -3529,8 +3561,8 @@ def main(argv: list[str] | None = None) -> int:
                 _write_system_build_sheet(
                     duplexer_design,
                     args.export_build_sheet,
-                    ESeries(args.bom_series) if args.bom_series else None,
                     bool(args.bom_group),
+                    dx_snap,
                 )
         except (
             DuplexerError,
@@ -3648,6 +3680,12 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 backend=str(args.backend),
             )
+            band_snap: SystemSnapResult | None = None
+            if args.bom_series is not None:
+                band_snap = snap_system_design(
+                    band_design, ESeries(args.bom_series)
+                )
+                band_design = cast(BandDiplexerDesign, band_snap.design)
             write_sparameters(band_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -3663,8 +3701,8 @@ def main(argv: list[str] | None = None) -> int:
                 _write_system_build_sheet(
                     band_design,
                     args.export_build_sheet,
-                    ESeries(args.bom_series) if args.bom_series else None,
                     bool(args.bom_group),
+                    band_snap,
                 )
         except (
             DiplexerError,
@@ -3754,6 +3792,12 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 backend=str(args.backend),
             )
+            dip_snap: SystemSnapResult | None = None
+            if args.bom_series is not None:
+                dip_snap = snap_system_design(
+                    diplexer_design, ESeries(args.bom_series)
+                )
+                diplexer_design = cast(DiplexerDesign, dip_snap.design)
             write_sparameters(diplexer_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -3769,8 +3813,8 @@ def main(argv: list[str] | None = None) -> int:
                 _write_system_build_sheet(
                     diplexer_design,
                     args.export_build_sheet,
-                    ESeries(args.bom_series) if args.bom_series else None,
                     bool(args.bom_group),
+                    dip_snap,
                 )
         except (
             DiplexerError,

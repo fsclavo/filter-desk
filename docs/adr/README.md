@@ -34,3 +34,4 @@
 - [ADR-029](ADR-029-bpf-bpf-diplexer.md) — BPF+BPF diplexer extension
 - [ADR-030](ADR-030-lc-duplexer-tx-rx.md) — LC TX/RX duplexer with isolation target
 - [ADR-031](ADR-031-multiband-multiplexer.md) — multi-band BPF multiplexer/triplexer
+- [ADR-032](ADR-032-system-snap-reanalysis.md) — E-series snap with system reanalysis
