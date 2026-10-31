@@ -1390,6 +1390,42 @@ def test_diplexer_dialog_snaps_to_e_series_and_reports_bom(tmp_path: Path) -> No
     assert app is not None
 
 
+def test_diplexer_dialog_applies_parasitics(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.domain.circuit import NonIdealCapacitor, NonIdealInductor
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.services.system_parasitics import SystemParasiticsConfig
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._parasitics_config = SystemParasiticsConfig(
+        inductor_q=100.0,
+        capacitor_esr_ohm=0.1,
+        capacitor_esl_h=1e-9,
+    )
+    dialog._parasitics_label.setText("Q=100, ESR=0.1 Ohm, ESL=1 nH")
+    dialog._points.setValue(401)
+    assert dialog.design()
+    assert dialog._parasitics_info is not None
+    assert "parasitics" in dialog._status.text()
+    design = dialog.current_design()
+    assert design is not None
+    assert any(
+        isinstance(el, NonIdealInductor) for el in design.low_circuit.elements
+    )
+    assert any(
+        isinstance(el, NonIdealCapacitor) for el in design.high_circuit.elements
+    )
+    bom_path = tmp_path / "parasitic_bom.md"
+    assert dialog.export_build_sheet(bom_path)
+    bom = bom_path.read_text(encoding="utf-8")
+    assert "Parasitics:" in bom
+    assert "Q=100" in bom
+    dialog.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

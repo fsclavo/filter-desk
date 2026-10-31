@@ -158,6 +158,11 @@ from filterdesk.services.multiplexer import (
     design_multiplexer,
 )
 from filterdesk.services.report import system_report
+from filterdesk.services.system_parasitics import (
+    SystemParasiticsConfig,
+    SystemParasiticsResult,
+    apply_system_parasitics,
+)
 from filterdesk.services.system_snap import (
     SystemSnapResult,
     snap_system_design,
@@ -1284,6 +1289,74 @@ class BuildSheetGroupDialog(QDialog):
         dialog = cls(parent)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog._group.isChecked()
+        return None
+
+
+class SystemParasiticsDialog(QDialog):
+    """Configure simple finite-Q / parasitic assumptions for system branches."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("System parasitics"))
+        self._q = QLineEdit()
+        self._q.setPlaceholderText(tr("blank = ideal"))
+        self._dcr = EngineeringLineEdit()
+        self._dcr.setText("0")
+        self._cp = EngineeringLineEdit()
+        self._cp.setText("0")
+        self._srf = EngineeringLineEdit()
+        self._srf.setPlaceholderText(tr("blank = none"))
+        self._esr = EngineeringLineEdit()
+        self._esr.setText("0")
+        self._esl = EngineeringLineEdit()
+        self._esl.setText("0")
+        note = QLabel(
+            tr(
+                "Q uses each branch center/cutoff as its reference frequency. "
+                "The model is first-order; verify with measurements."
+            )
+        )
+        note.setWordWrap(True)
+        form = QFormLayout(self)
+        form.addRow(tr("Inductor Q"), self._q)
+        form.addRow(tr("Inductor DCR (Ohm)"), self._dcr)
+        form.addRow(tr("Inductor Cp (F)"), self._cp)
+        form.addRow(tr("Inductor SRF (Hz)"), self._srf)
+        form.addRow(tr("Capacitor ESR (Ohm)"), self._esr)
+        form.addRow(tr("Capacitor ESL (H)"), self._esl)
+        form.addRow(note)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def config(self) -> SystemParasiticsConfig:
+        q_text = self._q.text().strip()
+        srf_text = self._srf.text().strip()
+        return SystemParasiticsConfig(
+            inductor_q=float(q_text) if q_text else None,
+            inductor_dcr_ohm=parse_si(self._dcr.text()),
+            inductor_parallel_capacitance_f=parse_si(self._cp.text()),
+            inductor_srf_hz=parse_si(srf_text) if srf_text else None,
+            capacitor_esr_ohm=parse_si(self._esr.text()),
+            capacitor_esl_h=parse_si(self._esl.text()),
+        )
+
+    def accept(self) -> None:
+        try:
+            self.config()
+        except ValueError as exc:
+            QMessageBox.warning(self, tr("System parasitics"), str(exc))
+            return
+        super().accept()
+
+    @classmethod
+    def ask(cls, parent: QWidget | None = None) -> SystemParasiticsConfig | None:
+        dialog = cls(parent)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return dialog.config()
         return None
 
 
@@ -3143,6 +3216,12 @@ class DiplexerDialog(QDialog):
         for series in ESeries:
             self._snap_series.addItem(series.value, series.value)
         self._snap_info: SystemSnapResult | None = None
+        self._parasitics_config: SystemParasiticsConfig | None = None
+        self._parasitics_info: SystemParasiticsResult | None = None
+        self._parasitics_button = QPushButton(tr("Parasitics…"))
+        self._parasitics_button.clicked.connect(self._configure_parasitics)
+        self._parasitics_label = QLabel(tr("off"))
+        self._parasitics_label.setWordWrap(True)
         self._summary = QLabel(
             tr("Port 1 = common, port 2 = low band, port 3 = high band.")
         )
@@ -3339,6 +3418,12 @@ class DiplexerDialog(QDialog):
             )
         )
         form.addRow(tr("E-series snap"), self._snap_series)
+        parasitics_row = QWidget()
+        parasitics_layout = QHBoxLayout(parasitics_row)
+        parasitics_layout.setContentsMargins(0, 0, 0, 0)
+        parasitics_layout.addWidget(self._parasitics_button)
+        parasitics_layout.addWidget(self._parasitics_label, 1)
+        form.addRow(tr("Parasitics"), parasitics_row)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -3408,6 +3493,7 @@ class DiplexerDialog(QDialog):
         self._samples.setHorizontalHeaderLabels(headers)
         self._design = None
         self._snap_info = None
+        self._parasitics_info = None
         self._set_export_enabled(False)
         self._metrics.setRowCount(0)
         self._samples.setRowCount(0)
@@ -3430,6 +3516,15 @@ class DiplexerDialog(QDialog):
     def _update_order_enabled(self) -> None:
         is_duplexer = self._mode.currentData() == "duplexer"
         self._order.setEnabled(not (is_duplexer and self._auto_order.isChecked()))
+
+    def _configure_parasitics(self) -> None:
+        config = SystemParasiticsDialog.ask(self)
+        if config is None:
+            return
+        self._parasitics_config = config
+        self._parasitics_label.setText(_parasitics_text(config))
+        if self._design is not None:
+            self.design()
 
     def design(self) -> bool:
         try:
@@ -3528,6 +3623,14 @@ class DiplexerDialog(QDialog):
                 self._snap_info = snap_result
             else:
                 self._snap_info = None
+            if self._parasitics_config is not None:
+                parasitics_result = apply_system_parasitics(
+                    design, self._parasitics_config
+                )
+                design = parasitics_result.design
+                self._parasitics_info = parasitics_result
+            else:
+                self._parasitics_info = None
         except (
             DiplexerError,
             DuplexerError,
@@ -3536,6 +3639,7 @@ class DiplexerDialog(QDialog):
         ) as exc:
             self._design = None
             self._snap_info = None
+            self._parasitics_info = None
             self._set_export_enabled(False)
             self._clear_plot()
             self._clear_schematic()
@@ -3553,14 +3657,27 @@ class DiplexerDialog(QDialog):
                     pct=self._snap_info.max_delta_pct,
                 )
             )
+        if self._parasitics_info is not None:
+            self._branch_summary.setText(
+                self._branch_summary.text()
+                + " "
+                + tr(
+                    "Parasitics: {model}.",
+                    model=_parasitics_text(self._parasitics_info.config),
+                )
+            )
         self._update_plot(design)
         self._update_schematic(design)
         self._set_export_enabled(True)
-        self._status.setText(
-            tr("Design complete (E-series snapped).")
-            if self._snap_info is not None
-            else tr("Design complete.")
-        )
+        if self._snap_info is not None and self._parasitics_info is not None:
+            status = tr("Design complete (E-series snapped, parasitics).")
+        elif self._snap_info is not None:
+            status = tr("Design complete (E-series snapped).")
+        elif self._parasitics_info is not None:
+            status = tr("Design complete (parasitics).")
+        else:
+            status = tr("Design complete.")
+        self._status.setText(status)
         return True
 
     def export_build_sheet(
@@ -3580,6 +3697,12 @@ class DiplexerDialog(QDialog):
                 "Component values snapped to "
                 f"{self._snap_info.series.value} "
                 f"(max delta {self._snap_info.max_delta_pct:.2f}%)."
+            )
+        if self._parasitics_info is not None:
+            notes.append(
+                "Parasitics: "
+                + _parasitics_text(self._parasitics_info.config)
+                + "."
             )
         try:
             write_multiplexer_build_sheet(
@@ -4079,6 +4202,25 @@ class DiplexerDialog(QDialog):
             if not path.lower().endswith(".s2p"):
                 path += ".s2p"
             self.export_branch(branch, path)
+
+
+def _parasitics_text(config: SystemParasiticsConfig) -> str:
+    parts: list[str] = []
+    if config.inductor_q is not None:
+        parts.append(f"Q={config.inductor_q:g}")
+    if config.inductor_dcr_ohm > 0.0:
+        parts.append(f"DCR={format_engineering(config.inductor_dcr_ohm, 'Ohm')}")
+    if config.inductor_parallel_capacitance_f > 0.0:
+        parts.append(
+            f"Cp={format_engineering(config.inductor_parallel_capacitance_f, 'F')}"
+        )
+    if config.inductor_srf_hz is not None:
+        parts.append(f"SRF={format_engineering(config.inductor_srf_hz, 'Hz')}")
+    if config.capacitor_esr_ohm > 0.0:
+        parts.append(f"ESR={format_engineering(config.capacitor_esr_ohm, 'Ohm')}")
+    if config.capacitor_esl_h > 0.0:
+        parts.append(f"ESL={format_engineering(config.capacitor_esl_h, 'H')}")
+    return ", ".join(parts) if parts else "off"
 
 
 def _form_pair(

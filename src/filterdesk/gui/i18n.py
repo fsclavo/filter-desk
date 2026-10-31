@@ -1040,6 +1040,28 @@ _ES.update(
         "Snapped to {series} (max delta {pct:.2f}%).": (
             "Ajustado a {series} (delta máx {pct:.2f}%)."
         ),
+        "Parasitics": "Parasitarios",
+        "Parasitics…": "Parasitarios…",
+        "Parasitics: {model}.": "Parasitarios: {model}.",
+        "System parasitics": "Parasitarios del sistema",
+        "Inductor Q": "Q del inductor",
+        "Inductor DCR (Ohm)": "DCR del inductor (Ohm)",
+        "Inductor Cp (F)": "Cp del inductor (F)",
+        "Inductor SRF (Hz)": "SRF del inductor (Hz)",
+        "Capacitor ESR (Ohm)": "ESR del capacitor (Ohm)",
+        "Capacitor ESL (H)": "ESL del capacitor (H)",
+        "blank = ideal": "vacío = ideal",
+        "blank = none": "vacío = ninguno",
+        "off": "desactivado",
+        "Design complete (parasitics).": "Diseño completado (parasitarios).",
+        "Design complete (E-series snapped, parasitics).": (
+            "Diseño completado (serie E ajustada, parasitarios)."
+        ),
+        "Q uses each branch center/cutoff as its reference frequency. "
+        "The model is first-order; verify with measurements.": (
+            "La Q usa el centro/corte de cada rama como frecuencia de referencia. "
+            "El modelo es de primer orden; verifique con mediciones."
+        ),
         "Diplexer LPF+HPF": "Diplexer LPF+HPF",
         "&Diplexer LPF+HPF…": "&Diplexer LPF+HPF…",
         "Design an LPF+HPF diplexer.": "Diseñar un diplexer LPF+HPF.",

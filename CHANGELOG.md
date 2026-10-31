@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.54.0 — 2026-10-30
+
+### Added
+
+- **Parasitics…** in the system designer: finite inductor Q, DCR, Cp, SRF and
+  capacitor ESR/ESL with combined-network reanalysis.
+- `apply_system_parasitics` and `rebuild_system_design`; metrics, curves,
+  schematic and BOM stay on the same non-ideal circuits.
+- BOM notes record the applied parasitic assumptions.
+
 ## v0.53.0 — 2026-10-30
 
 ### Added

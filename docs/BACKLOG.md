@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.53.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.54.0 · **Released:**
 [v0.53.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.53.0) ·
 **Previous:**
 [v0.52.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.52.0) ·
-**Next:** v0.54.0 planning.
+**Next:** v0.54.0 release (system parasitics, pending CI/tag).
 
-**Verification:** local suite **1173 passed**, 4 skipped (ngspice unavailable); coverage **82.67 %**.
+**Verification:** local suite **1177 passed**, 4 skipped (ngspice unavailable); coverage **82.55 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41152576633
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41153275604
 
@@ -750,6 +750,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       Markdown/CSV/HTML export in the designer and CLI.
 - [x] **System E-series snap:** reanalyze branches after snap so metrics,
       schematic and BOM stay consistent (ADR-032).
+- [x] **System parasitics:** finite Q/DCR/Cp/SRF/ESR/ESL with combined
+      reanalysis and BOM consistency (ADR-033).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

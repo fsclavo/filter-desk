@@ -1028,12 +1028,20 @@ a duplexer miss its isolation target, the table shows **NOT met**; it is not
 hidden. Narrow-band BPF branches are sensitive: E24 can detune them severely, so
 use E48/E96 or no snap and check the recomputed metrics before exporting the BOM.
 
+**Parasitics…** applies finite-Q / parasitic models to every branch and
+reanalyzes the combined network. Available assumptions: inductor Q, DCR, parallel
+capacitance, SRF, capacitor ESR and ESL. Q uses each branch center (BPF) or
+cutoff (LP/HP) as its reference frequency. The model is global across branches
+and first-order: it is not a vendor component model, thermal simulation or
+high-power validation. As with snapping, the metrics, curves, schematic and BOM
+all use the same non-ideal circuits.
+
 **Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
 It includes the system metrics, one row per physical component with a leading
-**Branch** column, optional grouping, and the ideal-model assumptions. CSV always
+**Branch** column, optional grouping, and the model assumptions. CSV always
 starts with `branch,ref,qty,…` so duplicate refs in different branches remain
-unambiguous. Because the BOM uses the already-analyzed snapped circuits, its
-values match the displayed response.
+unambiguous. Because the BOM uses the already-analyzed snapped/parasitic
+circuits, its values match the displayed response.
 
 In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
 Isolation is the combined `|S32|` in each band; the dialog reports TX/RX
