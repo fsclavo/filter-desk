@@ -146,7 +146,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   TX/RX duplexer with isolation target and automatic order search, plus
   triplexer and configurable N-band multiplexers; combined metrics, magnitude
   plots, branch schematics, E-series snap and finite-Q/parasitic reanalysis,
-  `.sNp` export and a combined system BOM in the GUI and CLI.
+  `.sNp` export, a combined system BOM and `.fdsys.json` project save/open in
+  the GUI and CLI.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

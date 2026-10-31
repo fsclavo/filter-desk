@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.56.0 — 2026-10-30
+
+### Added
+
+- Versioned `.fdsys.json` system project with **Open system…** / **Save
+  system…** in the designer.
+- Persists bands, order/family, ripple/stopband, Z0, sweep, E-series and
+  parasitics; opening rebuilds circuits, metrics and plots.
+- Validated JSON schema with `format`/`version` and kind-specific checks.
+- ADR-034 documents the persistence boundary.
+
 ## v0.55.0 — 2026-10-30
 
 ### Added

@@ -1465,6 +1465,44 @@ def test_multiplexer_dialog_handles_four_bands(tmp_path: Path) -> None:
     assert app is not None
 
 
+def test_system_project_save_open_round_trip(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+    from filterdesk.services.multiplexer import MultiplexerDesign
+    from filterdesk.services.system_project import (
+        read_system_project,
+        write_system_project,
+    )
+
+    app = QApplication.instance() or QApplication([])
+    first = DiplexerDialog()
+    first._mode.setCurrentIndex(4)
+    first._add_band_row()
+    first._multiplexer_table.item(3, 0).setText("top")
+    first._multiplexer_table.item(3, 1).setText("35M")
+    first._multiplexer_table.item(3, 2).setText("500k")
+    first._f_start.setText("5M")
+    first._f_stop.setText("50M")
+    first._points.setValue(401)
+    path = tmp_path / "system.fdsys.json"
+    write_system_project(first._system_project(), path)
+    project = read_system_project(path)
+    assert project.kind == "multiplexer"
+    assert len(project.bands) == 4
+
+    second = DiplexerDialog()
+    second._apply_system_project(project)
+    assert second._mode.currentData() == "multiplexer"
+    assert second._multiplexer_table.rowCount() == 4
+    assert second.current_design() is not None
+    assert isinstance(second.current_design(), MultiplexerDesign)
+    assert second.current_design().network.n_ports == 5
+    first.close()
+    second.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

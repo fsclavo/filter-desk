@@ -36,3 +36,4 @@
 - [ADR-031](ADR-031-multiband-multiplexer.md) — multi-band BPF multiplexer/triplexer
 - [ADR-032](ADR-032-system-snap-reanalysis.md) — E-series snap with system reanalysis
 - [ADR-033](ADR-033-system-parasitics.md) — system finite-Q / parasitic reanalysis
+- [ADR-034](ADR-034-system-project-json.md) — versioned system project `.fdsys.json`

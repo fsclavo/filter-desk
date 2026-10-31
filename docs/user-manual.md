@@ -790,6 +790,33 @@ A versioned JSON document (`format_version: 2`; v1 still loads) with
 `limits`. It is written and read by the GUI and is lossless across a save/open
 cycle.
 
+### System project (`.fdsys.json`)
+
+The system designer stores its inputs as a versioned JSON object:
+
+```json
+{
+  "format": "filterdesk.system",
+  "version": 1,
+  "kind": "multiplexer",
+  "order": 5,
+  "family": "chebyshev_type_i",
+  "ripple_db": 0.1,
+  "z0_ohm": 50.0,
+  "sweep": {"f_start_hz": 5000000.0, "f_stop_hz": 50000000.0,
+            "n_points": 4001, "spacing": "logarithmic"},
+  "snap_series": "E24",
+  "parasitics": null,
+  "bands": [
+    {"label": "low", "center_hz": 14000000.0, "bandwidth_hz": 300000.0}
+  ]
+}
+```
+
+Supported kinds are `lp-hp`, `bp-bp`, `duplexer`, `triplexer` and
+`multiplexer`. Only configuration is stored; opening re-synthesizes and
+reanalyzes the design.
+
 ### Limits JSON (used with `--limits`)
 
 A JSON **array** of regions:
@@ -1051,6 +1078,11 @@ cutoff (LP/HP) as its reference frequency. The model is global across branches
 and first-order: it is not a vendor component model, thermal simulation or
 high-power validation. As with snapping, the metrics, curves, schematic and BOM
 all use the same non-ideal circuits.
+
+**Open system… / Save system…** persist the designer configuration as a
+`.fdsys.json` file: kind, bands, order/family, ripple/stopband, Z0, sweep,
+E-series and parasitics. Derived circuits, metrics and S-matrices are not stored;
+opening rebuilds them. This is separate from the single-filter project format.
 
 **Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
 It includes the system metrics, one row per physical component with a leading

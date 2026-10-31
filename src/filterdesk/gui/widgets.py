@@ -163,6 +163,13 @@ from filterdesk.services.system_parasitics import (
     SystemParasiticsResult,
     apply_system_parasitics,
 )
+from filterdesk.services.system_project import (
+    SystemBand,
+    SystemProject,
+    SystemProjectError,
+    read_system_project,
+    write_system_project,
+)
 from filterdesk.services.system_snap import (
     SystemSnapResult,
     snap_system_design,
@@ -3151,6 +3158,14 @@ class DiplexerDialog(QDialog):
         self._mode.addItem(tr("Duplexer TX/RX"), "duplexer")
         self._mode.addItem(tr("Triplexer (3 bands)"), "triplexer")
         self._mode.addItem(tr("Multiplexer (N bands)"), "multiplexer")
+        self._project_path = QLabel(tr("unsaved"))
+        self._project_path.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self._open_project_button = QPushButton(tr("Open system…"))
+        self._save_project_button = QPushButton(tr("Save system…"))
+        self._open_project_button.clicked.connect(self._open_system_project)
+        self._save_project_button.clicked.connect(self._save_system_project)
         self._low_cutoff = EngineeringLineEdit()
         self._low_cutoff.setText("30M")
         self._high_cutoff = EngineeringLineEdit()
@@ -3380,6 +3395,13 @@ class DiplexerDialog(QDialog):
         self._form = form
         form.setVerticalSpacing(6)
         form.addRow(tr("Type"), self._mode)
+        project_row = QWidget()
+        project_layout = QHBoxLayout(project_row)
+        project_layout.setContentsMargins(0, 0, 0, 0)
+        project_layout.addWidget(self._open_project_button)
+        project_layout.addWidget(self._save_project_button)
+        project_layout.addWidget(self._project_path, 1)
+        form.addRow(tr("System project"), project_row)
         self._lp_rows = (self._low_cutoff, self._high_cutoff)
         self._bp_rows = (
             self._low_center,
@@ -3475,6 +3497,200 @@ class DiplexerDialog(QDialog):
         DiplexerDesign | BandDiplexerDesign | DuplexerDesign | MultiplexerDesign | None
     ):
         return self._design
+
+    def _system_project(self) -> SystemProject:
+        mode = str(self._mode.currentData())
+        bands: tuple[SystemBand, ...] = ()
+        if mode == "bp-bp":
+            bands = (
+                SystemBand(
+                    "low",
+                    parse_si(self._low_center.text()),
+                    parse_si(self._low_bw.text()),
+                ),
+                SystemBand(
+                    "high",
+                    parse_si(self._high_center.text()),
+                    parse_si(self._high_bw.text()),
+                ),
+            )
+        elif mode == "triplexer":
+            bands = (
+                SystemBand(
+                    "low",
+                    parse_si(self._tri_low_center.text()),
+                    parse_si(self._tri_low_bw.text()),
+                ),
+                SystemBand(
+                    "mid",
+                    parse_si(self._tri_mid_center.text()),
+                    parse_si(self._tri_mid_bw.text()),
+                ),
+                SystemBand(
+                    "high",
+                    parse_si(self._tri_high_center.text()),
+                    parse_si(self._tri_high_bw.text()),
+                ),
+            )
+        elif mode == "multiplexer":
+            bands = tuple(
+                SystemBand(band.label, band.center_hz, band.bandwidth_hz)
+                for band in self._multiplexer_bands()
+            )
+        snap_data = self._snap_series.currentData()
+        return SystemProject(
+            kind=mode,
+            order=int(self._order.value()),
+            family=ApproximationFamily(str(self._family.currentData())),
+            ripple_db=_optional_float(self._ripple.text()),
+            stopband_attenuation_db=_optional_float(self._stopband.text()),
+            z0_ohm=parse_si(self._z0.text()),
+            sweep=SweepConfig(
+                f_start_hz=parse_si(self._f_start.text()),
+                f_stop_hz=parse_si(self._f_stop.text()),
+                n_points=int(self._points.value()),
+                spacing=SweepSpacing.LOGARITHMIC,
+            ),
+            snap_series=ESeries(str(snap_data)) if snap_data else None,
+            parasitics=self._parasitics_config,
+            bands=bands,
+            low_cutoff_hz=(
+                parse_si(self._low_cutoff.text()) if mode == "lp-hp" else None
+            ),
+            high_cutoff_hz=(
+                parse_si(self._high_cutoff.text()) if mode == "lp-hp" else None
+            ),
+            tx_center_hz=(
+                parse_si(self._tx_center.text()) if mode == "duplexer" else None
+            ),
+            tx_bandwidth_hz=(
+                parse_si(self._tx_bw.text()) if mode == "duplexer" else None
+            ),
+            rx_center_hz=(
+                parse_si(self._rx_center.text()) if mode == "duplexer" else None
+            ),
+            rx_bandwidth_hz=(
+                parse_si(self._rx_bw.text()) if mode == "duplexer" else None
+            ),
+            min_isolation_db=parse_si(self._min_isolation.text()),
+            max_insertion_loss_db=parse_si(self._max_il.text()),
+            auto_order=self._auto_order.isChecked(),
+            max_order=int(self._max_order.value()),
+        )
+
+    def _apply_system_project(self, project: SystemProject) -> None:
+        index = self._mode.findData(project.kind)
+        if index < 0:
+            raise SystemProjectError(f"unsupported kind: {project.kind}")
+        self._mode.setCurrentIndex(index)
+        self._order.setValue(project.order)
+        family_index = self._family.findData(project.family.value)
+        if family_index >= 0:
+            self._family.setCurrentIndex(family_index)
+        self._ripple.setText(
+            "" if project.ripple_db is None else f"{project.ripple_db:g}"
+        )
+        self._stopband.setText(
+            ""
+            if project.stopband_attenuation_db is None
+            else f"{project.stopband_attenuation_db:g}"
+        )
+        self._z0.setText(f"{project.z0_ohm:g}")
+        self._f_start.setText(f"{project.sweep.f_start_hz:g}")
+        self._f_stop.setText(f"{project.sweep.f_stop_hz:g}")
+        self._points.setValue(project.sweep.n_points)
+        snap_index = self._snap_series.findData(
+            None if project.snap_series is None else project.snap_series.value
+        )
+        self._snap_series.setCurrentIndex(max(snap_index, 0))
+        self._parasitics_config = project.parasitics
+        self._parasitics_label.setText(
+            tr("off")
+            if project.parasitics is None
+            else _parasitics_text(project.parasitics)
+        )
+        if project.kind == "lp-hp":
+            assert project.low_cutoff_hz is not None
+            assert project.high_cutoff_hz is not None
+            self._low_cutoff.setText(f"{project.low_cutoff_hz:g}")
+            self._high_cutoff.setText(f"{project.high_cutoff_hz:g}")
+        elif project.kind == "bp-bp":
+            self._low_center.setText(f"{project.bands[0].center_hz:g}")
+            self._low_bw.setText(f"{project.bands[0].bandwidth_hz:g}")
+            self._high_center.setText(f"{project.bands[1].center_hz:g}")
+            self._high_bw.setText(f"{project.bands[1].bandwidth_hz:g}")
+        elif project.kind == "triplexer":
+            self._tri_low_center.setText(f"{project.bands[0].center_hz:g}")
+            self._tri_low_bw.setText(f"{project.bands[0].bandwidth_hz:g}")
+            self._tri_mid_center.setText(f"{project.bands[1].center_hz:g}")
+            self._tri_mid_bw.setText(f"{project.bands[1].bandwidth_hz:g}")
+            self._tri_high_center.setText(f"{project.bands[2].center_hz:g}")
+            self._tri_high_bw.setText(f"{project.bands[2].bandwidth_hz:g}")
+        elif project.kind == "multiplexer":
+            self._multiplexer_table.setRowCount(len(project.bands))
+            for row, band in enumerate(project.bands):
+                self._multiplexer_table.setItem(
+                    row, 0, QTableWidgetItem(band.label)
+                )
+                self._multiplexer_table.setItem(
+                    row, 1, QTableWidgetItem(f"{band.center_hz:g}")
+                )
+                self._multiplexer_table.setItem(
+                    row, 2, QTableWidgetItem(f"{band.bandwidth_hz:g}")
+                )
+        elif project.kind == "duplexer":
+            assert project.tx_center_hz is not None
+            assert project.tx_bandwidth_hz is not None
+            assert project.rx_center_hz is not None
+            assert project.rx_bandwidth_hz is not None
+            self._tx_center.setText(f"{project.tx_center_hz:g}")
+            self._tx_bw.setText(f"{project.tx_bandwidth_hz:g}")
+            self._rx_center.setText(f"{project.rx_center_hz:g}")
+            self._rx_bw.setText(f"{project.rx_bandwidth_hz:g}")
+            self._min_isolation.setText(f"{project.min_isolation_db:g}")
+            self._max_il.setText(f"{project.max_insertion_loss_db:g}")
+            self._auto_order.setChecked(project.auto_order)
+            self._max_order.setValue(project.max_order)
+        self._on_mode_changed()
+        self.design()
+
+    def _save_system_project(self) -> None:
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Save system project"),
+            "system.fdsys.json",
+            "FilterDesk system (*.fdsys.json);;JSON (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith((".fdsys.json", ".json")):
+            path += ".fdsys.json"
+        try:
+            project = self._system_project()
+            write_system_project(project, path)
+        except (SystemProjectError, OSError, ValueError) as exc:
+            QMessageBox.critical(self, tr("System project"), str(exc))
+            return
+        self._project_path.setText(path)
+        self._status.setText(tr("Wrote {path}", path=path))
+
+    def _open_system_project(self) -> None:
+        path, _selected = QFileDialog.getOpenFileName(
+            self,
+            tr("Open system project"),
+            "",
+            "FilterDesk system (*.fdsys.json);;JSON (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            project = read_system_project(path)
+            self._apply_system_project(project)
+        except (SystemProjectError, OSError, ValueError) as exc:
+            QMessageBox.critical(self, tr("System project"), str(exc))
+            return
+        self._project_path.setText(path)
+        self._status.setText(tr("Opened {path}", path=path))
 
     def _add_band_row(self) -> None:
         row = self._multiplexer_table.rowCount()
