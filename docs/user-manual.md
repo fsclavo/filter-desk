@@ -1100,6 +1100,14 @@ the combined network. The table ranks components by impact and shows the change
 in worst isolation (duplexer), insertion loss and out-of-band transmission. It is
 deterministic, not a Monte Carlo/yield analysis.
 
+**Monte Carlo…** draws random L/C/R tolerances (uniform ±tol or normal with
+sigma = tol/100) and estimates yield. For duplexers, a trial passes when worst
+isolation and maximum insertion loss meet their targets. For diplexers and
+multiplexers, it passes when maximum insertion loss and worst out-of-band
+transmission meet the configured targets. The report includes yield, pass/fail
+counts and min/percentile/max statistics. Default is 200 trials; large runs can
+take seconds. It does not include thermal, power, EM or vendor model data.
+
 **Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
 It includes the system metrics, one row per physical component with a leading
 **Branch** column, optional grouping, and the model assumptions. CSV always

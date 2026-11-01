@@ -1571,6 +1571,28 @@ def test_system_sensitivity_dialog_runs() -> None:
     assert app is not None
 
 
+def test_system_montecarlo_dialog_runs() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog, SystemMonteCarloDialog
+
+    app = QApplication.instance() or QApplication([])
+    designer = DiplexerDialog()
+    designer._points.setValue(201)
+    assert designer.design()
+    design = designer.current_design()
+    assert design is not None
+    dialog = SystemMonteCarloDialog(design)
+    dialog._trials.setValue(10)
+    dialog._tolerance.setValue(2.0)
+    dialog.run()
+    assert dialog._table.rowCount() >= 8
+    assert "trials" in dialog._status.text()
+    dialog.close()
+    designer.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

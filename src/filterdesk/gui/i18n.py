@@ -1049,6 +1049,30 @@ _ES.update(
         "System project": "Proyecto de sistema",
         "Component library": "Biblioteca de componentes",
         "System sensitivity": "Sensibilidad del sistema",
+        "System Monte Carlo": "Monte Carlo del sistema",
+        "Monte Carlo": "Monte Carlo",
+        "Monte Carlo…": "Monte Carlo…",
+        "Uniform": "Uniforme",
+        "Normal": "Normal",
+        "blank = random": "vacío = aleatorio",
+        "Max insertion loss (dB)": "Pérdida de inserción máxima (dB)",
+        "Max out-of-band (dB)": "Fuera de banda máxima (dB)",
+        "Yield": "Rendimiento",
+        "Passes": "Aprobados",
+        "Isolation min / p05 / p50": "Aislamiento mín. / p05 / p50",
+        "Max insertion loss / p95": "Pérdida de inserción máx. / p95",
+        "Worst out-of-band / p95": "Peor fuera de banda / p95",
+        "Failures isolation / IL / OOB": "Fallos aislamiento / IL / OOB",
+        "Isolation target": "Objetivo de aislamiento",
+        "Max insertion target": "Objetivo de inserción máxima",
+        "Out-of-band target": "Objetivo fuera de banda",
+        "Monte-Carlo uses the current design and tolerance model. "
+        "It does not include thermal, power, EM or vendor model data. "
+        "Large trials can take several seconds.": (
+            "Monte Carlo usa el diseño actual y el modelo de tolerancias. "
+            "No incluye térmica, potencia, EM ni datos de modelos de fabricante. "
+            "Muchas pruebas pueden tardar varios segundos."
+        ),
         "Sensitivity": "Sensibilidad",
         "Sensitivity…": "Sensibilidad…",
         "Branch": "Rama",

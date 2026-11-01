@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.59.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.60.0 · **Released:**
 [v0.59.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.59.0) ·
 **Previous:**
 [v0.58.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.58.0) ·
-**Next:** v0.60.0 planning.
+**Next:** v0.60.0 release (system Monte Carlo/yield, pending CI/tag).
 
-**Verification:** local suite **1195 passed**, 4 skipped (ngspice unavailable); coverage **82.11 %**.
+**Verification:** local suite **1200 passed**, 4 skipped (ngspice unavailable); coverage **82.24 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41266293041
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41266766081
 
@@ -847,6 +847,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       import/export and source/provenance notes (ADR-035).
 - [x] **System sensitivity:** deterministic ±delta ranking of isolation/IL/OOB
       impact in GUI and CLI (ADR-036).
+- [x] **System Monte Carlo:** tolerance/yield with uniform/normal draws and
+      isolation/IL/OOB criteria (ADR-037).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

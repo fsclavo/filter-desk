@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.60.0 — 2026-10-30
+
+### Added
+
+- **Monte Carlo…** in the system designer: uniform/normal L/C/R tolerances,
+  configurable trials, seed and yield criteria.
+- `analyze_system_montecarlo` reporting yield, pass/fail counts and
+  isolation/insertion/out-of-band statistics.
+- ADR-037 records the tolerance-model scope.
+
 ## v0.59.0 — 2026-10-30
 
 ### Added

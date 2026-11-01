@@ -165,6 +165,11 @@ from filterdesk.services.multiplexer import (
     design_multiplexer,
 )
 from filterdesk.services.report import system_report
+from filterdesk.services.system_montecarlo import (
+    SystemMonteCarloConfig,
+    SystemMonteCarloError,
+    analyze_system_montecarlo,
+)
 from filterdesk.services.system_parasitics import (
     SystemParasiticsConfig,
     SystemParasiticsResult,
@@ -1498,6 +1503,133 @@ class ComponentLibraryDialog(QDialog):
             return
         QApplication.clipboard().setText(part.mpn)
         self._status.setText(tr("Copied {mpn}", mpn=part.mpn))
+
+
+class SystemMonteCarloDialog(QDialog):
+    """Monte-Carlo tolerance / yield analysis for a system design."""
+
+    def __init__(self, design: SystemDesign, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("System Monte Carlo"))
+        self.setMinimumWidth(760)
+        self._design = design
+        self._trials = QSpinBox()
+        self._trials.setRange(10, 2000)
+        self._trials.setValue(200)
+        self._tolerance = QDoubleSpinBox()
+        self._tolerance.setRange(0.1, 20.0)
+        self._tolerance.setDecimals(1)
+        self._tolerance.setValue(2.0)
+        self._tolerance.setSuffix(" %")
+        self._distribution = QComboBox()
+        self._distribution.addItem(tr("Uniform"), ToleranceDistribution.UNIFORM.value)
+        self._distribution.addItem(tr("Normal"), ToleranceDistribution.NORMAL.value)
+        self._seed = QLineEdit()
+        self._seed.setPlaceholderText(tr("blank = random"))
+        self._max_il = EngineeringLineEdit()
+        self._max_il.setText("3")
+        self._max_oob = EngineeringLineEdit()
+        self._max_oob.setText("-15")
+        self._table = QTableWidget(0, 2)
+        self._table.setHorizontalHeaderLabels([tr("Metric"), tr("Value")])
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        self._note = QLabel(
+            tr(
+                "Monte-Carlo uses the current design and tolerance model. "
+                "It does not include thermal, power, EM or vendor model data. "
+                "Large trials can take several seconds."
+            )
+        )
+        self._note.setWordWrap(True)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        run_button = buttons.addButton(
+            tr("Run"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        run_button.clicked.connect(self.run)
+        form = QFormLayout(self)
+        form.addRow(
+            _form_pair(tr("Trials"), self._trials, tr("Tolerance"), self._tolerance)
+        )
+        form.addRow(
+            _form_pair(
+                tr("Distribution"),
+                self._distribution,
+                tr("Seed"),
+                self._seed,
+            )
+        )
+        form.addRow(
+            _form_pair(
+                tr("Max insertion loss (dB)"),
+                self._max_il,
+                tr("Max out-of-band (dB)"),
+                self._max_oob,
+            )
+        )
+        form.addRow(self._table)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+
+    def run(self) -> None:
+        seed_text = self._seed.text().strip()
+        try:
+            config = SystemMonteCarloConfig(
+                n_trials=int(self._trials.value()),
+                tolerance_pct=self._tolerance.value(),
+                distribution=ToleranceDistribution(
+                    str(self._distribution.currentData())
+                ),
+                seed=int(seed_text) if seed_text else None,
+                max_insertion_loss_db=parse_si(self._max_il.text()),
+                max_out_of_band_db=parse_si(self._max_oob.text()),
+            )
+            result = analyze_system_montecarlo(self._design, config)
+        except (SystemMonteCarloError, ValueError) as exc:
+            self._status.setText(str(exc))
+            return
+        rows = [
+            (tr("Trials"), str(result.n_trials)),
+            (tr("Yield"), f"{result.yield_fraction * 100:.1f}%"),
+            (tr("Passes"), str(result.passes)),
+            (tr("Isolation min / p05 / p50"), _mc_triplet(
+                result.isolation_min_db,
+                result.isolation_p05_db,
+                result.isolation_p50_db,
+            )),
+            (tr("Max insertion loss / p95"), _mc_pair(
+                result.insertion_max_db, result.insertion_p95_db
+            )),
+            (tr("Worst out-of-band / p95"), _mc_pair(
+                result.out_of_band_max_db, result.out_of_band_p95_db
+            )),
+            (tr("Failures isolation / IL / OOB"), (
+                f"{result.isolation_failures} / "
+                f"{result.insertion_failures} / "
+                f"{result.out_of_band_failures}"
+            )),
+            (tr("Isolation target"), _mc_value(result.isolation_target_db)),
+            (tr("Max insertion target"), f"{result.insertion_target_db:.2f} dB"),
+            (tr("Out-of-band target"), _mc_value(result.out_of_band_target_db)),
+        ]
+        self._table.setUpdatesEnabled(False)
+        try:
+            self._table.setRowCount(len(rows))
+            for row, (label, value) in enumerate(rows):
+                self._table.setItem(row, 0, QTableWidgetItem(label))
+                self._table.setItem(row, 1, QTableWidgetItem(value))
+        finally:
+            self._table.setUpdatesEnabled(True)
+        self._table.resizeRowsToContents()
+        self._status.setText(result.summary())
 
 
 class SystemSensitivityDialog(QDialog):
@@ -3772,6 +3904,10 @@ class DiplexerDialog(QDialog):
         self._sensitivity_button.clicked.connect(self._run_sensitivity)
         self._sensitivity_button.setEnabled(False)
         form.addRow(tr("Sensitivity"), self._sensitivity_button)
+        self._montecarlo_button = QPushButton(tr("Monte Carlo…"))
+        self._montecarlo_button.clicked.connect(self._run_system_montecarlo)
+        self._montecarlo_button.setEnabled(False)
+        form.addRow(tr("Monte Carlo"), self._montecarlo_button)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -4102,6 +4238,11 @@ class DiplexerDialog(QDialog):
     def _update_order_enabled(self) -> None:
         is_duplexer = self._mode.currentData() == "duplexer"
         self._order.setEnabled(not (is_duplexer and self._auto_order.isChecked()))
+
+    def _run_system_montecarlo(self) -> None:
+        if self._design is None:
+            return
+        SystemMonteCarloDialog(self._design, self).exec()
 
     def _run_sensitivity(self) -> None:
         if self._design is None:
@@ -4773,6 +4914,7 @@ class DiplexerDialog(QDialog):
             self._export_high_button,
             self._export_schematic_button,
             self._sensitivity_button,
+            self._montecarlo_button,
         ):
             button.setEnabled(enabled)
 
@@ -4812,6 +4954,24 @@ class DiplexerDialog(QDialog):
             if not path.lower().endswith(".s2p"):
                 path += ".s2p"
             self.export_branch(branch, path)
+
+
+def _mc_value(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f} dB"
+
+
+def _mc_pair(first: float | None, second: float | None) -> str:
+    if first is None or second is None:
+        return "n/a"
+    return f"{first:.2f} / {second:.2f} dB"
+
+
+def _mc_triplet(
+    first: float | None, second: float | None, third: float | None
+) -> str:
+    if first is None or second is None or third is None:
+        return "n/a"
+    return f"{first:.2f} / {second:.2f} / {third:.2f} dB"
 
 
 def _delta_text(value: float | None) -> str:
