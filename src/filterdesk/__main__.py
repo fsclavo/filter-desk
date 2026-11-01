@@ -44,6 +44,7 @@ from filterdesk.analysis.stress import (
 )
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
+    STARTER_PARTS,
     AirCoilError,
     AttenuatorError,
     AttenuatorKind,
@@ -51,6 +52,7 @@ from filterdesk.components_std import (
     BalunKind,
     CoaxStubError,
     CoaxStubKind,
+    ComponentLibraryError,
     ESeries,
     MatchingError,
     MatchingTopology,
@@ -77,7 +79,10 @@ from filterdesk.components_std import (
     list_cores,
     make_custom_core,
     nonidealize_circuit,
+    read_component_library,
+    search_parts,
     snap_circuit,
+    write_component_library,
 )
 from filterdesk.domain.circuit import (
     IdealBruneLC,
@@ -966,6 +971,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Emit machine-readable JSON",
     )
+
+    components = sub.add_parser(
+        "components",
+        help="List/search the curated component catalog or an imported library",
+    )
+    components.add_argument(
+        "--kind", choices=["capacitor", "inductor"], default=None
+    )
+    components.add_argument("--search", default="")
+    components.add_argument("--library", type=Path, default=None)
+    components.add_argument("--export", type=Path, default=None)
+    components.add_argument("--json", action="store_true")
 
     tsinfo = sub.add_parser(
         "touchstone-info",
@@ -4091,6 +4108,62 @@ def main(argv: list[str] | None = None) -> int:
         except (MultiportError, TouchstoneError, OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
+        return 0
+
+    if args.command == "components":
+        try:
+            catalog_parts = (
+                read_component_library(args.library)
+                if args.library is not None
+                else STARTER_PARTS
+            )
+            if args.export is not None:
+                write_component_library(catalog_parts, args.export)
+                print(f"Wrote {args.export}", file=sys.stderr)
+            selected = search_parts(
+                catalog_parts, kind=args.kind, query=str(args.search)
+            )
+        except (ComponentLibraryError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "library": None if args.library is None else str(args.library),
+                        "count": len(selected),
+                        "parts": [
+                            {
+                                "id": part.id,
+                                "manufacturer": part.manufacturer,
+                                "mpn": part.mpn,
+                                "kind": part.kind,
+                                "value_si": part.value_si,
+                                "value": part.value_text,
+                                "package": part.package,
+                                "tolerance_pct": part.tolerance_pct,
+                                "voltage_v": part.voltage_v,
+                                "current_a": part.current_a,
+                                "dcr_ohm": part.dcr_ohm,
+                                "srf_hz": part.srf_hz,
+                                "q_min": part.q_min,
+                                "source": part.source,
+                                "notes": part.notes,
+                            }
+                            for part in selected
+                        ],
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            for part in selected:
+                print(
+                    f"{part.kind:10s} {part.value_text:10s} "
+                    f"{part.mpn:28s} {part.manufacturer:10s} "
+                    f"{part.package:6s}"
+                )
+            print(f"{len(selected)} part(s)", file=sys.stderr)
         return 0
 
     if args.command == "touchstone-info":

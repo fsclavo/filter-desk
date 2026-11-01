@@ -1047,6 +1047,45 @@ _ES.update(
         "Parasitics: {model}.": "Parasitarios: {model}.",
         "System parasitics": "Parasitarios del sistema",
         "System project": "Proyecto de sistema",
+        "Component library": "Biblioteca de componentes",
+        "Component &library…": "&Biblioteca de componentes…",
+        "Browse real component MPNs and catalog data.": (
+            "Explorar MPN reales y datos de catálogo de componentes."
+        ),
+        "All": "Todos",
+        "Capacitor": "Capacitor",
+        "Inductor": "Inductor",
+        "Kind": "Tipo",
+        "MPN": "MPN",
+        "Manufacturer": "Fabricante",
+        "Value": "Valor",
+        "Tol": "Tol",
+        "Package": "Encapsulado",
+        "Tolerance": "Tolerancia",
+        "Voltage": "Tensión",
+        "Current": "Corriente",
+        "DCR": "DCR",
+        "SRF": "SRF",
+        "Q min": "Q mín.",
+        "Source": "Fuente",
+        "Notes": "Notas",
+        "Search": "Buscar",
+        "MPN, value, package…": "MPN, valor, encapsulado…",
+        "Copy MPN": "Copiar MPN",
+        "Copied {mpn}": "Copiado {mpn}",
+        "Load library…": "Cargar biblioteca…",
+        "Export library…": "Exportar biblioteca…",
+        "Load component library": "Cargar biblioteca de componentes",
+        "Export component library": "Exportar biblioteca de componentes",
+        "Loaded {path}": "Cargada {path}",
+        "No parts match the filter.": "Ninguna parte coincide con el filtro.",
+        "Catalog-level data only; verify the current manufacturer "
+        "datasheet before ordering. No vendor SPICE/model data is "
+        "redistributed.": (
+            "Datos de catálogo únicamente; verifique el datasheet vigente del "
+            "fabricante antes de comprar. No se redistribuyen modelos SPICE ni "
+            "datos de fabricante."
+        ),
         "Open system…": "Abrir sistema…",
         "Save system…": "Guardar sistema…",
         "Open system project": "Abrir proyecto de sistema",

@@ -68,6 +68,7 @@ projects**. A good first path is:
 | Analyze a measured 4-port balun | **Tools → 4-port mixed-mode…** |
 | Combine low/high bands into one antenna port | **Tools → Diplexer / multiplexer designer…** |
 | Share an antenna between TX and RX | **Tools → Diplexer / multiplexer designer…** → Duplexer TX/RX |
+| Look up a real capacitor/inductor MPN | **Tools → Component library…** |
 | Combine three bands into one port | **Tools → Diplexer / multiplexer designer…** → Triplexer (3 bands) |
 | Toroid or air-core coil | **Tools → Coil calculator…** |
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
@@ -352,7 +353,8 @@ specification edits require an explicit **Synthesize**.
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
 | **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
-| **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or 3-band triplexer; combined metrics and samples, `.s3p`/`.s4p` plus optional branch `.s2p` exports |
+| **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or N-band multiplexer; combined metrics, plots, schematics, BOM and `.sNp` exports |
+| **Component library** | **Tools → Component library…** | curated real MPNs, filter/search, import/export JSON and copy MPN; catalog-only, no vendor models |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -491,8 +493,8 @@ command's options.
 ```
 filterdesk {synthesize,analyze,gui,bands,attenuator,match,snap,montecarlo,
             optimize,to-csv,estimate-order,touchstone-info,network,diplexer,
-            band-diplexer,duplexer,triplexer,multiplexer,mixed-mode,
-            compare} ...
+            band-diplexer,duplexer,triplexer,multiplexer,components,
+            mixed-mode,compare} ...
 ```
 
 Global options: `-h/--help`, `--version`.
@@ -662,6 +664,13 @@ Most commands accept `--json` for machine-readable output.
   `--bom-group` for the combined system BOM. In these system commands
   `--bom-series` snaps the branches and reanalyzes the combined network, so the
   exported `.s3p`/`.s4p`, metrics and BOM stay consistent.
+- **`components`** — list/search the curated component catalog. Options:
+  `--kind {capacitor,inductor}`, `--search TEXT`, `--library FILE`,
+  `--export FILE`, `--json`.
+  ```bash
+  filterdesk components --kind capacitor --search 100pF
+  filterdesk components --export my_components.json --json
+  ```
 - **`touchstone-info`** — summarize a Touchstone file.
 - **`network`** — operate on any `.s1p`/`.s2p`/`.sNp` network:
   - `network info FILE [--json]` — ports, points, range, reference impedance
@@ -1112,6 +1121,20 @@ branches. It reports each band's insertion loss, worst out-of-band transmission
 to the other outputs and input return loss, plus the low/mid and mid/high
 crossovers. Adjacent passbands must not overlap and the sweep must cover all
 three. The triplexer is available in the GUI and as `filterdesk triplexer`.
+
+### Component library
+
+**Tools → Component library…** (`filterdesk components`) browses a curated
+catalog of real manufacturer part numbers. The starter catalog contains Murata
+C0G 0603 capacitors and Coilcraft 0603CS inductors with catalog-level values,
+package, tolerance, DCR/SRF/Q and source links. Use **Load library…** /
+**Export library…** for your own versioned `filterdesk.components` JSON.
+
+The catalog is intentionally **not** a vendor model database: ESR/ESL/SRF/Q
+fields that are not directly available remain unset, and no vendor SPICE or
+model data is redistributed. Verify the current datasheet before ordering. This
+v1 does not automatically replace circuit values or assign parts to BOM rows;
+it is a lookup/selection tool.
 
 ### Microstrip / distributed calculators
 

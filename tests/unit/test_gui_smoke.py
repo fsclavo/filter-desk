@@ -485,6 +485,7 @@ def test_tools_menu_holds_calculators() -> None:
         "Coaxial stub notch",
         "4-port mixed-mode",
         "Diplexer / multiplexer designer",
+        "Component library",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)
@@ -1521,6 +1522,29 @@ def test_schematic_image_export(tmp_path: Path) -> None:
     assert png.read_bytes().startswith(b"\x89PNG")
     assert b"<svg" in svg.read_bytes()
     assert pdf.read_bytes().startswith(b"%PDF")
+    dialog.close()
+    assert app is not None
+
+
+def test_component_library_dialog_filters_catalog() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import ComponentLibraryDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = ComponentLibraryDialog()
+    assert dialog._table.rowCount() >= 10
+    dialog._kind.setCurrentIndex(1)  # capacitor
+    assert dialog._table.rowCount() >= 5
+    dialog._search.setText("100pF")
+    assert dialog._table.rowCount() == 1
+    part = dialog.current_part()
+    assert part is not None
+    assert part.mpn == "GRM1885C1H101JA01D"
+    dialog._search.clear()
+    dialog._kind.setCurrentIndex(2)  # inductor
+    assert dialog._table.rowCount() >= 5
+    assert dialog.current_part() is not None
     dialog.close()
     assert app is not None
 

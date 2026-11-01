@@ -99,6 +99,7 @@ from filterdesk.gui.widgets import (
     BuildSheetDialog,
     CoaxStubDialog,
     CoilCalculatorDialog,
+    ComponentLibraryDialog,
     ConfidenceDialog,
     DesignSweepDialog,
     DesignSweepResultDialog,
@@ -600,6 +601,9 @@ class MainWindow(QMainWindow):
         act_diplexer = QAction(tr("&Diplexer / multiplexer designer…"), self)
         act_diplexer.triggered.connect(self._run_diplexer)
         tools_menu.addAction(act_diplexer)
+        act_library = QAction(tr("Component &library…"), self)
+        act_library.triggered.connect(self._run_component_library)
+        tools_menu.addAction(act_library)
 
         help_menu = self.menuBar().addMenu(tr("&Help"))
         act_about = QAction(tr("&About FilterDesk"), self)
@@ -671,6 +675,7 @@ class MainWindow(QMainWindow):
             act_coax: tr("Design a shunt coax stub notch."),
             act_four_port: tr("Import an .s4p and inspect mixed-mode S data."),
             act_diplexer: tr("Design a diplexer, TX/RX duplexer or triplexer."),
+            act_library: tr("Browse real component MPNs and catalog data."),
             act_docs: tr("Open the user manual in a browser."),
             act_confidence: tr("Inspect model validation and confidence levels."),
             act_about: tr("Show version and license information."),
@@ -1222,6 +1227,9 @@ class MainWindow(QMainWindow):
 
     def _run_diplexer(self) -> None:
         DiplexerDialog(self).exec()
+
+    def _run_component_library(self) -> None:
+        ComponentLibraryDialog(self).exec()
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()

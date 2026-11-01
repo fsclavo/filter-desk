@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.57.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.58.0 · **Released:**
 [v0.57.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.57.0) ·
 **Previous:**
 [v0.56.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.56.0) ·
-**Next:** v0.58.0 planning.
+**Next:** v0.58.0 release (curated component library, pending CI/tag).
 
-**Verification:** local suite **1184 passed**, 4 skipped (ngspice unavailable); coverage **82.28 %**.
+**Verification:** local suite **1190 passed**, 4 skipped (ngspice unavailable); coverage **82.17 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41252736380
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41253462045
 
@@ -815,6 +815,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       configuration-only storage (ADR-034).
 - [x] **Schematic image export:** current branch to PNG/SVG/PDF with a
       printable light style.
+- [x] **Component catalog v1:** real MPN starter set, GUI/CLI search, JSON
+      import/export and source/provenance notes (ADR-035).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

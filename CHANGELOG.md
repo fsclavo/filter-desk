@@ -3,6 +3,18 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.58.0 — 2026-10-30
+
+### Added
+
+- Curated component catalog of real Murata C0G 0603 capacitors and Coilcraft
+  0603CS inductors with catalog-level values and source links.
+- **Tools → Component library…** browser with kind/search filters, details and
+  copy-MPN action.
+- Versioned `filterdesk.components` JSON import/export and `filterdesk
+  components` CLI.
+- ADR-035 records the catalog-only boundary and data provenance.
+
 ## v0.57.0 — 2026-10-30
 
 ### Added

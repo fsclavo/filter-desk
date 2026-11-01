@@ -36,6 +36,17 @@ from filterdesk.components_std.e_series import (
     e_series_values,
     nearest_e_series,
 )
+from filterdesk.components_std.library import (
+    STARTER_PARTS,
+    ComponentLibraryError,
+    LibraryPart,
+    library_from_mapping,
+    library_to_mapping,
+    nearest_part,
+    read_component_library,
+    search_parts,
+    write_component_library,
+)
 from filterdesk.components_std.matching import (
     MatchingDesign,
     MatchingElement,
@@ -129,6 +140,9 @@ __all__ = [
     "StubKind",
     "Substrate",
     "SnapEntry",
+    "ComponentLibraryError",
+    "LibraryPart",
+    "STARTER_PARTS",
     "SnapReport",
     "SnapStrategy",
     "ToroidCore",
@@ -173,6 +187,12 @@ __all__ = [
     "nearest_e_series",
     "nonidealize_circuit",
     "set_element_parasitics",
+    "library_from_mapping",
+    "library_to_mapping",
+    "nearest_part",
+    "read_component_library",
+    "search_parts",
     "snap_circuit",
+    "write_component_library",
     "turns_for_inductance",
 ]

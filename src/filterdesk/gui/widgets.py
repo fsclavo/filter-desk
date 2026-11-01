@@ -45,6 +45,7 @@ from filterdesk.analysis.sensitivity import SensitivityReport
 from filterdesk.analysis.types import AnalysisResult, SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     COAX_CABLES,
+    STARTER_PARTS,
     AirCoilError,
     AttenuatorDesign,
     AttenuatorError,
@@ -57,7 +58,9 @@ from filterdesk.components_std import (
     CoaxStubError,
     CoaxStubKind,
     CoaxStubResponse,
+    ComponentLibraryError,
     ESeries,
+    LibraryPart,
     MatchingDesign,
     MatchingError,
     MatchingTopology,
@@ -73,6 +76,9 @@ from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
     list_cores,
     list_substrates,
+    read_component_library,
+    search_parts,
+    write_component_library,
 )
 from filterdesk.components_std.air_coil import AirCoilDesign, awg_for_diameter_mm
 from filterdesk.components_std.microstrip import (
@@ -1297,6 +1303,195 @@ class BuildSheetGroupDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog._group.isChecked()
         return None
+
+
+class ComponentLibraryDialog(QDialog):
+    """Browse the curated component catalog or an imported library."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Component library"))
+        self.setMinimumWidth(860)
+        self._parts = STARTER_PARTS
+        self._kind = QComboBox()
+        self._kind.addItem(tr("All"), None)
+        self._kind.addItem(tr("Capacitor"), "capacitor")
+        self._kind.addItem(tr("Inductor"), "inductor")
+        self._search = QLineEdit()
+        self._search.setPlaceholderText(tr("MPN, value, package…"))
+        self._table = QTableWidget(0, 6)
+        self._table.setHorizontalHeaderLabels(
+            [
+                tr("MPN"),
+                tr("Manufacturer"),
+                tr("Kind"),
+                tr("Value"),
+                tr("Tol"),
+                tr("Package"),
+            ]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._details = QLabel("")
+        self._details.setWordWrap(True)
+        self._details.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        self._note = QLabel(
+            tr(
+                "Catalog-level data only; verify the current manufacturer "
+                "datasheet before ordering. No vendor SPICE/model data is "
+                "redistributed."
+            )
+        )
+        self._note.setWordWrap(True)
+        top = QHBoxLayout()
+        top.addWidget(QLabel(tr("Kind")))
+        top.addWidget(self._kind)
+        top.addWidget(QLabel(tr("Search")))
+        top.addWidget(self._search, 1)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        load_button = buttons.addButton(
+            tr("Load library…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        export_button = buttons.addButton(
+            tr("Export library…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        copy_button = buttons.addButton(
+            tr("Copy MPN"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        load_button.clicked.connect(self._load_library)
+        export_button.clicked.connect(self._export_library)
+        copy_button.clicked.connect(self._copy_mpn)
+        form = QFormLayout(self)
+        form.addRow(top)
+        form.addRow(self._table)
+        form.addRow(self._details)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+        self._kind.currentIndexChanged.connect(self._refresh)
+        self._search.textChanged.connect(self._refresh)
+        self._table.itemSelectionChanged.connect(self._on_selection)
+        self._refresh()
+
+    def current_part(self) -> LibraryPart | None:
+        row = self._table.currentRow()
+        if row < 0 or row >= len(self._filtered):
+            return None
+        return self._filtered[row]
+
+    def _refresh(self) -> None:
+        kind_data = self._kind.currentData()
+        self._filtered = search_parts(
+            self._parts,
+            kind=None if kind_data is None else str(kind_data),
+            query=self._search.text(),
+        )
+        self._table.setUpdatesEnabled(False)
+        try:
+            self._table.setRowCount(len(self._filtered))
+            for row, part in enumerate(self._filtered):
+                cells = (
+                    part.mpn,
+                    part.manufacturer,
+                    part.kind,
+                    part.value_text,
+                    "" if part.tolerance_pct is None else f"±{part.tolerance_pct:g}%",
+                    part.package,
+                )
+                for column, value in enumerate(cells):
+                    self._table.setItem(row, column, QTableWidgetItem(value))
+        finally:
+            self._table.setUpdatesEnabled(True)
+        self._table.resizeRowsToContents()
+        if self._filtered:
+            self._table.selectRow(0)
+        else:
+            self._details.setText(tr("No parts match the filter."))
+
+    def _on_selection(self) -> None:
+        part = self.current_part()
+        if part is None:
+            return
+        lines = [
+            f"{part.manufacturer} {part.mpn}",
+            f"{tr('Kind')}: {part.kind}",
+            f"{tr('Value')}: {part.value_text}",
+            f"{tr('Package')}: {part.package}",
+        ]
+        if part.tolerance_pct is not None:
+            lines.append(f"{tr('Tolerance')}: ±{part.tolerance_pct:g}%")
+        if part.voltage_v is not None:
+            lines.append(f"{tr('Voltage')}: {part.voltage_v:g} V")
+        if part.current_a is not None:
+            lines.append(f"{tr('Current')}: {part.current_a:g} A")
+        if part.dcr_ohm is not None:
+            lines.append(f"{tr('DCR')}: {part.dcr_ohm:g} Ω")
+        if part.srf_hz is not None:
+            lines.append(f"{tr('SRF')}: {format_engineering(part.srf_hz, 'Hz')}")
+        if part.q_min is not None:
+            lines.append(f"{tr('Q min')}: {part.q_min:g}")
+        if part.source:
+            lines.append(f"{tr('Source')}: {part.source}")
+        if part.notes:
+            lines.append(f"{tr('Notes')}: {part.notes}")
+        self._details.setText("\n".join(lines))
+
+    def _load_library(self) -> None:
+        path, _selected = QFileDialog.getOpenFileName(
+            self,
+            tr("Load component library"),
+            "",
+            "Component library (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            self._parts = read_component_library(path)
+        except (ComponentLibraryError, OSError, ValueError) as exc:
+            QMessageBox.critical(self, tr("Component library"), str(exc))
+            return
+        self._refresh()
+        self._status.setText(tr("Loaded {path}", path=path))
+
+    def _export_library(self) -> None:
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export component library"),
+            "components.json",
+            "Component library (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".json"):
+            path += ".json"
+        try:
+            write_component_library(self._parts, path)
+        except OSError as exc:
+            QMessageBox.critical(self, tr("Component library"), str(exc))
+            return
+        self._status.setText(tr("Wrote {path}", path=path))
+
+    def _copy_mpn(self) -> None:
+        part = self.current_part()
+        if part is None:
+            return
+        QApplication.clipboard().setText(part.mpn)
+        self._status.setText(tr("Copied {mpn}", mpn=part.mpn))
 
 
 class SystemParasiticsDialog(QDialog):
