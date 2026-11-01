@@ -93,6 +93,7 @@ from filterdesk.gui.settings import (
     get_settings_store,
 )
 from filterdesk.gui.theme import ThemeColors, ThemeMode, apply_theme
+from filterdesk.gui.tutorials import TutorialDialog
 from filterdesk.gui.widgets import (
     AttenuatorDialog,
     BandFilterWizardDialog,
@@ -606,6 +607,11 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(act_library)
 
         help_menu = self.menuBar().addMenu(tr("&Help"))
+        act_tutorials = QAction(tr("&Tutorials…"), self)
+        act_tutorials.setShortcut(QKeySequence.StandardKey.HelpContents)
+        act_tutorials.triggered.connect(self._show_tutorials)
+        help_menu.addAction(act_tutorials)
+        help_menu.addSeparator()
         act_about = QAction(tr("&About FilterDesk"), self)
         act_about.triggered.connect(self._show_about)
         help_menu.addAction(act_about)
@@ -644,6 +650,7 @@ class MainWindow(QMainWindow):
             act_import_ts: tr("Import measured S11/S21 data from Touchstone."),
             act_export_build: tr("Export the BOM and build sheet."),
             act_quit: tr("Close FilterDesk."),
+            act_tutorials: tr("Open the guided tutorials."),
             act_undo: tr("Undo the last design edit."),
             act_redo: tr("Redo the last undone edit."),
             act_add_m: tr("Add a marker at the cursor frequency."),
@@ -2230,6 +2237,9 @@ class MainWindow(QMainWindow):
         self._session.title = text
         self._session.dirty = True
         self._update_title()
+
+    def _show_tutorials(self) -> None:
+        TutorialDialog(self).exec()
 
     def _show_about(self) -> None:
         QMessageBox.about(

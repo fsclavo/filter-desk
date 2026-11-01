@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.68.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.69.0 · **Released:**
 [v0.68.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.68.0) ·
 **Previous:**
 [v0.67.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.67.0) ·
-**Next:** v0.69.0 planning.
+**Next:** v0.69.0 release (guided tutorials, pending CI/tag).
 
-**Verification:** local suite **1220 passed**, 4 skipped (ngspice unavailable); coverage **82.05 %**.
+**Verification:** local suite **1223 passed**, 4 skipped (ngspice unavailable); coverage **82.06 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41352251103
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41353111399
 
@@ -1099,7 +1099,13 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 73. Ham-radio onboarding and discoverability
+## 73. Guided tutorials
+
+- [x] Bilingual **Help → Tutorials…** dialog with 40 m RX, 80 m TX LPF and
+      2 m diplexer/VNA walkthroughs.
+- [x] Copyable CLI commands per tutorial.
+
+## 74. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -1107,7 +1113,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 74. Maintenance rule
+## 75. Maintenance rule
 
 Every change must update, in the same commit:
 

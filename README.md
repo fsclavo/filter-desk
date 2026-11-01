@@ -151,8 +151,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   system BOM, real-part assignment with MPN/package and optional application of
   part values/parasitics to simple L/C and series/parallel resonators, 2-port
   VNA path comparison, standalone HTML/PDF reports with embedded
-  plots/schematics, `.fdsys.json` project save/open and a curated real-part
-  catalog.
+  plots/schematics, `.fdsys.json` project save/open, a curated real-part catalog
+  and bilingual in-app tutorials.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.69.0 — 2026-11-01
+
+### Added
+
+- **Help → Tutorials…** with three bilingual guided walkthroughs:
+  receiver preselector, 100 W transmitter LPF and 2 m diplexer/VNA comparison.
+- Copyable CLI commands for each tutorial.
+
 ## v0.68.0 — 2026-10-30
 
 ### Added

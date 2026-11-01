@@ -521,6 +521,7 @@ def test_help_menu(monkeypatch: pytest.MonkeyPatch) -> None:
     help_menu = menus.get("&Help")
     assert help_menu is not None
     labels = [a.text() for a in help_menu.actions()]
+    assert any("Tutorials" in t for t in labels)
     assert any("About FilterDesk" in t for t in labels)
     assert any("GitHub" in t for t in labels)
 

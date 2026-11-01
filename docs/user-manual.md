@@ -259,6 +259,20 @@ on the next launch. The theme and language are stored in the platform's user set
 (QSettings), not inside the project file, so opening a project does not change
 your appearance.
 
+### Guided tutorials
+
+**Help → Tutorials…** (or **F1**) opens short, bilingual walkthroughs:
+
+- **Receiver preselector (40 m)** — band-filter wizard, passband checks, BOM
+  and VNA comparison.
+- **100 W transmitter low-pass (80 m)** — TX LPF, harmonic readout, Vpk/Ipk and
+  build-sheet export.
+- **2 m diplexer and VNA comparison** — LPF+HPF design, E-series/parasitics,
+  `.s3p`/BOM/report export and 2-port measurement comparison.
+
+Each tutorial includes step-by-step instructions and a **Copy commands** button
+for the equivalent CLI workflow.
+
 ### Specification panel
 
 | Field | Meaning |
