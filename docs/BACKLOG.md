@@ -12,7 +12,7 @@ count or release changes.
 
 **Verification:** local suite **1190 passed**, 4 skipped (ngspice unavailable); coverage **82.17 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41261815508
-Release workflow: https://github.com/fsclavo/filter-desk/releases/tag/v0.58.0
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41262529379
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
