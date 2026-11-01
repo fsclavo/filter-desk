@@ -37,7 +37,7 @@ jobs:
         run: ./dist/FilterDesk/FilterDesk --version
       - name: Package tar.gz
         run: tar -C dist -czf FilterDesk-linux-x86_64.tar.gz FilterDesk
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-targz
           path: FilterDesk-linux-x86_64.tar.gz
@@ -65,7 +65,7 @@ jobs:
         run: .\dist\FilterDesk\FilterDesk.exe --version
       - name: Package ZIP
         run: Compress-Archive -Path dist/FilterDesk -DestinationPath FilterDesk-windows-x86_64.zip
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-zip
           path: FilterDesk-windows-x86_64.zip
@@ -82,7 +82,7 @@ jobs:
             "/DSRCDIR=$root\dist\FilterDesk" `
             "/DOUTFILE=$root\FilterDesk-$ver-windows-x86_64-setup.exe" `
             packaging\windows\filterdesk.nsi
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-setup
           path: FilterDesk-*-windows-x86_64-setup.exe
@@ -108,7 +108,7 @@ jobs:
         run: .venv/bin/python -m PyInstaller packaging/filterdesk.spec --noconfirm --distpath dist --workpath build
       - name: Build AppImage
         run: bash packaging/appimage/build_appimage.sh
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-appimage
           path: FilterDesk-x86_64.AppImage
@@ -138,7 +138,7 @@ jobs:
         run: bash packaging/debian/build_deb.sh
       - name: Verify Debian package in a clean container
         run: bash packaging/debian/verify_deb.sh "$(ls dist/FilterDesk-*-amd64.deb)"
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-deb
           path: dist/FilterDesk-*-amd64.deb

@@ -122,7 +122,7 @@ jobs:
         run: bash packaging/debian/build_deb.sh
       - name: Verify Debian package in a clean container
         run: bash packaging/debian/verify_deb.sh "$(ls dist/FilterDesk-*-amd64.deb)"
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: acceptance-linux
           path: |
@@ -182,7 +182,7 @@ jobs:
           Start-Process -FilePath $uninstaller -ArgumentList "/S" -Wait
           Start-Sleep -Seconds 2
           if (Test-Path $exe) { throw "uninstall did not remove $exe" }
-      - uses: actions/upload-artifact@v7.0.2
+      - uses: actions/upload-artifact@v7
         with:
           name: acceptance-windows
           path: FilterDesk-*-windows-x86_64-setup.exe
@@ -280,7 +280,7 @@ jobs:
             2>&1 | tee gui-pass-3.log
       - name: Upload GUI stability logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gui-stability-logs
           path: gui-pass-*.log
