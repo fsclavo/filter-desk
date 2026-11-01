@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.66.0 — 2026-10-30
+
+### Added
+
+- **Compare measurements…** in the system designer for 2-port VNA captures.
+- Common→output and adjacent output↔output path comparison with S21/S11
+  RMS/max errors.
+- Explicit assumption: unused ports terminated in 50 Ω; not a true N-port VNA
+  measurement.
+- ADR-040 documents the method and limits.
+
 ## v0.65.0 — 2026-10-30
 
 ### Added

@@ -173,6 +173,11 @@ from filterdesk.services.part_application import (
 )
 from filterdesk.services.part_assignment import assign_nearest_parts
 from filterdesk.services.report import system_report
+from filterdesk.services.system_compare import (
+    SystemCompareError,
+    compare_system_paths,
+    default_measurement_paths,
+)
 from filterdesk.services.system_montecarlo import (
     SystemMonteCarloConfig,
     SystemMonteCarloError,
@@ -1866,6 +1871,140 @@ class SystemMonteCarloDialog(QDialog):
             self._table.setUpdatesEnabled(True)
         self._table.resizeRowsToContents()
         self._status.setText(result.summary())
+
+
+class SystemCompareDialog(QDialog):
+    """Compare 2-port VNA captures against simulated system paths."""
+
+    def __init__(self, design: SystemDesign, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("System measurement compare"))
+        self.setMinimumWidth(980)
+        self._design = design
+        self._paths = default_measurement_paths(design)
+        self._files: dict[str, Path] = {}
+        self._table = QTableWidget(0, 7)
+        self._table.setHorizontalHeaderLabels(
+            [
+                tr("Path"),
+                tr("File"),
+                tr("Points"),
+                tr("S21 RMS"),
+                tr("S21 max"),
+                tr("S11 RMS"),
+                tr("S11 max"),
+            ]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._table.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._note = QLabel(
+            tr(
+                "Each file is a 2-port VNA capture from the first to the second "
+                "port; terminate every other system port in 50 Ω. This is not a "
+                "true N-port VNA measurement."
+            )
+        )
+        self._note.setWordWrap(True)
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        browse_button = buttons.addButton(
+            tr("Browse…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        compare_button = buttons.addButton(
+            tr("Compare"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        browse_button.clicked.connect(self._browse)
+        compare_button.clicked.connect(self._compare)
+        form = QFormLayout(self)
+        form.addRow(self._table)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+        self._refresh()
+
+    def _refresh(self) -> None:
+        self._table.setUpdatesEnabled(False)
+        try:
+            self._table.setRowCount(len(self._paths))
+            for row, path in enumerate(self._paths):
+                self._table.setItem(row, 0, QTableWidgetItem(path.label))
+                self._table.setItem(
+                    row,
+                    1,
+                    QTableWidgetItem(str(self._files.get(path.label, ""))),
+                )
+                for column in range(2, 7):
+                    self._table.setItem(row, column, QTableWidgetItem(""))
+        finally:
+            self._table.setUpdatesEnabled(True)
+        self._table.resizeRowsToContents()
+
+    def _browse(self) -> None:
+        row = self._table.currentRow()
+        if not 0 <= row < len(self._paths):
+            self._status.setText(tr("Select a path row first."))
+            return
+        path = self._paths[row]
+        filename, _selected = QFileDialog.getOpenFileName(
+            self,
+            tr("Open measured .s2p"),
+            "",
+            "Touchstone 2-port (*.s2p *.S2P);;All files (*)",
+        )
+        if not filename:
+            return
+        self._files[path.label] = Path(filename)
+        self._refresh()
+        self._table.selectRow(row)
+
+    def _compare(self) -> None:
+        measurements = {}
+        try:
+            for label, filename in self._files.items():
+                data = read_touchstone(filename)
+                if data.n_ports != 2:
+                    raise SystemCompareError(
+                        tr(
+                            "{path}: expected 2 ports, got {ports}",
+                            path=label,
+                            ports=data.n_ports,
+                        )
+                    )
+                measurements[label] = data.to_analysis_result()
+            results = compare_system_paths(self._design, measurements)
+        except (SystemCompareError, TouchstoneError, OSError, ValueError) as exc:
+            self._status.setText(str(exc))
+            return
+        by_label = {result.path.label: result for result in results}
+        for row, path in enumerate(self._paths):
+            result = by_label.get(path.label)
+            if result is None:
+                continue
+            comparison = result.compare
+            values = (
+                str(comparison.n_points),
+                f"{comparison.s21_db_rms_error:.3f} dB",
+                f"{comparison.s21_db_max_error:.3f} dB",
+                f"{comparison.s11_db_rms_error:.3f} dB",
+                f"{comparison.s11_db_max_error:.3f} dB",
+            )
+            for column, value in enumerate(values, start=2):
+                self._table.setItem(row, column, QTableWidgetItem(value))
+        self._status.setText(
+            tr("Compared {count} path(s).", count=len(results))
+        )
 
 
 class SystemSensitivityDialog(QDialog):
@@ -4163,6 +4302,10 @@ class DiplexerDialog(QDialog):
         parts_layout.addWidget(self._apply_parts_button)
         parts_layout.addStretch(1)
         form.addRow(tr("Real parts"), parts_row)
+        self._compare_button = QPushButton(tr("Compare measurements…"))
+        self._compare_button.clicked.connect(self._run_compare_measurements)
+        self._compare_button.setEnabled(False)
+        form.addRow(tr("Measurement compare"), self._compare_button)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -4511,6 +4654,11 @@ class DiplexerDialog(QDialog):
         self._status.setText(
             tr("Assigned {count} parts.", count=len(self._part_assignments))
         )
+
+    def _run_compare_measurements(self) -> None:
+        if self._design is None:
+            return
+        SystemCompareDialog(self._design, self).exec()
 
     def _run_apply_parts(self) -> None:
         if self._design is None or not self._part_assignments:
@@ -5285,6 +5433,7 @@ class DiplexerDialog(QDialog):
             self._sensitivity_button,
             self._montecarlo_button,
             self._assign_parts_button,
+            self._compare_button,
         ):
             button.setEnabled(enabled)
 

@@ -1079,6 +1079,31 @@ _ES.update(
         ),
         "System sensitivity": "Sensibilidad del sistema",
         "System Monte Carlo": "Monte Carlo del sistema",
+        "System measurement compare": "Comparación de mediciones del sistema",
+        "Measurement compare": "Comparación de mediciones",
+        "Compare measurements…": "Comparar mediciones…",
+        "Compare": "Comparar",
+        "Browse…": "Examinar…",
+        "Open measured .s2p": "Abrir .s2p medido",
+        "Path": "Camino",
+        "File": "Archivo",
+        "Points": "Puntos",
+        "S21 RMS": "S21 RMS",
+        "S21 max": "S21 máx.",
+        "S11 RMS": "S11 RMS",
+        "S11 max": "S11 máx.",
+        "Select a path row first.": "Seleccione primero una fila de camino.",
+        "Compared {count} path(s).": "Comparados {count} camino(s).",
+        "{path}: expected 2 ports, got {ports}": (
+            "{path}: se esperaban 2 puertos, hay {ports}"
+        ),
+        "Each file is a 2-port VNA capture from the first to the second "
+        "port; terminate every other system port in 50 Ω. This is not a "
+        "true N-port VNA measurement.": (
+            "Cada archivo es una captura de VNA de 2 puertos del primer al "
+            "segundo puerto; termine todos los demás puertos del sistema en "
+            "50 Ω. No es una medición de VNA de N puertos."
+        ),
         "Monte Carlo": "Monte Carlo",
         "Monte Carlo…": "Monte Carlo…",
         "Uniform": "Uniforme",

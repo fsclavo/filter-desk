@@ -149,9 +149,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   finite-Q/parasitic reanalysis, deterministic component sensitivity,
   Monte-Carlo tolerance/yield in the GUI and CLI, `.sNp` export, a combined
   system BOM, real-part assignment with MPN/package and optional application of
-  part values/parasitics to the analysis, standalone HTML/PDF reports with
-  embedded plots/schematics, `.fdsys.json` project save/open and a curated
-  real-part catalog.
+  part values/parasitics to the analysis, 2-port VNA path comparison,
+  standalone HTML/PDF reports with embedded plots/schematics, `.fdsys.json`
+  project save/open and a curated real-part catalog.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

@@ -1130,6 +1130,12 @@ Composite LC/Brune sub-parts (BPF branches) receive the value but not a
 parasitic model yet; the tool reports that warning. Applying a far-away manual
 part can materially change the response, so check the recomputed metrics.
 
+**Compare measurements…** compares 2-port VNA captures with the simulated
+system paths: common → each output, plus adjacent output ↔ output isolation
+paths. Each `.s2p` is measured from the first to the second port with all other
+system ports terminated in 50 Ω. The dialog reports S21/S11 RMS and maximum
+error per path. This is not a true N-port VNA measurement.
+
 **Export report…** writes a self-contained HTML or PDF report with the system
 summary, magnitude plot, one schematic per branch, the combined BOM table and
 the model notes. The HTML embeds its images, so it can be shared without extra
