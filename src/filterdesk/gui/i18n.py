@@ -1048,6 +1048,21 @@ _ES.update(
         "System parasitics": "Parasitarios del sistema",
         "System project": "Proyecto de sistema",
         "Component library": "Biblioteca de componentes",
+        "System sensitivity": "Sensibilidad del sistema",
+        "Sensitivity": "Sensibilidad",
+        "Sensitivity…": "Sensibilidad…",
+        "Branch": "Rama",
+        "Delta (%)": "Delta (%)",
+        "Run": "Ejecutar",
+        "Impact (dB)": "Impacto (dB)",
+        "Isolation Δ (dB)": "Δ aislamiento (dB)",
+        "IL Δ (dB)": "Δ inserción (dB)",
+        "OOB Δ (dB)": "Δ fuera de banda (dB)",
+        "Deterministic ±delta per component; not a Monte Carlo/yield "
+        "analysis. Metrics are recomputed on the current design.": (
+            "Sensibilidad determinista ±delta por componente; no es Monte "
+            "Carlo/yield. Las métricas se recalculan sobre el diseño actual."
+        ),
         "Component &library…": "&Biblioteca de componentes…",
         "Browse real component MPNs and catalog data.": (
             "Explorar MPN reales y datos de catálogo de componentes."

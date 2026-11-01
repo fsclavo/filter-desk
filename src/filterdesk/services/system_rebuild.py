@@ -110,8 +110,113 @@ def rebuild_system_design(
     )
 
 
+def rebuild_system_with_circuit(
+    design: SystemDesign, index: int, circuit: Circuit
+) -> SystemDesign:
+    """Reanalyze one branch and rebuild the combined network/metrics."""
+    if isinstance(design, MultiplexerDesign):
+        if not 0 <= index < len(design.circuits):
+            raise ValueError("multiplexer branch index out of range")
+        analyses = list(design.analyses)
+        analyses[index] = analyze_circuit(
+            circuit, design.sweep, backend=_backend(analyses[index])
+        )
+        circuits = list(design.circuits)
+        circuits[index] = circuit
+        network = SParameters.parallel_branches(
+            tuple(SParameters.from_analysis(item) for item in analyses)
+        )
+        multiplexer_metrics = evaluate_multiplexer(
+            network,
+            design.bands,
+            [band_edges(spec) for spec in design.specs],
+        )
+        return replace(
+            design,
+            circuits=tuple(circuits),
+            analyses=tuple(analyses),
+            network=network,
+            metrics=multiplexer_metrics,
+        )
+    if isinstance(design, DuplexerDesign):
+        if index not in (0, 1):
+            raise ValueError("duplexer branch index must be 0 or 1")
+        tx_circuit = circuit if index == 0 else design.tx_circuit
+        rx_circuit = circuit if index == 1 else design.rx_circuit
+        tx_analysis = (
+            analyze_circuit(circuit, design.sweep, backend=_backend(design.tx_analysis))
+            if index == 0
+            else design.tx_analysis
+        )
+        rx_analysis = (
+            analyze_circuit(circuit, design.sweep, backend=_backend(design.rx_analysis))
+            if index == 1
+            else design.rx_analysis
+        )
+        network = SParameters.parallel_branches(
+            (
+                SParameters.from_analysis(tx_analysis),
+                SParameters.from_analysis(rx_analysis),
+            )
+        )
+        duplexer_metrics = evaluate_duplexer(
+            network,
+            design.metrics.tx_band_hz,
+            design.metrics.rx_band_hz,
+            target_isolation_db=design.config.min_isolation_db,
+            max_insertion_loss_db=design.config.max_insertion_loss_db,
+        )
+        return replace(
+            design,
+            tx_circuit=tx_circuit,
+            rx_circuit=rx_circuit,
+            tx_analysis=tx_analysis,
+            rx_analysis=rx_analysis,
+            network=network,
+            metrics=duplexer_metrics,
+        )
+    if index not in (0, 1):
+        raise ValueError("diplexer branch index must be 0 or 1")
+    low_circuit = circuit if index == 0 else design.low_circuit
+    high_circuit = circuit if index == 1 else design.high_circuit
+    low_analysis = (
+        analyze_circuit(circuit, design.sweep, backend=_backend(design.low_analysis))
+        if index == 0
+        else design.low_analysis
+    )
+    high_analysis = (
+        analyze_circuit(circuit, design.sweep, backend=_backend(design.high_analysis))
+        if index == 1
+        else design.high_analysis
+    )
+    network = SParameters.parallel_branches(
+        (
+            SParameters.from_analysis(low_analysis),
+            SParameters.from_analysis(high_analysis),
+        )
+    )
+    diplexer_metrics = (
+        evaluate_band_diplexer(network, design.config)
+        if isinstance(design, BandDiplexerDesign)
+        else evaluate_diplexer(network, design.config)
+    )
+    return replace(
+        design,
+        low_circuit=low_circuit,
+        high_circuit=high_circuit,
+        low_analysis=low_analysis,
+        high_analysis=high_analysis,
+        network=network,
+        metrics=diplexer_metrics,
+    )
+
+
 def _backend(analysis: object) -> str:
     return str(getattr(analysis, "backend", "") or "abcd")
 
 
-__all__ = ["SystemDesign", "rebuild_system_design"]
+__all__ = [
+    "SystemDesign",
+    "rebuild_system_design",
+    "rebuild_system_with_circuit",
+]

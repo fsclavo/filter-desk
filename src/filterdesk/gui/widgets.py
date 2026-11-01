@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -175,6 +176,11 @@ from filterdesk.services.system_project import (
     SystemProjectError,
     read_system_project,
     write_system_project,
+)
+from filterdesk.services.system_rebuild import SystemDesign
+from filterdesk.services.system_sensitivity import (
+    SystemSensitivityError,
+    analyze_system_sensitivity,
 )
 from filterdesk.services.system_snap import (
     SystemSnapResult,
@@ -1492,6 +1498,88 @@ class ComponentLibraryDialog(QDialog):
             return
         QApplication.clipboard().setText(part.mpn)
         self._status.setText(tr("Copied {mpn}", mpn=part.mpn))
+
+
+class SystemSensitivityDialog(QDialog):
+    """Deterministic ±delta sensitivity table for a system design."""
+
+    def __init__(self, design: SystemDesign, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("System sensitivity"))
+        self.setMinimumWidth(820)
+        self._design = design
+        self._delta = QDoubleSpinBox()
+        self._delta.setRange(0.1, 50.0)
+        self._delta.setDecimals(1)
+        self._delta.setValue(5.0)
+        self._delta.setSuffix(" %")
+        self._table = QTableWidget(0, 7)
+        self._table.setHorizontalHeaderLabels(
+            [
+                tr("Branch"),
+                tr("Ref"),
+                tr("Type"),
+                tr("Impact (dB)"),
+                tr("Isolation Δ (dB)"),
+                tr("IL Δ (dB)"),
+                tr("OOB Δ (dB)"),
+            ]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._note = QLabel(
+            tr(
+                "Deterministic ±delta per component; not a Monte Carlo/yield "
+                "analysis. Metrics are recomputed on the current design."
+            )
+        )
+        self._note.setWordWrap(True)
+        self._status = QLabel("")
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        run_button = buttons.addButton(
+            tr("Run"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        run_button.clicked.connect(self.run)
+        form = QFormLayout(self)
+        form.addRow(tr("Delta (%)"), self._delta)
+        form.addRow(self._table)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+        self.run()
+
+    def run(self) -> None:
+        try:
+            report = analyze_system_sensitivity(
+                self._design, self._delta.value()
+            )
+        except (SystemSensitivityError, ValueError) as exc:
+            self._status.setText(str(exc))
+            return
+        self._table.setUpdatesEnabled(False)
+        try:
+            self._table.setRowCount(len(report.rows))
+            for row, item in enumerate(report.rows):
+                values = (
+                    item.branch,
+                    item.ref,
+                    item.kind,
+                    f"{item.score_db:.3f}",
+                    _delta_text(item.isolation_delta_db),
+                    _delta_text(item.insertion_delta_db),
+                    _delta_text(item.out_of_band_delta_db),
+                )
+                for column, value in enumerate(values):
+                    self._table.setItem(row, column, QTableWidgetItem(value))
+        finally:
+            self._table.setUpdatesEnabled(True)
+        self._table.resizeRowsToContents()
+        self._status.setText(report.summary())
 
 
 class SystemParasiticsDialog(QDialog):
@@ -3680,6 +3768,10 @@ class DiplexerDialog(QDialog):
         parasitics_layout.addWidget(self._parasitics_button)
         parasitics_layout.addWidget(self._parasitics_label, 1)
         form.addRow(tr("Parasitics"), parasitics_row)
+        self._sensitivity_button = QPushButton(tr("Sensitivity…"))
+        self._sensitivity_button.clicked.connect(self._run_sensitivity)
+        self._sensitivity_button.setEnabled(False)
+        form.addRow(tr("Sensitivity"), self._sensitivity_button)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -4010,6 +4102,11 @@ class DiplexerDialog(QDialog):
     def _update_order_enabled(self) -> None:
         is_duplexer = self._mode.currentData() == "duplexer"
         self._order.setEnabled(not (is_duplexer and self._auto_order.isChecked()))
+
+    def _run_sensitivity(self) -> None:
+        if self._design is None:
+            return
+        SystemSensitivityDialog(self._design, self).exec()
 
     def _configure_parasitics(self) -> None:
         config = SystemParasiticsDialog.ask(self)
@@ -4675,6 +4772,7 @@ class DiplexerDialog(QDialog):
             self._export_mid_button,
             self._export_high_button,
             self._export_schematic_button,
+            self._sensitivity_button,
         ):
             button.setEnabled(enabled)
 
@@ -4714,6 +4812,10 @@ class DiplexerDialog(QDialog):
             if not path.lower().endswith(".s2p"):
                 path += ".s2p"
             self.export_branch(branch, path)
+
+
+def _delta_text(value: float | None) -> str:
+    return "—" if value is None else f"{value:+.3f}"
 
 
 def _parasitics_text(config: SystemParasiticsConfig) -> str:

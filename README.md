@@ -145,10 +145,10 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Diplexer / multiplexer designer**: LPF+HPF or BPF+BPF branches, an LC
   TX/RX duplexer with isolation target and automatic order search, plus
   triplexer and configurable N-band multiplexers; combined metrics, magnitude
-  plots, branch schematics with PNG/SVG/PDF export, E-series snap and
-  finite-Q/parasitic reanalysis, `.sNp` export, a combined system BOM,
-  `.fdsys.json` project save/open and a curated real-part catalog in the GUI
-  and CLI.
+  plots, branch schematics with PNG/SVG/PDF export, E-series snap,
+  finite-Q/parasitic reanalysis, deterministic component sensitivity, `.sNp`
+  export, a combined system BOM, `.fdsys.json` project save/open and a curated
+  real-part catalog in the GUI and CLI.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

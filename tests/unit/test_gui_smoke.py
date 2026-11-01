@@ -1549,6 +1549,28 @@ def test_component_library_dialog_filters_catalog() -> None:
     assert app is not None
 
 
+def test_system_sensitivity_dialog_runs() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog, SystemSensitivityDialog
+
+    app = QApplication.instance() or QApplication([])
+    designer = DiplexerDialog()
+    designer._points.setValue(201)
+    assert designer.design()
+    design = designer.current_design()
+    assert design is not None
+    dialog = SystemSensitivityDialog(design)
+    assert dialog._table.rowCount() > 0
+    assert "components" in dialog._status.text()
+    dialog._delta.setValue(2.0)
+    dialog.run()
+    assert dialog._table.rowCount() > 0
+    dialog.close()
+    designer.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

@@ -38,3 +38,4 @@
 - [ADR-033](ADR-033-system-parasitics.md) — system finite-Q / parasitic reanalysis
 - [ADR-034](ADR-034-system-project-json.md) — versioned system project `.fdsys.json`
 - [ADR-035](ADR-035-component-library-v1.md) — curated component catalog v1
+- [ADR-036](ADR-036-system-sensitivity.md) — deterministic system sensitivity

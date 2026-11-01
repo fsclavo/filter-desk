@@ -660,10 +660,11 @@ Most commands accept `--json` for machine-readable output.
 
   `diplexer`, `band-diplexer`, `duplexer`, `triplexer` and `multiplexer`
   also accept
-  `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}` and
-  `--bom-group` for the combined system BOM. In these system commands
+  `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}`,
+  `--bom-group` and `--sensitivity PCT`. In these system commands
   `--bom-series` snaps the branches and reanalyzes the combined network, so the
-  exported `.s3p`/`.s4p`, metrics and BOM stay consistent.
+  exported `.sNp`, metrics and BOM stay consistent. `--sensitivity` prints or
+  emits the deterministic component sensitivity table.
 - **`components`** — list/search the curated component catalog. Options:
   `--kind {capacitor,inductor}`, `--search TEXT`, `--library FILE`,
   `--export FILE`, `--json`.
@@ -1093,6 +1094,11 @@ all use the same non-ideal circuits.
 `.fdsys.json` file: kind, bands, order/family, ripple/stopband, Z0, sweep,
 E-series and parasitics. Derived circuits, metrics and S-matrices are not stored;
 opening rebuilds them. This is separate from the single-filter project format.
+
+**Sensitivity…** perturbs every L/C/R in every branch by ±delta and reanalyzes
+the combined network. The table ranks components by impact and shows the change
+in worst isolation (duplexer), insertion loss and out-of-band transmission. It is
+deterministic, not a Monte Carlo/yield analysis.
 
 **Export build sheet…** writes a combined system BOM as Markdown, CSV or HTML.
 It includes the system metrics, one row per physical component with a leading

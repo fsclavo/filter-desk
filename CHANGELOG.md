@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.59.0 — 2026-10-30
+
+### Added
+
+- **Sensitivity…** in the system designer: perturb every L/C/R by ±delta,
+  reanalyze the combined network and rank the impact on isolation, insertion
+  loss and out-of-band transmission.
+- `analyze_system_sensitivity` service and `--sensitivity PCT` on the system
+  CLI commands.
+- ADR-036 records the deterministic (non-Monte-Carlo) scope.
+
 ## v0.58.0 — 2026-10-30
 
 ### Added

@@ -191,6 +191,11 @@ from filterdesk.services.multiplexer import (
 )
 from filterdesk.services.report import system_report
 from filterdesk.services.session import default_sweep_for_spec
+from filterdesk.services.system_rebuild import SystemDesign
+from filterdesk.services.system_sensitivity import (
+    SystemSensitivityReport,
+    analyze_system_sensitivity,
+)
 from filterdesk.services.system_snap import (
     SystemSnapResult,
     snap_system_design,
@@ -1059,6 +1064,12 @@ def build_parser() -> argparse.ArgumentParser:
     diplexer.add_argument("--low-output", type=Path, default=None)
     diplexer.add_argument("--high-output", type=Path, default=None)
     diplexer.add_argument("--json", action="store_true")
+    diplexer.add_argument(
+        "--sensitivity",
+        type=float,
+        default=None,
+        help="Run deterministic ±PCT component sensitivity",
+    )
     diplexer.add_argument("--export-build-sheet", type=Path, default=None)
     diplexer.add_argument(
         "--bom-series",
@@ -1096,6 +1107,12 @@ def build_parser() -> argparse.ArgumentParser:
     band_diplexer.add_argument("--low-output", type=Path, default=None)
     band_diplexer.add_argument("--high-output", type=Path, default=None)
     band_diplexer.add_argument("--json", action="store_true")
+    band_diplexer.add_argument(
+        "--sensitivity",
+        type=float,
+        default=None,
+        help="Run deterministic ±PCT component sensitivity",
+    )
     band_diplexer.add_argument("--export-build-sheet", type=Path, default=None)
     band_diplexer.add_argument(
         "--bom-series",
@@ -1137,6 +1154,12 @@ def build_parser() -> argparse.ArgumentParser:
     duplexer.add_argument("--tx-output", type=Path, default=None)
     duplexer.add_argument("--rx-output", type=Path, default=None)
     duplexer.add_argument("--json", action="store_true")
+    duplexer.add_argument(
+        "--sensitivity",
+        type=float,
+        default=None,
+        help="Run deterministic ±PCT component sensitivity",
+    )
     duplexer.add_argument("--export-build-sheet", type=Path, default=None)
     duplexer.add_argument(
         "--bom-series",
@@ -1177,6 +1200,12 @@ def build_parser() -> argparse.ArgumentParser:
     triplexer.add_argument("--mid-output", type=Path, default=None)
     triplexer.add_argument("--high-output", type=Path, default=None)
     triplexer.add_argument("--json", action="store_true")
+    triplexer.add_argument(
+        "--sensitivity",
+        type=float,
+        default=None,
+        help="Run deterministic ±PCT component sensitivity",
+    )
     triplexer.add_argument("--export-build-sheet", type=Path, default=None)
     triplexer.add_argument(
         "--bom-series",
@@ -1228,6 +1257,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     multiplexer.add_argument("--bom-group", action="store_true")
     multiplexer.add_argument("--json", action="store_true")
+    multiplexer.add_argument(
+        "--sensitivity",
+        type=float,
+        default=None,
+        help="Run deterministic ±PCT component sensitivity",
+    )
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -3409,6 +3444,42 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Notes:         {estimate.notes}")
         return 0
 
+    def _sensitivity_report(
+        system_design: SystemDesign, delta_pct: float
+    ) -> SystemSensitivityReport:
+        return analyze_system_sensitivity(system_design, delta_pct)
+
+    def _print_system_sensitivity(report: SystemSensitivityReport) -> None:
+        print(f"System sensitivity ±{report.delta_pct:g}%:")
+        for row in report.rows:
+            print(
+                f"  {row.branch:6s} {row.ref:8s} {row.kind:10s} "
+                f"impact={row.score_db:.3f} dB  "
+                f"iso={_system_delta_text(row.isolation_delta_db)}  "
+                f"IL={_system_delta_text(row.insertion_delta_db)}  "
+                f"OOB={_system_delta_text(row.out_of_band_delta_db)}"
+            )
+
+    def _system_sensitivity_to_json(
+        report: SystemSensitivityReport,
+    ) -> dict[str, object]:
+        return {
+            "delta_pct": report.delta_pct,
+            "rows": [
+                {
+                    "branch": row.branch,
+                    "ref": row.ref,
+                    "kind": row.kind,
+                    "score_db": row.score_db,
+                    "direction": row.direction,
+                    "isolation_delta_db": row.isolation_delta_db,
+                    "insertion_delta_db": row.insertion_delta_db,
+                    "out_of_band_delta_db": row.out_of_band_delta_db,
+                }
+                for row in report.rows
+            ],
+        }
+
     def _write_system_build_sheet(
         system_design: object,
         path: Path,
@@ -3433,6 +3504,9 @@ def main(argv: list[str] | None = None) -> int:
             group=group,
         )
         print(f"Wrote {path}", file=sys.stderr)
+
+    def _system_delta_text(value: float | None) -> str:
+        return "—" if value is None else f"{value:+.3f}"
 
     if args.command == "multiplexer":
         try:
@@ -3485,6 +3559,11 @@ def main(argv: list[str] | None = None) -> int:
                     multiplexer_design, ESeries(args.bom_series)
                 )
                 multiplexer_design = cast(MultiplexerDesign, mux_snap.design)
+            mux_sensitivity: SystemSensitivityReport | None = None
+            if args.sensitivity is not None:
+                mux_sensitivity = _sensitivity_report(
+                    multiplexer_design, float(args.sensitivity)
+                )
             write_sparameters(multiplexer_design.network, args.output)
             for raw in args.branch_output:
                 if "=" not in str(raw):
@@ -3548,6 +3627,15 @@ def main(argv: list[str] | None = None) -> int:
                             )
                         ],
                         "crossovers_hz": list(mux_metrics.crossovers_hz),
+                        **(
+                            {
+                                "sensitivity": _system_sensitivity_to_json(
+                                    mux_sensitivity
+                                )
+                            }
+                            if mux_sensitivity is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3559,6 +3647,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"{len(multiplexer_design.bands)} bands ({labels})"
             )
             print(f"  {mux_metrics.summary()}")
+            if mux_sensitivity is not None:
+                _print_system_sensitivity(mux_sensitivity)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3612,6 +3702,11 @@ def main(argv: list[str] | None = None) -> int:
                     triplexer_design, ESeries(args.bom_series)
                 )
                 triplexer_design = cast(MultiplexerDesign, tri_snap.design)
+            tri_sensitivity: SystemSensitivityReport | None = None
+            if args.sensitivity is not None:
+                tri_sensitivity = _sensitivity_report(
+                    triplexer_design, float(args.sensitivity)
+                )
             write_sparameters(triplexer_design.network, args.output)
             branch_paths = {
                 "low": args.low_output,
@@ -3676,6 +3771,15 @@ def main(argv: list[str] | None = None) -> int:
                             )
                         ],
                         "crossovers_hz": list(triplexer_metrics.crossovers_hz),
+                        **(
+                            {
+                                "sensitivity": _system_sensitivity_to_json(
+                                    tri_sensitivity
+                                )
+                            }
+                            if tri_sensitivity is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3686,6 +3790,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"{len(triplexer_design.bands)} bands"
             )
             print(f"  {triplexer_metrics.summary()}")
+            if tri_sensitivity is not None:
+                _print_system_sensitivity(tri_sensitivity)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3734,6 +3840,11 @@ def main(argv: list[str] | None = None) -> int:
                     duplexer_design, ESeries(args.bom_series)
                 )
                 duplexer_design = cast(DuplexerDesign, dx_snap.design)
+            dx_sensitivity: SystemSensitivityReport | None = None
+            if args.sensitivity is not None:
+                dx_sensitivity = _sensitivity_report(
+                    duplexer_design, float(args.sensitivity)
+                )
             write_sparameters(duplexer_design.network, args.output)
             if args.tx_output is not None:
                 write_sparameters(
@@ -3820,6 +3931,11 @@ def main(argv: list[str] | None = None) -> int:
                             ),
                             "meets_target": duplexer_metrics.meets_target,
                         },
+                        **(
+                            {"sensitivity": _system_sensitivity_to_json(dx_sensitivity)}
+                            if dx_sensitivity is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3830,6 +3946,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"(attempted {', '.join(map(str, duplexer_design.attempted_orders))})"
             )
             print(f"  {duplexer_metrics.summary()}")
+            if dx_sensitivity is not None:
+                _print_system_sensitivity(dx_sensitivity)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3874,6 +3992,11 @@ def main(argv: list[str] | None = None) -> int:
                     band_design, ESeries(args.bom_series)
                 )
                 band_design = cast(BandDiplexerDesign, band_snap.design)
+            band_sensitivity: SystemSensitivityReport | None = None
+            if args.sensitivity is not None:
+                band_sensitivity = _sensitivity_report(
+                    band_design, float(args.sensitivity)
+                )
             write_sparameters(band_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -3930,6 +4053,15 @@ def main(argv: list[str] | None = None) -> int:
                             "high_return_loss_db": band_metrics.high_return_loss_db,
                             "crossover_hz": band_metrics.crossover_hz,
                         },
+                        **(
+                            {
+                                "sensitivity": _system_sensitivity_to_json(
+                                    band_sensitivity
+                                )
+                            }
+                            if band_sensitivity is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3944,6 +4076,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"{band_config.order}th order, Z0={band_config.z0_ohm:g} Ohm"
             )
             print(f"  {band_metrics.summary()}")
+            if band_sensitivity is not None:
+                _print_system_sensitivity(band_sensitivity)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3986,6 +4120,11 @@ def main(argv: list[str] | None = None) -> int:
                     diplexer_design, ESeries(args.bom_series)
                 )
                 diplexer_design = cast(DiplexerDesign, dip_snap.design)
+            dip_sensitivity: SystemSensitivityReport | None = None
+            if args.sensitivity is not None:
+                dip_sensitivity = _sensitivity_report(
+                    diplexer_design, float(args.sensitivity)
+                )
             write_sparameters(diplexer_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -4038,6 +4177,15 @@ def main(argv: list[str] | None = None) -> int:
                             "high_return_loss_db": metrics.high_return_loss_db,
                             "crossover_hz": metrics.crossover_hz,
                         },
+                        **(
+                            {
+                                "sensitivity": _system_sensitivity_to_json(
+                                    dip_sensitivity
+                                )
+                            }
+                            if dip_sensitivity is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -4051,6 +4199,8 @@ def main(argv: list[str] | None = None) -> int:
                 f"Z0={diplexer_config.z0_ohm:g} Ohm"
             )
             print(f"  {metrics.summary()}")
+            if dip_sensitivity is not None:
+                _print_system_sensitivity(dip_sensitivity)
             print(f"  Wrote {args.output}")
         return 0
 
