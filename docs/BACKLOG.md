@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.69.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.70.0 · **Released:**
 [v0.69.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.69.0) ·
 **Previous:**
 [v0.68.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.68.0) ·
-**Next:** v0.70.0 planning.
+**Next:** v0.70.0 release (example projects, pending CI/tag).
 
-**Verification:** local suite **1223 passed**, 4 skipped (ngspice unavailable); coverage **82.06 %**.
+**Verification:** local suite **1228 passed**, 4 skipped (ngspice unavailable); coverage **82.08 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41356739012
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41357468995
 
@@ -1111,11 +1111,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 74. Guided tutorials
+## 74. Guided tutorials and examples
 
 - [x] Bilingual **Help → Tutorials…** dialog with 40 m RX, 80 m TX LPF and
       2 m diplexer/VNA walkthroughs.
 - [x] Copyable CLI commands per tutorial.
+- [x] Ready-to-open example projects with **Open example**.
 
 ## 75. Ham-radio onboarding and discoverability
 

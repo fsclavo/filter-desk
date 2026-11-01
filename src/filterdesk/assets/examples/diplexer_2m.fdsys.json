@@ -1,0 +1,29 @@
+{
+  "format": "filterdesk.system",
+  "version": 1,
+  "kind": "lp-hp",
+  "order": 5,
+  "family": "chebyshev_type_i",
+  "ripple_db": 0.1,
+  "stopband_attenuation_db": null,
+  "z0_ohm": 50.0,
+  "sweep": {
+    "f_start_hz": 100000000.0,
+    "f_stop_hz": 200000000.0,
+    "n_points": 2001,
+    "spacing": "logarithmic"
+  },
+  "snap_series": null,
+  "parasitics": null,
+  "bands": [],
+  "low_cutoff_hz": 144000000.0,
+  "high_cutoff_hz": 148000000.0,
+  "tx_center_hz": null,
+  "tx_bandwidth_hz": null,
+  "rx_center_hz": null,
+  "rx_bandwidth_hz": null,
+  "min_isolation_db": 60.0,
+  "max_insertion_loss_db": 3.0,
+  "auto_order": true,
+  "max_order": 9
+}

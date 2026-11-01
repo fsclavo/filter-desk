@@ -1,0 +1,104 @@
+{
+  "format_version": 2,
+  "metadata": {
+    "title": "Tutorial 2 - 80 m 100 W transmitter low-pass",
+    "author": "",
+    "app_version": "0.69.0",
+    "notes": "Built-in tutorial example. Open Help -> Tutorials, Tutorial 2, for the guided steps. Check 2f/3f rejection and Vpk/Ipk; the model is linear and does not validate thermal rise or core saturation."
+  },
+  "extensions": {
+    "power_w": 100.0,
+    "harmonics_f0_hz": 3741657.3867739416
+  },
+  "specification": {
+    "family": "chebyshev_type_i",
+    "response": "low_pass",
+    "order": 5,
+    "cutoff_definition": "ripple_edge",
+    "z_source_ohm": 50.0,
+    "z_load_ohm": 50.0,
+    "topology_id": "ladder_lp_series_l_input",
+    "cutoff_hz": 4400000.0,
+    "passband_ripple_db": 0.1
+  },
+  "circuit": {
+    "topology_id": "ladder_lp_series_l_input",
+    "ground": "gnd",
+    "port_in": {
+      "name": "port1",
+      "node": "in",
+      "impedance_ohm": 50.0
+    },
+    "port_out": {
+      "name": "port2",
+      "node": "out",
+      "impedance_ohm": 50.0
+    },
+    "elements": [
+      {
+        "id": "L1",
+        "role": "series",
+        "type": "inductor",
+        "node_a": "in",
+        "node_b": "n1",
+        "g": 1.1468130672714616,
+        "value_H": 2.0741019143026298e-06
+      },
+      {
+        "id": "C2",
+        "role": "shunt",
+        "type": "capacitor",
+        "node_a": "n1",
+        "node_b": "gnd",
+        "g": 1.3712125512670543,
+        "value_F": 9.91978434380912e-10
+      },
+      {
+        "id": "L3",
+        "role": "series",
+        "type": "inductor",
+        "node_a": "n1",
+        "node_b": "n2",
+        "g": 1.9750031575003777,
+        "value_H": 3.5719490356623435e-06
+      },
+      {
+        "id": "C4",
+        "role": "shunt",
+        "type": "capacitor",
+        "node_a": "n2",
+        "node_b": "gnd",
+        "g": 1.3712125512670539,
+        "value_F": 9.919784343809116e-10
+      },
+      {
+        "id": "L5",
+        "role": "series",
+        "type": "inductor",
+        "node_a": "n2",
+        "node_b": "out",
+        "g": 1.1468130672714618,
+        "value_H": 2.07410191430263e-06
+      }
+    ],
+    "meta": {
+      "family": "chebyshev_type_i",
+      "response": "low_pass",
+      "order": 5,
+      "cutoff_definition": "ripple_edge",
+      "z0_scale_ohm": 50.0,
+      "output_transformer_ratio": 1.0,
+      "cutoff_hz": 4400000.0
+    },
+    "output_transformer_ratio": 1.0,
+    "output_balun": null
+  },
+  "analysis": {
+    "sweep": {
+      "f_start_hz": 1000000.0,
+      "f_stop_hz": 30000000.0,
+      "n_points": 2001,
+      "spacing": "logarithmic"
+    }
+  }
+}

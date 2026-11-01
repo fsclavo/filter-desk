@@ -270,8 +270,20 @@ your appearance.
 - **2 m diplexer and VNA comparison** — LPF+HPF design, E-series/parasitics,
   `.s3p`/BOM/report export and 2-port measurement comparison.
 
-Each tutorial includes step-by-step instructions and a **Copy commands** button
-for the equivalent CLI workflow.
+Each tutorial includes step-by-step instructions, a **Copy commands** button
+for the equivalent CLI workflow and an **Open example** button.
+
+#### Built-in example projects
+
+- **40 m receiver preselector** — 7.0–7.3 MHz band-pass, ideal LC ladder.
+- **80 m 100 W transmitter low-pass** — harmonic stress example with TX power
+  set to 100 W.
+- **2 m LPF + HPF diplexer** — 144/148 MHz split with a 100–200 MHz sweep.
+
+The example files live in `src/filterdesk/assets/examples/` in a source
+checkout and are bundled with packaged builds. **Open example** loads a filter
+example into the main window or opens the diplexer in the system designer; use
+**Save as** to keep an edited copy.
 
 ### Specification panel
 

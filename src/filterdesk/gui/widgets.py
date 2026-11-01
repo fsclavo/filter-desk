@@ -3935,7 +3935,11 @@ class FourPortMixedModeDialog(QDialog):
 class DiplexerDialog(QDialog):
     """Design and export an LPF+HPF or BPF+BPF diplexer as a 3-port network."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        project: SystemProject | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setWindowTitle(tr("Diplexer / multiplexer designer"))
         self.setMinimumWidth(760)
@@ -4315,6 +4319,9 @@ class DiplexerDialog(QDialog):
         self._mode.currentIndexChanged.connect(self._on_mode_changed)
         self._auto_order.toggled.connect(self._update_order_enabled)
         self._on_mode_changed()
+        if project is not None:
+            self._apply_system_project(project)
+            self._project_path.setText(tr("built-in example"))
 
     def current_design(
         self,

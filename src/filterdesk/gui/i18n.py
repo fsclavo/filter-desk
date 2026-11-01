@@ -1055,6 +1055,12 @@ _ES.update(
         "&Tutorials…": "&Tutoriales…",
         "Open the guided tutorials.": "Abrir los tutoriales guiados.",
         "Copy commands": "Copiar comandos",
+        "Open example": "Abrir ejemplo",
+        "built-in example": "ejemplo integrado",
+        "Opened example: {title}": "Ejemplo abierto: {title}",
+        "Open the example project for this tutorial.": (
+            "Abrir el proyecto de ejemplo de este tutorial."
+        ),
         "Copied tutorial commands.": "Comandos del tutorial copiados.",
         "No commands for this tutorial.": "Este tutorial no tiene comandos.",
         "Assign real parts": "Asignar partes reales",

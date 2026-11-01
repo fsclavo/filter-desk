@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.70.0 — 2026-11-01
+
+### Added
+
+- **Open example** in **Help → Tutorials…** for the 40 m preselector, 80 m
+  100 W TX low-pass and 2 m diplexer walkthroughs.
+- Bundled example projects under `src/filterdesk/assets/examples/`.
+
 ## v0.69.0 — 2026-11-01
 
 ### Added

@@ -1,0 +1,108 @@
+{
+  "format_version": 2,
+  "metadata": {
+    "title": "Tutorial 1 - 40 m receiver preselector",
+    "author": "",
+    "app_version": "0.69.0",
+    "notes": "Built-in tutorial example. Open Help -> Tutorials, Tutorial 1, for the guided steps. The ideal LC result is a starting point; verify passband, return loss and out-of-band rejection with a VNA."
+  },
+  "extensions": {},
+  "specification": {
+    "family": "chebyshev_type_i",
+    "response": "band_pass",
+    "order": 5,
+    "cutoff_definition": "ripple_edge",
+    "z_source_ohm": 50.0,
+    "z_load_ohm": 50.0,
+    "topology_id": "ladder_bp_series_resonator_input",
+    "f_center_hz": 7148426.400264607,
+    "bandwidth_hz": 450000.0,
+    "passband_ripple_db": 0.1
+  },
+  "circuit": {
+    "topology_id": "ladder_bp_series_resonator_input",
+    "ground": "gnd",
+    "port_in": {
+      "name": "port1",
+      "node": "in",
+      "impedance_ohm": 50.0
+    },
+    "port_out": {
+      "name": "port2",
+      "node": "out",
+      "impedance_ohm": 50.0
+    },
+    "elements": [
+      {
+        "id": "X1",
+        "role": "series",
+        "type": "series_lc",
+        "node_a": "in",
+        "node_b": "n1",
+        "g": 1.1468130672714616,
+        "value_H": 2.0280107606514603e-05,
+        "value_F": 2.4442696097786614e-11
+      },
+      {
+        "id": "X2",
+        "role": "shunt",
+        "type": "parallel_lc",
+        "node_a": "n1",
+        "node_b": "gnd",
+        "g": 1.3712125512670543,
+        "value_H": 5.110659769410825e-08,
+        "value_F": 9.699344691724474e-09
+      },
+      {
+        "id": "X3",
+        "role": "series",
+        "type": "series_lc",
+        "node_a": "n1",
+        "node_b": "n2",
+        "g": 1.9750031575003777,
+        "value_H": 3.492572390425403e-05,
+        "value_F": 1.4192991630334388e-11
+      },
+      {
+        "id": "X4",
+        "role": "shunt",
+        "type": "parallel_lc",
+        "node_a": "n2",
+        "node_b": "gnd",
+        "g": 1.3712125512670539,
+        "value_H": 5.1106597694108265e-08,
+        "value_F": 9.69934469172447e-09
+      },
+      {
+        "id": "X5",
+        "role": "series",
+        "type": "series_lc",
+        "node_a": "n2",
+        "node_b": "out",
+        "g": 1.1468130672714618,
+        "value_H": 2.0280107606514606e-05,
+        "value_F": 2.4442696097786607e-11
+      }
+    ],
+    "meta": {
+      "family": "chebyshev_type_i",
+      "response": "band_pass",
+      "order": 5,
+      "cutoff_definition": "ripple_edge",
+      "z0_scale_ohm": 50.0,
+      "output_transformer_ratio": 1.0,
+      "f_center_hz": 7148426.400264607,
+      "bandwidth_hz": 450000.0
+    },
+    "output_transformer_ratio": 1.0,
+    "output_balun": null
+  },
+  "analysis": {
+    "sweep": {
+      "f_start_hz": 5000000.0,
+      "f_stop_hz": 10000000.0,
+      "n_points": 2001,
+      "spacing": "logarithmic"
+    }
+  }
+}

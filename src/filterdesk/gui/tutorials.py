@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -26,6 +27,7 @@ class Tutorial:
     html: str
     html_es: str
     commands: tuple[str, ...] = ()
+    example: str | None = None
 
 
 TUTORIALS: tuple[Tutorial, ...] = (
@@ -66,6 +68,7 @@ fuera de 7,0–7,3 MHz. El resultado LC ideal es un punto de partida; validar co
             "filterdesk analyze --band 40m --band-kind bpf "
             "--export-build-sheet rx40m.md",
         ),
+        example="rx40m",
     ),
     Tutorial(
         title="100 W transmitter low-pass (80 m)",
@@ -107,6 +110,7 @@ saturación.</p>
             "filterdesk analyze --band 80m --band-kind lpf --power 100 "
             "--harmonics --export-build-sheet tx80m.md",
         ),
+        example="tx80m",
     ),
     Tutorial(
         title="2 m diplexer and VNA comparison",
@@ -150,12 +154,15 @@ cruce. La comparación de 2 puertos no es una medición de VNA de N puertos.</p>
             "--order 5 --ripple 0.1 --f-start 100M --f-stop 200M "
             "--output diplexer.s3p --export-build-sheet diplexer_bom.md",
         ),
+        example="diplexer2m",
     ),
 )
 
 
 class TutorialDialog(QDialog):
-    """Guided tutorials with copyable CLI commands."""
+    """Guided tutorials with copyable CLI commands and example projects."""
+
+    example_requested = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -186,6 +193,11 @@ class TutorialDialog(QDialog):
             tr("Copy commands"), QDialogButtonBox.ButtonRole.ActionRole
         )
         copy_button.clicked.connect(self._copy_commands)
+        self._open_button = buttons.addButton(
+            tr("Open example"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        self._open_button.setToolTip(tr("Open the example project for this tutorial."))
+        self._open_button.clicked.connect(self._open_example)
         layout = QVBoxLayout(self)
         layout.addLayout(body, 1)
         layout.addWidget(buttons)
@@ -203,6 +215,17 @@ class TutorialDialog(QDialog):
             return
         self._browser.setHtml(self._html(TUTORIALS[row]))
         self._status.setText("")
+        self._open_button.setEnabled(TUTORIALS[row].example is not None)
+
+    def _open_example(self) -> None:
+        row = self._list.currentRow()
+        if not 0 <= row < len(TUTORIALS):
+            return
+        example = TUTORIALS[row].example
+        if example is None:
+            return
+        self.accept()
+        self.example_requested.emit(example)
 
     def _copy_commands(self) -> None:
         row = self._list.currentRow()

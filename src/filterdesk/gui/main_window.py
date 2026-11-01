@@ -146,6 +146,11 @@ from filterdesk.services.design_sweep import (
     parse_values,
     run_design_sweep,
 )
+from filterdesk.services.examples import (
+    get_example,
+    load_filter_example,
+    load_system_example,
+)
 from filterdesk.services.hf_band import evaluate_band_filter_response
 from filterdesk.services.measurements import MeasurementRecord
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
@@ -2239,7 +2244,27 @@ class MainWindow(QMainWindow):
         self._update_title()
 
     def _show_tutorials(self) -> None:
-        TutorialDialog(self).exec()
+        dialog = TutorialDialog(self)
+        dialog.example_requested.connect(self._open_tutorial_example)
+        dialog.exec()
+
+    def _open_tutorial_example(self, example_id: str) -> None:
+        try:
+            example = get_example(example_id)
+            if example.kind == "filter":
+                project = load_filter_example(example)
+                self._session.load_project(project, path=None)
+                self._undo.clear()
+                self._load_session_into_ui()
+                self._run_analyze()
+            else:
+                DiplexerDialog(self, load_system_example(example)).exec()
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, tr("Open example"), _exc_text(exc))
+            return
+        self.statusBar().showMessage(
+            tr("Opened example: {title}", title=example.title)
+        )
 
     def _show_about(self) -> None:
         QMessageBox.about(
