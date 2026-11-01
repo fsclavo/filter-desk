@@ -830,6 +830,14 @@ Supported kinds are `lp-hp`, `bp-bp`, `duplexer`, `triplexer` and
 `multiplexer`. Only configuration is stored; opening re-synthesizes and
 reanalyzes the design.
 
+### Schematic export validation
+
+LTspice `.asc`, Qucs `.sch` and SPICE netlist exports have a structural
+validation matrix (headers, symbol/instance blocks, ports, wires, net flags and
+component refs). This does not replace opening the files in LTspice/Qucs; those
+applications are not available in the build environment, so true external
+validation remains a manual/release task.
+
 ### Limits JSON (used with `--limits`)
 
 A JSON **array** of regions:

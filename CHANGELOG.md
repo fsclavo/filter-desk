@@ -3,6 +3,19 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.68.0 — 2026-10-30
+
+### Added
+
+- Structural validation harness for LTspice `.asc`, Qucs `.sch` and SPICE
+  exports: headers, symbols/instances, ports, wires, flags and component refs.
+- Validation matrix for LP/HP/BP/BS exports plus negative structural tests.
+
+### Notes
+
+- LTspice/Qucs are not installed in the build environment. True external-tool
+  validation remains an explicit P0 blocker; no false validation is claimed.
+
 ## v0.67.0 — 2026-10-30
 
 ### Added

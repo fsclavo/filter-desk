@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.67.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.68.0 · **Released:**
 [v0.67.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.67.0) ·
 **Previous:**
 [v0.66.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.66.0) ·
-**Next:** v0.68.0 planning.
+**Next:** v0.68.0 release (export structural validation, pending CI/tag).
 
-**Verification:** local suite **1215 passed**, 4 skipped (ngspice unavailable); coverage **81.96 %**.
+**Verification:** local suite **1220 passed**, 4 skipped (ngspice unavailable); coverage **82.05 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41346980169
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41347804983
 
@@ -899,6 +899,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       visual check remains the only manual residue. (S)
 - [ ] **LTspice/Qucs external validation:** open representative netlists/schematics
       and confirm syntax, transformer ratio orientation and node mapping. (M)
+      - 2026-10-30: added structural validation for `.asc`/`.sch` and a
+        LP/HP/BP/BS matrix. LTspice/Qucs are still not installed, so opening in
+        the vendor tools remains the pending external step.
 - [ ] **VNA holdout (hardware):** run the two real captures through the new
       protocol and record calibration/reference-plane metadata. The tooling and
       synthetic holdout tests are ready. (M)
