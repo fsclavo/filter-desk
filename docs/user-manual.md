@@ -281,9 +281,10 @@ for the equivalent CLI workflow and an **Open example** button.
 - **2 m LPF + HPF diplexer** — 144/148 MHz split with a 100–200 MHz sweep.
 
 The example files live in `src/filterdesk/assets/examples/` in a source
-checkout and are bundled with packaged builds. **Open example** loads a filter
-example into the main window or opens the diplexer in the system designer; use
-**Save as** to keep an edited copy.
+checkout and are bundled with packaged builds. **File → Open example** and the
+**Open example** tutorial button load a filter example into the main window or
+open the diplexer in the system designer; use **Save as** to keep an edited
+copy.
 
 ### Specification panel
 

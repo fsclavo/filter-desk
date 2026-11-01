@@ -459,6 +459,34 @@ def test_file_menu_has_import_touchstone() -> None:
     assert app is not None
 
 
+def test_file_menu_has_builtin_examples(monkeypatch: pytest.MonkeyPatch) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.examples import BUILTIN_EXAMPLES
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    menus = {
+        a.text(): a.menu() for a in window.menuBar().actions() if a.menu()
+    }
+    examples_menu = {
+        a.text(): a.menu()
+        for a in menus["&File"].actions()
+        if a.menu()
+    }.get("Open &example")
+    assert examples_menu is not None
+    assert len(examples_menu.actions()) == len(BUILTIN_EXAMPLES)
+
+    opened: list[str] = []
+    monkeypatch.setattr(window, "_open_tutorial_example", opened.append)
+    examples_menu.actions()[0].trigger()
+    assert opened == [BUILTIN_EXAMPLES[0].id]
+    window.close()
+    assert app is not None
+
+
 def test_tools_menu_holds_calculators() -> None:
     from PySide6.QtWidgets import QApplication
 

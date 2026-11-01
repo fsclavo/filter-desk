@@ -1056,6 +1056,8 @@ _ES.update(
         "Open the guided tutorials.": "Abrir los tutoriales guiados.",
         "Copy commands": "Copiar comandos",
         "Open example": "Abrir ejemplo",
+        "Open &example": "Abrir &ejemplo",
+        "Open built-in example: {title}": "Abrir ejemplo integrado: {title}",
         "built-in example": "ejemplo integrado",
         "Opened example: {title}": "Ejemplo abierto: {title}",
         "Open the example project for this tutorial.": (

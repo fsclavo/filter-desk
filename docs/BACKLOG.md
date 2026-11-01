@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.70.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.71.0 · **Released:**
 [v0.70.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.70.0) ·
 **Previous:**
 [v0.69.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.69.0) ·
-**Next:** v0.71.0 planning.
+**Next:** v0.71.0 release (File → Open example, pending CI/tag).
 
-**Verification:** local suite **1228 passed**, 4 skipped (ngspice unavailable); coverage **82.08 %**.
+**Verification:** local suite **1229 passed**, 4 skipped (ngspice unavailable); coverage **82.09 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41359788057
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41360392927
 
@@ -28,7 +28,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
   calculator, **Transformer / balun / unun**, Microstrip line.
 - **File** — project/Touchstone import and exports: BOM, SPICE, LTspice, Qucs,
-  CSV and Smith chart; **Recent projects** for the last ten files.
+  CSV and Smith chart; **Open example** and **Recent projects** for the last
+  ten files.
 - **Help** — Guided tutorials (F1), model confidence inventory and user manual.
 - The transformer/balun/unun designer has only **Design** and **Model** tabs;
   winding diagrams were removed.
@@ -1130,6 +1131,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       2 m diplexer/VNA walkthroughs.
 - [x] Copyable CLI commands per tutorial.
 - [x] Ready-to-open example projects with **Open example**.
+- [x] **File → Open example** submenu with bilingual titles.
 
 ## 76. Ham-radio onboarding and discoverability
 

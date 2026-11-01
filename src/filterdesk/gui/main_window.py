@@ -69,7 +69,13 @@ from filterdesk.gui.commands import (
     SnapCommand,
     SynthesizeCommand,
 )
-from filterdesk.gui.i18n import Language, language_from_code, set_language, tr
+from filterdesk.gui.i18n import (
+    Language,
+    current_language,
+    language_from_code,
+    set_language,
+    tr,
+)
 from filterdesk.gui.panels.component_table import ComponentTablePanel
 from filterdesk.gui.panels.harmonics_panel import HarmonicsPanel
 from filterdesk.gui.panels.limits_panel import LimitsPanel
@@ -147,6 +153,7 @@ from filterdesk.services.design_sweep import (
     run_design_sweep,
 )
 from filterdesk.services.examples import (
+    BUILTIN_EXAMPLES,
     get_example,
     load_filter_example,
     load_system_example,
@@ -448,6 +455,18 @@ class MainWindow(QMainWindow):
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_new)
         file_menu.addAction(act_open)
+        examples_menu = file_menu.addMenu(tr("Open &example"))
+        language = current_language()
+        for example in BUILTIN_EXAMPLES:
+            label = example.title_es if language is Language.ES else example.title
+            action = QAction(label, self)
+            action.setStatusTip(tr("Open built-in example: {title}", title=label))
+            action.triggered.connect(
+                lambda checked=False, example_id=example.id: (
+                    self._open_tutorial_example(example_id)
+                )
+            )
+            examples_menu.addAction(action)
         self._recent_menu = file_menu.addMenu(tr("&Recent projects"))
         self._refresh_recent_menu()
         file_menu.addSeparator()

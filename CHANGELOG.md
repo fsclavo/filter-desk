@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.71.0 — 2026-11-01
+
+### Added
+
+- **File → Open example** submenu for the bundled tutorial projects.
+- Bilingual example titles and status tips.
+
 ## v0.70.0 — 2026-11-01
 
 ### Added
