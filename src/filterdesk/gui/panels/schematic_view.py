@@ -5,7 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import (
+    QBuffer,
     QEvent,
+    QIODevice,
     QPoint,
     QPointF,
     QRect,
@@ -242,17 +244,7 @@ class SchematicPanel(QWidget):
         try:
             self.set_circuit(self._circuit)
             if suffix == ".png":
-                image = QImage(width, height, QImage.Format.Format_ARGB32)
-                image.fill(QColor("#ffffff") if light else self._bg_color())
-                painter = QPainter(image)
-                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                self._scene.render(
-                    painter,
-                    QRectF(0, 0, width, height),
-                    scene_rect,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                )
-                painter.end()
+                image = self._render_png_image(width, height, light)
                 if not image.save(str(target)):
                     raise OSError(f"cannot write {target}")
             elif suffix == ".svg":
@@ -290,6 +282,49 @@ class SchematicPanel(QWidget):
         finally:
             self._export_light = previous
             self.set_circuit(self._circuit)
+
+    def _render_png_image(
+        self, width: int, height: int, light: bool
+    ) -> QImage:
+        if self._circuit is None or not self._circuit.elements:
+            raise ValueError("no schematic to export")
+        scene_rect = self._scene.itemsBoundingRect().adjusted(-30, -24, 30, 24)
+        if scene_rect.isEmpty():
+            raise ValueError("no schematic to export")
+        previous = self._export_light
+        self._export_light = light
+        try:
+            self.set_circuit(self._circuit)
+            image = QImage(width, height, QImage.Format.Format_ARGB32)
+            image.fill(QColor("#ffffff") if light else self._bg_color())
+            painter = QPainter(image)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            self._scene.render(
+                painter,
+                QRectF(0, 0, width, height),
+                scene_rect,
+                Qt.AspectRatioMode.KeepAspectRatio,
+            )
+            painter.end()
+            return image
+        finally:
+            self._export_light = previous
+            self.set_circuit(self._circuit)
+
+    def render_png_bytes(
+        self,
+        *,
+        width: int = 1600,
+        height: int = 900,
+        light: bool = True,
+    ) -> bytes:
+        """Return the current schematic as PNG bytes."""
+        image = self._render_png_image(width, height, light)
+        buffer = QBuffer()
+        buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+        if not image.save(buffer, b"PNG"):
+            raise OSError("cannot encode schematic PNG")
+        return bytes(buffer.data().data())
 
     def _fit_view(self) -> None:
         rect = self._scene.itemsBoundingRect().adjusted(-20, -20, 20, 20)

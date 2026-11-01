@@ -680,6 +680,52 @@ def render_multiplexer_bom_csv(
     return buf.getvalue()
 
 
+_REPORT_BOM_COLUMNS: tuple[str, ...] = (
+    "ref",
+    "type",
+    "value",
+    "tolerance_pct",
+    "v_peak_v",
+    "i_peak_a",
+)
+_REPORT_BOM_HEADERS: dict[str, str] = {
+    "ref": "Ref",
+    "type": "Type",
+    "value": "Value",
+    "tolerance_pct": "Tol %",
+    "v_peak_v": "Vpk",
+    "i_peak_a": "Ipk",
+}
+
+
+def render_multiplexer_bom_table_html(
+    branches: Sequence[tuple[str, Circuit]],
+    *,
+    columns: Sequence[str] = _REPORT_BOM_COLUMNS,
+    tolerances: Mapping[str, Mapping[str, float]] | None = None,
+    series: ESeries | None = None,
+    group: bool = False,
+) -> str:
+    """Render a compact combined BOM table for the system HTML report."""
+    rows = multiplexer_build_rows(
+        branches, tolerances=tolerances, series=series, group=group
+    )
+    parts = ["<table>", "<tr>"]
+    parts.append("<th>Branch</th>")
+    parts += [f"<th>{html.escape(_REPORT_BOM_HEADERS[c])}</th>" for c in columns]
+    parts.append("</tr>")
+    for label, row in rows:
+        parts.append("<tr>")
+        parts.append(f"<td>{html.escape(label)}</td>")
+        parts += [
+            f"<td>{html.escape(_column_value(row, column, human=True))}</td>"
+            for column in columns
+        ]
+        parts.append("</tr>")
+    parts.append("</table>")
+    return "\n".join(parts)
+
+
 def render_multiplexer_build_sheet_markdown(
     branches: Sequence[tuple[str, Circuit]],
     *,
@@ -930,6 +976,7 @@ __all__ = [
     "render_build_sheet_html",
     "render_build_sheet_markdown",
     "render_multiplexer_bom_csv",
+    "render_multiplexer_bom_table_html",
     "render_multiplexer_build_sheet_html",
     "render_multiplexer_build_sheet_markdown",
     "summary_pairs",

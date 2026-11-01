@@ -1593,6 +1593,28 @@ def test_system_montecarlo_dialog_runs() -> None:
     assert app is not None
 
 
+def test_system_report_export(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog
+
+    app = QApplication.instance() or QApplication([])
+    dialog = DiplexerDialog()
+    dialog._points.setValue(201)
+    assert dialog.design()
+    assert dialog._export_report_button.isEnabled()
+    path = tmp_path / "report.html"
+    assert dialog.export_report(path)
+    text = path.read_text(encoding="utf-8")
+    assert "System report" in text
+    assert "Magnitude" in text
+    assert "Bill of materials" in text
+    assert "data:image/png;base64," in text
+    assert "<td>Low</td>" in text
+    dialog.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 

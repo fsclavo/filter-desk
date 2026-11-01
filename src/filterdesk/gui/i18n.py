@@ -695,6 +695,8 @@ _ES.update(
         "Export Touchstone (.s2p)": "Exportar Touchstone (.s2p)",
         "Export build sheet": "Exportar hoja de montaje",
         "Export build sheet…": "Exportar hoja de montaje…",
+        "Export report…": "Exportar informe…",
+        "Export system report": "Exportar informe del sistema",
         "Export schematic": "Exportar esquemático",
         "Export schematic…": "Exportar esquemático…",
         "Export system build sheet": "Exportar hoja de montaje del sistema",

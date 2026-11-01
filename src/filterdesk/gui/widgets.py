@@ -183,6 +183,7 @@ from filterdesk.services.system_project import (
     write_system_project,
 )
 from filterdesk.services.system_rebuild import SystemDesign
+from filterdesk.services.system_report import render_system_report_html
 from filterdesk.services.system_sensitivity import (
     SystemSensitivityError,
     analyze_system_sensitivity,
@@ -3781,6 +3782,7 @@ class DiplexerDialog(QDialog):
         self._design_button.clicked.connect(self.design)
         self._export_network_button = QPushButton(tr("Export .s3p…"))
         self._export_build_button = QPushButton(tr("Export build sheet…"))
+        self._export_report_button = QPushButton(tr("Export report…"))
         self._export_low_button = QPushButton(tr("Export low .s2p…"))
         self._export_high_button = QPushButton(tr("Export high .s2p…"))
         self._export_mid_button = QPushButton(tr("Export mid .s2p…"))
@@ -3788,6 +3790,7 @@ class DiplexerDialog(QDialog):
         for button in (
             self._export_network_button,
             self._export_build_button,
+            self._export_report_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
@@ -3795,6 +3798,7 @@ class DiplexerDialog(QDialog):
             button.setEnabled(False)
         self._export_network_button.clicked.connect(self._export_network)
         self._export_build_button.clicked.connect(self._export_build_sheet)
+        self._export_report_button.clicked.connect(self._export_report)
         self._export_low_button.clicked.connect(lambda: self._export_branch("low"))
         self._export_high_button.clicked.connect(lambda: self._export_branch("high"))
         self._export_mid_button.clicked.connect(self._export_mid)
@@ -3805,6 +3809,7 @@ class DiplexerDialog(QDialog):
             self._design_button,
             self._export_network_button,
             self._export_build_button,
+            self._export_report_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,
@@ -4422,6 +4427,61 @@ class DiplexerDialog(QDialog):
         self._status.setText(status)
         return True
 
+    def export_report(self, path: str | Path) -> bool:
+        if self._design is None:
+            return False
+        report = system_report(self._design)
+        schematic_images: list[tuple[str, bytes]] = []
+        for branch, panel in zip(
+            report.branches, self._schematic_panels, strict=False
+        ):
+            try:
+                schematic_images.append(
+                    (branch.label, panel.render_png_bytes(width=1400, height=700))
+                )
+            except (OSError, ValueError):
+                continue
+        notes = list(report.notes)
+        if self._snap_info is not None:
+            notes.append(
+                "Component values snapped to "
+                f"{self._snap_info.series.value} "
+                f"(max delta {self._snap_info.max_delta_pct:.2f}%)."
+            )
+        if self._parasitics_info is not None:
+            notes.append(
+                "Parasitics: "
+                + _parasitics_text(self._parasitics_info.config)
+                + "."
+            )
+        try:
+            text = render_system_report_html(
+                self._design,
+                schematic_images=schematic_images,
+                notes=notes,
+            )
+            Path(path).write_text(text, encoding="utf-8")
+        except (OSError, ValueError) as exc:
+            self._status.setText(str(exc))
+            return False
+        self._status.setText(tr("Wrote {path}", path=path))
+        return True
+
+    def _export_report(self) -> None:
+        if self._design is None:
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export system report"),
+            "system_report.html",
+            "HTML (*.html);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith((".html", ".htm")):
+            path += ".html"
+        self.export_report(path)
+
     def export_build_sheet(
         self,
         path: str | Path,
@@ -4909,6 +4969,7 @@ class DiplexerDialog(QDialog):
         for button in (
             self._export_network_button,
             self._export_build_button,
+            self._export_report_button,
             self._export_low_button,
             self._export_mid_button,
             self._export_high_button,

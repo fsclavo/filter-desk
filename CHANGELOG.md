@@ -3,6 +3,16 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.61.0 — 2026-10-30
+
+### Added
+
+- **Export report…** in the system designer: standalone HTML with system
+  metrics, embedded magnitude plot, one schematic per branch, combined BOM and
+  model notes.
+- `render_magnitude_png` and `render_system_report_html`; no external image
+  files are required.
+
 ## v0.60.0 — 2026-10-30
 
 ### Added
