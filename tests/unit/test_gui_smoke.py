@@ -1611,6 +1611,10 @@ def test_system_report_export(tmp_path: Path) -> None:
     assert "Bill of materials" in text
     assert "data:image/png;base64," in text
     assert "<td>Low</td>" in text
+    pdf = tmp_path / "report.pdf"
+    assert dialog.export_report(pdf)
+    assert pdf.read_bytes().startswith(b"%PDF")
+    assert pdf.stat().st_size > 1000
     dialog.close()
     assert app is not None
 

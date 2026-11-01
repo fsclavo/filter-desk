@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.62.0 — 2026-10-30
+
+### Added
+
+- Direct **PDF** export for the system report, alongside standalone HTML.
+- Qt PDF rendering reuses the embedded report images; no external assets.
+- **Export report…** file dialog now offers HTML and PDF.
+
 ## v0.61.0 — 2026-10-30
 
 ### Added

@@ -110,6 +110,7 @@ from filterdesk.domain.units import format_engineering, parse_si
 from filterdesk.gui.i18n import family_label, tr
 from filterdesk.gui.panels.schematic_view import SchematicPanel
 from filterdesk.gui.plot_axes import freq_plot
+from filterdesk.gui.report_pdf import write_system_report_pdf
 from filterdesk.io.build_sheet import write_multiplexer_build_sheet
 from filterdesk.io.coax_export import coax_notch_csv
 from filterdesk.io.mixed_mode_export import mixed_mode_csv, mixed_mode_json
@@ -4460,7 +4461,11 @@ class DiplexerDialog(QDialog):
                 schematic_images=schematic_images,
                 notes=notes,
             )
-            Path(path).write_text(text, encoding="utf-8")
+            target = Path(path)
+            if target.suffix.lower() == ".pdf":
+                write_system_report_pdf(text, target)
+            else:
+                target.write_text(text, encoding="utf-8")
         except (OSError, ValueError) as exc:
             self._status.setText(str(exc))
             return False
@@ -4470,16 +4475,16 @@ class DiplexerDialog(QDialog):
     def _export_report(self) -> None:
         if self._design is None:
             return
-        path, _selected = QFileDialog.getSaveFileName(
+        path, selected = QFileDialog.getSaveFileName(
             self,
             tr("Export system report"),
             "system_report.html",
-            "HTML (*.html);;All files (*)",
+            "HTML (*.html);;PDF (*.pdf);;All files (*)",
         )
         if not path:
             return
-        if not path.lower().endswith((".html", ".htm")):
-            path += ".html"
+        if not path.lower().endswith((".html", ".htm", ".pdf")):
+            path += ".pdf" if "PDF" in selected else ".html"
         self.export_report(path)
 
     def export_build_sheet(

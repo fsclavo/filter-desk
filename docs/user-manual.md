@@ -1115,10 +1115,10 @@ starts with `branch,ref,qty,…` so duplicate refs in different branches remain
 unambiguous. Because the BOM uses the already-analyzed snapped/parasitic
 circuits, its values match the displayed response.
 
-**Export report…** writes a self-contained HTML report with the system summary,
-magnitude plot, one schematic per branch, the combined BOM table and the model
-notes. Images are embedded, so the file can be shared or printed to PDF without
-extra assets.
+**Export report…** writes a self-contained HTML or PDF report with the system
+summary, magnitude plot, one schematic per branch, the combined BOM table and
+the model notes. The HTML embeds its images, so it can be shared without extra
+assets; the PDF is generated directly with Qt and is ready to print.
 
 In **Duplexer TX/RX** mode, ports are **1 = antenna**, **2 = TX**, **3 = RX**.
 Isolation is the combined `|S32|` in each band; the dialog reports TX/RX

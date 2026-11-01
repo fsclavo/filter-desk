@@ -23,6 +23,7 @@ from PySide6.QtGui import (
     QContextMenuEvent,
     QFont,
     QImage,
+    QImageWriter,
     QMouseEvent,
     QPageSize,
     QPainter,
@@ -322,8 +323,9 @@ class SchematicPanel(QWidget):
         image = self._render_png_image(width, height, light)
         buffer = QBuffer()
         buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-        if not image.save(buffer, b"PNG"):
-            raise OSError("cannot encode schematic PNG")
+        writer = QImageWriter(buffer, b"PNG")
+        if not writer.write(image):
+            raise OSError(writer.errorString())
         return bytes(buffer.data().data())
 
     def _fit_view(self) -> None:
