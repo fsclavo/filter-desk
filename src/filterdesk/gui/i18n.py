@@ -1050,6 +1050,31 @@ _ES.update(
         "System parasitics": "Parasitarios del sistema",
         "System project": "Proyecto de sistema",
         "Component library": "Biblioteca de componentes",
+        "Assign real parts": "Asignar partes reales",
+        "Assign parts…": "Asignar partes…",
+        "Assigned {count} parts.": "Asignadas {count} partes.",
+        "Real parts": "Partes reales",
+        "Assign selected": "Asignar seleccionada",
+        "Auto-assign": "Autoasignar",
+        "Assigned MPN": "MPN asignado",
+        "Assigned {assigned} parts; {unassigned} unassigned.": (
+            "Asignadas {assigned} partes; {unassigned} sin asignar."
+        ),
+        "Assigned {mpn}.": "Asignada {mpn}.",
+        "Assignments cleared.": "Asignaciones borradas.",
+        "Delta": "Delta",
+        "Max delta": "Delta máximo",
+        "Library": "Biblioteca",
+        "Select a component and a library part.": (
+            "Seleccione un componente y una parte de la biblioteca."
+        ),
+        "Automatic assignment only selects a same-kind part within the "
+        "maximum delta; otherwise the component stays unassigned. "
+        "Manual assignment is always allowed.": (
+            "La asignación automática solo elige una parte del mismo tipo "
+            "dentro del delta máximo; si no, el componente queda sin asignar. "
+            "La asignación manual siempre está permitida."
+        ),
         "System sensitivity": "Sensibilidad del sistema",
         "System Monte Carlo": "Monte Carlo del sistema",
         "Monte Carlo": "Monte Carlo",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import html as html_mod
 import io
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 
 import numpy as np
@@ -13,6 +13,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from filterdesk import __version__
+from filterdesk.components_std import LibraryPart
 from filterdesk.io.build_sheet import render_multiplexer_bom_table_html
 from filterdesk.services.diplexer import BandDiplexerDesign, DiplexerDesign
 from filterdesk.services.duplexer import DuplexerDesign
@@ -64,6 +65,7 @@ def render_system_report_html(
     *,
     schematic_images: Sequence[tuple[str, bytes]] = (),
     notes: Sequence[str] = (),
+    parts: Mapping[str, LibraryPart] | None = None,
     title: str | None = None,
     generated_at: datetime | None = None,
 ) -> str:
@@ -79,7 +81,7 @@ def render_system_report_html(
         for key, value in report.summary
     )
     branches = [(branch.label, branch.circuit) for branch in report.branches]
-    bom_table = render_multiplexer_bom_table_html(branches)
+    bom_table = render_multiplexer_bom_table_html(branches, parts=parts)
     schematic_parts: list[str] = []
     for label, png in schematic_images:
         encoded = base64.b64encode(png).decode("ascii")

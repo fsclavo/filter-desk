@@ -103,6 +103,7 @@ from filterdesk.domain.circuit import (
     IdealInductor,
     MicrostripLineElement,
     NonIdealInductor,
+    physical_components,
 )
 from filterdesk.domain.enums import ApproximationFamily, FilterResponse
 from filterdesk.domain.specs import FilterSpec
@@ -165,6 +166,7 @@ from filterdesk.services.multiplexer import (
     MultiplexerError,
     design_multiplexer,
 )
+from filterdesk.services.part_assignment import assign_nearest_parts
 from filterdesk.services.report import system_report
 from filterdesk.services.system_montecarlo import (
     SystemMonteCarloConfig,
@@ -1316,6 +1318,233 @@ class BuildSheetGroupDialog(QDialog):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             return dialog._group.isChecked()
         return None
+
+
+class PartAssignmentDialog(QDialog):
+    """Assign library parts to physical L/C components in a system design."""
+
+    def __init__(
+        self,
+        design: SystemDesign,
+        assignments: dict[str, LibraryPart] | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Assign real parts"))
+        self.setMinimumWidth(1050)
+        self._design = design
+        self._library: tuple[LibraryPart, ...] = STARTER_PARTS
+        self._assignments = dict(assignments or {})
+        self._bom_rows: list[tuple[str, str, str, str, float]] = []
+        self._filtered_parts: list[LibraryPart] = []
+        report = system_report(design)
+        for branch in report.branches:
+            for comp in physical_components(branch.circuit):
+                if comp.kind not in {"inductor", "capacitor"}:
+                    continue
+                self._bom_rows.append(
+                    (
+                        f"{branch.label}:{comp.ref}",
+                        branch.label,
+                        comp.ref,
+                        comp.kind,
+                        comp.value,
+                    )
+                )
+        self._bom = QTableWidget(0, 5)
+        self._bom.setHorizontalHeaderLabels(
+            [tr("Branch"), tr("Ref"), tr("Type"), tr("Value"), tr("Assigned MPN")]
+        )
+        self._bom.verticalHeader().setVisible(False)
+        self._bom.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._bom.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._bom.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._bom.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._parts = QTableWidget(0, 5)
+        self._parts.setHorizontalHeaderLabels(
+            [tr("MPN"), tr("Manufacturer"), tr("Value"), tr("Package"), tr("Delta")]
+        )
+        self._parts.verticalHeader().setVisible(False)
+        self._parts.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._parts.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._parts.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        self._parts.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        self._max_delta = QDoubleSpinBox()
+        self._max_delta.setRange(0.0, 100.0)
+        self._max_delta.setDecimals(1)
+        self._max_delta.setValue(10.0)
+        self._max_delta.setSuffix(" %")
+        self._status = QLabel("")
+        self._status.setWordWrap(True)
+        self._note = QLabel(
+            tr(
+                "Automatic assignment only selects a same-kind part within the "
+                "maximum delta; otherwise the component stays unassigned. "
+                "Manual assignment is always allowed."
+            )
+        )
+        self._note.setWordWrap(True)
+        left = QVBoxLayout()
+        left.addWidget(QLabel(tr("Components")))
+        left.addWidget(self._bom, 1)
+        right = QVBoxLayout()
+        right.addWidget(QLabel(tr("Library")))
+        right.addWidget(self._parts, 1)
+        tables = QHBoxLayout()
+        tables.addLayout(left, 1)
+        tables.addLayout(right, 1)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        auto_button = buttons.addButton(
+            tr("Auto-assign"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        clear_button = buttons.addButton(
+            tr("Clear"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        assign_button = buttons.addButton(
+            tr("Assign selected"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        load_button = buttons.addButton(
+            tr("Load library…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
+        auto_button.clicked.connect(self._auto_assign)
+        clear_button.clicked.connect(self._clear)
+        assign_button.clicked.connect(self._assign_selected)
+        load_button.clicked.connect(self._load_library)
+        form = QFormLayout(self)
+        form.addRow(tr("Max delta"), self._max_delta)
+        form.addRow(tables)
+        form.addRow(self._note)
+        form.addRow(self._status)
+        form.addRow(buttons)
+        self._bom.itemSelectionChanged.connect(self._on_bom_selection)
+        self._refresh_bom()
+        if self._bom_rows:
+            self._bom.selectRow(0)
+
+    def assignments(self) -> dict[str, LibraryPart]:
+        return dict(self._assignments)
+
+    def _selected_bom(self) -> tuple[str, str, str, str, float] | None:
+        row = self._bom.currentRow()
+        if row < 0 or row >= len(self._bom_rows):
+            return None
+        return self._bom_rows[row]
+
+    def _refresh_bom(self) -> None:
+        self._bom.setUpdatesEnabled(False)
+        try:
+            self._bom.setRowCount(len(self._bom_rows))
+            for row, (key, branch, ref, kind, value) in enumerate(self._bom_rows):
+                part = self._assignments.get(key)
+                unit = "H" if kind == "inductor" else "F"
+                cells = (
+                    branch,
+                    ref,
+                    kind,
+                    format_engineering(value, unit, digits=6),
+                    "" if part is None else part.mpn,
+                )
+                for column, cell in enumerate(cells):
+                    self._bom.setItem(row, column, QTableWidgetItem(cell))
+        finally:
+            self._bom.setUpdatesEnabled(True)
+        self._bom.resizeRowsToContents()
+
+    def _on_bom_selection(self) -> None:
+        selected = self._selected_bom()
+        if selected is None:
+            self._parts.setRowCount(0)
+            return
+        _key, _branch, _ref, kind, value = selected
+        self._filtered_parts = sorted(
+            search_parts(self._library, kind=kind),
+            key=lambda part: abs(part.value_si - value),
+        )
+        self._parts.setUpdatesEnabled(False)
+        try:
+            self._parts.setRowCount(len(self._filtered_parts))
+            for row, part in enumerate(self._filtered_parts):
+                delta = 100.0 * abs(part.value_si - value) / value
+                cells = (
+                    part.mpn,
+                    part.manufacturer,
+                    part.value_text,
+                    part.package,
+                    f"{delta:.1f}%",
+                )
+                for column, cell in enumerate(cells):
+                    self._parts.setItem(row, column, QTableWidgetItem(cell))
+        finally:
+            self._parts.setUpdatesEnabled(True)
+        self._parts.resizeRowsToContents()
+        if self._filtered_parts:
+            self._parts.selectRow(0)
+
+    def _auto_assign(self) -> None:
+        report = system_report(self._design)
+        result = assign_nearest_parts(
+            [(branch.label, branch.circuit) for branch in report.branches],
+            self._library,
+            max_delta_pct=self._max_delta.value(),
+        )
+        self._assignments = dict(result.assignments)
+        self._refresh_bom()
+        self._status.setText(
+            tr(
+                "Assigned {assigned} parts; {unassigned} unassigned.",
+                assigned=len(result.assignments),
+                unassigned=len(result.unassigned),
+            )
+        )
+
+    def _assign_selected(self) -> None:
+        selected = self._selected_bom()
+        row = self._parts.currentRow()
+        if selected is None or row < 0 or row >= len(self._filtered_parts):
+            self._status.setText(tr("Select a component and a library part."))
+            return
+        self._assignments[selected[0]] = self._filtered_parts[row]
+        self._refresh_bom()
+        self._status.setText(tr("Assigned {mpn}.", mpn=self._filtered_parts[row].mpn))
+
+    def _clear(self) -> None:
+        self._assignments.clear()
+        self._refresh_bom()
+        self._status.setText(tr("Assignments cleared."))
+
+    def _load_library(self) -> None:
+        path, _selected = QFileDialog.getOpenFileName(
+            self,
+            tr("Load component library"),
+            "",
+            "Component library (*.json);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            self._library = read_component_library(path)
+        except (ComponentLibraryError, OSError, ValueError) as exc:
+            QMessageBox.critical(self, tr("Component library"), str(exc))
+            return
+        self._on_bom_selection()
+        self._status.setText(tr("Loaded {path}", path=path))
 
 
 class ComponentLibraryDialog(QDialog):
@@ -3674,6 +3903,7 @@ class DiplexerDialog(QDialog):
         for series in ESeries:
             self._snap_series.addItem(series.value, series.value)
         self._snap_info: SystemSnapResult | None = None
+        self._part_assignments: dict[str, LibraryPart] = {}
         self._parasitics_config: SystemParasiticsConfig | None = None
         self._parasitics_info: SystemParasiticsResult | None = None
         self._parasitics_button = QPushButton(tr("Parasitics…"))
@@ -3914,6 +4144,10 @@ class DiplexerDialog(QDialog):
         self._montecarlo_button.clicked.connect(self._run_system_montecarlo)
         self._montecarlo_button.setEnabled(False)
         form.addRow(tr("Monte Carlo"), self._montecarlo_button)
+        self._assign_parts_button = QPushButton(tr("Assign parts…"))
+        self._assign_parts_button.clicked.connect(self._run_assign_parts)
+        self._assign_parts_button.setEnabled(False)
+        form.addRow(tr("Real parts"), self._assign_parts_button)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -4219,6 +4453,7 @@ class DiplexerDialog(QDialog):
         self._samples.setHorizontalHeaderLabels(headers)
         self._design = None
         self._snap_info = None
+        self._part_assignments.clear()
         self._parasitics_info = None
         self._set_export_enabled(False)
         self._metrics.setRowCount(0)
@@ -4245,6 +4480,19 @@ class DiplexerDialog(QDialog):
         is_duplexer = self._mode.currentData() == "duplexer"
         self._order.setEnabled(not (is_duplexer and self._auto_order.isChecked()))
 
+    def _run_assign_parts(self) -> None:
+        if self._design is None:
+            return
+        dialog = PartAssignmentDialog(
+            self._design, self._part_assignments, self
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._part_assignments = dialog.assignments()
+        self._status.setText(
+            tr("Assigned {count} parts.", count=len(self._part_assignments))
+        )
+
     def _run_system_montecarlo(self) -> None:
         if self._design is None:
             return
@@ -4265,6 +4513,7 @@ class DiplexerDialog(QDialog):
             self.design()
 
     def design(self) -> bool:
+        self._part_assignments.clear()
         try:
             family = ApproximationFamily(str(self._family.currentData()))
             order = int(self._order.value())
@@ -4460,6 +4709,7 @@ class DiplexerDialog(QDialog):
                 self._design,
                 schematic_images=schematic_images,
                 notes=notes,
+                parts=self._part_assignments,
             )
             target = Path(path)
             if target.suffix.lower() == ".pdf":
@@ -4520,6 +4770,7 @@ class DiplexerDialog(QDialog):
                 notes=notes,
                 series=series,
                 group=group,
+                parts=self._part_assignments,
             )
         except OSError as exc:
             self._status.setText(str(exc))
@@ -4981,6 +5232,7 @@ class DiplexerDialog(QDialog):
             self._export_schematic_button,
             self._sensitivity_button,
             self._montecarlo_button,
+            self._assign_parts_button,
         ):
             button.setEnabled(enabled)
 

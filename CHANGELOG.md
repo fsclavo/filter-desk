@@ -3,6 +3,18 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.64.0 — 2026-10-30
+
+### Added
+
+- **Assign parts…** dialog for automatic nearest-part and manual real-part
+  assignment to physical L/C components.
+- Conservative auto-assignment with a configurable maximum value delta;
+  unmatched parts stay unassigned.
+- Manufacturer, MPN and package columns in the BOM, combined CSV, build sheets
+  and HTML/PDF report.
+- ADR-038 documents the BOM-metadata-only boundary.
+
 ## v0.63.0 — 2026-10-30
 
 ### Added

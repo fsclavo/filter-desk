@@ -20,7 +20,7 @@ from pathlib import Path
 
 from filterdesk.analysis.harmonics import HarmonicReport
 from filterdesk.analysis.stress import StressReport
-from filterdesk.components_std import ESeries, nearest_e_series
+from filterdesk.components_std import ESeries, LibraryPart, nearest_e_series
 from filterdesk.confidence import assumptions_for_circuit
 from filterdesk.domain.circuit import (
     Circuit,
@@ -64,6 +64,10 @@ class BuildSheetRow:
     length_mm: float = 0.0
     angle_deg: float = 0.0
     stub_kind: str = ""
+    manufacturer: str = ""
+    mpn: str = ""
+    package: str = ""
+    part_id: str = ""
 
 
 BOM_COLUMNS: tuple[str, ...] = (
@@ -118,6 +122,9 @@ _SHEET_COLUMNS: tuple[str, ...] = (
     "length_mm",
     "angle_deg",
     "stub_kind",
+    "manufacturer",
+    "mpn",
+    "package",
 )
 _SHEET_HEADERS: tuple[str, ...] = (
     "Ref",
@@ -142,6 +149,9 @@ _SHEET_HEADERS: tuple[str, ...] = (
     "L",
     "Angle",
     "Stub",
+    "Mfr",
+    "MPN",
+    "Package",
 )
 
 
@@ -224,6 +234,10 @@ def _group_key(row: BuildSheetRow) -> tuple[object, ...]:
         row.length_mm,
         row.angle_deg,
         row.stub_kind,
+        row.manufacturer,
+        row.mpn,
+        row.package,
+        row.part_id,
     )
 
 
@@ -259,12 +273,15 @@ def build_sheet_rows(
     stress: StressReport | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> list[BuildSheetRow]:
     """Expand ``circuit`` into BOM rows (optionally snapped and grouped)."""
     tol = tolerances or {}
+    part_map = parts or {}
     by_ref = {e.ref: e for e in stress.entries} if stress is not None else {}
     rows: list[BuildSheetRow] = []
     for comp in physical_components(circuit):
+        library_part = part_map.get(comp.ref)
         entry = by_ref.get(comp.ref)
         series_tag: str | None = None
         nearest: float | None = None
@@ -340,6 +357,12 @@ def build_sheet_rows(
                 length_mm=comp.length_mm,
                 angle_deg=comp.angle_deg,
                 stub_kind=comp.stub_kind,
+                manufacturer=(
+                    library_part.manufacturer if library_part is not None else ""
+                ),
+                mpn=library_part.mpn if library_part is not None else "",
+                package=library_part.package if library_part is not None else "",
+                part_id=library_part.id if library_part is not None else "",
             )
         )
     return _group_rows(rows) if group else rows
@@ -404,6 +427,14 @@ def _column_value(row: BuildSheetRow, column: str, *, human: bool = False) -> st
         return "" if row.angle_deg <= 0.0 else f"{row.angle_deg:.4g}"
     if column == "stub_kind":
         return row.stub_kind
+    if column == "manufacturer":
+        return row.manufacturer
+    if column == "mpn":
+        return row.mpn
+    if column == "package":
+        return row.package
+    if column == "part_id":
+        return row.part_id
     if column == "v_peak_v":
         return "" if row.v_peak_v is None else f"{row.v_peak_v:.4g}"
     if column == "i_peak_a":
@@ -624,7 +655,13 @@ def render_build_sheet_html(
     return "\n".join(parts)
 
 
-MULTIPLEXER_BOM_COLUMNS: tuple[str, ...] = ("branch", *BOM_COLUMNS)
+MULTIPLEXER_BOM_COLUMNS: tuple[str, ...] = (
+    "branch",
+    *BOM_COLUMNS,
+    "manufacturer",
+    "mpn",
+    "package",
+)
 
 
 def multiplexer_build_rows(
@@ -633,16 +670,24 @@ def multiplexer_build_rows(
     tolerances: Mapping[str, Mapping[str, float]] | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> list[tuple[str, BuildSheetRow]]:
     """Expand each labelled branch into combined BOM rows."""
     tol = tolerances or {}
+    part_map = parts or {}
     rows: list[tuple[str, BuildSheetRow]] = []
     for label, circuit in branches:
+        branch_parts = {
+            key.split(":", 1)[1]: value
+            for key, value in part_map.items()
+            if key.startswith(f"{label}:")
+        }
         for row in build_sheet_rows(
             circuit,
             tolerances=tol.get(label, {}),
             series=series,
             group=group,
+            parts=branch_parts,
         ):
             rows.append((label, row))
     return rows
@@ -666,11 +711,18 @@ def render_multiplexer_bom_csv(
     tolerances: Mapping[str, Mapping[str, float]] | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> str:
     """Render a combined BOM with a leading ``branch`` column."""
-    selected = tuple(columns) if columns is not None else BOM_COLUMNS
+    selected = tuple(columns) if columns is not None else MULTIPLEXER_BOM_COLUMNS
+    if selected and selected[0] == "branch":
+        selected = selected[1:]
     rows = multiplexer_build_rows(
-        branches, tolerances=tolerances, series=series, group=group
+        branches,
+        tolerances=tolerances,
+        series=series,
+        group=group,
+        parts=parts,
     )
     buf = io.StringIO()
     writer = csv.writer(buf, lineterminator="\n")
@@ -687,6 +739,8 @@ _REPORT_BOM_COLUMNS: tuple[str, ...] = (
     "tolerance_pct",
     "v_peak_v",
     "i_peak_a",
+    "mpn",
+    "package",
 )
 _REPORT_BOM_HEADERS: dict[str, str] = {
     "ref": "Ref",
@@ -695,6 +749,8 @@ _REPORT_BOM_HEADERS: dict[str, str] = {
     "tolerance_pct": "Tol %",
     "v_peak_v": "Vpk",
     "i_peak_a": "Ipk",
+    "mpn": "MPN",
+    "package": "Package",
 }
 
 
@@ -705,25 +761,30 @@ def render_multiplexer_bom_table_html(
     tolerances: Mapping[str, Mapping[str, float]] | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> str:
     """Render a compact combined BOM table for the system HTML report."""
     rows = multiplexer_build_rows(
-        branches, tolerances=tolerances, series=series, group=group
+        branches,
+        tolerances=tolerances,
+        series=series,
+        group=group,
+        parts=parts,
     )
-    parts = ["<table>", "<tr>"]
-    parts.append("<th>Branch</th>")
-    parts += [f"<th>{html.escape(_REPORT_BOM_HEADERS[c])}</th>" for c in columns]
-    parts.append("</tr>")
+    html_parts = ["<table>", "<tr>"]
+    html_parts.append("<th>Branch</th>")
+    html_parts += [f"<th>{html.escape(_REPORT_BOM_HEADERS[c])}</th>" for c in columns]
+    html_parts.append("</tr>")
     for label, row in rows:
-        parts.append("<tr>")
-        parts.append(f"<td>{html.escape(label)}</td>")
-        parts += [
+        html_parts.append("<tr>")
+        html_parts.append(f"<td>{html.escape(label)}</td>")
+        html_parts += [
             f"<td>{html.escape(_column_value(row, column, human=True))}</td>"
             for column in columns
         ]
-        parts.append("</tr>")
-    parts.append("</table>")
-    return "\n".join(parts)
+        html_parts.append("</tr>")
+    html_parts.append("</table>")
+    return "\n".join(html_parts)
 
 
 def render_multiplexer_build_sheet_markdown(
@@ -736,6 +797,7 @@ def render_multiplexer_build_sheet_markdown(
     tolerances: Mapping[str, Mapping[str, float]] | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> str:
     """Render a combined Markdown system build sheet."""
     lines: list[str] = [f"# {title.strip() or 'Multiplexer build sheet'}"]
@@ -743,7 +805,11 @@ def render_multiplexer_build_sheet_markdown(
         lines += ["", "## System", "", "| Item | Value |", "| --- | --- |"]
         lines += [f"| {key} | {value} |" for key, value in summary]
     rows = multiplexer_build_rows(
-        branches, tolerances=tolerances, series=series, group=group
+        branches,
+        tolerances=tolerances,
+        series=series,
+        group=group,
+        parts=parts,
     )
     headers = ("Branch", *_SHEET_HEADERS)
     lines += [
@@ -777,10 +843,11 @@ def render_multiplexer_build_sheet_html(
     tolerances: Mapping[str, Mapping[str, float]] | None = None,
     series: ESeries | None = None,
     group: bool = False,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> str:
     """Render a combined printable HTML system build sheet."""
     heading = html.escape(title.strip() or "Multiplexer build sheet")
-    parts: list[str] = [
+    html_parts: list[str] = [
         "<!DOCTYPE html>",
         '<html lang="en">',
         "<head>",
@@ -798,39 +865,43 @@ def render_multiplexer_build_sheet_html(
         f"<h1>{heading}</h1>",
     ]
     if summary:
-        parts += ["<h2>System</h2>", "<table>"]
-        parts += [
+        html_parts += ["<h2>System</h2>", "<table>"]
+        html_parts += [
             f"<tr><th>{html.escape(key)}</th><td>{html.escape(value)}</td></tr>"
             for key, value in summary
         ]
-        parts.append("</table>")
+        html_parts.append("</table>")
     rows = multiplexer_build_rows(
-        branches, tolerances=tolerances, series=series, group=group
+        branches,
+        tolerances=tolerances,
+        series=series,
+        group=group,
+        parts=parts,
     )
     headers = ("Branch", *_SHEET_HEADERS)
-    parts += ["<h2>Bill of materials</h2>", "<table>", "<tr>"]
-    parts += [f"<th>{html.escape(head)}</th>" for head in headers]
-    parts += ["</tr>"]
+    html_parts += ["<h2>Bill of materials</h2>", "<table>", "<tr>"]
+    html_parts += [f"<th>{html.escape(head)}</th>" for head in headers]
+    html_parts += ["</tr>"]
     for label, row in rows:
-        parts.append("<tr>")
-        parts += [
+        html_parts.append("<tr>")
+        html_parts += [
             f"<td>{html.escape(cell)}</td>"
             for cell in (label, *_table_cells(row))
         ]
-        parts.append("</tr>")
-    parts.append("</table>")
+        html_parts.append("</tr>")
+    html_parts.append("</table>")
     if assumptions:
-        parts.append("<h2>Assumptions</h2>")
-        parts.append("<ul>")
-        parts += [f"<li>{html.escape(item)}</li>" for item in assumptions]
-        parts.append("</ul>")
+        html_parts.append("<h2>Assumptions</h2>")
+        html_parts.append("<ul>")
+        html_parts += [f"<li>{html.escape(item)}</li>" for item in assumptions]
+        html_parts.append("</ul>")
     if notes:
-        parts.append("<h2>Notes</h2>")
-        parts.append("<ul>")
-        parts += [f"<li>{html.escape(note)}</li>" for note in notes]
-        parts.append("</ul>")
-    parts += ["</body>", "</html>", ""]
-    return "\n".join(parts)
+        html_parts.append("<h2>Notes</h2>")
+        html_parts.append("<ul>")
+        html_parts += [f"<li>{html.escape(note)}</li>" for note in notes]
+        html_parts.append("</ul>")
+    html_parts += ["</body>", "</html>", ""]
+    return "\n".join(html_parts)
 
 
 def write_multiplexer_build_sheet(
@@ -845,6 +916,7 @@ def write_multiplexer_build_sheet(
     series: ESeries | None = None,
     group: bool = False,
     columns: Sequence[str] | None = None,
+    parts: Mapping[str, LibraryPart] | None = None,
 ) -> Path:
     """Write a combined system BOM/build sheet (CSV, Markdown or HTML)."""
     target = Path(path)
@@ -861,6 +933,7 @@ def write_multiplexer_build_sheet(
             tolerances=tolerances,
             series=series,
             group=group,
+            parts=parts,
         )
     elif suffix in {".md", ".markdown"}:
         text = render_multiplexer_build_sheet_markdown(
@@ -872,6 +945,7 @@ def write_multiplexer_build_sheet(
             tolerances=tolerances,
             series=series,
             group=group,
+            parts=parts,
         )
     elif suffix in {".html", ".htm"}:
         text = render_multiplexer_build_sheet_html(
@@ -883,6 +957,7 @@ def write_multiplexer_build_sheet(
             tolerances=tolerances,
             series=series,
             group=group,
+            parts=parts,
         )
     else:
         raise BuildSheetError(

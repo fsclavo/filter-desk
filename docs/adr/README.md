@@ -40,3 +40,4 @@
 - [ADR-035](ADR-035-component-library-v1.md) — curated component catalog v1
 - [ADR-036](ADR-036-system-sensitivity.md) — deterministic system sensitivity
 - [ADR-037](ADR-037-system-montecarlo.md) — system Monte-Carlo tolerance/yield
+- [ADR-038](ADR-038-bom-part-assignment.md) — real-part assignment to the BOM

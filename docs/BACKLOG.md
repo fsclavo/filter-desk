@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.63.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.64.0 · **Released:**
 [v0.63.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.63.0) ·
 **Previous:**
 [v0.62.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.62.0) ·
-**Next:** v0.64.0 planning.
+**Next:** v0.64.0 release (real-part BOM assignment, pending CI/tag).
 
-**Verification:** local suite **1204 passed**, 4 skipped (ngspice unavailable); coverage **82.18 %**.
+**Verification:** local suite **1208 passed**, 4 skipped (ngspice unavailable); coverage **82.16 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41314578318
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41315390648
 
@@ -905,6 +905,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       schematics, BOM and notes.
 - [x] **Direct PDF report:** Qt PDF rendering of the same standalone report.
 - [x] **Monte Carlo CLI:** `--montecarlo`/`--mc-*` flags on system commands.
+- [x] **BOM part assignment:** automatic/manual real-part mapping with MPN and
+      package in BOM/report (ADR-038).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

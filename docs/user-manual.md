@@ -1118,6 +1118,13 @@ starts with `branch,ref,qty,…` so duplicate refs in different branches remain
 unambiguous. Because the BOM uses the already-analyzed snapped/parasitic
 circuits, its values match the displayed response.
 
+**Assign parts…** maps real library parts to physical L/C components. It offers
+automatic nearest-part assignment within a configurable maximum delta, plus
+manual selection from the filtered library. Components outside the delta remain
+unassigned instead of receiving a poor substitute. Assignments appear as
+manufacturer/MPN/package in the BOM and HTML/PDF report. This is BOM metadata
+only: it does not change circuit values, apply parasitics or alter the analysis.
+
 **Export report…** writes a self-contained HTML or PDF report with the system
 summary, magnitude plot, one schematic per branch, the combined BOM table and
 the model notes. The HTML embeds its images, so it can be shared without extra

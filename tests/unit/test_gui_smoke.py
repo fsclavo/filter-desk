@@ -1619,6 +1619,37 @@ def test_system_report_export(tmp_path: Path) -> None:
     assert app is not None
 
 
+def test_part_assignment_dialog_and_bom_export(tmp_path: Path) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui.widgets import DiplexerDialog, PartAssignmentDialog
+
+    app = QApplication.instance() or QApplication([])
+    designer = DiplexerDialog()
+    designer._points.setValue(201)
+    assert designer.design()
+    design = designer.current_design()
+    assert design is not None
+    dialog = PartAssignmentDialog(design)
+    dialog._max_delta.setValue(100.0)
+    dialog._auto_assign()
+    assignments = dialog.assignments()
+    assert assignments
+    designer._part_assignments = assignments
+    bom_path = tmp_path / "assigned_bom.md"
+    assert designer.export_build_sheet(bom_path)
+    bom = bom_path.read_text(encoding="utf-8")
+    assert "MPN" in bom
+    assert any(part.mpn in bom for part in assignments.values())
+    report_path = tmp_path / "assigned_report.html"
+    assert designer.export_report(report_path)
+    report_text = report_path.read_text(encoding="utf-8")
+    assert any(part.mpn in report_text for part in assignments.values())
+    dialog.close()
+    designer.close()
+    assert app is not None
+
+
 def test_diplexer_dialog_reports_invalid_input() -> None:
     from PySide6.QtWidgets import QApplication
 
