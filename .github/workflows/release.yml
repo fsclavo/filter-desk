@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: true
@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: true
@@ -92,7 +92,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: true
@@ -118,7 +118,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: true
