@@ -661,10 +661,13 @@ Most commands accept `--json` for machine-readable output.
   `diplexer`, `band-diplexer`, `duplexer`, `triplexer` and `multiplexer`
   also accept
   `--export-build-sheet PATH`, `--bom-series {E6,E12,E24,E48,E96}`,
-  `--bom-group` and `--sensitivity PCT`. In these system commands
-  `--bom-series` snaps the branches and reanalyzes the combined network, so the
-  exported `.sNp`, metrics and BOM stay consistent. `--sensitivity` prints or
-  emits the deterministic component sensitivity table.
+  `--bom-group`, `--sensitivity PCT` and `--montecarlo`. In these system
+  commands `--bom-series` snaps the branches and reanalyzes the combined
+  network, so the exported `.sNp`, metrics and BOM stay consistent.
+  `--sensitivity` prints or emits the deterministic component sensitivity
+  table. `--montecarlo` adds `--mc-trials`, `--mc-tol`, `--mc-distribution`,
+  `--mc-seed`, `--mc-max-il` and `--mc-max-oob` and emits the yield summary in
+  JSON or text.
 - **`components`** — list/search the curated component catalog. Options:
   `--kind {capacitor,inductor}`, `--search TEXT`, `--library FILE`,
   `--export FILE`, `--json`.

@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
+from filterdesk.__main__ import main
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.montecarlo import ToleranceDistribution
@@ -92,3 +96,39 @@ def test_montecarlo_validation() -> None:
         SystemMonteCarloConfig(n_trials=0)
     with pytest.raises(ValueError, match="tolerance"):
         SystemMonteCarloConfig(tolerance_pct=-1.0)
+
+
+def test_cli_multiplexer_montecarlo_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(
+        [
+            "multiplexer",
+            "--band",
+            "low:14M:300k",
+            "--band",
+            "mid:21M:500k",
+            "--band",
+            "high:28M:500k",
+            "--f-start",
+            "5M",
+            "--f-stop",
+            "40M",
+            "--points",
+            "201",
+            "--output",
+            str(tmp_path / "mux.s4p"),
+            "--montecarlo",
+            "--mc-trials",
+            "10",
+            "--mc-tol",
+            "2",
+            "--mc-seed",
+            "1",
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["montecarlo"]["n_trials"] == 10
+    assert 0.0 <= payload["montecarlo"]["yield_fraction"] <= 1.0

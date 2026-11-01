@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.62.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.63.0 · **Released:**
 [v0.62.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.62.0) ·
 **Previous:**
 [v0.61.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.61.0) ·
-**Next:** v0.63.0 planning.
+**Next:** v0.63.0 release (Monte Carlo CLI, pending CI/tag).
 
-**Verification:** local suite **1203 passed**, 4 skipped (ngspice unavailable); coverage **82.20 %**.
+**Verification:** local suite **1204 passed**, 4 skipped (ngspice unavailable); coverage **82.18 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41309829368
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41310613185
 
@@ -892,6 +892,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **System report:** standalone HTML with metrics, magnitude plot,
       schematics, BOM and notes.
 - [x] **Direct PDF report:** Qt PDF rendering of the same standalone report.
+- [x] **Monte Carlo CLI:** `--montecarlo`/`--mc-*` flags on system commands.
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

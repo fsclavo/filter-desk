@@ -191,6 +191,11 @@ from filterdesk.services.multiplexer import (
 )
 from filterdesk.services.report import system_report
 from filterdesk.services.session import default_sweep_for_spec
+from filterdesk.services.system_montecarlo import (
+    SystemMonteCarloConfig,
+    SystemMonteCarloResult,
+    analyze_system_montecarlo,
+)
 from filterdesk.services.system_rebuild import SystemDesign
 from filterdesk.services.system_sensitivity import (
     SystemSensitivityReport,
@@ -1070,6 +1075,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run deterministic ±PCT component sensitivity",
     )
+    _add_montecarlo_args(diplexer)
     diplexer.add_argument("--export-build-sheet", type=Path, default=None)
     diplexer.add_argument(
         "--bom-series",
@@ -1113,6 +1119,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run deterministic ±PCT component sensitivity",
     )
+    _add_montecarlo_args(band_diplexer)
     band_diplexer.add_argument("--export-build-sheet", type=Path, default=None)
     band_diplexer.add_argument(
         "--bom-series",
@@ -1160,6 +1167,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run deterministic ±PCT component sensitivity",
     )
+    _add_montecarlo_args(duplexer)
     duplexer.add_argument("--export-build-sheet", type=Path, default=None)
     duplexer.add_argument(
         "--bom-series",
@@ -1206,6 +1214,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run deterministic ±PCT component sensitivity",
     )
+    _add_montecarlo_args(triplexer)
     triplexer.add_argument("--export-build-sheet", type=Path, default=None)
     triplexer.add_argument(
         "--bom-series",
@@ -1263,6 +1272,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Run deterministic ±PCT component sensitivity",
     )
+    _add_montecarlo_args(multiplexer)
 
     mixed = sub.add_parser(
         "mixed-mode",
@@ -2074,6 +2084,24 @@ def _nonideal_kwargs(args: argparse.Namespace) -> dict[str, float]:
     if getattr(args, "inductor_i_sat", None) is not None:
         kwargs["inductor_i_sat_a"] = parse_si(str(args.inductor_i_sat))
     return kwargs
+
+
+def _add_montecarlo_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--montecarlo",
+        action="store_true",
+        help="Run system Monte-Carlo tolerance/yield analysis",
+    )
+    parser.add_argument("--mc-trials", type=int, default=200)
+    parser.add_argument("--mc-tol", type=float, default=2.0)
+    parser.add_argument(
+        "--mc-distribution",
+        choices=[d.value for d in ToleranceDistribution],
+        default=ToleranceDistribution.UNIFORM.value,
+    )
+    parser.add_argument("--mc-seed", type=int, default=None)
+    parser.add_argument("--mc-max-il", type=float, default=3.0)
+    parser.add_argument("--mc-max-oob", type=float, default=-15.0)
 
 
 def _add_microstrip_substrate(parser: argparse.ArgumentParser) -> None:
@@ -3449,6 +3477,49 @@ def main(argv: list[str] | None = None) -> int:
     ) -> SystemSensitivityReport:
         return analyze_system_sensitivity(system_design, delta_pct)
 
+    def _montecarlo_report(
+        system_design: SystemDesign, mc_args: argparse.Namespace
+    ) -> SystemMonteCarloResult | None:
+        if not mc_args.montecarlo:
+            return None
+        return analyze_system_montecarlo(
+            system_design,
+            SystemMonteCarloConfig(
+                n_trials=int(mc_args.mc_trials),
+                tolerance_pct=float(mc_args.mc_tol),
+                distribution=ToleranceDistribution(str(mc_args.mc_distribution)),
+                seed=mc_args.mc_seed,
+                max_insertion_loss_db=float(mc_args.mc_max_il),
+                max_out_of_band_db=float(mc_args.mc_max_oob),
+            ),
+        )
+
+    def _print_montecarlo(report: SystemMonteCarloResult) -> None:
+        print(f"Monte Carlo: {report.summary()}")
+
+    def _montecarlo_to_json(
+        report: SystemMonteCarloResult,
+    ) -> dict[str, object]:
+        return {
+            "n_trials": report.n_trials,
+            "passes": report.passes,
+            "yield_fraction": report.yield_fraction,
+            "isolation_min_db": report.isolation_min_db,
+            "isolation_p05_db": report.isolation_p05_db,
+            "isolation_p50_db": report.isolation_p50_db,
+            "isolation_p95_db": report.isolation_p95_db,
+            "insertion_max_db": report.insertion_max_db,
+            "insertion_p95_db": report.insertion_p95_db,
+            "out_of_band_max_db": report.out_of_band_max_db,
+            "out_of_band_p95_db": report.out_of_band_p95_db,
+            "isolation_failures": report.isolation_failures,
+            "insertion_failures": report.insertion_failures,
+            "out_of_band_failures": report.out_of_band_failures,
+            "isolation_target_db": report.isolation_target_db,
+            "insertion_target_db": report.insertion_target_db,
+            "out_of_band_target_db": report.out_of_band_target_db,
+        }
+
     def _print_system_sensitivity(report: SystemSensitivityReport) -> None:
         print(f"System sensitivity ±{report.delta_pct:g}%:")
         for row in report.rows:
@@ -3564,6 +3635,7 @@ def main(argv: list[str] | None = None) -> int:
                 mux_sensitivity = _sensitivity_report(
                     multiplexer_design, float(args.sensitivity)
                 )
+            mux_mc = _montecarlo_report(multiplexer_design, args)
             write_sparameters(multiplexer_design.network, args.output)
             for raw in args.branch_output:
                 if "=" not in str(raw):
@@ -3636,6 +3708,11 @@ def main(argv: list[str] | None = None) -> int:
                             if mux_sensitivity is not None
                             else {}
                         ),
+                        **(
+                            {"montecarlo": _montecarlo_to_json(mux_mc)}
+                            if mux_mc is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3649,6 +3726,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {mux_metrics.summary()}")
             if mux_sensitivity is not None:
                 _print_system_sensitivity(mux_sensitivity)
+            if mux_mc is not None:
+                _print_montecarlo(mux_mc)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3707,6 +3786,7 @@ def main(argv: list[str] | None = None) -> int:
                 tri_sensitivity = _sensitivity_report(
                     triplexer_design, float(args.sensitivity)
                 )
+            tri_mc = _montecarlo_report(triplexer_design, args)
             write_sparameters(triplexer_design.network, args.output)
             branch_paths = {
                 "low": args.low_output,
@@ -3780,6 +3860,11 @@ def main(argv: list[str] | None = None) -> int:
                             if tri_sensitivity is not None
                             else {}
                         ),
+                        **(
+                            {"montecarlo": _montecarlo_to_json(tri_mc)}
+                            if tri_mc is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3792,6 +3877,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {triplexer_metrics.summary()}")
             if tri_sensitivity is not None:
                 _print_system_sensitivity(tri_sensitivity)
+            if tri_mc is not None:
+                _print_montecarlo(tri_mc)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3845,6 +3932,7 @@ def main(argv: list[str] | None = None) -> int:
                 dx_sensitivity = _sensitivity_report(
                     duplexer_design, float(args.sensitivity)
                 )
+            dx_mc = _montecarlo_report(duplexer_design, args)
             write_sparameters(duplexer_design.network, args.output)
             if args.tx_output is not None:
                 write_sparameters(
@@ -3936,6 +4024,11 @@ def main(argv: list[str] | None = None) -> int:
                             if dx_sensitivity is not None
                             else {}
                         ),
+                        **(
+                            {"montecarlo": _montecarlo_to_json(dx_mc)}
+                            if dx_mc is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -3948,6 +4041,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {duplexer_metrics.summary()}")
             if dx_sensitivity is not None:
                 _print_system_sensitivity(dx_sensitivity)
+            if dx_mc is not None:
+                _print_montecarlo(dx_mc)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -3997,6 +4092,7 @@ def main(argv: list[str] | None = None) -> int:
                 band_sensitivity = _sensitivity_report(
                     band_design, float(args.sensitivity)
                 )
+            band_mc = _montecarlo_report(band_design, args)
             write_sparameters(band_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -4062,6 +4158,11 @@ def main(argv: list[str] | None = None) -> int:
                             if band_sensitivity is not None
                             else {}
                         ),
+                        **(
+                            {"montecarlo": _montecarlo_to_json(band_mc)}
+                            if band_mc is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -4078,6 +4179,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {band_metrics.summary()}")
             if band_sensitivity is not None:
                 _print_system_sensitivity(band_sensitivity)
+            if band_mc is not None:
+                _print_montecarlo(band_mc)
             print(f"  Wrote {args.output}")
         return 0
 
@@ -4125,6 +4228,7 @@ def main(argv: list[str] | None = None) -> int:
                 dip_sensitivity = _sensitivity_report(
                     diplexer_design, float(args.sensitivity)
                 )
+            dip_mc = _montecarlo_report(diplexer_design, args)
             write_sparameters(diplexer_design.network, args.output)
             if args.low_output is not None:
                 write_sparameters(
@@ -4186,6 +4290,11 @@ def main(argv: list[str] | None = None) -> int:
                             if dip_sensitivity is not None
                             else {}
                         ),
+                        **(
+                            {"montecarlo": _montecarlo_to_json(dip_mc)}
+                            if dip_mc is not None
+                            else {}
+                        ),
                     },
                     indent=2,
                 )
@@ -4201,6 +4310,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {metrics.summary()}")
             if dip_sensitivity is not None:
                 _print_system_sensitivity(dip_sensitivity)
+            if dip_mc is not None:
+                _print_montecarlo(dip_mc)
             print(f"  Wrote {args.output}")
         return 0
 

@@ -147,9 +147,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   triplexer and configurable N-band multiplexers; combined metrics, magnitude
   plots, branch schematics with PNG/SVG/PDF export, E-series snap,
   finite-Q/parasitic reanalysis, deterministic component sensitivity,
-  Monte-Carlo tolerance/yield, `.sNp` export, a combined system BOM,
-  standalone HTML/PDF reports with embedded plots/schematics, `.fdsys.json`
-  project save/open and a curated real-part catalog in the GUI and CLI.
+  Monte-Carlo tolerance/yield in the GUI and CLI, `.sNp` export, a combined
+  system BOM, standalone HTML/PDF reports with embedded plots/schematics,
+  `.fdsys.json` project save/open and a curated real-part catalog.
 - **Interoperability**: import/export Touchstone (`.s1p`/`.s2p`/`.sNp`), export CSV,
   LTspice-compatible SPICE netlists, and Smith-chart images.
 - Both a **desktop GUI** (PySide6) and a scriptable **command-line interface**.

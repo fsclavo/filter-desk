@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.63.0 — 2026-10-30
+
+### Added
+
+- System Monte-Carlo CLI flags on `diplexer`, `band-diplexer`, `duplexer`,
+  `triplexer` and `multiplexer`: `--montecarlo`, `--mc-trials`, `--mc-tol`,
+  `--mc-distribution`, `--mc-seed`, `--mc-max-il` and `--mc-max-oob`.
+- Text and JSON yield output for system CLI runs.
+
 ## v0.62.0 — 2026-10-30
 
 ### Added
