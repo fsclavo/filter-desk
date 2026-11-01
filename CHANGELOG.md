@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.65.0 — 2026-10-30
+
+### Added
+
+- **Apply assigned parts** in the designer: replace simple L/C values with the
+  assigned part value, apply available DCR/SRF or ESR/ESL and reanalyze.
+- Composite BPF sub-parts receive the value but report that per-subpart
+  parasitic modeling is not yet available.
+- BOM/report notes record applied models and warnings.
+- ADR-039 documents the supported scope.
+
 ## v0.64.0 — 2026-10-30
 
 ### Added

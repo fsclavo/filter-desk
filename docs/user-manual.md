@@ -1122,8 +1122,13 @@ circuits, its values match the displayed response.
 automatic nearest-part assignment within a configurable maximum delta, plus
 manual selection from the filtered library. Components outside the delta remain
 unassigned instead of receiving a poor substitute. Assignments appear as
-manufacturer/MPN/package in the BOM and HTML/PDF report. This is BOM metadata
-only: it does not change circuit values, apply parasitics or alter the analysis.
+manufacturer/MPN/package in the BOM and HTML/PDF report.
+
+**Apply assigned parts** replaces each simple L/C value with the assigned part
+value and applies available DCR/SRF or ESR/ESL, then reanalyzes the system.
+Composite LC/Brune sub-parts (BPF branches) receive the value but not a
+parasitic model yet; the tool reports that warning. Applying a far-away manual
+part can materially change the response, so check the recomputed metrics.
 
 **Export report…** writes a self-contained HTML or PDF report with the system
 summary, magnitude plot, one schematic per branch, the combined BOM table and

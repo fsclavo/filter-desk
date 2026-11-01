@@ -166,6 +166,11 @@ from filterdesk.services.multiplexer import (
     MultiplexerError,
     design_multiplexer,
 )
+from filterdesk.services.part_application import (
+    PartApplicationError,
+    PartApplicationResult,
+    apply_assigned_parts,
+)
 from filterdesk.services.part_assignment import assign_nearest_parts
 from filterdesk.services.report import system_report
 from filterdesk.services.system_montecarlo import (
@@ -3904,6 +3909,7 @@ class DiplexerDialog(QDialog):
             self._snap_series.addItem(series.value, series.value)
         self._snap_info: SystemSnapResult | None = None
         self._part_assignments: dict[str, LibraryPart] = {}
+        self._part_application: PartApplicationResult | None = None
         self._parasitics_config: SystemParasiticsConfig | None = None
         self._parasitics_info: SystemParasiticsResult | None = None
         self._parasitics_button = QPushButton(tr("Parasitics…"))
@@ -4147,7 +4153,16 @@ class DiplexerDialog(QDialog):
         self._assign_parts_button = QPushButton(tr("Assign parts…"))
         self._assign_parts_button.clicked.connect(self._run_assign_parts)
         self._assign_parts_button.setEnabled(False)
-        form.addRow(tr("Real parts"), self._assign_parts_button)
+        self._apply_parts_button = QPushButton(tr("Apply assigned parts"))
+        self._apply_parts_button.clicked.connect(self._run_apply_parts)
+        self._apply_parts_button.setEnabled(False)
+        parts_row = QWidget()
+        parts_layout = QHBoxLayout(parts_row)
+        parts_layout.setContentsMargins(0, 0, 0, 0)
+        parts_layout.addWidget(self._assign_parts_button)
+        parts_layout.addWidget(self._apply_parts_button)
+        parts_layout.addStretch(1)
+        form.addRow(tr("Real parts"), parts_row)
         form.addRow(self._summary)
         form.addRow(self._branch_summary)
         form.addRow(self._results_tabs)
@@ -4454,6 +4469,8 @@ class DiplexerDialog(QDialog):
         self._design = None
         self._snap_info = None
         self._part_assignments.clear()
+        self._part_application = None
+        self._apply_parts_button.setEnabled(False)
         self._parasitics_info = None
         self._set_export_enabled(False)
         self._metrics.setRowCount(0)
@@ -4489,8 +4506,29 @@ class DiplexerDialog(QDialog):
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         self._part_assignments = dialog.assignments()
+        self._part_application = None
+        self._apply_parts_button.setEnabled(bool(self._part_assignments))
         self._status.setText(
             tr("Assigned {count} parts.", count=len(self._part_assignments))
+        )
+
+    def _run_apply_parts(self) -> None:
+        if self._design is None or not self._part_assignments:
+            return
+        try:
+            result = apply_assigned_parts(
+                self._design, self._part_assignments
+            )
+        except PartApplicationError as exc:
+            self._status.setText(str(exc))
+            return
+        self._design = result.design
+        self._part_application = result
+        self._populate(self._design)
+        self._update_plot(self._design)
+        self._update_schematic(self._design)
+        self._status.setText(
+            tr("Applied {count} part models.", count=len(result.applied))
         )
 
     def _run_system_montecarlo(self) -> None:
@@ -4514,6 +4552,8 @@ class DiplexerDialog(QDialog):
 
     def design(self) -> bool:
         self._part_assignments.clear()
+        self._part_application = None
+        self._apply_parts_button.setEnabled(False)
         try:
             family = ApproximationFamily(str(self._family.currentData()))
             order = int(self._order.value())
@@ -4704,6 +4744,12 @@ class DiplexerDialog(QDialog):
                 + _parasitics_text(self._parasitics_info.config)
                 + "."
             )
+        if self._part_application is not None:
+            notes.append(
+                "Assigned part models applied to "
+                f"{len(self._part_application.applied)} components."
+            )
+            notes.extend(self._part_application.warnings)
         try:
             text = render_system_report_html(
                 self._design,
@@ -4761,6 +4807,12 @@ class DiplexerDialog(QDialog):
                 + _parasitics_text(self._parasitics_info.config)
                 + "."
             )
+        if self._part_application is not None:
+            notes.append(
+                "Assigned part models applied to "
+                f"{len(self._part_application.applied)} components."
+            )
+            notes.extend(self._part_application.warnings)
         try:
             write_multiplexer_build_sheet(
                 branches,

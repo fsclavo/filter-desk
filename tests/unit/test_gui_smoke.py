@@ -1636,11 +1636,15 @@ def test_part_assignment_dialog_and_bom_export(tmp_path: Path) -> None:
     assignments = dialog.assignments()
     assert assignments
     designer._part_assignments = assignments
+    designer._run_apply_parts()
+    assert designer._part_application is not None
+    assert "part models" in designer._status.text()
     bom_path = tmp_path / "assigned_bom.md"
     assert designer.export_build_sheet(bom_path)
     bom = bom_path.read_text(encoding="utf-8")
     assert "MPN" in bom
     assert any(part.mpn in bom for part in assignments.values())
+    assert "Assigned part models applied" in bom
     report_path = tmp_path / "assigned_report.html"
     assert designer.export_report(report_path)
     report_text = report_path.read_text(encoding="utf-8")

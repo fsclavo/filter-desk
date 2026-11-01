@@ -1052,6 +1052,8 @@ _ES.update(
         "Component library": "Biblioteca de componentes",
         "Assign real parts": "Asignar partes reales",
         "Assign parts…": "Asignar partes…",
+        "Apply assigned parts": "Aplicar partes asignadas",
+        "Applied {count} part models.": "Aplicados {count} modelos de parte.",
         "Assigned {count} parts.": "Asignadas {count} partes.",
         "Real parts": "Partes reales",
         "Assign selected": "Asignar seleccionada",

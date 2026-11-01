@@ -41,3 +41,4 @@
 - [ADR-036](ADR-036-system-sensitivity.md) — deterministic system sensitivity
 - [ADR-037](ADR-037-system-montecarlo.md) — system Monte-Carlo tolerance/yield
 - [ADR-038](ADR-038-bom-part-assignment.md) — real-part assignment to the BOM
+- [ADR-039](ADR-039-apply-assigned-parts.md) — apply assigned parts to the analysis
