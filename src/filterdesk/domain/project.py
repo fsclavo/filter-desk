@@ -162,6 +162,16 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
         elif isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             row["value_H"] = el.value_h
             row["value_F"] = el.value_f
+            if el.l_series_resistance_ohm:
+                row["l_series_R_Ohm"] = el.l_series_resistance_ohm
+            if el.l_parallel_capacitance_f:
+                row["l_parallel_C_F"] = el.l_parallel_capacitance_f
+            if el.l_srf_hz is not None:
+                row["l_srf_hz"] = el.l_srf_hz
+            if el.c_esr_ohm:
+                row["c_esr_Ohm"] = el.c_esr_ohm
+            if el.c_esl_h:
+                row["c_esl_H"] = el.c_esl_h
         elif isinstance(el, (IdealBruneLC, IdealDualBruneLC)):
             row["series_L_H"] = el.series_l_h
             row["series_C_F"] = el.series_c_f
@@ -289,6 +299,15 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     node_b=str(row["node_b"]),
                     role=role,
                     g=g,
+                    l_series_resistance_ohm=float(
+                        row.get("l_series_R_Ohm", 0.0)
+                    ),
+                    l_parallel_capacitance_f=float(
+                        row.get("l_parallel_C_F", 0.0)
+                    ),
+                    l_srf_hz=_opt_float(row.get("l_srf_hz")),
+                    c_esr_ohm=float(row.get("c_esr_Ohm", 0.0)),
+                    c_esl_h=float(row.get("c_esl_H", 0.0)),
                 )
             )
         elif etype == "parallel_lc":
@@ -301,6 +320,15 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     node_b=str(row["node_b"]),
                     role=role,
                     g=g,
+                    l_series_resistance_ohm=float(
+                        row.get("l_series_R_Ohm", 0.0)
+                    ),
+                    l_parallel_capacitance_f=float(
+                        row.get("l_parallel_C_F", 0.0)
+                    ),
+                    l_srf_hz=_opt_float(row.get("l_srf_hz")),
+                    c_esr_ohm=float(row.get("c_esr_Ohm", 0.0)),
+                    c_esl_h=float(row.get("c_esl_H", 0.0)),
                 )
             )
         elif etype == "brune_lc":

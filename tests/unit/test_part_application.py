@@ -38,7 +38,7 @@ def test_apply_assigned_parts_changes_values_and_reanalyzes() -> None:
     assert not result.warnings
 
 
-def test_composite_parts_get_value_with_warning() -> None:
+def test_composite_parts_apply_subpart_models() -> None:
     from filterdesk.services.multiplexer import (
         MultiplexerBand,
         MultiplexerConfig,
@@ -65,4 +65,10 @@ def test_composite_parts_get_value_with_warning() -> None:
     assigned = assign_nearest_parts(branches, STARTER_PARTS, max_delta_pct=100.0)
     result = apply_assigned_parts(design, assigned.assignments)
     assert result.applied
-    assert any("composite" in warning for warning in result.warnings)
+    assert not any("composite" in warning for warning in result.warnings)
+    assert any(
+        el.l_series_resistance_ohm > 0.0
+        or el.l_srf_hz is not None
+        for el in result.design.circuits[0].elements
+        if hasattr(el, "l_series_resistance_ohm")
+    )

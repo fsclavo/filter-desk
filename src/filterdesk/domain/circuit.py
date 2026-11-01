@@ -65,7 +65,11 @@ class IdealInductor:
 
 @dataclass(frozen=True, slots=True)
 class IdealSeriesLC:
-    """Series connection of L and C (series arm or shunt branch)."""
+    """Series connection of L and C (series arm or shunt branch).
+
+    Optional sub-part parasitics keep the compact resonator representation while
+    allowing per-part loss/self-resonance modeling.
+    """
 
     id: str
     value_h: float
@@ -74,6 +78,11 @@ class IdealSeriesLC:
     node_b: str
     role: ElementRole
     g: float | None = None
+    l_series_resistance_ohm: float = 0.0
+    l_parallel_capacitance_f: float = 0.0
+    l_srf_hz: float | None = None
+    c_esr_ohm: float = 0.0
+    c_esl_h: float = 0.0
 
     @property
     def element_type(self) -> ElementType:
@@ -82,7 +91,11 @@ class IdealSeriesLC:
 
 @dataclass(frozen=True, slots=True)
 class IdealParallelLC:
-    """Parallel connection of L and C (series arm or shunt branch)."""
+    """Parallel connection of L and C (series arm or shunt branch).
+
+    Optional sub-part parasitics keep the compact resonator representation while
+    allowing per-part loss/self-resonance modeling.
+    """
 
     id: str
     value_h: float
@@ -91,6 +104,11 @@ class IdealParallelLC:
     node_b: str
     role: ElementRole
     g: float | None = None
+    l_series_resistance_ohm: float = 0.0
+    l_parallel_capacitance_f: float = 0.0
+    l_srf_hz: float | None = None
+    c_esr_ohm: float = 0.0
+    c_esl_h: float = 0.0
 
     @property
     def element_type(self) -> ElementType:
@@ -526,12 +544,27 @@ def physical_components(circuit: Circuit) -> list[PhysicalComponent]:
         if isinstance(el, (IdealSeriesLC, IdealParallelLC)):
             rows.append(
                 PhysicalComponent(
-                    f"{el.id}.L", el.id, role, "inductor", el.value_h, "H"
+                    f"{el.id}.L",
+                    el.id,
+                    role,
+                    "inductor",
+                    el.value_h,
+                    "H",
+                    series_resistance_ohm=el.l_series_resistance_ohm,
+                    parallel_capacitance_f=el.l_parallel_capacitance_f,
+                    srf_hz=el.l_srf_hz,
                 )
             )
             rows.append(
                 PhysicalComponent(
-                    f"{el.id}.C", el.id, role, "capacitor", el.value_f, "F"
+                    f"{el.id}.C",
+                    el.id,
+                    role,
+                    "capacitor",
+                    el.value_f,
+                    "F",
+                    esr_ohm=el.c_esr_ohm,
+                    esl_h=el.c_esl_h,
                 )
             )
         elif isinstance(el, (IdealBruneLC, IdealDualBruneLC)):

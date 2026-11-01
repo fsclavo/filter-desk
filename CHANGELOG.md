@@ -3,6 +3,17 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.67.0 — 2026-10-30
+
+### Added
+
+- Non-ideal sub-part models for `IdealSeriesLC`/`IdealParallelLC`: inductor
+  DCR/SRF and capacitor ESR/ESL.
+- Global parasitics and assigned real parts now apply to series/parallel
+  resonators used by BPF, duplexer, triplexer and multiplexer branches.
+- Native project persistence and component edits preserve the sub-part models.
+- ADR-041 documents the extension; Brune arms remain value-only.
+
 ## v0.66.0 — 2026-10-30
 
 ### Added

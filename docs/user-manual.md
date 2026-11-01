@@ -1124,11 +1124,12 @@ manual selection from the filtered library. Components outside the delta remain
 unassigned instead of receiving a poor substitute. Assignments appear as
 manufacturer/MPN/package in the BOM and HTML/PDF report.
 
-**Apply assigned parts** replaces each simple L/C value with the assigned part
-value and applies available DCR/SRF or ESR/ESL, then reanalyzes the system.
-Composite LC/Brune sub-parts (BPF branches) receive the value but not a
-parasitic model yet; the tool reports that warning. Applying a far-away manual
-part can materially change the response, so check the recomputed metrics.
+**Apply assigned parts** replaces each L/C value with the assigned part value
+and applies available DCR/SRF or ESR/ESL, then reanalyzes the system. Series and
+parallel LC resonators now carry separate sub-part models. Brune/dual-Brune
+sub-parts receive the value but still report that their parasitic model is not
+yet supported. Applying a far-away manual part can materially change the
+response, so check the recomputed metrics.
 
 **Compare measurements…** compares 2-port VNA captures with the simulated
 system paths: common → each output, plus adjacent output ↔ output isolation

@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+import pytest
+
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
-from filterdesk.domain.circuit import NonIdealCapacitor, NonIdealInductor
+from filterdesk.domain.circuit import (
+    IdealParallelLC,
+    IdealSeriesLC,
+    NonIdealCapacitor,
+    NonIdealInductor,
+)
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.services.diplexer import DiplexerConfig, design_diplexer
 from filterdesk.services.system_parasitics import (
@@ -53,3 +60,42 @@ def test_parasitic_validation() -> None:
         SystemParasiticsConfig(inductor_q=0.0)
     with pytest.raises(ValueError, match="capacitor_esr"):
         SystemParasiticsConfig(capacitor_esr_ohm=-1.0)
+
+
+def test_parasitics_apply_to_composite_lc() -> None:
+    from filterdesk.services.multiplexer import (
+        MultiplexerBand,
+        MultiplexerConfig,
+        design_multiplexer,
+    )
+
+    design = design_multiplexer(
+        MultiplexerConfig(
+            bands=(
+                MultiplexerBand("low", 14e6, 0.3e6),
+                MultiplexerBand("mid", 21e6, 0.5e6),
+                MultiplexerBand("high", 28e6, 0.5e6),
+            ),
+            order=5,
+            family=ApproximationFamily.CHEBYSHEV_TYPE_I,
+            ripple_db=0.1,
+        ),
+        SweepConfig(5e6, 40e6, 201, SweepSpacing.LOGARITHMIC),
+    )
+    result = apply_system_parasitics(
+        design,
+        SystemParasiticsConfig(
+            inductor_q=100.0,
+            capacitor_esr_ohm=0.1,
+            capacitor_esl_h=1e-9,
+        ),
+    )
+    composites = [
+        el
+        for el in result.design.circuits[0].elements
+        if isinstance(el, (IdealSeriesLC, IdealParallelLC))
+    ]
+    assert composites
+    assert all(el.l_series_resistance_ohm > 0.0 for el in composites)
+    assert all(el.c_esr_ohm == pytest.approx(0.1) for el in composites)
+    assert all(el.c_esl_h == pytest.approx(1e-9) for el in composites)

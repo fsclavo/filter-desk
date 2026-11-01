@@ -366,6 +366,11 @@ class DesignSession:
                         node_b=el.node_b,
                         role=el.role,
                         g=el.g,
+                        l_series_resistance_ohm=el.l_series_resistance_ohm,
+                        l_parallel_capacitance_f=el.l_parallel_capacitance_f,
+                        l_srf_hz=el.l_srf_hz,
+                        c_esr_ohm=el.c_esr_ohm,
+                        c_esl_h=el.c_esl_h,
                     )
                 )
             elif isinstance(el, IdealParallelLC):
@@ -382,6 +387,11 @@ class DesignSession:
                         node_b=el.node_b,
                         role=el.role,
                         g=el.g,
+                        l_series_resistance_ohm=el.l_series_resistance_ohm,
+                        l_parallel_capacitance_f=el.l_parallel_capacitance_f,
+                        l_srf_hz=el.l_srf_hz,
+                        c_esr_ohm=el.c_esr_ohm,
+                        c_esl_h=el.c_esl_h,
                     )
                 )
             elif isinstance(el, NonIdealCapacitor):

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from filterdesk.components_std import LibraryPart, set_element_parasitics
+from filterdesk.components_std import (
+    LibraryPart,
+    inductor_resistance_ohm_from_q,
+    set_element_parasitics,
+)
 from filterdesk.domain.circuit import (
     Circuit,
     Element,
@@ -40,9 +44,10 @@ def apply_assigned_parts(
 ) -> PartApplicationResult:
     """Apply assigned part values and available parasitics, then reanalyze.
 
-    Simple L/C elements receive value + DCR/SRF or ESR/ESL when available.
-    Composite LC/Brune arms receive the sub-part value but no parasitic model
-    yet; that limitation is reported in ``warnings``.
+    Simple L/C elements and series/parallel LC resonators receive value +
+    DCR/SRF or ESR/ESL when available. Brune/dual-Brune arms receive the
+    sub-part value but no parasitic model yet; that limitation is reported in
+    ``warnings``.
     """
     if not assignments:
         raise PartApplicationError("no assigned parts to apply")
@@ -99,9 +104,10 @@ def _apply_part(
             continue
         if suffix:
             new_elements[index] = _replace_composite_value(element, suffix, part)
-            warnings.append(
-                f"{ref}: composite parasitic model not applied (value only)"
-            )
+            if not isinstance(element, (IdealSeriesLC, IdealParallelLC)):
+                warnings.append(
+                    f"{ref}: composite parasitic model not applied (value only)"
+                )
         elif isinstance(element, (IdealInductor, NonIdealInductor)):
             new_elements[index] = replace(element, value_h=part.value_si)
         elif isinstance(element, (IdealCapacitor, NonIdealCapacitor)):
@@ -143,9 +149,24 @@ def _replace_composite_value(
 ) -> Element:
     if isinstance(element, (IdealSeriesLC, IdealParallelLC)):
         if suffix == ".L" and part.kind == "inductor":
-            return replace(element, value_h=part.value_si)
+            resistance = part.dcr_ohm or 0.0
+            if resistance == 0.0 and part.q_min is not None:
+                resistance = inductor_resistance_ohm_from_q(
+                    part.value_si, part.q_min, 250e6
+                )
+            return replace(
+                element,
+                value_h=part.value_si,
+                l_series_resistance_ohm=resistance,
+                l_srf_hz=part.srf_hz,
+            )
         if suffix == ".C" and part.kind == "capacitor":
-            return replace(element, value_f=part.value_si)
+            return replace(
+                element,
+                value_f=part.value_si,
+                c_esr_ohm=part.esr_ohm or 0.0,
+                c_esl_h=part.esl_h or 0.0,
+            )
     if isinstance(element, (IdealBruneLC, IdealDualBruneLC)):
         if suffix == ".Ls" and part.kind == "inductor":
             return replace(element, series_l_h=part.value_si)

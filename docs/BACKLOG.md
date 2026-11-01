@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-10-30 · **App version:** 0.66.0 · **Released:**
+**Last verified:** 2026-10-30 · **App version:** 0.67.0 · **Released:**
 [v0.66.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.66.0) ·
 **Previous:**
 [v0.65.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.65.0) ·
-**Next:** v0.67.0 planning.
+**Next:** v0.67.0 release (composite non-ideal LC, pending CI/tag).
 
-**Verification:** local suite **1213 passed**, 4 skipped (ngspice unavailable); coverage **81.93 %**.
+**Verification:** local suite **1215 passed**, 4 skipped (ngspice unavailable); coverage **81.96 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41338468354
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41339089585
 
@@ -951,6 +951,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       reanalyzed; composite limitations reported (ADR-039).
 - [x] **System measurement compare:** 2-port VNA path captures with
       terminated unused ports (ADR-040).
+- [x] **Composite non-ideal LC:** series/parallel resonator DCR/SRF/ESR/ESL
+      with project persistence (ADR-041).
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

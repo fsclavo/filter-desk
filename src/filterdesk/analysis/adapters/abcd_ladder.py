@@ -84,16 +84,58 @@ def _shunt_abcd(y: NDArray[np.complexfloating]) -> NDArray[np.complexfloating]:
     return a
 
 
-def _z_series_lc(
-    omega: NDArray[np.floating], l_h: float, c_f: float
+def _z_lc_inductor(
+    omega: NDArray[np.floating],
+    l_h: float,
+    series_r_ohm: float,
+    parallel_c_f: float,
+    srf_hz: float | None,
 ) -> NDArray[np.complexfloating]:
-    return 1j * omega * l_h + 1.0 / (1j * omega * c_f)
+    if srf_hz is not None and srf_hz > 0.0 and l_h > 0.0:
+        parallel_c_f = 1.0 / ((2.0 * np.pi * srf_hz) ** 2 * l_h)
+    z_series = series_r_ohm + 1j * omega * l_h
+    if parallel_c_f <= 0.0:
+        return np.asarray(z_series, dtype=np.complex128)
+    z_parallel = 1.0 / (1j * omega * parallel_c_f)
+    return np.asarray(1.0 / (1.0 / z_series + 1.0 / z_parallel), dtype=np.complex128)
+
+
+def _z_lc_capacitor(
+    omega: NDArray[np.floating], c_f: float, esr_ohm: float, esl_h: float
+) -> NDArray[np.complexfloating]:
+    return esr_ohm + 1j * omega * esl_h + 1.0 / (1j * omega * c_f)
+
+
+def _z_series_lc(
+    omega: NDArray[np.floating],
+    l_h: float,
+    c_f: float,
+    *,
+    l_series_resistance_ohm: float = 0.0,
+    l_parallel_capacitance_f: float = 0.0,
+    l_srf_hz: float | None = None,
+    c_esr_ohm: float = 0.0,
+    c_esl_h: float = 0.0,
+) -> NDArray[np.complexfloating]:
+    return _z_lc_inductor(
+        omega, l_h, l_series_resistance_ohm, l_parallel_capacitance_f, l_srf_hz
+    ) + _z_lc_capacitor(omega, c_f, c_esr_ohm, c_esl_h)
 
 
 def _y_parallel_lc(
-    omega: NDArray[np.floating], l_h: float, c_f: float
+    omega: NDArray[np.floating],
+    l_h: float,
+    c_f: float,
+    *,
+    l_series_resistance_ohm: float = 0.0,
+    l_parallel_capacitance_f: float = 0.0,
+    l_srf_hz: float | None = None,
+    c_esr_ohm: float = 0.0,
+    c_esl_h: float = 0.0,
 ) -> NDArray[np.complexfloating]:
-    return 1.0 / (1j * omega * l_h) + 1j * omega * c_f
+    return 1.0 / _z_lc_inductor(
+        omega, l_h, l_series_resistance_ohm, l_parallel_capacitance_f, l_srf_hz
+    ) + 1.0 / _z_lc_capacitor(omega, c_f, c_esr_ohm, c_esl_h)
 
 
 def transformer_abcd(ratio: float, n_points: int) -> NDArray[np.complexfloating]:
@@ -398,12 +440,30 @@ def _element_abcd_impl(
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)
     if isinstance(el, IdealSeriesLC):
-        z = _z_series_lc(omega, el.value_h, el.value_f)
+        z = _z_series_lc(
+            omega,
+            el.value_h,
+            el.value_f,
+            l_series_resistance_ohm=el.l_series_resistance_ohm,
+            l_parallel_capacitance_f=el.l_parallel_capacitance_f,
+            l_srf_hz=el.l_srf_hz,
+            c_esr_ohm=el.c_esr_ohm,
+            c_esl_h=el.c_esl_h,
+        )
         if el.role == ElementRole.SERIES:
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)
     if isinstance(el, IdealParallelLC):
-        y = _y_parallel_lc(omega, el.value_h, el.value_f)
+        y = _y_parallel_lc(
+            omega,
+            el.value_h,
+            el.value_f,
+            l_series_resistance_ohm=el.l_series_resistance_ohm,
+            l_parallel_capacitance_f=el.l_parallel_capacitance_f,
+            l_srf_hz=el.l_srf_hz,
+            c_esr_ohm=el.c_esr_ohm,
+            c_esl_h=el.c_esl_h,
+        )
         if el.role == ElementRole.SERIES:
             z = np.asarray(1.0 / y, dtype=np.complex128)
             return _series_abcd(z)

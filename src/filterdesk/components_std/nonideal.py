@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 from filterdesk.domain.circuit import (
@@ -9,6 +10,8 @@ from filterdesk.domain.circuit import (
     Element,
     IdealCapacitor,
     IdealInductor,
+    IdealParallelLC,
+    IdealSeriesLC,
     NonIdealCapacitor,
     NonIdealInductor,
     WindingSpec,
@@ -130,6 +133,32 @@ def nonidealize_circuit(
                         loss_model=inductor_loss_model,
                         dc_current_a=inductor_dc_current_a,
                         saturation_current_a=inductor_i_sat_a,
+                    )
+                )
+            else:
+                new_elements.append(el)
+        elif isinstance(el, (IdealSeriesLC, IdealParallelLC)):
+            r = inductor_dcr_ohm
+            if inductor_q is not None:
+                assert q_frequency_hz is not None
+                r += inductor_resistance_ohm_from_q(
+                    el.value_h, inductor_q, q_frequency_hz
+                )
+            if (
+                r > 0.0
+                or inductor_parallel_capacitance_f > 0.0
+                or inductor_srf_hz is not None
+                or capacitor_esr_ohm > 0.0
+                or capacitor_esl_h > 0.0
+            ):
+                new_elements.append(
+                    dataclasses.replace(
+                        el,
+                        l_series_resistance_ohm=r,
+                        l_parallel_capacitance_f=inductor_parallel_capacitance_f,
+                        l_srf_hz=inductor_srf_hz,
+                        c_esr_ohm=capacitor_esr_ohm,
+                        c_esl_h=capacitor_esl_h,
                     )
                 )
             else:

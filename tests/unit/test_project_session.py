@@ -6,7 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from filterdesk.domain.project import ProjectMetadata
+from filterdesk.domain.circuit import Circuit, IdealSeriesLC, Port
+from filterdesk.domain.enums import ElementRole
+from filterdesk.domain.project import (
+    ProjectMetadata,
+    circuit_from_mapping,
+    circuit_to_mapping,
+)
 from filterdesk.io.native import load_project, save_project
 from filterdesk.montecarlo import ToleranceDistribution
 from filterdesk.services.session import DesignSession
@@ -100,3 +106,31 @@ def test_update_element_value() -> None:
     session.update_element_value(el.id, el.value_f * 1.1)
     assert isinstance(session.circuit.elements[0], IdealCapacitor)
     assert abs(session.circuit.elements[0].value_f - el.value_f * 1.1) < 1e-30
+
+
+def test_composite_parasitics_survive_project_roundtrip() -> None:
+    circuit = Circuit(
+        [
+            IdealSeriesLC(
+                "X1",
+                10e-9,
+                1e-12,
+                "in",
+                "out",
+                ElementRole.SERIES,
+                l_series_resistance_ohm=0.25,
+                l_srf_hz=2e9,
+                c_esr_ohm=0.1,
+                c_esl_h=1e-9,
+            )
+        ],
+        Port("P1", "in", 50.0),
+        Port("P2", "out", 50.0),
+    )
+    restored = circuit_from_mapping(circuit_to_mapping(circuit))
+    element = restored.elements[0]
+    assert isinstance(element, IdealSeriesLC)
+    assert element.l_series_resistance_ohm == pytest.approx(0.25)
+    assert element.l_srf_hz == pytest.approx(2e9)
+    assert element.c_esr_ohm == pytest.approx(0.1)
+    assert element.c_esl_h == pytest.approx(1e-9)
