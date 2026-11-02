@@ -1336,7 +1336,7 @@ It supports **Butterworth** (order 1–9) and **Chebyshev-I** (odd order, equal
 - a **conceptual layout sketch** in edge-coupled, hairpin or interdigital style;
 - the ideal 2-port S11/S21 response from cascaded J-inverters and shunt
   resonators;
-- Touchstone `.s2p` and SVG layout export.
+- Touchstone `.s2p` plus SVG/DXF layout export.
 
 Example:
 
@@ -1348,7 +1348,8 @@ filterdesk coupled-line --center 100M --bandwidth 10M --order 3 \
 ```
 
 `--substrate NAME` selects the PCB stackup; `--layout {edge,hairpin,interdigital}`
-with `--layout-output FILE.svg` writes the conceptual sketch.
+with `--layout-output FILE.svg` or `FILE.dxf` writes the conceptual sketch. The
+DXF is a geometry handoff for a field solver/CAD tool, not a fabrication drawing.
 
 Width/gap use a zero-thickness, quasi-static Hammerstad-Jensen model with a
 bounded numerical fit. The layout selector produces a **conceptual to-scale
@@ -1541,7 +1542,8 @@ detailed test cases and tolerances are in
 - **Coupled-line BPF geometry is quasi-static**: width/gap use a zero-thickness
   Hammerstad-Jensen fit. The hairpin/interdigital views are conceptual sketches,
   not routed layouts; finite thickness, dispersion, bends, discontinuities,
-  shorting vias and EM coupling are not included.
+  shorting vias and EM coupling are not included. DXF is a geometry handoff, not
+  a fabrication/EM-validated output.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

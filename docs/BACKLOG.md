@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.76.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.77.0 · **Released:**
 [v0.76.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.76.0) ·
 **Previous:**
 [v0.75.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.75.0) ·
-**Next:** v0.77.0 planning.
+**Next:** v0.77.0 release (DXF export, pending CI/tag).
 
-**Verification:** local suite **1253 passed**, 4 skipped (ngspice unavailable); coverage **82.23 %**.
+**Verification:** local suite **1254 passed**, 4 skipped (ngspice unavailable); coverage **82.27 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41513630967
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41515381601
 
@@ -1201,7 +1201,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Coupled-microstrip geometry:** quasi-static width/gap fit, substrate
       selection and warnings (ADR-045).
 - [x] **Conceptual layout sketches:** edge-coupled, hairpin and interdigital
-      SVG preview/export (ADR-046). Routed layout/EM remain pending.
+      SVG preview/export (ADR-046).
+- [x] **DXF geometry handoff:** `TOP_COPPER`/`BOARD_OUTLINE` layers for external
+      EM/CAD (ADR-047). Routed layout/EM remain pending.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, hairpin/interdigital layout, step
       discontinuities and hardware validation. (L)

@@ -10,6 +10,7 @@ from filterdesk.services.coupled_layout import (
     CoupledLayoutError,
     LayoutMode,
     build_coupled_layout,
+    render_coupled_layout_dxf,
     render_coupled_layout_svg,
 )
 from filterdesk.services.coupled_line import (
@@ -61,3 +62,13 @@ def test_layout_svg_contains_traces() -> None:
 def test_layout_requires_geometry() -> None:
     with pytest.raises(CoupledLayoutError):
         build_coupled_layout(_design(with_substrate=False))
+
+
+def test_layout_dxf_contains_copper_and_outline() -> None:
+    layout = build_coupled_layout(_design(), LayoutMode.EDGE)
+    dxf = render_coupled_layout_dxf(layout)
+    assert "AC1009" in dxf
+    assert "TOP_COPPER" in dxf
+    assert "BOARD_OUTLINE" in dxf
+    assert dxf.count("SOLID") == len(layout.traces)
+    assert dxf.rstrip().endswith("EOF")

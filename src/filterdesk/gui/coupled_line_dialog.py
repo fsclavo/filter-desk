@@ -33,6 +33,7 @@ from filterdesk.services.coupled_layout import (
     CoupledLayoutError,
     LayoutMode,
     build_coupled_layout,
+    render_coupled_layout_dxf,
     render_coupled_layout_svg,
 )
 from filterdesk.services.coupled_line import (
@@ -111,7 +112,7 @@ class CoupledLineDialog(QDialog):
         self._export_button = QPushButton(tr("Export Touchstone…"))
         self._export_button.setEnabled(False)
         self._export_button.clicked.connect(self._export)
-        self._export_layout_button = QPushButton(tr("Export layout SVG…"))
+        self._export_layout_button = QPushButton(tr("Export layout…"))
         self._export_layout_button.setEnabled(False)
         self._export_layout_button.clicked.connect(self._export_layout)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
@@ -238,9 +239,9 @@ class CoupledLineDialog(QDialog):
             return
         path, _selected = QFileDialog.getSaveFileName(
             self,
-            tr("Export layout SVG"),
+            tr("Export layout"),
             "coupled_layout.svg",
-            "SVG (*.svg);;All files (*)",
+            "SVG (*.svg);;DXF (*.dxf);;All files (*)",
         )
         if not path:
             return
@@ -250,9 +251,11 @@ class CoupledLineDialog(QDialog):
             layout = build_coupled_layout(
                 self._design, str(self._layout_mode.currentData())
             )
-            Path(path).write_text(
-                render_coupled_layout_svg(layout), encoding="utf-8"
-            )
+            if Path(path).suffix.lower() == ".dxf":
+                layout_text = render_coupled_layout_dxf(layout)
+            else:
+                layout_text = render_coupled_layout_svg(layout)
+            Path(path).write_text(layout_text, encoding="utf-8")
         except (CoupledLayoutError, OSError) as exc:
             QMessageBox.critical(self, tr("Export failed"), str(exc))
             return

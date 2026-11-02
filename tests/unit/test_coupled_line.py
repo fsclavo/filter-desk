@@ -172,6 +172,27 @@ def test_cli_coupled_line(
     assert layout_path.is_file()
     assert "<svg" in layout_path.read_text(encoding="utf-8")
 
+    dxf_path = tmp_path / "coupled_layout.dxf"
+    assert (
+        main(
+            [
+                "coupled-line",
+                "--center",
+                "100M",
+                "--bandwidth",
+                "10M",
+                "--layout",
+                "interdigital",
+                "--layout-output",
+                str(dxf_path),
+                "--output",
+                str(tmp_path / "coupled_layout_dxf.s2p"),
+            ]
+        )
+        == 0
+    )
+    assert "TOP_COPPER" in dxf_path.read_text(encoding="utf-8")
+
     text_output = tmp_path / "coupled_text.s2p"
     assert (
         main(
@@ -231,5 +252,13 @@ def test_coupled_line_dialog_design_and_export(
     dialog._export_layout()
     assert layout_output.is_file()
     assert "<svg" in layout_output.read_text(encoding="utf-8")
+    dxf_output = tmp_path / "coupled_gui.dxf"
+    monkeypatch.setattr(
+        module.QFileDialog,
+        "getSaveFileName",
+        lambda *args, **kwargs: (str(dxf_output), ""),
+    )
+    dialog._export_layout()
+    assert "TOP_COPPER" in dxf_output.read_text(encoding="utf-8")
     dialog.close()
     assert app is not None

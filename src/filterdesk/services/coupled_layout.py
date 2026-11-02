@@ -214,6 +214,124 @@ def build_coupled_layout(
     return _interdigital_layout(design, lengths)
 
 
+def render_coupled_layout_dxf(layout: CoupledLayout) -> str:
+    """Render a minimal ASCII DXF (mm) for external EM/PCB import."""
+    margin = 3.0
+    board_w = layout.width_mm + 2.0 * margin
+    board_h = layout.height_mm + 2.0 * margin
+
+    def solid(trace: LayoutTrace) -> list[str]:
+        dx = trace.x1_mm - trace.x0_mm
+        dy = trace.y1_mm - trace.y0_mm
+        half = trace.width_mm / 2.0
+        if abs(dx) >= abs(dy):
+            x0, x1 = trace.x0_mm + margin, trace.x1_mm + margin
+            y = trace.y0_mm + margin + half
+            corners = [
+                (x0, y - half),
+                (x1, y - half),
+                (x1, y + half),
+                (x0, y + half),
+            ]
+        else:
+            y0, y1 = trace.y0_mm + margin, trace.y1_mm + margin
+            x = trace.x0_mm + margin + half
+            corners = [
+                (x - half, y0),
+                (x - half, y1),
+                (x + half, y1),
+                (x + half, y0),
+            ]
+        out = ["0", "SOLID", "8", "TOP_COPPER"]
+        for index, (x, y) in enumerate(corners):
+            out.extend([str(10 + index), f"{x:.6f}", str(20 + index), f"{y:.6f}"])
+        return out
+
+    lines = [
+        "999",
+        "FilterDesk conceptual coupled-line layout - not EM-validated",
+        "0",
+        "SECTION",
+        "2",
+        "HEADER",
+        "9",
+        "$ACADVER",
+        "1",
+        "AC1009",
+        "9",
+        "$INSUNITS",
+        "70",
+        "4",
+        "0",
+        "ENDSEC",
+        "0",
+        "SECTION",
+        "2",
+        "TABLES",
+        "0",
+        "TABLE",
+        "2",
+        "LAYER",
+        "70",
+        "2",
+        "0",
+        "LAYER",
+        "2",
+        "TOP_COPPER",
+        "70",
+        "0",
+        "62",
+        "1",
+        "6",
+        "CONTINUOUS",
+        "0",
+        "LAYER",
+        "2",
+        "BOARD_OUTLINE",
+        "70",
+        "0",
+        "62",
+        "7",
+        "6",
+        "CONTINUOUS",
+        "0",
+        "ENDTAB",
+        "0",
+        "ENDSEC",
+        "0",
+        "SECTION",
+        "2",
+        "ENTITIES",
+    ]
+    for trace in layout.traces:
+        lines.extend(solid(trace))
+    # Board outline as four LINE entities.
+    for x0, y0, x1, y1 in (
+        (0.0, 0.0, board_w, 0.0),
+        (board_w, 0.0, board_w, board_h),
+        (board_w, board_h, 0.0, board_h),
+        (0.0, board_h, 0.0, 0.0),
+    ):
+        lines.extend(
+            [
+                "0",
+                "LINE",
+                "8",
+                "BOARD_OUTLINE",
+                "10",
+                f"{x0:.6f}",
+                "20",
+                f"{y0:.6f}",
+                "11",
+                f"{x1:.6f}",
+                "21",
+                f"{y1:.6f}",
+            ]
+        )
+    lines.extend(["0", "ENDSEC", "0", "EOF"])
+    return "\n".join(lines) + "\n"
+
+
 def render_coupled_layout_svg(layout: CoupledLayout) -> str:
     """Render a simple standalone SVG with mm units."""
     margin = 3.0
@@ -254,5 +372,6 @@ __all__ = [
     "LayoutMode",
     "LayoutTrace",
     "build_coupled_layout",
+    "render_coupled_layout_dxf",
     "render_coupled_layout_svg",
 ]

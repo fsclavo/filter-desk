@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.77.0 — 2026-11-01
+
+### Added
+
+- **DXF layout export** for the conceptual coupled-line sketches, with
+  `TOP_COPPER` and `BOARD_OUTLINE` layers in millimetres.
+- SVG/DXF export from the GUI and CLI (`--layout-output FILE.dxf`).
+- ADR-047 documenting the geometry handoff and the absence of an internal EM
+  solver.
+
+### Limitations
+
+- DXF is not a routed fabrication layout; bends, vias, copper thickness,
+  discontinuities and EM validation remain external work.
+
 ## v0.76.0 — 2026-11-01
 
 ### Added

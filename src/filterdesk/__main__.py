@@ -169,6 +169,7 @@ from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.coupled_layout import (
     CoupledLayoutError,
     build_coupled_layout,
+    render_coupled_layout_dxf,
     render_coupled_layout_svg,
 )
 from filterdesk.services.coupled_line import (
@@ -4524,9 +4525,11 @@ def main(argv: list[str] | None = None) -> int:
                         "--layout requires --layout-output"
                     )
                 layout = build_coupled_layout(coupled_design, args.layout)
-                args.layout_output.write_text(
-                    render_coupled_layout_svg(layout), encoding="utf-8"
-                )
+                if args.layout_output.suffix.lower() == ".dxf":
+                    layout_text = render_coupled_layout_dxf(layout)
+                else:
+                    layout_text = render_coupled_layout_svg(layout)
+                args.layout_output.write_text(layout_text, encoding="utf-8")
             if args.json:
                 print(
                     json.dumps(

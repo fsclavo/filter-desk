@@ -820,8 +820,8 @@ _ES.update(
         "Edge-coupled": "Líneas acopladas rectas",
         "Hairpin": "Hairpin",
         "Interdigital": "Interdigital",
-        "Export layout SVG…": "Exportar layout SVG…",
-        "Export layout SVG": "Exportar layout SVG",
+        "Export layout…": "Exportar layout…",
+        "Export layout": "Exportar layout",
         "Export coupled-line filter": "Exportar filtro de líneas acopladas",
         "Synthesize an ideal coupled-line bandpass filter.": (
             "Sintetizar un filtro pasa-banda ideal de líneas acopladas."

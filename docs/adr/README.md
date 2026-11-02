@@ -49,3 +49,4 @@
 - [ADR-044](ADR-044-coupled-line-bpf.md) — coupled-line bandpass electrical synthesis
 - [ADR-045](ADR-045-coupled-microstrip-geometry.md) — coupled-microstrip width/gap synthesis
 - [ADR-046](ADR-046-coupled-layout-sketches.md) — conceptual edge/hairpin/interdigital layout sketches
+- [ADR-047](ADR-047-dxf-layout-export.md) — DXF geometry handoff for external EM
