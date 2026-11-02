@@ -70,6 +70,7 @@ from filterdesk.gui.commands import (
     SnapCommand,
     SynthesizeCommand,
 )
+from filterdesk.gui.coupled_line_dialog import CoupledLineDialog
 from filterdesk.gui.i18n import (
     Language,
     current_language,
@@ -572,6 +573,9 @@ class MainWindow(QMainWindow):
         act_distributed = QAction(tr("&Distributed microstrip realization…"), self)
         act_distributed.triggered.connect(self._run_distributed)
         design_menu.addAction(act_distributed)
+        act_coupled = QAction(tr("&Coupled-line BPF…"), self)
+        act_coupled.triggered.connect(self._run_coupled_line)
+        design_menu.addAction(act_coupled)
         design_menu.addSeparator()
         act_snap = QAction(tr("Sna&p to E-series…"), self)
         act_snap.triggered.connect(self._run_snap)
@@ -683,6 +687,7 @@ class MainWindow(QMainWindow):
             act_import_ts: tr("Import measured S11/S21 data from Touchstone."),
             act_import_nanovna: tr("Read S11/S21 directly from a NanoVNA."),
             act_circulator: tr("Design an ideal circulator or isolator model."),
+            act_coupled: tr("Synthesize an ideal coupled-line bandpass filter."),
             act_export_build: tr("Export the BOM and build sheet."),
             act_quit: tr("Close FilterDesk."),
             act_tutorials: tr("Open the guided tutorials."),
@@ -1275,6 +1280,9 @@ class MainWindow(QMainWindow):
 
     def _run_circulator(self) -> None:
         CirculatorDialog(self).exec()
+
+    def _run_coupled_line(self) -> None:
+        CoupledLineDialog(self).exec()
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()

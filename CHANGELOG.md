@@ -3,6 +3,23 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.74.0 — 2026-11-01
+
+### Added
+
+- **Design → Coupled-line BPF…** and `filterdesk coupled-line` for narrowband
+  parallel-coupled half-wave-resonator bandpass filters.
+- Butterworth (any order 1–9) and Chebyshev-I (odd order, equal 50 Ω)
+  synthesis with J-inverter values, `Z0e`/`Z0o` and coupling table.
+- Ideal 2-port response and Touchstone `.s2p` export.
+- ADR-044 documenting the electrical-only scope and missing layout/EM steps.
+
+### Limitations
+
+- Physical coupled-microstrip width/gap, hairpin/interdigital layout,
+  discontinuities, dispersion and EM coupling are not synthesized.
+- Results are experimental until validated with a field solver or VNA.
+
 ## v0.73.0 — 2026-11-01
 
 ### Added

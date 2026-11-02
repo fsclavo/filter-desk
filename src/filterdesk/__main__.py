@@ -166,6 +166,11 @@ from filterdesk.services.circulator import (
     design_isolator,
 )
 from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.coupled_line import (
+    CoupledLineBpfConfig,
+    CoupledLineError,
+    design_coupled_line_bpf,
+)
 from filterdesk.services.design_sweep import (
     DesignSweepConfig,
     DesignSweepRow,
@@ -1097,6 +1102,32 @@ def build_parser() -> argparse.ArgumentParser:
     )
     isolator.add_argument("--output", type=Path, required=True)
     isolator.add_argument("--json", action="store_true")
+
+    coupled = sub.add_parser(
+        "coupled-line",
+        help="Synthesize an ideal parallel-coupled-line bandpass filter",
+    )
+    coupled.add_argument("--center", default="100M")
+    coupled.add_argument("--bandwidth", default="10M")
+    coupled.add_argument("--order", type=int, default=3)
+    coupled.add_argument(
+        "--family",
+        choices=[
+            ApproximationFamily.BUTTERWORTH.value,
+            ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+        ],
+        default=ApproximationFamily.CHEBYSHEV_TYPE_I.value,
+    )
+    coupled.add_argument("--ripple", type=float, default=0.1)
+    coupled.add_argument("--z0", default="50")
+    coupled.add_argument("--f-start", default=None)
+    coupled.add_argument("--f-stop", default=None)
+    coupled.add_argument("--points", type=int, default=2001)
+    coupled.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="linear"
+    )
+    coupled.add_argument("--output", type=Path, required=True)
+    coupled.add_argument("--json", action="store_true")
 
     diplexer = sub.add_parser(
         "diplexer",
@@ -4434,6 +4465,82 @@ def main(argv: list[str] | None = None) -> int:
             write_sparameters(network_result, args.output)
             print(f"Wrote {args.output}", file=sys.stderr)
         except (MultiportError, TouchstoneError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        return 0
+
+    if args.command == "coupled-line":
+        try:
+            coupled_center = parse_si(str(args.center))
+            coupled_bw = parse_si(str(args.bandwidth))
+            coupled_config = CoupledLineBpfConfig(
+                center_hz=coupled_center,
+                bandwidth_hz=coupled_bw,
+                order=int(args.order),
+                family=ApproximationFamily(str(args.family)),
+                ripple_db=float(args.ripple),
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            coupled_start = (
+                parse_si(str(args.f_start))
+                if args.f_start is not None
+                else max(coupled_center - 2.0 * coupled_bw, coupled_center / 10.0)
+            )
+            coupled_stop = (
+                parse_si(str(args.f_stop))
+                if args.f_stop is not None
+                else coupled_center + 2.0 * coupled_bw
+            )
+            coupled_sweep = SweepConfig(
+                f_start_hz=coupled_start,
+                f_stop_hz=coupled_stop,
+                n_points=int(args.points),
+                spacing=SweepSpacing(str(args.spacing)),
+            )
+            coupled_design = design_coupled_line_bpf(
+                coupled_config, coupled_sweep
+            )
+            write_sparameters(coupled_design.network, args.output)
+            if args.json:
+                print(
+                    json.dumps(
+                        {
+                            "kind": "coupled-line",
+                            "output": str(args.output),
+                            "n_ports": coupled_design.network.n_ports,
+                            "n_points": coupled_design.network.n_points,
+                            "center_hz": coupled_config.center_hz,
+                            "bandwidth_hz": coupled_config.bandwidth_hz,
+                            "order": coupled_config.order,
+                            "family": coupled_config.family.value,
+                            "sections": [
+                                {
+                                    "index": section.index,
+                                    "j_norm": section.j_norm,
+                                    "z0e_ohm": section.z0e_ohm,
+                                    "z0o_ohm": section.z0o_ohm,
+                                    "coupling": section.coupling,
+                                }
+                                for section in coupled_design.sections
+                            ],
+                            "warnings": list(coupled_design.warnings),
+                        },
+                        indent=2,
+                    )
+                )
+            else:
+                print(coupled_design.summary())
+                for section in coupled_design.sections:
+                    print(
+                        f"  section {section.index}: "
+                        f"Z0e={section.z0e_ohm:.3f} ohm, "
+                        f"Z0o={section.z0o_ohm:.3f} ohm, "
+                        f"k={section.coupling:.4f}"
+                    )
+                for warning in coupled_design.warnings:
+                    print(f"warning: {warning}", file=sys.stderr)
+                print(f"Wrote {args.output}", file=sys.stderr)
+        except (CoupledLineError, MultiportError, OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         return 0

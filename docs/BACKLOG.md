@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.73.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.74.0 · **Released:**
 [v0.73.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.73.0) ·
 **Previous:**
 [v0.72.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.72.0) ·
-**Next:** v0.74.0 planning.
+**Next:** v0.74.0 release (coupled-line BPF, pending CI/tag).
 
-**Verification:** local suite **1244 passed**, 4 skipped (ngspice unavailable); coverage **82.08 %**.
+**Verification:** local suite **1249 passed**, 4 skipped (ngspice unavailable); coverage **82.19 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41487187775
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41488803117
 
@@ -24,7 +24,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - **Design** — filter-only workflow: Synthesize + Analyze, Band filter wizard,
   Snap to E-series, Apply parasitics/Q, Monte-Carlo, Scale response, Optimize to limits,
   Component sensitivity, Parameter sweep, Check spec compliance, Tune to VNA,
-  **Distributed microstrip realization**, Component submenu.
+  **Distributed microstrip realization**, **Coupled-line BPF**, Component
+  submenu.
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
   calculator, **Transformer / balun / unun**, Microstrip line, **Circulator /
   isolator**.
@@ -1153,8 +1154,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Microstrip dispersion:** Kirschning-Jansen `eeff(f)`/`Z0(f)` for line and
       stub analysis.
 - [x] **Open-end fringing:** Hammerstad open-stub length correction.
+- [x] **Coupled-line BPF electrical synthesis:** narrowband J-inverter BPF with
+      even/odd impedance table, GUI/CLI and `.s2p` export (ADR-044). Layout/EM
+      remain pending.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
-      stub-only/Kuroda topologies, step discontinuities and hardware validation. (L)
+      stub-only/Kuroda topologies, hairpin/interdigital layout, step
+      discontinuities and hardware validation. (L)
       - 2026-10-28 spike: shunt-only unit-element/stub topologies reproduce a
         low-order BP passband numerically but not the stopband; HP/BS fail
         because they require series stubs (Kuroda) or coupled lines. Do not ship

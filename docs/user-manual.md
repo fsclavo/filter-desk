@@ -74,6 +74,7 @@ projects**. A good first path is:
 | PCB microstrip/stub/quarter-wave | **Tools → Microstrip line…** |
 | Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
 | Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
+| Coupled-line bandpass filter | **Design → Coupled-line BPF…** |
 | Compare a built filter with a VNA | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
 | Read a NanoVNA directly | **File → Import → NanoVNA sweep…** |
 | Produce a BOM/build sheet | **File → Export → build sheet / BOM…** |
@@ -379,6 +380,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
+| **Coupled-line BPF** | **Design → Coupled-line BPF…** | narrowband J-inverter BPF; Butterworth or odd-order Chebyshev-I, even/odd impedance table and `.s2p` export |
 | **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or N-band multiplexer; combined metrics, plots, schematics, BOM and `.sNp` exports |
@@ -1320,9 +1322,35 @@ filterdesk distributed --family chebyshev_type_i --ripple 0.1 --response low_pas
   --order 5 --cutoff 100M --export-s2p out.s2p --export-build-sheet bom.csv
 ```
 
+### Coupled-line bandpass filter (experimental)
+
+**Design → Coupled-line BPF…** (`filterdesk coupled-line`) synthesizes a
+narrowband parallel-coupled half-wave-resonator BPF from a low-pass prototype.
+It supports **Butterworth** (order 1–9) and **Chebyshev-I** (odd order, equal
+50 Ω terminations). The result includes:
+
+- the J-inverter value, even/odd impedances (`Z0e`, `Z0o`) and coupling for each
+  coupled section;
+- the ideal 2-port S11/S21 response from cascaded J-inverters and shunt
+  resonators;
+- Touchstone `.s2p` export.
+
+Example:
+
+```bash
+filterdesk coupled-line --center 100M --bandwidth 10M --order 3 \
+  --family chebyshev_type_i --ripple 0.1 --output coupled.s2p --json
+```
+
+This is an **electrical** design, not a fabrication-ready layout. Width/gap
+synthesis, coupled-line dispersion, discontinuities, open-end effects, hairpin
+or interdigital layout and EM coupling are not included. Use a field solver or
+VNA before building the board.
+
 Manual line and stub elements are also part of the canonical netlist and both
 ABCD/skrf backends. Stubs are not produced by the v1 low-pass synthesis; series
-stubs, Kuroda transforms, coupled lines and higher-order synthesis remain future
+stubs, Kuroda transforms, hairpin/interdigital layout and higher-order
+all-response synthesis remain future
 work.
 
 ### VNA-guided tuning
@@ -1499,6 +1527,9 @@ detailed test cases and tolerances are in
 - **Circulators/isolators are first-order models**: IL/isolation/RL are
   independent magnitudes, not a ferrite-junction simulation. Cavity filters are
   not implemented.
+- **Coupled-line BPF is electrical only**: even/odd impedances and the ideal
+  J-inverter response are synthesized; physical width/gap, hairpin/interdigital
+  layout, discontinuities and EM coupling are not.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

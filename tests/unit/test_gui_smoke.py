@@ -523,6 +523,7 @@ def test_tools_menu_holds_calculators() -> None:
     for filter_action in (
         "Synthesize + Analyze",
         "Band filter wizard",
+        "Coupled-line BPF",
         "Snap to E-series",
         "Optimize to limits",
         "Check spec compliance",
