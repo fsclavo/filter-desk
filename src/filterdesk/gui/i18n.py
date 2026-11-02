@@ -816,6 +816,12 @@ _ES.update(
         "J/Y0": "J/Y0",
         "Width (mm)": "Ancho (mm)",
         "Gap (mm)": "Separación (mm)",
+        "Layout sketch": "Esquema de layout",
+        "Edge-coupled": "Líneas acopladas rectas",
+        "Hairpin": "Hairpin",
+        "Interdigital": "Interdigital",
+        "Export layout SVG…": "Exportar layout SVG…",
+        "Export layout SVG": "Exportar layout SVG",
         "Export coupled-line filter": "Exportar filtro de líneas acopladas",
         "Synthesize an ideal coupled-line bandpass filter.": (
             "Sintetizar un filtro pasa-banda ideal de líneas acopladas."

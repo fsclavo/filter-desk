@@ -150,6 +150,28 @@ def test_cli_coupled_line(
     assert payload["sections"][0]["gap_mm"] > 0
     assert read_sparameters(output).n_ports == 2
 
+    layout_path = tmp_path / "coupled_layout.svg"
+    assert (
+        main(
+            [
+                "coupled-line",
+                "--center",
+                "100M",
+                "--bandwidth",
+                "10M",
+                "--layout",
+                "hairpin",
+                "--layout-output",
+                str(layout_path),
+                "--output",
+                str(tmp_path / "coupled_layout.s2p"),
+            ]
+        )
+        == 0
+    )
+    assert layout_path.is_file()
+    assert "<svg" in layout_path.read_text(encoding="utf-8")
+
     text_output = tmp_path / "coupled_text.s2p"
     assert (
         main(
@@ -184,6 +206,9 @@ def test_coupled_line_dialog_design_and_export(
     assert dialog._table.rowCount() == 4
     assert dialog._table.columnCount() == 7
     assert dialog._export_button.isEnabled()
+    assert dialog._layout_mode.count() == 3
+    dialog._layout_mode.setCurrentIndex(1)
+    assert "Conceptual" in dialog._layout_status.text()
     dialog._family.setCurrentIndex(1)
     dialog._order.setValue(4)
     dialog._run_design()
@@ -197,5 +222,14 @@ def test_coupled_line_dialog_design_and_export(
     )
     dialog._export()
     assert output.is_file()
+    layout_output = tmp_path / "coupled_gui.svg"
+    monkeypatch.setattr(
+        module.QFileDialog,
+        "getSaveFileName",
+        lambda *args, **kwargs: (str(layout_output), ""),
+    )
+    dialog._export_layout()
+    assert layout_output.is_file()
+    assert "<svg" in layout_output.read_text(encoding="utf-8")
     dialog.close()
     assert app is not None

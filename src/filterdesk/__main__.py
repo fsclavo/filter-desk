@@ -166,6 +166,11 @@ from filterdesk.services.circulator import (
     design_isolator,
 )
 from filterdesk.services.compare import CompareError, compare_results
+from filterdesk.services.coupled_layout import (
+    CoupledLayoutError,
+    build_coupled_layout,
+    render_coupled_layout_svg,
+)
 from filterdesk.services.coupled_line import (
     CoupledLineBpfConfig,
     CoupledLineError,
@@ -1128,6 +1133,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--spacing", choices=[s.value for s in SweepSpacing], default="linear"
     )
     coupled.add_argument("--output", type=Path, required=True)
+    coupled.add_argument(
+        "--layout",
+        choices=["edge", "hairpin", "interdigital"],
+        default=None,
+        help="Write a conceptual layout SVG (requires --layout-output)",
+    )
+    coupled.add_argument("--layout-output", type=Path, default=None)
     coupled.add_argument("--json", action="store_true")
 
     diplexer = sub.add_parser(
@@ -4502,6 +4514,19 @@ def main(argv: list[str] | None = None) -> int:
                 coupled_config, coupled_sweep, substrate=str(args.substrate)
             )
             write_sparameters(coupled_design.network, args.output)
+            if args.layout_output is not None and args.layout is None:
+                raise CoupledLayoutError(
+                    "--layout-output requires --layout"
+                )
+            if args.layout is not None:
+                if args.layout_output is None:
+                    raise CoupledLayoutError(
+                        "--layout requires --layout-output"
+                    )
+                layout = build_coupled_layout(coupled_design, args.layout)
+                args.layout_output.write_text(
+                    render_coupled_layout_svg(layout), encoding="utf-8"
+                )
             if args.json:
                 print(
                     json.dumps(
@@ -4529,6 +4554,12 @@ def main(argv: list[str] | None = None) -> int:
                                 for section in coupled_design.sections
                             ],
                             "warnings": list(coupled_design.warnings),
+                            "layout": args.layout,
+                            "layout_output": (
+                                None
+                                if args.layout_output is None
+                                else str(args.layout_output)
+                            ),
                         },
                         indent=2,
                     )
@@ -4547,7 +4578,15 @@ def main(argv: list[str] | None = None) -> int:
                 for warning in coupled_design.warnings:
                     print(f"warning: {warning}", file=sys.stderr)
                 print(f"Wrote {args.output}", file=sys.stderr)
-        except (CoupledLineError, MultiportError, OSError, ValueError) as exc:
+                if args.layout is not None and args.layout_output is not None:
+                    print(f"Wrote {args.layout_output}", file=sys.stderr)
+        except (
+            CoupledLayoutError,
+            CoupledLineError,
+            MultiportError,
+            OSError,
+            ValueError,
+        ) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         return 0

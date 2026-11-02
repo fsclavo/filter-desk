@@ -117,7 +117,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   model limits.
 - **Coupled-line BPF synthesis**: narrowband Butterworth / odd-order Chebyshev-I
   bandpass, J-inverter values, even/odd impedance table, first-pass coupled
-  microstrip width/gap and Touchstone export; EM layout/hairpin still pending.
+  microstrip width/gap, conceptual edge/hairpin/interdigital SVG sketches and
+  Touchstone export; routed/EM layout still pending.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
   measured S11/S21 magnitude with bounded least squares.
 - **Measurement history**: store multiple captures per project, keep their

@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.75.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.76.0 · **Released:**
 [v0.75.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.75.0) ·
 **Previous:**
 [v0.74.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.74.0) ·
-**Next:** v0.76.0 planning.
+**Next:** v0.76.0 release (layout sketches, pending CI/tag).
 
-**Verification:** local suite **1250 passed**, 4 skipped (ngspice unavailable); coverage **82.22 %**.
+**Verification:** local suite **1253 passed**, 4 skipped (ngspice unavailable); coverage **82.23 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41506998352
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41508558462
 
@@ -1185,7 +1185,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Coupled-line BPF electrical synthesis:** narrowband J-inverter BPF with
       even/odd impedance table, GUI/CLI and `.s2p` export (ADR-044).
 - [x] **Coupled-microstrip geometry:** quasi-static width/gap fit, substrate
-      selection and warnings (ADR-045). Hairpin/interdigital/EM remain pending.
+      selection and warnings (ADR-045).
+- [x] **Conceptual layout sketches:** edge-coupled, hairpin and interdigital
+      SVG preview/export (ADR-046). Routed layout/EM remain pending.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, hairpin/interdigital layout, step
       discontinuities and hardware validation. (L)

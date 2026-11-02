@@ -3,6 +3,22 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.76.0 — 2026-11-01
+
+### Added
+
+- **Conceptual layout sketches** for coupled-line BPF: edge-coupled, hairpin
+  and interdigital.
+- To-scale SVG export from **Design → Coupled-line BPF…** and
+  `filterdesk coupled-line --layout … --layout-output …`.
+- ADR-046 documenting the sketch-only scope.
+
+### Limitations
+
+- Hairpin/interdigital sketches use uniform average width/gap and idealized
+  bends; there is no routed layout, shorting-via model, discontinuity
+  compensation or EM validation.
+
 ## v0.75.0 — 2026-11-01
 
 ### Added

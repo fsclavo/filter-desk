@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PySide6.QtCore import QByteArray
+from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -27,6 +29,12 @@ from filterdesk.domain.units import parse_si
 from filterdesk.gui.i18n import tr
 from filterdesk.gui.widgets import EngineeringLineEdit
 from filterdesk.io.touchstone import write_sparameters
+from filterdesk.services.coupled_layout import (
+    CoupledLayoutError,
+    LayoutMode,
+    build_coupled_layout,
+    render_coupled_layout_svg,
+)
 from filterdesk.services.coupled_line import (
     CoupledLineBpfConfig,
     CoupledLineBpfDesign,
@@ -83,6 +91,17 @@ class CoupledLineDialog(QDialog):
                 tr("Gap (mm)"),
             ]
         )
+        self._layout_mode = QComboBox()
+        for label, mode in (
+            (tr("Edge-coupled"), LayoutMode.EDGE),
+            (tr("Hairpin"), LayoutMode.HAIRPIN),
+            (tr("Interdigital"), LayoutMode.INTERDIGITAL),
+        ):
+            self._layout_mode.addItem(label, mode.value)
+        self._layout_widget = QSvgWidget()
+        self._layout_widget.setMinimumHeight(220)
+        self._layout_status = QLabel("")
+        self._layout_status.setWordWrap(True)
         self._note = QLabel("")
         self._note.setWordWrap(True)
         self._status = QLabel("")
@@ -92,11 +111,17 @@ class CoupledLineDialog(QDialog):
         self._export_button = QPushButton(tr("Export Touchstone…"))
         self._export_button.setEnabled(False)
         self._export_button.clicked.connect(self._export)
+        self._export_layout_button = QPushButton(tr("Export layout SVG…"))
+        self._export_layout_button.setEnabled(False)
+        self._export_layout_button.clicked.connect(self._export_layout)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
         buttons.addButton(self._design_button, QDialogButtonBox.ButtonRole.ActionRole)
         buttons.addButton(self._export_button, QDialogButtonBox.ButtonRole.ActionRole)
+        buttons.addButton(
+            self._export_layout_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
         form = QFormLayout()
         form.addRow(tr("Center frequency"), self._center)
         form.addRow(tr("Bandwidth"), self._bandwidth)
@@ -108,14 +133,18 @@ class CoupledLineDialog(QDialog):
         form.addRow(tr("Sweep start"), self._f_start)
         form.addRow(tr("Sweep stop"), self._f_stop)
         form.addRow(tr("Points"), self._points)
+        form.addRow(tr("Layout sketch"), self._layout_mode)
         layout = QVBoxLayout(self)
         layout.addLayout(form)
         layout.addWidget(self._summary)
         layout.addWidget(self._table)
+        layout.addWidget(self._layout_widget)
+        layout.addWidget(self._layout_status)
         layout.addWidget(self._note)
         layout.addWidget(self._status)
         layout.addWidget(buttons)
         self._family.currentIndexChanged.connect(self._on_family_changed)
+        self._layout_mode.currentIndexChanged.connect(self._update_layout)
         self._run_design()
 
     @property
@@ -161,6 +190,9 @@ class CoupledLineDialog(QDialog):
             self._note.setText("")
             self._status.setText(str(exc))
             self._export_button.setEnabled(False)
+            self._export_layout_button.setEnabled(False)
+            self._layout_widget.load(QByteArray())
+            self._layout_status.setText("")
             return
         self._summary.setText(self._design.summary())
         self._table.setRowCount(len(self._design.sections))
@@ -179,6 +211,52 @@ class CoupledLineDialog(QDialog):
         self._note.setText(" ".join(self._design.warnings))
         self._status.setText("")
         self._export_button.setEnabled(True)
+        self._update_layout()
+
+    def _update_layout(self) -> None:
+        if self._design is None:
+            self._layout_widget.load(QByteArray())
+            self._layout_status.setText("")
+            self._export_layout_button.setEnabled(False)
+            return
+        try:
+            layout = build_coupled_layout(
+                self._design, str(self._layout_mode.currentData())
+            )
+        except CoupledLayoutError as exc:
+            self._layout_widget.load(QByteArray())
+            self._layout_status.setText(str(exc))
+            self._export_layout_button.setEnabled(False)
+            return
+        svg = render_coupled_layout_svg(layout)
+        self._layout_widget.load(QByteArray(svg.encode("utf-8")))
+        self._layout_status.setText(" ".join(layout.warnings))
+        self._export_layout_button.setEnabled(True)
+
+    def _export_layout(self) -> None:
+        if self._design is None:
+            return
+        path, _selected = QFileDialog.getSaveFileName(
+            self,
+            tr("Export layout SVG"),
+            "coupled_layout.svg",
+            "SVG (*.svg);;All files (*)",
+        )
+        if not path:
+            return
+        if not Path(path).suffix:
+            path += ".svg"
+        try:
+            layout = build_coupled_layout(
+                self._design, str(self._layout_mode.currentData())
+            )
+            Path(path).write_text(
+                render_coupled_layout_svg(layout), encoding="utf-8"
+            )
+        except (CoupledLayoutError, OSError) as exc:
+            QMessageBox.critical(self, tr("Export failed"), str(exc))
+            return
+        self._status.setText(tr("Wrote {path}", path=path))
 
     def _export(self) -> None:
         if self._design is None:

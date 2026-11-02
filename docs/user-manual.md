@@ -380,7 +380,7 @@ specification edits require an explicit **Synthesize**.
 | **Coil calculator** | **Tools → Coil calculator…** | tabs: **Toroid** (turns, wire gauge, flux/saturation) and **Air-core** solenoid (turns, length, R_DC, enamelled wire by default) |
 | **Transformer / balun / unun** | **Tools → Transformer / balun / unun…** | topology and winding options, core/turns/wire, leakage/core loss, TLT models, output-boundary insertion and BOM |
 | **Microstrip line** | **Tools → Microstrip line…** | Hammerstad-Jensen synthesis: width, effective er, guided wavelength, quarter-wave length and first-order conductor/dielectric loss |
-| **Coupled-line BPF** | **Design → Coupled-line BPF…** | narrowband J-inverter BPF; Butterworth or odd-order Chebyshev-I, even/odd impedance and width/gap table, `.s2p` export |
+| **Coupled-line BPF** | **Design → Coupled-line BPF…** | narrowband J-inverter BPF; Butterworth or odd-order Chebyshev-I, even/odd impedance and width/gap table, conceptual edge/hairpin/interdigital SVG sketch, `.s2p` export |
 | **Coaxial stub notch** | **Tools → Coaxial stub notch…** | cable presets, λ/4/λ/2 stub, response plot and CSV export, notch depth/bandwidth/Q |
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or N-band multiplexer; combined metrics, plots, schematics, BOM and `.sNp` exports |
@@ -1333,23 +1333,30 @@ It supports **Butterworth** (order 1–9) and **Chebyshev-I** (odd order, equal
   coupled section;
 - first-pass **width and gap** for the selected substrate, plus even/odd
   effective permittivity;
+- a **conceptual layout sketch** in edge-coupled, hairpin or interdigital style;
 - the ideal 2-port S11/S21 response from cascaded J-inverters and shunt
   resonators;
-- Touchstone `.s2p` export.
+- Touchstone `.s2p` and SVG layout export.
 
 Example:
 
 ```bash
 filterdesk coupled-line --center 100M --bandwidth 10M --order 3 \
   --family chebyshev_type_i --ripple 0.1 --substrate FR4 \
+  --layout hairpin --layout-output coupled_layout.svg \
   --output coupled.s2p --json
 ```
 
+`--substrate NAME` selects the PCB stackup; `--layout {edge,hairpin,interdigital}`
+with `--layout-output FILE.svg` writes the conceptual sketch.
+
 Width/gap use a zero-thickness, quasi-static Hammerstad-Jensen model with a
-bounded numerical fit. This is a **first-pass electrical/geometry** design, not
-a fabrication-ready layout: finite copper thickness, coupled-line dispersion,
-discontinuities, open-end effects, hairpin/interdigital layout and EM coupling
-are not included. Use a 2-D/3-D field solver or VNA before building the board.
+bounded numerical fit. The layout selector produces a **conceptual to-scale
+sketch**, not a routed fabrication layout: edge-coupled sections, idealized
+hairpin folds or interdigital lines are drawn with average width/gap where
+needed. Finite copper thickness, coupled-line dispersion, bends,
+discontinuities, open-end effects, shorting vias and EM coupling are not
+included. Use a 2-D/3-D field solver or VNA before building the board.
 
 Manual line and stub elements are also part of the canonical netlist and both
 ABCD/skrf backends. Stubs are not produced by the v1 low-pass synthesis; series
@@ -1532,8 +1539,9 @@ detailed test cases and tolerances are in
   independent magnitudes, not a ferrite-junction simulation. Cavity filters are
   not implemented.
 - **Coupled-line BPF geometry is quasi-static**: width/gap use a zero-thickness
-  Hammerstad-Jensen fit. Finite thickness, dispersion, discontinuities,
-  hairpin/interdigital layout and EM coupling are not included.
+  Hammerstad-Jensen fit. The hairpin/interdigital views are conceptual sketches,
+  not routed layouts; finite thickness, dispersion, bends, discontinuities,
+  shorting vias and EM coupling are not included.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.
