@@ -1120,6 +1120,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     coupled.add_argument("--ripple", type=float, default=0.1)
     coupled.add_argument("--z0", default="50")
+    coupled.add_argument("--substrate", default="FR4")
     coupled.add_argument("--f-start", default=None)
     coupled.add_argument("--f-stop", default=None)
     coupled.add_argument("--points", type=int, default=2001)
@@ -4498,7 +4499,7 @@ def main(argv: list[str] | None = None) -> int:
                 spacing=SweepSpacing(str(args.spacing)),
             )
             coupled_design = design_coupled_line_bpf(
-                coupled_config, coupled_sweep
+                coupled_config, coupled_sweep, substrate=str(args.substrate)
             )
             write_sparameters(coupled_design.network, args.output)
             if args.json:
@@ -4520,6 +4521,10 @@ def main(argv: list[str] | None = None) -> int:
                                     "z0e_ohm": section.z0e_ohm,
                                     "z0o_ohm": section.z0o_ohm,
                                     "coupling": section.coupling,
+                                    "width_mm": section.width_mm,
+                                    "gap_mm": section.gap_mm,
+                                    "eeff_even": section.eeff_even,
+                                    "eeff_odd": section.eeff_odd,
                                 }
                                 for section in coupled_design.sections
                             ],
@@ -4535,7 +4540,9 @@ def main(argv: list[str] | None = None) -> int:
                         f"  section {section.index}: "
                         f"Z0e={section.z0e_ohm:.3f} ohm, "
                         f"Z0o={section.z0o_ohm:.3f} ohm, "
-                        f"k={section.coupling:.4f}"
+                        f"k={section.coupling:.4f}, "
+                        f"W={section.width_mm:.3f} mm, "
+                        f"S={section.gap_mm:.3f} mm"
                     )
                 for warning in coupled_design.warnings:
                     print(f"warning: {warning}", file=sys.stderr)

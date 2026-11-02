@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
+from filterdesk.components_std.microstrip import list_substrates
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.domain.units import parse_si
 from filterdesk.gui.i18n import tr
@@ -58,6 +59,9 @@ class CoupledLineDialog(QDialog):
         self._ripple.setText("0.1")
         self._z0 = EngineeringLineEdit()
         self._z0.setText("50")
+        self._substrate = QComboBox()
+        for substrate in list_substrates():
+            self._substrate.addItem(substrate.name, substrate.name)
         self._f_start = EngineeringLineEdit()
         self._f_start.setText("80M")
         self._f_stop = EngineeringLineEdit()
@@ -67,7 +71,7 @@ class CoupledLineDialog(QDialog):
         self._points.setValue(1001)
         self._summary = QLabel("-")
         self._summary.setWordWrap(True)
-        self._table = QTableWidget(0, 5)
+        self._table = QTableWidget(0, 7)
         self._table.setHorizontalHeaderLabels(
             [
                 tr("Section"),
@@ -75,6 +79,8 @@ class CoupledLineDialog(QDialog):
                 tr("Z0o (ohm)"),
                 tr("Coupling"),
                 tr("J/Y0"),
+                tr("Width (mm)"),
+                tr("Gap (mm)"),
             ]
         )
         self._note = QLabel("")
@@ -98,6 +104,7 @@ class CoupledLineDialog(QDialog):
         form.addRow(tr("Family"), self._family)
         form.addRow(tr("Ripple (dB)"), self._ripple)
         form.addRow(tr("Reference Z0 (Ohm)"), self._z0)
+        form.addRow(tr("Substrate"), self._substrate)
         form.addRow(tr("Sweep start"), self._f_start)
         form.addRow(tr("Sweep stop"), self._f_stop)
         form.addRow(tr("Points"), self._points)
@@ -144,7 +151,9 @@ class CoupledLineDialog(QDialog):
                 n_points=int(self._points.value()),
                 spacing=SweepSpacing.LINEAR,
             )
-            self._design = design_coupled_line_bpf(config, sweep)
+            self._design = design_coupled_line_bpf(
+                config, sweep, substrate=str(self._substrate.currentData())
+            )
         except (CoupledLineError, ValueError) as exc:
             self._design = None
             self._table.setRowCount(0)
@@ -162,6 +171,8 @@ class CoupledLineDialog(QDialog):
                 f"{section.z0o_ohm:.3f}",
                 f"{section.coupling:.4f}",
                 f"{section.j_norm:.4f}",
+                "-" if section.width_mm is None else f"{section.width_mm:.3f}",
+                "-" if section.gap_mm is None else f"{section.gap_mm:.3f}",
             )
             for column, value in enumerate(values):
                 self._table.setItem(row, column, QTableWidgetItem(value))

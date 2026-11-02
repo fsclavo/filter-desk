@@ -814,6 +814,8 @@ _ES.update(
         "Z0e (ohm)": "Z0e (ohm)",
         "Z0o (ohm)": "Z0o (ohm)",
         "J/Y0": "J/Y0",
+        "Width (mm)": "Ancho (mm)",
+        "Gap (mm)": "Separación (mm)",
         "Export coupled-line filter": "Exportar filtro de líneas acopladas",
         "Synthesize an ideal coupled-line bandpass filter.": (
             "Sintetizar un filtro pasa-banda ideal de líneas acopladas."

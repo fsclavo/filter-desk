@@ -3,6 +3,24 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.75.0 — 2026-11-01
+
+### Added
+
+- **Coupled-microstrip geometry synthesis**: zero-thickness Hammerstad-Jensen
+  even/odd model plus bounded multi-start width/gap fit.
+- Width, gap, even/odd effective permittivity and residual in the coupled-line
+  BPF table, CLI JSON and GUI.
+- Substrate selection in **Design → Coupled-line BPF…** and `--substrate` in
+  `filterdesk coupled-line`.
+- ADR-045 documenting the geometry model and its limits.
+
+### Limitations
+
+- Finite copper thickness, dispersion, discontinuities, hairpin/interdigital
+  layout and EM coupling are not modeled.
+- Geometry is a first-pass estimate; verify with a 2-D/3-D field solver or VNA.
+
 ## v0.74.0 — 2026-11-01
 
 ### Added

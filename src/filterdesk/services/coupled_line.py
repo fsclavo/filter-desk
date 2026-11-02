@@ -16,6 +16,11 @@ from numpy.typing import NDArray
 
 from filterdesk.analysis.multiport import SParameters
 from filterdesk.analysis.types import SweepConfig
+from filterdesk.components_std.coupled_microstrip import (
+    CoupledMicrostripError,
+    design_coupled_microstrip,
+)
+from filterdesk.components_std.microstrip import Substrate, find_substrate
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.synthesis.families.butterworth import butterworth_g_values
 from filterdesk.synthesis.families.chebyshev_i import chebyshev_type_i_g_values
@@ -71,6 +76,10 @@ class CoupledLineSection:
     z0e_ohm: float
     z0o_ohm: float
     coupling: float
+    width_mm: float | None = None
+    gap_mm: float | None = None
+    eeff_even: float | None = None
+    eeff_odd: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,16 +89,22 @@ class CoupledLineBpfDesign:
     network: SParameters
     sections: tuple[CoupledLineSection, ...]
     g_values: tuple[float, ...]
+    substrate: Substrate | None = None
     warnings: tuple[str, ...] = ()
     meta: dict[str, object] = field(default_factory=dict)
 
     def summary(self) -> str:
+        substrate = (
+            ""
+            if self.substrate is None
+            else f", substrate {self.substrate.name}"
+        )
         return (
             f"Coupled-line BPF: {self.config.order} resonators, "
             f"{len(self.sections)} sections, "
             f"{self.config.center_hz / 1e6:.4g} MHz, "
             f"BW {self.config.bandwidth_hz / 1e6:.4g} MHz, "
-            f"Z0 {self.config.z0_ohm:g} ohm"
+            f"Z0 {self.config.z0_ohm:g} ohm{substrate}"
         )
 
 
@@ -114,12 +129,26 @@ def _inverter_values(
 
 
 def _sections(
-    config: CoupledLineBpfConfig, j_norm: tuple[float, ...]
+    config: CoupledLineBpfConfig,
+    j_norm: tuple[float, ...],
+    substrate: Substrate | None,
 ) -> tuple[CoupledLineSection, ...]:
     sections: list[CoupledLineSection] = []
     for index, value in enumerate(j_norm, start=1):
         z0e = config.z0_ohm * (1.0 + value + value * value)
         z0o = config.z0_ohm * (1.0 - value + value * value)
+        width = gap = eeff_even = eeff_odd = None
+        if substrate is not None:
+            try:
+                geometry = design_coupled_microstrip(z0e, z0o, substrate)
+            except CoupledMicrostripError as exc:
+                raise CoupledLineError(
+                    f"section {index} geometry failed: {exc}"
+                ) from exc
+            width = geometry.width_mm
+            gap = geometry.gap_mm
+            eeff_even = geometry.eeff_even
+            eeff_odd = geometry.eeff_odd
         sections.append(
             CoupledLineSection(
                 index=index,
@@ -127,6 +156,10 @@ def _sections(
                 z0e_ohm=z0e,
                 z0o_ohm=z0o,
                 coupling=(z0e - z0o) / (z0e + z0o),
+                width_mm=width,
+                gap_mm=gap,
+                eeff_even=eeff_even,
+                eeff_odd=eeff_odd,
             )
         )
     return tuple(sections)
@@ -155,7 +188,9 @@ def _abcd_to_s(
 
 
 def design_coupled_line_bpf(
-    config: CoupledLineBpfConfig, sweep: SweepConfig
+    config: CoupledLineBpfConfig,
+    sweep: SweepConfig,
+    substrate: Substrate | str | None = None,
 ) -> CoupledLineBpfDesign:
     """Synthesize an ideal parallel-coupled half-wave-resonator BPF.
 
@@ -165,7 +200,8 @@ def design_coupled_line_bpf(
     g = _g_values(config)
     fbw = config.bandwidth_hz / config.center_hz
     j_norm = _inverter_values(g, fbw)
-    sections = _sections(config, j_norm)
+    sub = find_substrate(substrate) if isinstance(substrate, str) else substrate
+    sections = _sections(config, j_norm, sub)
     frequencies = np.asarray(sweep.frequencies_hz(), dtype=np.float64)
     omega = 2.0 * np.pi * frequencies
     y0 = 1.0 / config.z0_ohm
@@ -200,18 +236,40 @@ def design_coupled_line_bpf(
         z0_ohm=config.z0_ohm,
         source="coupled-line-model",
     )
-    warnings = (
+    warnings = [
         "Ideal narrowband J-inverter model; even/odd impedances are electrical "
-        "targets. Physical width/gap, dispersion, discontinuities and EM "
-        "coupling are not included; verify with a field solver or VNA.",
-    )
+        "targets. Dispersion, discontinuities and EM coupling are not included; "
+        "verify with a field solver or VNA.",
+    ]
+    if sub is None:
+        warnings.append(
+            "No substrate selected; physical width/gap geometry was not "
+            "synthesized."
+        )
+    else:
+        warnings.append(
+            "Width/gap use a zero-thickness quasi-static Hammerstad-Jensen "
+            "model; finite thickness and dispersion are not included."
+        )
+        for section in sections:
+            if section.width_mm is not None and section.width_mm < 0.15:
+                warnings.append(
+                    f"section {section.index}: narrow trace "
+                    f"({section.width_mm:.3f} mm); verify fabrication"
+                )
+            if section.gap_mm is not None and section.gap_mm < 0.15:
+                warnings.append(
+                    f"section {section.index}: narrow gap "
+                    f"({section.gap_mm:.3f} mm); verify fabrication"
+                )
     return CoupledLineBpfDesign(
         config=config,
         sweep=sweep,
         network=network,
         sections=sections,
         g_values=g,
-        warnings=warnings,
+        substrate=sub,
+        warnings=tuple(warnings),
         meta={
             "fbw": fbw,
             "resonator_capacitance_f": capacitance,

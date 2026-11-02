@@ -30,6 +30,12 @@ from filterdesk.components_std.coax import (
     design_coax_stub,
     find_coax_cable,
 )
+from filterdesk.components_std.coupled_microstrip import (
+    CoupledMicrostripError,
+    CoupledMicrostripGeometry,
+    coupled_microstrip_impedances,
+    design_coupled_microstrip,
+)
 from filterdesk.components_std.e_series import (
     ESeries,
     base_values,
@@ -133,6 +139,8 @@ __all__ = [
     "MATERIALS",
     "FerriteMaterial",
     "MatchingTopology",
+    "CoupledMicrostripError",
+    "CoupledMicrostripGeometry",
     "MicrostripError",
     "MicrostripLine",
     "QuarterWaveTransformer",
@@ -163,6 +171,8 @@ __all__ = [
     "design_balun",
     "design_balun_options",
     "coax_stub_response",
+    "coupled_microstrip_impedances",
+    "design_coupled_microstrip",
     "design_coax_stub",
     "design_matching",
     "find_coax_cable",
