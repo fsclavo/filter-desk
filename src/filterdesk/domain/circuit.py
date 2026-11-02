@@ -280,6 +280,24 @@ class BalunSpec:
                 raise ValueError(f"balun {name} must be >= 0")
 
 
+def _validate_model_curve(
+    curve: tuple[tuple[float, float], ...],
+    name: str,
+    *,
+    allow_zero: bool = False,
+) -> None:
+    if not curve:
+        return
+    frequencies = [point[0] for point in curve]
+    if frequencies != sorted(frequencies) or len(set(frequencies)) != len(frequencies):
+        raise ValueError(f"{name} must be sorted with unique frequencies")
+    for frequency, value in curve:
+        if frequency <= 0.0:
+            raise ValueError(f"{name} frequencies must be > 0")
+        if value < 0.0 or (not allow_zero and value <= 0.0):
+            raise ValueError(f"{name} values are out of range")
+
+
 @dataclass(frozen=True, slots=True)
 class NonIdealInductor:
     """Inductor with losses, self-resonance and optional DC-bias derating.
@@ -306,6 +324,7 @@ class NonIdealInductor:
     dc_current_a: float = 0.0
     saturation_current_a: float | None = None
     winding: WindingSpec | None = None
+    q_curve: tuple[tuple[float, float], ...] = ()
 
     def __post_init__(self) -> None:
         if self.loss_model not in ("constant", "dc_skin"):
@@ -318,6 +337,7 @@ class NonIdealInductor:
             raise ValueError("saturation_current_a must be > 0")
         if self.dc_current_a < 0.0:
             raise ValueError("dc_current_a must be >= 0")
+        _validate_model_curve(self.q_curve, "q_curve")
 
     @property
     def element_type(self) -> ElementType:
@@ -384,6 +404,10 @@ class NonIdealCapacitor:
     esr_ohm: float = 0.0
     esl_h: float = 0.0
     g: float | None = None
+    esr_curve: tuple[tuple[float, float], ...] = ()
+
+    def __post_init__(self) -> None:
+        _validate_model_curve(self.esr_curve, "esr_curve", allow_zero=True)
 
     @property
     def element_type(self) -> ElementType:

@@ -53,6 +53,11 @@ from filterdesk.components_std.library import (
     search_parts,
     write_component_library,
 )
+from filterdesk.components_std.manufacturer_model import (
+    ManufacturerModel,
+    ManufacturerModelError,
+    ModelPoint,
+)
 from filterdesk.components_std.matching import (
     MatchingDesign,
     MatchingElement,
@@ -141,8 +146,11 @@ __all__ = [
     "MatchingTopology",
     "CoupledMicrostripError",
     "CoupledMicrostripGeometry",
+    "ManufacturerModel",
+    "ManufacturerModelError",
     "MicrostripError",
     "MicrostripLine",
+    "ModelPoint",
     "QuarterWaveTransformer",
     "Stub",
     "StubKind",

@@ -155,7 +155,8 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   plots, branch schematics with PNG/SVG/PDF export, E-series snap,
   finite-Q/parasitic reanalysis, deterministic component sensitivity,
   Monte-Carlo tolerance/yield in the GUI and CLI, `.sNp` export, a combined
-  system BOM, real-part assignment with MPN/package and optional application of
+  system BOM, real-part assignment with MPN/package, optional manufacturer
+  Q(f)/ESR(f) curves and application of
   part values/parasitics to simple L/C and series/parallel resonators, 2-port
   VNA path comparison, standalone HTML/PDF reports with embedded
   plots/schematics, `.fdsys.json` project save/open, a curated real-part catalog

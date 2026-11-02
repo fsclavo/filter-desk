@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
-from filterdesk.components_std import STARTER_PARTS
+from filterdesk.components_std import (
+    STARTER_PARTS,
+    ManufacturerModel,
+    ModelPoint,
+)
+from filterdesk.domain.circuit import NonIdealInductor
 from filterdesk.domain.enums import ApproximationFamily
 from filterdesk.services.diplexer import DiplexerConfig, design_diplexer
 from filterdesk.services.part_application import apply_assigned_parts
@@ -72,3 +79,41 @@ def test_composite_parts_apply_subpart_models() -> None:
         for el in result.design.circuits[0].elements
         if hasattr(el, "l_series_resistance_ohm")
     )
+
+
+def test_manufacturer_q_curve_is_applied_to_simple_inductor() -> None:
+    design = _design()
+    assigned = assign_nearest_parts(
+        [("Low", design.low_circuit), ("High", design.high_circuit)],
+        STARTER_PARTS,
+        max_delta_pct=100.0,
+    )
+    key, part = next(
+        (key, part)
+        for key, part in assigned.assignments.items()
+        if part.kind == "inductor" and ":L" in key
+    )
+    modelled = replace(
+        part,
+        model=ManufacturerModel(
+            model_id="test-q",
+            confidence="datasheet",
+            q_points=(
+                ModelPoint(1e6, 80.0),
+                ModelPoint(50e6, 40.0),
+            ),
+        ),
+    )
+    result = apply_assigned_parts(design, {key: modelled})
+    branch, ref = key.split(":", 1)
+    circuit = (
+        result.design.low_circuit
+        if branch == "Low"
+        else result.design.high_circuit
+    )
+    element = next(
+        el
+        for el in circuit.elements
+        if el.id == ref and isinstance(el, NonIdealInductor)
+    )
+    assert element.q_curve == ((1e6, 80.0), (50e6, 40.0))

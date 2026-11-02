@@ -4675,8 +4675,15 @@ def main(argv: list[str] | None = None) -> int:
                                 "dcr_ohm": part.dcr_ohm,
                                 "srf_hz": part.srf_hz,
                                 "q_min": part.q_min,
+                                "esr_ohm": part.esr_ohm,
+                                "esl_h": part.esl_h,
                                 "source": part.source,
                                 "notes": part.notes,
+                                "model": (
+                                    None
+                                    if part.model is None
+                                    else part.model.to_mapping()
+                                ),
                             }
                             for part in selected
                         ],

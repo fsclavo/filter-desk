@@ -42,6 +42,12 @@ def _opt_int(value: Any) -> int | None:
     return None if value is None else int(value)
 
 
+def _curve_from_mapping(value: Any) -> tuple[tuple[float, float], ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple((float(row[0]), float(row[1])) for row in value)
+
+
 def _winding_to_mapping(winding: WindingSpec) -> dict[str, object]:
     return {
         "kind": winding.kind,
@@ -195,10 +201,14 @@ def circuit_to_mapping(circuit: Circuit) -> dict[str, Any]:
                 row["i_sat_A"] = el.saturation_current_a
             if el.winding is not None:
                 row["winding"] = _winding_to_mapping(el.winding)
+            if el.q_curve:
+                row["q_curve"] = [[f, q] for f, q in el.q_curve]
         elif isinstance(el, NonIdealCapacitor):
             row["value_F"] = el.value_f
             row["esr_Ohm"] = el.esr_ohm
             row["esl_H"] = el.esl_h
+            if el.esr_curve:
+                row["esr_curve"] = [[f, esr] for f, esr in el.esr_curve]
         elif isinstance(el, MicrostripLineElement):
             row["z0_Ohm"] = el.z0_ohm
             row["length_m"] = el.length_m
@@ -383,6 +393,7 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     dc_current_a=float(row.get("dc_current_A", 0.0)),
                     saturation_current_a=_opt_float(row.get("i_sat_A")),
                     winding=winding,
+                    q_curve=_curve_from_mapping(row.get("q_curve")),
                 )
             )
         elif etype == "nonideal_capacitor":
@@ -396,6 +407,7 @@ def circuit_from_mapping(data: dict[str, Any]) -> Circuit:
                     esr_ohm=float(row.get("esr_Ohm", 0.0)),
                     esl_h=float(row.get("esl_H", 0.0)),
                     g=g,
+                    esr_curve=_curve_from_mapping(row.get("esr_curve")),
                 )
             )
         elif etype == "microstrip_line":

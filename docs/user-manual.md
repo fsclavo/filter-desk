@@ -1251,6 +1251,29 @@ model data is redistributed. Verify the current datasheet before ordering. This
 v1 does not automatically replace circuit values or assign parts to BOM rows;
 it is a lookup/selection tool.
 
+#### Manufacturer models
+
+A catalog part can include an optional frequency-dependent model:
+
+```json
+"model": {
+  "model_id": "vendor-q-curve",
+  "source": "datasheet figure 5",
+  "confidence": "datasheet",
+  "q_points": [[1e6, 100], [10e6, 60], [50e6, 35]],
+  "esr_points": []
+}
+```
+
+- `q_points` apply to inductors; `esr_points` apply to capacitors.
+- Points are sorted by frequency and interpolated log-log; outside the range the
+  nearest endpoint is used.
+- **Apply assigned parts** applies curves to simple L/C arms. Composite
+  series/parallel resonators keep constant DCR/ESR and show a warning.
+- The catalog does not redistribute vendor SPICE decks; import only data you are
+  allowed to use. Model confidence and source are shown in the part details.
+
+
 ### Microstrip / distributed calculators
 
 **Tools → Microstrip line…** (`filterdesk microstrip`) synthesizes a

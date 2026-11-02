@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from filterdesk.components_std.manufacturer_model import ManufacturerModel
 from filterdesk.domain.units import format_engineering
 
 _FORMAT = "filterdesk.components"
@@ -42,6 +43,7 @@ class LibraryPart:
     esl_h: float | None = None
     source: str = ""
     notes: str = ""
+    model: ManufacturerModel | None = None
 
     def __post_init__(self) -> None:
         if not self.id.strip() or not self.mpn.strip():
@@ -235,6 +237,7 @@ def search_parts(
                 part.package,
                 part.value_text,
                 part.notes,
+                "" if part.model is None else part.model.model_id,
             )
         ).lower().replace(" ", "")
         if needle and needle not in haystack:
@@ -323,6 +326,7 @@ def _part_to_mapping(part: LibraryPart) -> dict[str, Any]:
         "esl_h": part.esl_h,
         "source": part.source,
         "notes": part.notes,
+        "model": None if part.model is None else part.model.to_mapping(),
     }
 
 
@@ -345,6 +349,11 @@ def _part_from_mapping(data: dict[str, Any]) -> LibraryPart:
         esl_h=_optional_float(data.get("esl_h")),
         source=str(data.get("source", "")),
         notes=str(data.get("notes", "")),
+        model=(
+            None
+            if data.get("model") is None
+            else ManufacturerModel.from_mapping(data["model"])
+        ),
     )
 
 
@@ -355,6 +364,7 @@ def _optional_float(value: Any) -> float | None:
 __all__ = [
     "ComponentLibraryError",
     "LibraryPart",
+    "ManufacturerModel",
     "STARTER_PARTS",
     "library_from_mapping",
     "library_to_mapping",

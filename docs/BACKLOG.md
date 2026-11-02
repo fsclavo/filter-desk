@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.77.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.78.0 · **Released:**
 [v0.77.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.77.0) ·
 **Previous:**
 [v0.76.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.76.0) ·
-**Next:** v0.78.0 planning.
+**Next:** v0.78.0 release (manufacturer models, pending CI/tag).
 
-**Verification:** local suite **1254 passed**, 4 skipped (ngspice unavailable); coverage **82.27 %**.
+**Verification:** local suite **1259 passed**, 4 skipped (ngspice unavailable); coverage **82.21 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41528648788
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41530143719
 
@@ -1093,6 +1093,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       printable light style.
 - [x] **Component catalog v1:** real MPN starter set, GUI/CLI search, JSON
       import/export and source/provenance notes (ADR-035).
+- [x] **Manufacturer Q/ESR models:** optional frequency curves, persistence,
+      ABCD application to simple L/C and composite warning (ADR-048).
 - [x] **System sensitivity:** deterministic ±delta ranking of isolation/IL/OOB
       impact in GUI and CLI (ADR-036).
 - [x] **System Monte Carlo:** tolerance/yield with uniform/normal draws and

@@ -108,6 +108,11 @@ def _apply_part(
                 warnings.append(
                     f"{ref}: composite parasitic model not applied (value only)"
                 )
+            elif part.model is not None and part.model.has_curve:
+                warnings.append(
+                    f"{ref}: manufacturer Q/ESR curve not applied to a composite "
+                    "resonator; constant DCR/ESR used"
+                )
         elif isinstance(element, (IdealInductor, NonIdealInductor)):
             new_elements[index] = replace(element, value_h=part.value_si)
         elif isinstance(element, (IdealCapacitor, NonIdealCapacitor)):
@@ -124,7 +129,20 @@ def _apply_part(
         dcr = part.dcr_ohm
         q_ref = part.q_min if dcr is None else None
         q_frequency = 250e6 if q_ref is not None else None
-        if dcr is not None or part.srf_hz is not None or q_ref is not None:
+        q_curve = (
+            ()
+            if part.model is None
+            else tuple(
+                (point.frequency_hz, point.value)
+                for point in part.model.q_points
+            )
+        )
+        if (
+            dcr is not None
+            or part.srf_hz is not None
+            or q_ref is not None
+            or q_curve
+        ):
             updated = set_element_parasitics(
                 updated,
                 element_id,
@@ -132,14 +150,24 @@ def _apply_part(
                 q_ref=q_ref,
                 q_frequency_hz=q_frequency,
                 srf_hz=part.srf_hz,
+                q_curve=q_curve or None,
             )
     elif part.kind == "capacitor":
-        if part.esr_ohm is not None or part.esl_h is not None:
+        esr_curve = (
+            ()
+            if part.model is None
+            else tuple(
+                (point.frequency_hz, point.value)
+                for point in part.model.esr_points
+            )
+        )
+        if part.esr_ohm is not None or part.esl_h is not None or esr_curve:
             updated = set_element_parasitics(
                 updated,
                 element_id,
                 esr_ohm=part.esr_ohm,
                 esl_h=part.esl_h,
+                esr_curve=esr_curve or None,
             )
     return updated, warnings
 

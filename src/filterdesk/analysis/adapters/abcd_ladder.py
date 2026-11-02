@@ -369,12 +369,37 @@ def _stub_input_impedance(
     return np.asarray(z, dtype=np.complex128)
 
 
+def _interp_model_curve(
+    frequency_hz: NDArray[np.floating],
+    points: tuple[tuple[float, float], ...],
+) -> NDArray[np.float64]:
+    frequencies = np.asarray([point[0] for point in points], dtype=float)
+    values = np.asarray([point[1] for point in points], dtype=float)
+    target = np.asarray(frequency_hz, dtype=float)
+    log_f = np.log10(np.maximum(target, frequencies[0]))
+    if np.all(values > 0.0):
+        result = 10.0 ** np.interp(
+            log_f, np.log10(frequencies), np.log10(values)
+        )
+    else:
+        result = np.interp(log_f, np.log10(frequencies), values)
+    return np.asarray(result, dtype=np.float64)
+
+
 def _z_nonideal_inductor(
     omega: NDArray[np.floating],
     el: NonIdealInductor,
 ) -> NDArray[np.complexfloating]:
     r_ref = el.reference_resistance_ohm
-    if (
+    if el.q_curve:
+        frequency_hz = np.asarray(omega, dtype=float) / (2.0 * np.pi)
+        q_curve = _interp_model_curve(frequency_hz, el.q_curve)
+        resistance = (
+            2.0 * np.pi * frequency_hz * el.effective_inductance_h / q_curve
+        )
+        if el.series_resistance_ohm > 0.0:
+            resistance = np.maximum(resistance, el.series_resistance_ohm)
+    elif (
         el.loss_model == "dc_skin"
         and r_ref > 0.0
         and el.q_frequency_hz is not None
@@ -398,8 +423,17 @@ def _z_nonideal_capacitor(
     c_f: float,
     esr_ohm: float,
     esl_h: float,
+    esr_curve: tuple[tuple[float, float], ...] = (),
 ) -> NDArray[np.complexfloating]:
-    return esr_ohm + 1j * omega * esl_h + 1.0 / (1j * omega * c_f)
+    if esr_curve:
+        frequency_hz = np.asarray(omega, dtype=float) / (2.0 * np.pi)
+        esr = _interp_model_curve(frequency_hz, esr_curve)
+    else:
+        esr = np.full_like(omega, esr_ohm, dtype=np.float64)
+    return np.asarray(
+        esr + 1j * omega * esl_h + 1.0 / (1j * omega * c_f),
+        dtype=np.complex128,
+    )
 
 
 def _element_abcd(
@@ -435,7 +469,9 @@ def _element_abcd_impl(
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)
     if isinstance(el, NonIdealCapacitor):
-        z = _z_nonideal_capacitor(omega, el.value_f, el.esr_ohm, el.esl_h)
+        z = _z_nonideal_capacitor(
+            omega, el.value_f, el.esr_ohm, el.esl_h, el.esr_curve
+        )
         if el.role == ElementRole.SERIES:
             return _series_abcd(z)
         return _shunt_abcd(1.0 / z)

@@ -422,6 +422,12 @@ _ES.update(
         "&GitHub repository": "Repositorio de &GitHub",
         "&User manual": "Manual de &usuario",
         "Model &confidence…": "&Confianza de modelos…",
+        "Model": "Modelo",
+        "unnamed": "sin nombre",
+        "Q curve points": "Puntos de curva Q",
+        "ESR curve points": "Puntos de curva ESR",
+        "Model source": "Fuente del modelo",
+        "Model notes": "Notas del modelo",
         "Set tune &step…": "Definir &paso de ajuste…",
         "Set &tolerance…": "Definir &tolerancia…",
         # Toolbar / status ---------------------------------------------------

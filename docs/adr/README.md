@@ -50,3 +50,4 @@
 - [ADR-045](ADR-045-coupled-microstrip-geometry.md) — coupled-microstrip width/gap synthesis
 - [ADR-046](ADR-046-coupled-layout-sketches.md) — conceptual edge/hairpin/interdigital layout sketches
 - [ADR-047](ADR-047-dxf-layout-export.md) — DXF geometry handoff for external EM
+- [ADR-048](ADR-048-manufacturer-frequency-models.md) — manufacturer Q(f)/ESR(f) catalog models

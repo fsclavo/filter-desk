@@ -1697,6 +1697,27 @@ class ComponentLibraryDialog(QDialog):
             lines.append(f"{tr('SRF')}: {format_engineering(part.srf_hz, 'Hz')}")
         if part.q_min is not None:
             lines.append(f"{tr('Q min')}: {part.q_min:g}")
+        if part.esr_ohm is not None:
+            lines.append(f"{tr('ESR')}: {part.esr_ohm:g} Ω")
+        if part.esl_h is not None:
+            lines.append(f"{tr('ESL')}: {format_engineering(part.esl_h, 'H')}")
+        if part.model is not None:
+            lines.append(
+                f"{tr('Model')}: {part.model.model_id or tr('unnamed')} "
+                f"({part.model.confidence})"
+            )
+            if part.model.q_points:
+                lines.append(
+                    f"{tr('Q curve points')}: {len(part.model.q_points)}"
+                )
+            if part.model.esr_points:
+                lines.append(
+                    f"{tr('ESR curve points')}: {len(part.model.esr_points)}"
+                )
+            if part.model.source:
+                lines.append(f"{tr('Model source')}: {part.model.source}")
+            if part.model.notes:
+                lines.append(f"{tr('Model notes')}: {part.model.notes}")
         if part.source:
             lines.append(f"{tr('Source')}: {part.source}")
         if part.notes:

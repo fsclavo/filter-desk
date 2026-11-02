@@ -3,6 +3,22 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.78.0 — 2026-11-01
+
+### Added
+
+- Optional **manufacturer Q(f)/ESR(f) curves** in component-library JSON.
+- Log-log interpolation, provenance/confidence fields and GUI details.
+- Native project persistence for inductor Q curves and capacitor ESR curves.
+- ABCD analysis uses frequency-dependent loss; **Apply assigned parts** applies
+  curves to simple L/C arms.
+- ADR-048 documenting the no-vendor-SPICE policy and composite-resonator limit.
+
+### Limitations
+
+- Composite series/parallel resonators keep constant DCR/ESR and warn.
+- Temperature, DC bias, mounting and full vendor SPICE decks are not modeled.
+
 ## v0.77.0 — 2026-11-01
 
 ### Added

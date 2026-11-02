@@ -41,6 +41,7 @@ def make_nonideal_inductor(
     dc_current_a: float = 0.0,
     saturation_current_a: float | None = None,
     winding: WindingSpec | None = None,
+    q_curve: tuple[tuple[float, float], ...] = (),
 ) -> NonIdealInductor:
     return NonIdealInductor(
         id=el.id,
@@ -58,6 +59,7 @@ def make_nonideal_inductor(
         dc_current_a=dc_current_a,
         saturation_current_a=saturation_current_a,
         winding=winding,
+        q_curve=q_curve,
     )
 
 
@@ -66,6 +68,7 @@ def make_nonideal_capacitor(
     *,
     esr_ohm: float = 0.0,
     esl_h: float = 0.0,
+    esr_curve: tuple[tuple[float, float], ...] = (),
 ) -> NonIdealCapacitor:
     return NonIdealCapacitor(
         id=el.id,
@@ -76,6 +79,7 @@ def make_nonideal_capacitor(
         esr_ohm=esr_ohm,
         esl_h=esl_h,
         g=el.g,
+        esr_curve=esr_curve,
     )
 
 
@@ -199,6 +203,8 @@ def set_element_parasitics(
     dc_current_a: float | None = None,
     saturation_current_a: float | None = None,
     winding: WindingSpec | None = None,
+    q_curve: tuple[tuple[float, float], ...] | None = None,
+    esr_curve: tuple[tuple[float, float], ...] | None = None,
 ) -> Circuit:
     """Return a copy with one L/C arm's parasitics changed (per-part editing).
 
@@ -229,6 +235,7 @@ def set_element_parasitics(
             cur_dc = current.dc_current_a if current else 0.0
             cur_isat = current.saturation_current_a if current else None
             cur_winding = current.winding if current else None
+            cur_q_curve = current.q_curve if current else ()
             r = cur_r if series_resistance_ohm is None else series_resistance_ohm
             cp = (
                 cur_cp
@@ -246,6 +253,7 @@ def set_element_parasitics(
                 else saturation_current_a
             )
             wnd = cur_winding if winding is None else winding
+            q_curve_value = cur_q_curve if q_curve is None else q_curve
             replaced = True
             has_model = (
                 r != 0.0
@@ -256,6 +264,7 @@ def set_element_parasitics(
                 or dc != 0.0
                 or isat is not None
                 or wnd is not None
+                or bool(q_curve_value)
             )
             if not has_model:
                 new_elements.append(
@@ -286,15 +295,22 @@ def set_element_parasitics(
                         dc_current_a=dc,
                         saturation_current_a=isat,
                         winding=wnd,
+                        q_curve=q_curve_value,
                     )
                 )
         elif isinstance(el, (IdealCapacitor, NonIdealCapacitor)):
             cur_esr = el.esr_ohm if isinstance(el, NonIdealCapacitor) else 0.0
             cur_esl = el.esl_h if isinstance(el, NonIdealCapacitor) else 0.0
+            cur_esr_curve = (
+                el.esr_curve if isinstance(el, NonIdealCapacitor) else ()
+            )
             esr = cur_esr if esr_ohm is None else esr_ohm
             esl = cur_esl if esl_h is None else esl_h
+            esr_curve_value = (
+                cur_esr_curve if esr_curve is None else esr_curve
+            )
             replaced = True
-            if esr == 0.0 and esl == 0.0:
+            if esr == 0.0 and esl == 0.0 and not esr_curve_value:
                 new_elements.append(
                     IdealCapacitor(
                         id=el.id,
@@ -316,6 +332,7 @@ def set_element_parasitics(
                         esr_ohm=esr,
                         esl_h=esl,
                         g=el.g,
+                        esr_curve=esr_curve_value,
                     )
                 )
         else:
