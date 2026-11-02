@@ -802,6 +802,38 @@ _ES.update(
         "Source": "Origen",
         "Date": "Fecha",
         "VNA": "VNA",
+        "NanoVNA sweep": "Barrido NanoVNA",
+        "Read S11/S21 directly from a NanoVNA.": (
+            "Leer S11/S21 directamente desde un NanoVNA."
+        ),
+        "Nano&VNA sweep…": "Barrido Nano&VNA…",
+        "Serial port": "Puerto serie",
+        "Baud rate": "Velocidad",
+        "Start frequency": "Frecuencia inicial",
+        "Stop frequency": "Frecuencia final",
+        "Points": "Puntos",
+        "Refresh": "Actualizar",
+        "Read sweep": "Leer barrido",
+        "No serial ports found": "No se encontraron puertos serie",
+        "Connect the NanoVNA and press Refresh.": (
+            "Conectá el NanoVNA y presioná Actualizar."
+        ),
+        "Select a serial port first.": "Seleccioná primero un puerto serie.",
+        "Stop frequency must be above start frequency.": (
+            "La frecuencia final debe ser mayor que la inicial."
+        ),
+        "Reading sweep from NanoVNA…": "Leyendo barrido del NanoVNA…",
+        "Unexpected NanoVNA result.": "Resultado inesperado del NanoVNA.",
+        "Classic NanoVNA supports 101 points; H4/scan firmware supports more.": (
+            "El NanoVNA clásico admite 101 puntos; el firmware H4/scan admite más."
+        ),
+        (
+            "Uses the NanoVNA's active calibration. Only S11/S21 are measured; "
+            "S12/S22 are stored as zero."
+        ): (
+            "Usa la calibración activa del NanoVNA. Solo se miden S11/S21; "
+            "S12/S22 se guardan como cero."
+        ),
         "Calibration": "Calibración",
         "Reference plane": "Plano de referencia",
         "Import…": "Importar…",

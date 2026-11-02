@@ -76,6 +76,7 @@ from filterdesk.gui.i18n import (
     set_language,
     tr,
 )
+from filterdesk.gui.nanovna_dialog import NanoVnaDialog
 from filterdesk.gui.panels.component_table import ComponentTablePanel
 from filterdesk.gui.panels.harmonics_panel import HarmonicsPanel
 from filterdesk.gui.panels.limits_panel import LimitsPanel
@@ -160,6 +161,7 @@ from filterdesk.services.examples import (
 )
 from filterdesk.services.hf_band import evaluate_band_filter_response
 from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.services.nanovna import NanoVnaSweep
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import (
     DEFAULT_TITLE,
@@ -436,6 +438,8 @@ class MainWindow(QMainWindow):
         act_rename.triggered.connect(self._rename_project)
         act_import_ts = QAction(tr("&Import Touchstone…"), self)
         act_import_ts.triggered.connect(self._import_touchstone)
+        act_import_nanovna = QAction(tr("Nano&VNA sweep…"), self)
+        act_import_nanovna.triggered.connect(self._import_nanovna)
         act_export_smith = QAction(tr("Export &Smith chart…"), self)
         act_export_smith.triggered.connect(self._export_smith_chart)
         act_export_csv = QAction(tr("Export C&SV…"), self)
@@ -476,6 +480,7 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         import_menu = file_menu.addMenu(tr("&Import"))
         import_menu.addAction(act_import_ts)
+        import_menu.addAction(act_import_nanovna)
         export_menu = file_menu.addMenu(tr("&Export"))
         export_menu.addAction(act_export_smith)
         export_menu.addAction(act_export_csv)
@@ -672,6 +677,7 @@ class MainWindow(QMainWindow):
             act_save_as: tr("Save the project under a new name."),
             act_rename: tr("Change the project title."),
             act_import_ts: tr("Import measured S11/S21 data from Touchstone."),
+            act_import_nanovna: tr("Read S11/S21 directly from a NanoVNA."),
             act_export_build: tr("Export the BOM and build sheet."),
             act_quit: tr("Close FilterDesk."),
             act_tutorials: tr("Open the guided tutorials."),
@@ -2368,7 +2374,7 @@ class MainWindow(QMainWindow):
         assert isinstance(data, TouchstoneData)
         name = Path(data.source).name if data.source else "measured"
         try:
-            result = data.to_analysis_result()
+            data.to_analysis_result()
         except TouchstoneError as exc:
             QMessageBox.information(
                 self,
@@ -2383,6 +2389,30 @@ class MainWindow(QMainWindow):
                 metadata = read_vna_metadata(data.source)
             except (OSError, ValueError):
                 pass
+        self._store_measurement(data, name, metadata, tr("Import Touchstone"))
+
+    def _import_nanovna(self) -> None:
+        dialog = NanoVnaDialog(self, self._session.sweep)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        sweep = dialog.sweep
+        if sweep is None:
+            return
+        self._on_nanovna_loaded(sweep)
+
+    def _on_nanovna_loaded(self, sweep: NanoVnaSweep) -> None:
+        self._store_measurement(
+            sweep.data, sweep.name, sweep.metadata, tr("NanoVNA sweep")
+        )
+
+    def _store_measurement(
+        self,
+        data: TouchstoneData,
+        name: str,
+        metadata: VnaMeasurementMetadata,
+        title: str,
+    ) -> None:
+        result = data.to_analysis_result()
         record = MeasurementRecord.from_arrays(
             name=name,
             source=data.source or "",
@@ -2413,7 +2443,7 @@ class MainWindow(QMainWindow):
             else:
                 detail += f"\n\nCompare (overlap band):\n{cmp.summary()}"
         self._status.setText(f"Imported {name}: {data.summary()}")
-        QMessageBox.information(self, tr("Import Touchstone"), detail)
+        QMessageBox.information(self, title, detail)
 
     def _use_measurement(self, index: int) -> None:
         try:

@@ -22,6 +22,7 @@ from filterdesk.optimization import (
     OptimizationConfig,
     optimize_circuit,
 )
+from filterdesk.services.nanovna import read_nanovna_sweep
 
 
 class AnalyzeWorker(QObject):
@@ -223,15 +224,75 @@ def start_import_thread(
     return thread, worker
 
 
+class NanoVnaWorker(QObject):
+    """Read a sweep from a NanoVNA without blocking the UI."""
+
+    finished = Signal(object)  # NanoVnaSweep
+    failed = Signal(str)
+
+    def __init__(
+        self,
+        port: str,
+        baudrate: int,
+        start_hz: float,
+        stop_hz: float,
+        points: int,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._port = port
+        self._baudrate = baudrate
+        self._start_hz = start_hz
+        self._stop_hz = stop_hz
+        self._points = points
+
+    def run(self) -> None:
+        try:
+            sweep = read_nanovna_sweep(
+                self._port,
+                baudrate=self._baudrate,
+                start_hz=self._start_hz,
+                stop_hz=self._stop_hz,
+                points=self._points,
+            )
+            self.finished.emit(sweep)
+        except Exception as exc:  # noqa: BLE001 — surface to UI
+            self.failed.emit(str(exc))
+
+
+def start_nanovna_thread(
+    port: str,
+    baudrate: int,
+    start_hz: float,
+    stop_hz: float,
+    points: int,
+    on_finished: Callable[[object], None],
+    on_failed: Callable[[str], None],
+) -> tuple[QThread, NanoVnaWorker]:
+    thread = QThread()
+    worker = NanoVnaWorker(port, baudrate, start_hz, stop_hz, points)
+    worker.moveToThread(thread)
+    thread.started.connect(worker.run)
+    worker.finished.connect(on_finished)
+    worker.failed.connect(on_failed)
+    worker.finished.connect(thread.quit)
+    worker.failed.connect(thread.quit)
+    thread.finished.connect(worker.deleteLater)
+    thread._filterdesk_worker = worker  # type: ignore[attr-defined]
+    return thread, worker
+
+
 __all__ = [
     "AnalyzeWorker",
     "AnalysisResult",
     "ImportTouchstoneWorker",
+    "NanoVnaWorker",
     "MonteCarloWorker",
     "OptimizeWorker",
     "TouchstoneData",
     "start_analyze_thread",
     "start_import_thread",
+    "start_nanovna_thread",
     "start_monte_carlo_thread",
     "start_optimize_thread",
 ]

@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.71.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.72.0 · **Released:**
 [v0.71.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.71.0) ·
 **Previous:**
 [v0.70.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.70.0) ·
-**Next:** v0.72.0 planning.
+**Next:** v0.72.0 release (NanoVNA import, pending CI/tag).
 
-**Verification:** local suite **1229 passed**, 4 skipped (ngspice unavailable); coverage **82.09 %**.
+**Verification:** local suite **1236 passed**, 4 skipped (ngspice unavailable); coverage **82.00 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41362894142
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41363625381
 
@@ -27,9 +27,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
   **Distributed microstrip realization**, Component submenu.
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
   calculator, **Transformer / balun / unun**, Microstrip line.
-- **File** — project/Touchstone import and exports: BOM, SPICE, LTspice, Qucs,
-  CSV and Smith chart; **Open example** and **Recent projects** for the last
-  ten files.
+- **File** — project/Touchstone/NanoVNA import and exports: BOM, SPICE,
+  LTspice, Qucs, CSV and Smith chart; **Open example** and **Recent projects**
+  for the last ten files.
 - **Help** — Guided tutorials (F1), model confidence inventory and user manual.
 - The transformer/balun/unun designer has only **Design** and **Model** tabs;
   winding diagrams were removed.
@@ -955,6 +955,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [ ] **VNA holdout (hardware):** run the two real captures through the new
       protocol and record calibration/reference-plane metadata. The tooling and
       synthetic holdout tests are ready. (M)
+- [ ] **NanoVNA direct-import hardware validation:** test a NanoVNA-H/H4 on
+      Linux/Windows, classic 101-point `sweep`, scan-mask fallback, disconnect
+      handling and calibration provenance. Synthetic serial tests only so far.
+      (M)
 
 ### P1 — validation / model depth
 
@@ -1020,6 +1024,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       terminated unused ports (ADR-040).
 - [x] **Composite non-ideal LC:** series/parallel resonator DCR/SRF/ESR/ESL
       with project persistence (ADR-041).
+- [x] **NanoVNA direct import:** independent serial client, S11/S21 sweep,
+      scan fallback and measurement provenance (ADR-042). Hardware validation
+      remains P0.
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

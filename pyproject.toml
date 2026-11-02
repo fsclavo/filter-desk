@@ -1,6 +1,6 @@
 [project]
 name = "filterdesk"
-version = "0.71.0"
+version = "0.72.0"
 description = "RF filter design, construction and measurement companion for radio amateurs and RF builders"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,6 +14,7 @@ dependencies = [
     "pyside6>=6.6",
     "pyqtgraph>=0.13",
     "matplotlib>=3.8",
+    "pyserial>=3.5",
 ]
 
 [project.scripts]
@@ -46,7 +47,7 @@ warn_return_any = true
 warn_unused_configs = true
 
 [[tool.mypy.overrides]]
-module = ["skrf.*", "scipy.*"]
+module = ["skrf.*", "scipy.*", "serial.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

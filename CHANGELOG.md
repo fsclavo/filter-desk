@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.72.0 — 2026-11-01
+
+### Added
+
+- **File → Import → NanoVNA sweep…** reads S11/S21 directly over USB serial.
+- Serial port discovery, baud/start/stop/points controls and a scan-mask fallback.
+- Measurement provenance with model, firmware, port and calibration assumption.
+- ADR-042 documenting the independent protocol client and GPL-3.0 boundary.
+
+### Limitations
+
+- S12/S22 are not measured and are stored as zero.
+- The device's active calibration is assumed; no calibration is written.
+- Real NanoVNA hardware validation remains pending.
+
 ## v0.71.0 — 2026-11-01
 
 ### Added

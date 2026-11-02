@@ -44,3 +44,4 @@
 - [ADR-039](ADR-039-apply-assigned-parts.md) — apply assigned parts to the analysis
 - [ADR-040](ADR-040-system-measurement-compare.md) — system comparison with a 2-port VNA
 - [ADR-041](ADR-041-composite-nonideal-lc.md) — non-ideal series/parallel LC sub-parts
+- [ADR-042](ADR-042-nanovna-direct-import.md) — direct NanoVNA serial sweep import

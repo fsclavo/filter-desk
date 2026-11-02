@@ -34,6 +34,10 @@ hiddenimports += [
     "PySide6.QtSvgWidgets",
     "PySide6.QtPrintSupport",
     "PySide6.QtXml",
+    "serial.tools.list_ports_linux",
+    "serial.tools.list_ports_windows",
+    "serial.tools.list_ports_osx",
+    "serial.tools.list_ports_posix",
 ]
 # Data files only — do NOT collect_all()/collect_submodules(), which would import
 # pyqtgraph.examples (initialises Qt and aborts the isolated collector).

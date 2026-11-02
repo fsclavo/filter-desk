@@ -445,6 +445,7 @@ def test_file_menu_has_import_touchstone() -> None:
     import_menu = submenus.get("&Import")
     assert import_menu is not None
     assert any("Touchstone" in a.text() for a in import_menu.actions())
+    assert any("NanoVNA" in a.text().replace("&", "") for a in import_menu.actions())
 
     export_menu = submenus.get("&Export")
     assert export_menu is not None

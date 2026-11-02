@@ -75,6 +75,7 @@ projects**. A good first path is:
 | Coax stub notch for VHF/UHF | **Tools → Coaxial stub notch…** |
 | Low-pass filter as microstrip lines | **Design → Distributed microstrip realization…** |
 | Compare a built filter with a VNA | **File → Import → Touchstone…**, then **Design → Tune to VNA measurement…** |
+| Read a NanoVNA directly | **File → Import → NanoVNA sweep…** |
 | Produce a BOM/build sheet | **File → Export → build sheet / BOM…** |
 
 You do not need to know the synthesis theory to begin: choose the band, use the
@@ -467,6 +468,24 @@ reports a simulation-vs-measurement comparison over the overlapping band. Toggle
 the overlay with **View → Show measured overlay**. The measured legend entries
 are hidden until a file is loaded and while the overlay is disabled.
 
+### Direct NanoVNA sweep
+
+**File → Import → NanoVNA sweep…** reads S11/S21 directly over USB serial.
+Select the port (use **Refresh** after connecting), baud rate, start/stop and
+point count, then **Read sweep**. The result is added to the measurement history
+with model/firmware/port/method metadata, so it can be compared, inspected or
+used for VNA-guided tuning like a Touchstone capture.
+
+Important limits:
+
+- The device's **active calibration** is used. FilterDesk does not calibrate the
+  NanoVNA or write calibration slots.
+- A NanoVNA 2-port sweep measures **S11/S21 only**; S12/S22 are stored as zero.
+- Classic firmware uses 101 points and the `sweep` command; firmware advertising
+  `scan` can fall back to scan-mask reads for larger sweeps.
+- NanoVNA V2/LiteVNA variants and true N-port measurements are not validated.
+  Check the result against a known standard before trusting a measurement.
+
 ---
 
 ## 9. Saving, opening, and exporting
@@ -479,6 +498,7 @@ are hidden until a file is loaded and while the overlay is disabled.
 | Save / Save As | File → Save / Save As… | `Ctrl+S` | `.filterdesk.json` |
 | Rename project | File → Rename project… | — | — |
 | Import measured | File → Import → Touchstone… | — | `.s1p`/`.s2p`/`.sNp` |
+| Import NanoVNA | File → Import → NanoVNA sweep… | — | measurement history |
 | Export Smith chart | File → Export → Smith chart… | — | `.png`/`.svg`/`.pdf` |
 | Export CSV | File → Export → CSV… | — | `.csv` |
 | Export Touchstone | File → Export → Touchstone (.s2p)… | — | `.s2p` |

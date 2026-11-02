@@ -33,7 +33,8 @@ Typical amateur-radio jobs:
 - **Toroid and air-core coil** turns, wire gauge, DCR and saturation checks.
 - **Microstrip/stub** sizing for a PCB filter or matching section.
 - **Distributed low-pass** conversion to microstrip lines for a PCB build.
-- **VNA comparison and tuning** of a filter you already built.
+- **VNA comparison and tuning** of a filter you already built, including direct
+  NanoVNA S11/S21 sweeps over USB serial.
 
 ## New to filter design? Start in five minutes
 

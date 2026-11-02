@@ -44,7 +44,7 @@ TUTORIALS: tuple[Tutorial, ...] = (
 <li>Apply the lowest order that meets the requirements.</li>
 <li>Check the <b>Magnitude</b> plot and the component table.</li>
 <li>Export a build sheet, assign real parts, or compare a measured
-<b>File → Import Touchstone…</b> capture.</li>
+<b>File → Import → Touchstone…</b> capture.</li>
 </ol>
 <p><b>Check:</b> passband insertion loss, input return loss, and rejection
 outside 7.0–7.3 MHz. The ideal LC result is a starting point; verify with a VNA.</p>
@@ -59,7 +59,7 @@ outside 7.0–7.3 MHz. The ideal LC result is a starting point; verify with a VN
 <li>Aplicar el menor orden que cumpla los requisitos.</li>
 <li>Revisar el gráfico <b>Magnitude</b> y la tabla de componentes.</li>
 <li>Exportar la hoja de montaje, asignar partes reales o comparar una captura
-medida con <b>File → Import Touchstone…</b>.</li>
+medida con <b>File → Import → Touchstone…</b>.</li>
 </ol>
 <p><b>Verificar:</b> pérdida en la banda de paso, adaptación de entrada y rechazo
 fuera de 7,0–7,3 MHz. El resultado LC ideal es un punto de partida; validar con VNA.</p>
