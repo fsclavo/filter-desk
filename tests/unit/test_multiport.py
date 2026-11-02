@@ -112,6 +112,51 @@ def test_parallel_branches_match_three_resistor_junction() -> None:
     assert combined.s[:, 1, 1] == pytest.approx(-1.0 / 12.0)
 
 
+def test_cascade_matched_attenuators() -> None:
+    first = _matched_attenuator(0.5)
+    second = _matched_attenuator(0.5)
+    cascaded = first.cascade(second)
+    assert cascaded.n_ports == 2
+    assert cascaded.s[:, 1, 0] == pytest.approx(0.25)
+    assert cascaded.s[:, 0, 1] == pytest.approx(0.25)
+    assert cascaded.s[:, 0, 0] == pytest.approx(0.0)
+
+
+def test_connect_ideal_thru_and_port_order() -> None:
+    frequency = _frequencies()
+    thru_s = np.zeros((3, 2, 2), dtype=complex)
+    thru_s[:, 1, 0] = 1.0
+    thru_s[:, 0, 1] = 1.0
+    thru = SParameters(frequency, thru_s)
+    three_s = np.zeros((3, 3, 3), dtype=complex)
+    three_s[:, 1, 0] = 0.8
+    three_s[:, 2, 0] = 0.6
+    three_s[:, 0, 1] = 0.8
+    three_s[:, 0, 2] = 0.6
+    three = SParameters(frequency, three_s)
+    result = SParameters.connect((three, thru), ((0, 2, 1, 1),))
+    assert result.n_ports == 3
+    # External order: three port 1, three port 3, thru port 2.
+    assert result.s[:, 1, 0] == pytest.approx(0.6)
+    assert result.s[:, 2, 0] == pytest.approx(0.8)
+    assert result.s[:, 1, 1] == pytest.approx(0.0)
+
+
+def test_connect_rejects_invalid_connections() -> None:
+    branch = _matched_attenuator()
+    with pytest.raises(MultiportError):
+        SParameters.connect((branch,), ())
+    with pytest.raises(MultiportError):
+        SParameters.connect((branch, branch), ((0, 1, 1, 1), (0, 1, 1, 2)))
+    with pytest.raises(MultiportError):
+        SParameters.connect(
+            (branch, branch), ((0, 1, 1, 1), (0, 2, 1, 2))
+        )
+    other = SParameters(_frequencies() * 2.0, branch.s)
+    with pytest.raises(MultiportError):
+        SParameters.connect((branch, other), ((0, 2, 1, 1),))
+
+
 def test_parallel_branches_reject_incompatible_inputs() -> None:
     branch = _matched_attenuator()
     other = SParameters(_frequencies() * 2.0, branch.s)
@@ -205,6 +250,42 @@ def test_cli_network_info_renumber_terminate_and_combine(
     combined = read_sparameters(combined_path)
     assert combined.n_ports == 3
     assert combined.s[:, 0, 0] == pytest.approx(-1.0 / 3.0)
+
+    cascaded_path = tmp_path / "cascaded.s2p"
+    assert (
+        main(
+            [
+                "network",
+                "cascade",
+                str(first),
+                str(second),
+                "--output",
+                str(cascaded_path),
+            ]
+        )
+        == 0
+    )
+    assert read_sparameters(cascaded_path).s[:, 1, 0] == pytest.approx(0.25)
+
+    connected_path = tmp_path / "connected.s2p"
+    assert (
+        main(
+            [
+                "network",
+                "connect",
+                str(first),
+                str(second),
+                "--left-port",
+                "2",
+                "--right-port",
+                "1",
+                "--output",
+                str(connected_path),
+            ]
+        )
+        == 0
+    )
+    assert read_sparameters(connected_path).s[:, 1, 0] == pytest.approx(0.25)
     assert "Wrote" in capsys.readouterr().err
 
 

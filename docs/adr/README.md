@@ -45,3 +45,4 @@
 - [ADR-040](ADR-040-system-measurement-compare.md) — system comparison with a 2-port VNA
 - [ADR-041](ADR-041-composite-nonideal-lc.md) — non-ideal series/parallel LC sub-parts
 - [ADR-042](ADR-042-nanovna-direct-import.md) — direct NanoVNA serial sweep import
+- [ADR-043](ADR-043-general-multiport-and-circulators.md) — general N-port connection and circulator/isolator models

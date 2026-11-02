@@ -515,6 +515,7 @@ def test_tools_menu_holds_calculators() -> None:
         "4-port mixed-mode",
         "Diplexer / multiplexer designer",
         "Component library",
+        "Circulator / isolator",
     ):
         assert not any(calculator in label for label in design_labels)
         assert any(calculator in label for label in tools_labels)

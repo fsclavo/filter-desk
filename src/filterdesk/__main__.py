@@ -159,6 +159,12 @@ from filterdesk.services.bands import (
     band_preset_spec,
     find_band,
 )
+from filterdesk.services.circulator import (
+    CirculatorConfig,
+    CirculatorError,
+    design_circulator,
+    design_isolator,
+)
 from filterdesk.services.compare import CompareError, compare_results
 from filterdesk.services.design_sweep import (
     DesignSweepConfig,
@@ -1007,7 +1013,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     network = sub.add_parser(
         "network",
-        help="N-port file operations (info, renumber, terminate, combine)",
+        help="N-port file operations (info, renumber, terminate, combine, connect)",
     )
     network_sub = network.add_subparsers(dest="network_command", required=True)
     net_info = network_sub.add_parser("info", help="Inspect an .sNp file")
@@ -1042,6 +1048,55 @@ def build_parser() -> argparse.ArgumentParser:
         "branches", type=Path, nargs="+", help="Two or more 2-port .sNp files"
     )
     net_combine.add_argument("--output", type=Path, required=True)
+    net_cascade = network_sub.add_parser(
+        "cascade", help="Cascade two or more 2-port .sNp networks"
+    )
+    net_cascade.add_argument(
+        "branches", type=Path, nargs="+", help="Two or more 2-port .sNp files"
+    )
+    net_cascade.add_argument("--output", type=Path, required=True)
+    net_connect = network_sub.add_parser(
+        "connect", help="Connect one port pair between two .sNp networks"
+    )
+    net_connect.add_argument("left", type=Path)
+    net_connect.add_argument("right", type=Path)
+    net_connect.add_argument("--left-port", type=int, required=True)
+    net_connect.add_argument("--right-port", type=int, required=True)
+    net_connect.add_argument("--output", type=Path, required=True)
+
+    circulator = sub.add_parser(
+        "circulator",
+        help="Build a 3-port ideal circulator model and write .s3p",
+    )
+    circulator.add_argument("--insertion-loss", type=float, default=0.5)
+    circulator.add_argument("--isolation", type=float, default=30.0)
+    circulator.add_argument("--return-loss", type=float, default=20.0)
+    circulator.add_argument("--z0", default="50")
+    circulator.add_argument("--f-start", default="100M")
+    circulator.add_argument("--f-stop", default="200M")
+    circulator.add_argument("--points", type=int, default=401)
+    circulator.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    circulator.add_argument("--output", type=Path, required=True)
+    circulator.add_argument("--json", action="store_true")
+
+    isolator = sub.add_parser(
+        "isolator",
+        help="Terminate port 3 of the circulator model and write .s2p",
+    )
+    isolator.add_argument("--insertion-loss", type=float, default=0.5)
+    isolator.add_argument("--isolation", type=float, default=30.0)
+    isolator.add_argument("--return-loss", type=float, default=20.0)
+    isolator.add_argument("--z0", default="50")
+    isolator.add_argument("--f-start", default="100M")
+    isolator.add_argument("--f-stop", default="200M")
+    isolator.add_argument("--points", type=int, default=401)
+    isolator.add_argument(
+        "--spacing", choices=[s.value for s in SweepSpacing], default="logarithmic"
+    )
+    isolator.add_argument("--output", type=Path, required=True)
+    isolator.add_argument("--json", action="store_true")
 
     diplexer = sub.add_parser(
         "diplexer",
@@ -4362,11 +4417,67 @@ def main(argv: list[str] | None = None) -> int:
                 network_result = SParameters.parallel_branches(
                     [read_sparameters(path) for path in args.branches]
                 )
+            elif args.network_command == "cascade":
+                networks = [read_sparameters(path) for path in args.branches]
+                if any(network.n_ports != 2 for network in networks):
+                    raise MultiportError("cascade requires 2-port networks")
+                network_result = networks[0]
+                for branch in networks[1:]:
+                    network_result = network_result.cascade(branch)
+            elif args.network_command == "connect":
+                network_result = SParameters.connect(
+                    (read_sparameters(args.left), read_sparameters(args.right)),
+                    ((0, args.left_port, 1, args.right_port),),
+                )
             else:  # pragma: no cover - argparse enforces the subcommand
                 raise MultiportError(f"unknown network command: {args.network_command}")
             write_sparameters(network_result, args.output)
             print(f"Wrote {args.output}", file=sys.stderr)
         except (MultiportError, TouchstoneError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        return 0
+
+    if args.command in {"circulator", "isolator"}:
+        try:
+            circulator_config = CirculatorConfig(
+                insertion_loss_db=float(args.insertion_loss),
+                isolation_db=float(args.isolation),
+                return_loss_db=float(args.return_loss),
+                z0_ohm=parse_si(str(args.z0)),
+            )
+            circulator_sweep = SweepConfig(
+                f_start_hz=parse_si(str(args.f_start)),
+                f_stop_hz=parse_si(str(args.f_stop)),
+                n_points=int(args.points),
+                spacing=SweepSpacing(str(args.spacing)),
+            )
+            circulator_design = (
+                design_circulator(circulator_config, circulator_sweep)
+                if args.command == "circulator"
+                else design_isolator(circulator_config, circulator_sweep)
+            )
+            write_sparameters(circulator_design.network, args.output)
+            if args.json:
+                print(
+                    json.dumps(
+                        {
+                            "kind": args.command,
+                            "output": str(args.output),
+                            "n_ports": circulator_design.network.n_ports,
+                            "n_points": circulator_design.network.n_points,
+                            "z0_ohm": circulator_design.network.z0_ohm,
+                            "insertion_loss_db": circulator_config.insertion_loss_db,
+                            "isolation_db": circulator_config.isolation_db,
+                            "return_loss_db": circulator_config.return_loss_db,
+                        },
+                        indent=2,
+                    )
+                )
+            else:
+                print(circulator_design.summary())
+                print(f"Wrote {args.output}", file=sys.stderr)
+        except (CirculatorError, MultiportError, OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         return 0

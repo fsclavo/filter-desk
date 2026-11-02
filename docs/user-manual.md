@@ -383,6 +383,7 @@ specification edits require an explicit **Synthesize**.
 | **4-port mixed-mode** | **Tools → 4-port mixed-mode…** | imports an `.s4p`, shows Sdd/Sdc/Scd/Scc in a table and plot, and exports CSV/JSON; ports paired as (1,2)/(3,4) |
 | **Diplexer / multiplexer designer** | **Tools → Diplexer / multiplexer designer…** | LPF+HPF, BPF+BPF, TX/RX duplexer or N-band multiplexer; combined metrics, plots, schematics, BOM and `.sNp` exports |
 | **Component library** | **Tools → Component library…** | curated real MPNs, filter/search, import/export JSON and copy MPN; catalog-only, no vendor models |
+| **Circulator / isolator** | **Tools → Circulator / isolator…** | first-order ideal 3-port circulator or 2-port isolator; IL/isolation/RL fields and `.s3p`/`.s2p` export |
 | **Tune to VNA** | **Design → Tune to VNA measurement…** | least-squares trim of L/C/R values to an imported measured S11/S21 magnitude response |
 | **Analyze** | toolbar **Analyze** | re-analyzes; synthesizes first if needed |
 | **Estimate order** | **Estimate N** in the Specification panel | LP/HP classical families |
@@ -734,13 +735,29 @@ Most commands accept `--json` for machine-readable output.
   - `network combine A.s2p B.s2p … --output OUT.s3p` — parallel-combine two or
     more grounded 2-port branches at a common input. Port 1 is common, followed
     by each branch output in argument order.
+  - `network cascade A.s2p B.s2p … --output OUT.s2p` — cascade 2-port networks
+    (A port 2 to B port 1, and so on).
+  - `network connect LEFT RIGHT --left-port N --right-port M --output OUT.sNp`
+    — connect one port pair and remove the two connected ports. Remaining ports
+    keep their original order.
 
-  The combination uses an ideal common node: branch input voltages are equal
-  and their currents add. It does not insert an isolation network, and all
-  files must share one frequency grid and one real reference impedance.
+  Connections use ideal zero-length nodes: connected port voltages are equal
+  and their currents add. They do not insert an isolation network, and all
+  files must share one frequency grid and one real reference impedance. The
+  wave-domain implementation also handles ideal through networks.
   ```bash
   filterdesk network combine lpf.s2p hpf.s2p --output diplexer.s3p
   filterdesk network terminate diplexer.s3p --port 3 --load open       --output diplexer_2port.s2p
+  filterdesk network cascade lpf.s2p attenuator.s2p --output tx_chain.s2p
+  ```
+- **`circulator` / `isolator`** — first-order ideal non-reciprocal models.
+  Options: `--insertion-loss` (dB), `--isolation` (dB), `--return-loss` (dB),
+  `--z0`, sweep options, `--output` and optional `--json`. The circulator is a
+  3-port `.s3p`; the isolator terminates port 3 and writes a 2-port `.s2p`.
+  ```bash
+  filterdesk circulator --insertion-loss 0.4 --isolation 25 \
+    --f-start 100M --f-stop 200M --output circulator.s3p
+  filterdesk isolator --isolation 25 --output isolator.s2p
   ```
 - **`mixed-mode`** — transform a 4-port `.s4p` into differential, common-mode
   and cross-mode S-parameters. Ports are paired as (1,2) and (3,4); mixed-mode
@@ -1477,6 +1494,11 @@ detailed test cases and tolerances are in
   high-flux thermal simulation; validate power designs with the core datasheet or
   measurement. Ferrite AL values are typical μi/dimension-derived values; confirm
   the exact batch.
+- **N-port connections are ideal**: connected ports use zero-length nodes and
+  no discontinuity, isolation network or reference-plane de-embedding.
+- **Circulators/isolators are first-order models**: IL/isolation/RL are
+  independent magnitudes, not a ferrite-junction simulation. Cavity filters are
+  not implemented.
 - **Markers** are limited to 8 and **limits** to 10.
 - The GUI analyzes with the `abcd` backend; use the CLI `--backend skrf` for a
   cross-check.

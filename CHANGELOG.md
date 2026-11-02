@@ -3,6 +3,23 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.73.0 — 2026-11-01
+
+### Added
+
+- **General N-port connection:** `SParameters.connect` and `cascade` with
+  wave-domain port-pair elimination, plus `network cascade/connect` CLI.
+- **Circulator / isolator:** first-order ideal 3-port/2-port models with
+  insertion loss, isolation and return-loss fields.
+- **Tools → Circulator / isolator…** and `circulator`/`isolator` CLI export.
+- ADR-043 documenting the connection model and non-reciprocal limits.
+
+### Limitations
+
+- Cavity filters still need a coupling-matrix/physical model and VNA/EM
+  validation.
+- The circulator model is not a physical ferrite-junction model.
+
 ## v0.72.0 — 2026-11-01
 
 ### Added

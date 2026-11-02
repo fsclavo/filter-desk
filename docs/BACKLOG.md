@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.72.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.73.0 · **Released:**
 [v0.72.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.72.0) ·
 **Previous:**
 [v0.71.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.71.0) ·
-**Next:** v0.73.0 planning.
+**Next:** v0.73.0 release (multiport/circulator, pending CI/tag).
 
-**Verification:** local suite **1236 passed**, 4 skipped (ngspice unavailable); coverage **82.00 %**.
+**Verification:** local suite **1244 passed**, 4 skipped (ngspice unavailable); coverage **82.08 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41366891435
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41367502184
 
@@ -26,7 +26,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
   Component sensitivity, Parameter sweep, Check spec compliance, Tune to VNA,
   **Distributed microstrip realization**, Component submenu.
 - **Tools** — independent calculators: Matching network, Attenuator pad, Coil
-  calculator, **Transformer / balun / unun**, Microstrip line.
+  calculator, **Transformer / balun / unun**, Microstrip line, **Circulator /
+  isolator**.
 - **File** — project/Touchstone/NanoVNA import and exports: BOM, SPICE,
   LTspice, Qucs, CSV and Smith chart; **Open example** and **Recent projects**
   for the last ten files.
@@ -1042,6 +1043,12 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **NanoVNA direct import:** independent serial client, S11/S21 sweep,
       scan fallback and measurement provenance (ADR-042). Hardware validation
       remains P0.
+- [x] **General N-port connection:** arbitrary port-pair connection and 2-port
+      cascade with a wave-domain solver (ADR-043).
+- [x] **Circulator/isolator models:** first-order ideal 3-port/2-port blocks
+      with GUI/CLI export (ADR-043).
+- [ ] **Cavity filters:** coupling-matrix/physical cavity model and VNA/EM
+      validation. Do not ship a cosmetic model. (L)
 - [x] **Ruthroff 1:4 SPICE:** single bootstrap TEM line, floating load and
       ngspice low-frequency check.
 - [ ] **Asymmetric 4-port/EM:** full cross-mode and 4-port behavior remain

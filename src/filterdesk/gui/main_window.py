@@ -58,6 +58,7 @@ from filterdesk.domain.naming import default_filename, default_stem
 from filterdesk.domain.overlays import Marker
 from filterdesk.domain.specs import FilterSpec
 from filterdesk.domain.units import format_engineering, parse_si
+from filterdesk.gui.circulator_dialog import CirculatorDialog
 from filterdesk.gui.commands import (
     EditCircuitCommand,
     NonIdealCommand,
@@ -634,6 +635,9 @@ class MainWindow(QMainWindow):
         act_library = QAction(tr("Component &library…"), self)
         act_library.triggered.connect(self._run_component_library)
         tools_menu.addAction(act_library)
+        act_circulator = QAction(tr("&Circulator / isolator…"), self)
+        act_circulator.triggered.connect(self._run_circulator)
+        tools_menu.addAction(act_circulator)
 
         help_menu = self.menuBar().addMenu(tr("&Help"))
         act_tutorials = QAction(tr("&Tutorials…"), self)
@@ -678,6 +682,7 @@ class MainWindow(QMainWindow):
             act_rename: tr("Change the project title."),
             act_import_ts: tr("Import measured S11/S21 data from Touchstone."),
             act_import_nanovna: tr("Read S11/S21 directly from a NanoVNA."),
+            act_circulator: tr("Design an ideal circulator or isolator model."),
             act_export_build: tr("Export the BOM and build sheet."),
             act_quit: tr("Close FilterDesk."),
             act_tutorials: tr("Open the guided tutorials."),
@@ -1267,6 +1272,9 @@ class MainWindow(QMainWindow):
 
     def _run_component_library(self) -> None:
         ComponentLibraryDialog(self).exec()
+
+    def _run_circulator(self) -> None:
+        CirculatorDialog(self).exec()
 
     def _run_microstrip(self) -> None:
         MicrostripDialog(self).exec()

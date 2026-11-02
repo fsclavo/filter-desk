@@ -803,6 +803,25 @@ _ES.update(
         "Date": "Fecha",
         "VNA": "VNA",
         "NanoVNA sweep": "Barrido NanoVNA",
+        "Circulator / isolator": "Circulador / aislador",
+        "&Circulator / isolator…": "&Circulador / aislador…",
+        "Circulator (3 ports)": "Circulador (3 puertos)",
+        "Isolator (2 ports)": "Aislador (2 puertos)",
+        "Insertion loss (dB)": "Pérdida de inserción (dB)",
+        "Isolation (dB)": "Aislamiento (dB)",
+        "Return loss (dB)": "Pérdida de retorno (dB)",
+        "Export Touchstone…": "Exportar Touchstone…",
+        "Export circulator/isolator": "Exportar circulador/aislador",
+        "Design an ideal circulator or isolator model.": (
+            "Diseñar un modelo ideal de circulador o aislador."
+        ),
+        (
+            "First-order model: phase, bandwidth, power and ferrite bias are "
+            "not simulated."
+        ): (
+            "Modelo de primer orden: no se simulan fase, ancho de banda, "
+            "potencia ni polarización del ferrite."
+        ),
         "Read S11/S21 directly from a NanoVNA.": (
             "Leer S11/S21 directamente desde un NanoVNA."
         ),

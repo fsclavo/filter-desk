@@ -141,8 +141,10 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Interactive tuning**: tune components, retune by dragging markers, and scale
   the whole response.
 - **Recent projects** menu for the last ten opened/saved filter files.
-- **Multiport file tools**: inspect, renumber, terminate and parallel-combine
-  Touchstone `.sNp` networks from the CLI.
+- **Multiport file tools**: inspect, renumber, terminate, parallel-combine,
+  cascade and connect arbitrary port pairs in Touchstone `.sNp` networks.
+- **Circulator / isolator models**: first-order 3-port/2-port non-reciprocal
+  blocks with IL/isolation/RL fields, GUI export and CLI.
 - **Diplexer / multiplexer designer**: LPF+HPF or BPF+BPF branches, an LC
   TX/RX duplexer with isolation target and automatic order search, plus
   triplexer and configurable N-band multiplexers; combined metrics, magnitude

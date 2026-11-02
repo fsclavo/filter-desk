@@ -143,6 +143,111 @@ class SParameters:
         return replace(self, s=np.ascontiguousarray(s))
 
     @classmethod
+    def connect(
+        cls,
+        networks: Sequence[SParameters],
+        connections: Sequence[tuple[int, int, int, int]],
+    ) -> SParameters:
+        """Connect pairs of ports between N-port networks.
+
+        ``connections`` entries are ``(network_a, port_a, network_b, port_b)``;
+        network indices are 0-based and ports are 1-based. Connected ports are
+        internal and disappear from the result. Remaining ports keep their
+        original network order (network 0 ports first, then network 1, ...).
+
+        The connection is an ideal zero-length node: connected port voltages are
+        equal and their currents sum. The internal waves are eliminated with the
+        connection permutation matrix, which also handles ideal through
+        networks whose admittance matrix is singular.
+        """
+        items = tuple(networks)
+        if not items:
+            raise MultiportError("connect needs at least one network")
+        first = items[0]
+        if not connections:
+            raise MultiportError("connect needs at least one port pair")
+        offsets: list[int] = []
+        total = 0
+        for network in items:
+            if not np.array_equal(network.frequency_hz, first.frequency_hz):
+                raise MultiportError("connected networks must share one frequency grid")
+            if not np.isclose(network.z0_ohm, first.z0_ohm, rtol=1e-12):
+                raise MultiportError(
+                    "connected networks must use the same reference impedance"
+                )
+            offsets.append(total)
+            total += network.n_ports
+        pairs: list[tuple[int, int]] = []
+        used: set[int] = set()
+        for network_a, port_a, network_b, port_b in connections:
+            if not 0 <= network_a < len(items) or not 0 <= network_b < len(items):
+                raise MultiportError("connection network index is out of range")
+            if not 1 <= port_a <= items[network_a].n_ports:
+                raise MultiportError("connection port is out of range")
+            if not 1 <= port_b <= items[network_b].n_ports:
+                raise MultiportError("connection port is out of range")
+            index_a = offsets[network_a] + port_a - 1
+            index_b = offsets[network_b] + port_b - 1
+            if index_a == index_b:
+                raise MultiportError("cannot connect a port to itself")
+            if index_a in used or index_b in used:
+                raise MultiportError("each port can participate in only one connection")
+            used.add(index_a)
+            used.add(index_b)
+            pairs.append((index_a, index_b))
+
+        external = [index for index in range(total) if index not in used]
+        internal = [index for index in range(total) if index in used]
+        if not external:
+            raise MultiportError("connection leaves no external ports")
+        internal_position = {index: position for position, index in enumerate(internal)}
+        connection = np.zeros((len(internal), len(internal)), dtype=np.complex128)
+        for index_a, index_b in pairs:
+            pos_a = internal_position[index_a]
+            pos_b = internal_position[index_b]
+            connection[pos_a, pos_b] = 1.0
+            connection[pos_b, pos_a] = 1.0
+
+        all_s = np.zeros((first.n_points, total, total), dtype=np.complex128)
+        for offset, network in zip(offsets, items, strict=True):
+            all_s[
+                :,
+                offset : offset + network.n_ports,
+                offset : offset + network.n_ports,
+            ] = network.s
+        s_ee = all_s[:, external, :][:, :, external]
+        s_ei = all_s[:, external, :][:, :, internal]
+        s_ie = all_s[:, internal, :][:, :, external]
+        s_ii = all_s[:, internal, :][:, :, internal]
+        identity = np.eye(len(internal), dtype=np.complex128)
+        try:
+            internal_response = np.asarray(
+                [
+                    np.linalg.solve(
+                        identity - connection @ s_ii[index],
+                        connection @ s_ie[index],
+                    )
+                    for index in range(first.n_points)
+                ],
+                dtype=np.complex128,
+            )
+        except np.linalg.LinAlgError as exc:
+            raise MultiportError("connected network is singular") from exc
+        s = s_ee + s_ei @ internal_response
+        return cls(
+            frequency_hz=first.frequency_hz,
+            s=np.ascontiguousarray(s),
+            z0_ohm=first.z0_ohm,
+            source="connected",
+        )
+
+    def cascade(self, other: SParameters) -> SParameters:
+        """Cascade this 2-port with ``other`` (this port 2 to other port 1)."""
+        if self.n_ports != 2 or other.n_ports != 2:
+            raise MultiportError("cascade requires two 2-port networks")
+        return self.connect((self, other), ((0, 2, 1, 1),))
+
+    @classmethod
     def parallel_branches(
         cls, branches: Sequence[SParameters]
     ) -> SParameters:
