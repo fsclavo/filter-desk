@@ -4,13 +4,13 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.78.0 · **Released:**
+**Last verified:** 2026-11-01 · **App version:** 0.79.0 · **Released:**
 [v0.78.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.78.0) ·
 **Previous:**
 [v0.77.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.77.0) ·
-**Next:** v0.79.0 planning.
+**Next:** v0.79.0 release (example model library, pending CI/tag).
 
-**Verification:** local suite **1259 passed**, 4 skipped (ngspice unavailable); coverage **82.21 %**.
+**Verification:** local suite **1261 passed**, 4 skipped (ngspice unavailable); coverage **82.21 %**.
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41535789243
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41538027667
 
@@ -1110,6 +1110,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       import/export and source/provenance notes (ADR-035).
 - [x] **Manufacturer Q/ESR models:** optional frequency curves, persistence,
       ABCD application to simple L/C and composite warning (ADR-048).
+- [x] **Example model library:** Coilcraft 0603CS Q curves from the public
+      datasheet; Murata catalog-only; import instructions.
 - [x] **System sensitivity:** deterministic ±delta ranking of isolation/IL/OOB
       impact in GUI and CLI (ADR-036).
 - [x] **System Monte Carlo:** tolerance/yield with uniform/normal draws and

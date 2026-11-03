@@ -1272,6 +1272,10 @@ A catalog part can include an optional frequency-dependent model:
   series/parallel resonators keep constant DCR/ESR and show a warning.
 - The catalog does not redistribute vendor SPICE decks; import only data you are
   allowed to use. Model confidence and source are shown in the part details.
+- A ready-to-load example is in
+  [`examples/component_library_models.json`](../examples/component_library_models.json):
+  Coilcraft 0603CS Q curves from the public datasheet and Murata C0G parts
+  without invented ESR curves.
 
 
 ### Microstrip / distributed calculators

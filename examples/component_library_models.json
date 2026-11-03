@@ -1,0 +1,294 @@
+{
+  "format": "filterdesk.components",
+  "version": 1,
+  "parts": [
+    {
+      "id": "murata-grm1885c1h100ja01d",
+      "manufacturer": "Murata",
+      "mpn": "GRM1885C1H100JA01D",
+      "kind": "capacitor",
+      "value_si": 1e-11,
+      "unit": "F",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": 50.0,
+      "current_a": null,
+      "dcr_ohm": null,
+      "srf_hz": null,
+      "q_min": 1000.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.murata.com/en-global/products/productdetail?partno=GRM1885C1H100JA01D",
+      "notes": "C0G/NP0; verify current datasheet.",
+      "model": null
+    },
+    {
+      "id": "murata-grm1885c1h220ja01d",
+      "manufacturer": "Murata",
+      "mpn": "GRM1885C1H220JA01D",
+      "kind": "capacitor",
+      "value_si": 2.2e-11,
+      "unit": "F",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": 50.0,
+      "current_a": null,
+      "dcr_ohm": null,
+      "srf_hz": null,
+      "q_min": 1000.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.murata.com/en-global/products/productdetail?partno=GRM1885C1H220JA01D",
+      "notes": "C0G/NP0; verify current datasheet.",
+      "model": null
+    },
+    {
+      "id": "murata-grm1885c1h470ja01d",
+      "manufacturer": "Murata",
+      "mpn": "GRM1885C1H470JA01D",
+      "kind": "capacitor",
+      "value_si": 4.7e-11,
+      "unit": "F",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": 50.0,
+      "current_a": null,
+      "dcr_ohm": null,
+      "srf_hz": null,
+      "q_min": 1000.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.murata.com/en-global/products/productdetail?partno=GRM1885C1H470JA01D",
+      "notes": "C0G/NP0; verify current datasheet.",
+      "model": null
+    },
+    {
+      "id": "murata-grm1885c1h101ja01d",
+      "manufacturer": "Murata",
+      "mpn": "GRM1885C1H101JA01D",
+      "kind": "capacitor",
+      "value_si": 1e-10,
+      "unit": "F",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": 50.0,
+      "current_a": null,
+      "dcr_ohm": null,
+      "srf_hz": null,
+      "q_min": 1000.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.murata.com/en-global/products/productdetail?partno=GRM1885C1H101JA01D",
+      "notes": "C0G/NP0; Q>=1000 at 1 MHz; verify current datasheet.",
+      "model": null
+    },
+    {
+      "id": "murata-grm1885c1h102ja01d",
+      "manufacturer": "Murata",
+      "mpn": "GRM1885C1H102JA01D",
+      "kind": "capacitor",
+      "value_si": 1e-09,
+      "unit": "F",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": 50.0,
+      "current_a": null,
+      "dcr_ohm": null,
+      "srf_hz": null,
+      "q_min": 1000.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.murata.com/en-global/products/productdetail?partno=GRM1885C1H102JA01D",
+      "notes": "C0G/NP0; verify current datasheet.",
+      "model": null
+    },
+    {
+      "id": "coilcraft-0603cs-10nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-10NXJRW",
+      "kind": "inductor",
+      "value_si": 1e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.13,
+      "srf_hz": 4800000000.0,
+      "q_min": 31.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
+      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-10nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            31.0
+          ],
+          [
+            900000000.0,
+            66.0
+          ],
+          [
+            1700000000.0,
+            83.0
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-22nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-22NXJRW",
+      "kind": "inductor",
+      "value_si": 2.2e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.19,
+      "srf_hz": 3000000000.0,
+      "q_min": 38.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
+      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-22nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            38.0
+          ],
+          [
+            900000000.0,
+            73.0
+          ],
+          [
+            1700000000.0,
+            71.0
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-47nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-47NXJRW",
+      "kind": "inductor",
+      "value_si": 4.7e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.6,
+      "dcr_ohm": 0.28,
+      "srf_hz": 2000000000.0,
+      "q_min": 38.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
+      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-47nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            200000000.0,
+            38.0
+          ],
+          [
+            900000000.0,
+            62.0
+          ],
+          [
+            1700000000.0,
+            35.0
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r10xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R10XJRW",
+      "kind": "inductor",
+      "value_si": 1e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.4,
+      "dcr_ohm": 0.58,
+      "srf_hz": 1400000000.0,
+      "q_min": 34.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
+      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r10xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            150000000.0,
+            34.0
+          ],
+          [
+            900000000.0,
+            49.0
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r22xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R22XJRW",
+      "kind": "inductor",
+      "value_si": 2.2e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.2,
+      "dcr_ohm": 2.1,
+      "srf_hz": 900000000.0,
+      "q_min": 25.0,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
+      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r22xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            100000000.0,
+            25.0
+          ]
+        ],
+        "esr_points": []
+      }
+    }
+  ]
+}

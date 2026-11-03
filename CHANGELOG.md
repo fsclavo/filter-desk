@@ -3,6 +3,15 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.79.0 — 2026-11-01
+
+### Added
+
+- `examples/component_library_models.json` with the ten starter parts.
+- Coilcraft 0603CS Q(f) points from the public Document 195 datasheet.
+- Murata C0G parts remain catalog-only; no ESR curve was invented.
+- `examples/README.md` with import/apply instructions.
+
 ## v0.78.0 — 2026-11-01
 
 ### Added
