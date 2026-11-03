@@ -4,14 +4,14 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-01 · **App version:** 0.79.0 · **Released:**
+**Last verified:** 2026-11-03 · **App version:** 0.79.1 · **Released:**
 [v0.79.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.79.0) ·
 **Previous:**
 [v0.78.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.78.0) ·
-**Next:** v0.80.0 planning.
+**Next:** v0.79.1 release (dependency/CI patch, pending CI/tag).
 
 **Verification:** local suite **1261 passed**, 4 skipped (ngspice unavailable); coverage **82.22 %**.
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41552303202
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/41560736529
 Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/41553423350
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·

@@ -3,6 +3,20 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.79.1 — 2026-11-03
+
+### Changed
+
+- Dependency bumps: ruff 0.17.3, mypy 2.4.1, pytest 9.2.0, setup-uv 10.3.3 and
+  upload-artifact v7.
+- Package self-test no longer shows a Qt window; GUI display remains covered by
+  the dedicated stability job.
+
+### Reverted
+
+- Hypothesis 6.170.13 was reverted to 6.170.5: it aborted Python natively in the
+  property-based unit tests on CI.
+
 ## v0.79.0 — 2026-11-01
 
 ### Added
