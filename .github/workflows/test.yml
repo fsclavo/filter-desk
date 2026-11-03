@@ -42,7 +42,7 @@ jobs:
         run: uv run --frozen lint-imports
       - name: Pytest (with coverage)
         run: >-
-          uv run --frozen pytest -q
+          uv run --frozen pytest -vv
           --cov=filterdesk --cov-report=term-missing:skip-covered
           --cov-fail-under=80
         env:
