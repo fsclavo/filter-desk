@@ -451,7 +451,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "hypothesis", specifier = ">=6.100" },
+    { name = "hypothesis", specifier = ">=6.100,!=6.170.13" },
     { name = "import-linter", specifier = ">=2.0" },
     { name = "mypy", specifier = ">=1.14" },
     { name = "pytest", specifier = ">=8.0" },
