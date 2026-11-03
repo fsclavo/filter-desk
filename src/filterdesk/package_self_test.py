@@ -32,8 +32,10 @@ def run_package_self_test(*, quiet: bool = False) -> int:
         assert session.circuit is not None
         assert result.frequency_hz.size > 1
 
+        # Construct the GUI without showing it: some offscreen Qt/runner
+        # combinations abort on show(). The dedicated GUI-stability job covers
+        # real window display separately.
         window = MainWindow(session, auto_run=False)
-        window.show()
         app.processEvents()
         window._session.dirty = False
         window.close()
