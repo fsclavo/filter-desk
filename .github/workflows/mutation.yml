@@ -2,14 +2,20 @@ name: mutation
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
 
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mutation:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.3.3
@@ -22,13 +28,46 @@ jobs:
           sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libdbus-1-3
       - name: Install package and dev tools
         run: uv sync --frozen
-      - name: Run mutation baseline
+      - name: Run mutation testing (report-only)
         env:
           QT_QPA_PLATFORM: offscreen
         run: uv run --frozen mutmut run --max-children 2
       - name: Export mutation stats
+        if: always()
         run: uv run --frozen mutmut export-cicd-stats
+      - name: Summarize mutation score
+        if: always()
+        run: |
+          uv run --frozen python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("mutants/mutmut-cicd-stats.json")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary is None:
+              raise SystemExit(0)
+          if not path.is_file():
+              with open(summary, "a", encoding="utf-8") as handle:
+                  handle.write("## Mutation testing\n\nNo stats artifact was produced.\n")
+              raise SystemExit(0)
+          data = json.loads(path.read_text(encoding="utf-8"))
+          total = int(data.get("total", 0))
+          skipped = int(data.get("skipped", 0))
+          tested = max(total - skipped, 0)
+          killed = int(data.get("killed", 0))
+          survived = int(data.get("survived", 0))
+          score = 100.0 * killed / tested if tested else 0.0
+          with open(summary, "a", encoding="utf-8") as handle:
+              handle.write("## Mutation testing (report-only)\n\n")
+              handle.write(f"- Killed: **{killed}**\n")
+              handle.write(f"- Survived: **{survived}**\n")
+              handle.write(f"- Total: **{total}**\n")
+              handle.write(f"- Mutation score: **{score:.1f} %**\n")
+          PY
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: mutation-stats
           path: mutants/mutmut-cicd-stats.json
+          if-no-files-found: warn

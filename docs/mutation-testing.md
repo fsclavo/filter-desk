@@ -6,13 +6,13 @@ manually or from the `mutation` workflow.
 
 ## Current scope
 
-The first baseline targets:
+The baseline targets:
 
-`src/filterdesk/components_std/manufacturer_model.py`
+- `src/filterdesk/components_std/manufacturer_model.py`
+- `src/filterdesk/services/coupled_line.py`
+- `src/filterdesk/services/circulator.py`
 
-and runs only:
-
-`tests/unit/test_manufacturer_model.py`
+and runs the matching unit-test files.
 
 The configuration lives in `[tool.mutmut]` in `pyproject.toml`.
 
@@ -32,24 +32,35 @@ crash. `tests/unit/conftest.py` skips that hard exit when mutmut sets
 
 ## Baseline (2026-11-04)
 
-Initial run: 104/199 killed (52.3 %). After targeted validation, exact error
-message and interpolation tests:
+Initial `manufacturer_model.py` run: 104/199 killed (52.3 %). After targeted
+validation and exact error-message tests: **187/199 killed (94.0 %)**; the 12
+remaining mutants are equivalent `_interp_log` boundary/strict-zip variants.
 
-- 199 mutants generated.
-- 187 killed.
-- 12 survived.
-- Mutation score: **94.0 %**.
+Expanded scope baseline:
 
-The remaining survivors are all in `_interp_log`: mostly equivalent boundary
-(`<=` vs `<` at an exact endpoint) or `zip(strict=...)` variants. They are not
-behaviorally distinguishable by the public interpolation contract.
+- 705 mutants generated.
+- 503 killed.
+- 202 survived.
+- Mutation score: **71.3 %**.
+
+Survivor groups: `coupled_line` 159, `circulator` 31, `manufacturer_model` 12.
+This is a report-only baseline; no threshold is enforced.
+
+## Weekly report-only workflow
+
+`.github/workflows/mutation.yml` runs every Monday at 04:00 UTC and can also be
+started manually. It:
+
+- runs the configured mutation scope;
+- uploads `mutants/mutmut-cicd-stats.json` as the `mutation-stats` artifact;
+- writes killed/survived/total/score to the GitHub job summary;
+- does **not** enforce a score threshold yet.
 
 ## Next targets
 
-After improving the baseline, add small service modules one at a time:
+Improve the `coupled_line` and `circulator` baselines, then add small service
+modules one at a time:
 
-- `services/coupled_line.py`
-- `services/circulator.py`
 - `services/part_application.py`
 - `analysis/multiport.py`
 

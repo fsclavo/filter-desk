@@ -33,9 +33,17 @@ testpaths = ["tests"]
 
 [tool.mutmut]
 source_paths = ["src/filterdesk"]
-only_mutate = ["src/filterdesk/components_std/manufacturer_model.py"]
+only_mutate = [
+    "src/filterdesk/components_std/manufacturer_model.py",
+    "src/filterdesk/services/coupled_line.py",
+    "src/filterdesk/services/circulator.py",
+]
 pytest_add_cli_args = ["-q", "-x"]
-pytest_add_cli_args_test_selection = ["tests/unit/test_manufacturer_model.py"]
+pytest_add_cli_args_test_selection = [
+    "tests/unit/test_manufacturer_model.py",
+    "tests/unit/test_coupled_line.py",
+    "tests/unit/test_circulator.py",
+]
 
 [tool.ruff]
 line-length = 88
