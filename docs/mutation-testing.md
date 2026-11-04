@@ -30,16 +30,19 @@ The Qt test suite normally hard-exits after pytest to avoid a PySide6 teardown
 crash. `tests/unit/conftest.py` skips that hard exit when mutmut sets
 `MUTMUT_DEPENDENCY_DEPTH`, so mutmut can collect stats and return normally.
 
-## First baseline (2026-11-04)
+## Baseline (2026-11-04)
+
+Initial run: 104/199 killed (52.3 %). After targeted validation, exact error
+message and interpolation tests:
 
 - 199 mutants generated.
-- 104 killed.
-- 95 survived.
-- Mutation score: **52.3 %**.
+- 187 killed.
+- 12 survived.
+- Mutation score: **94.0 %**.
 
-The largest survivor groups are `ManufacturerModel.from_mapping` (44),
-`_interp_log` (21) and `ManufacturerModel.__post_init__` (13). This is a useful
-target list for stronger validation tests.
+The remaining survivors are all in `_interp_log`: mostly equivalent boundary
+(`<=` vs `<` at an exact endpoint) or `zip(strict=...)` variants. They are not
+behaviorally distinguishable by the public interpolation contract.
 
 ## Next targets
 
