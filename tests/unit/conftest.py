@@ -107,8 +107,13 @@ def pytest_unconfigure(config: object) -> None:
     Uses the original ``sys.__stdout__``/``__stderr__`` (not pytest's capture
     wrappers, which may already be torn down). Coverage data and the terminal
     summary are written before this hook runs.
+
+    Mutmut runs pytest in-process and needs the normal return path; its runner
+    sets ``MUTMUT_DEPENDENCY_DEPTH``. Skip the hard exit only in that case.
     """
     del config
+    if os.environ.get("MUTMUT_DEPENDENCY_DEPTH") is not None:
+        return
     for stream in (sys.__stdout__, sys.__stderr__):
         try:
             if stream is not None:

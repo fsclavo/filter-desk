@@ -1068,6 +1068,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ### P0 — release quality
 
+- [ ] **Mutation-testing baseline:** `mutmut` is configured for
+      `manufacturer_model.py`; first run 104/199 killed (52.3 %). Improve tests
+      before adding a CI gate. (M)
+
 - [x] **Clean-machine package acceptance:** AppImage and Windows installer run a
       headless `--self-test` on clean CI runners (GUI construction, synthesize,
       Touchstone import/export, BOM, project round-trip). Physical-desktop
