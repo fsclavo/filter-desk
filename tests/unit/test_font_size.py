@@ -19,6 +19,15 @@ from filterdesk.gui.settings import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _restore_default_font() -> object:
+    """Keep font changes scoped to this module."""
+    yield None
+    app = QApplication.instance()
+    if isinstance(app, QApplication):
+        apply_font_size(app, FontSize.DEFAULT)
+
+
 def test_font_size_presets_scale_relative_to_base() -> None:
     app = QApplication.instance() or QApplication([])
     reset_font_base()

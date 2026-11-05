@@ -77,19 +77,6 @@ def _reset_language() -> object:
     set_language(Language.EN)
 
 
-@pytest.fixture(autouse=True)
-def _reset_font_size() -> object:
-    """Restore the default application font after each test."""
-    from PySide6.QtWidgets import QApplication
-
-    from filterdesk.gui.fonts import FontSize, apply_font_size
-
-    yield None
-    app = QApplication.instance()
-    if isinstance(app, QApplication):
-        apply_font_size(app, FontSize.DEFAULT)
-
-
 
 def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     del session
