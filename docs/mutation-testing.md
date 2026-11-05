@@ -48,15 +48,15 @@ First expanded baseline (three modules):
 After targeted `coupled_line`/`circulator` validation, those three modules reached
 **568/705 killed (80.6 %)**.
 
-Full configured scope baseline:
+Full configured scope baseline after targeted multiport/part-application tests:
 
 - 1573 mutants generated.
-- 1089 killed.
-- 472 survived.
-- 12 without associated tests.
-- Mutation score: **69.2 %**.
+- 1256 killed.
+- 317 survived.
+- 0 without associated tests.
+- Mutation score: **79.8 %**.
 
-Survivor groups: `multiport` 189, `part_application` 158, `coupled_line` 105,
+Survivor groups: `coupled_line` 105, `multiport` 93, `part_application` 87,
 `circulator` 20, `manufacturer_model` 12. This is a report-only baseline; no
 threshold is enforced.
 

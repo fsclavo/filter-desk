@@ -324,3 +324,142 @@ def test_cli_network_errors(
         )
         == 2
     )
+
+
+def test_sparameters_exact_validation_messages() -> None:
+    s = np.zeros((2, 2, 2), dtype=complex)
+    cases = [
+        (
+            lambda: SParameters(np.array([]), np.zeros((0, 2, 2))),
+            "frequency_hz must be a non-empty 1-D array",
+        ),
+        (
+            lambda: SParameters(np.array([1e6, 2e6]), np.zeros((2, 3, 2))),
+            "s must have shape (points, ports, ports)",
+        ),
+        (
+            lambda: SParameters(np.array([1e6, 2e6]), np.zeros((1, 2, 2))),
+            "s has 1 points but frequency has 2",
+        ),
+        (
+            lambda: SParameters(np.array([1e6]), np.zeros((1, 0, 0))),
+            "a network needs at least one port",
+        ),
+        (
+            lambda: SParameters(np.array([0.0]), s[:1]),
+            "frequencies must be finite and > 0",
+        ),
+        (
+            lambda: SParameters(np.array([2e6, 1e6]), s),
+            "frequencies must be strictly increasing",
+        ),
+        (
+            lambda: SParameters(np.array([1e6, 2e6]), np.full((2, 2, 2), np.nan)),
+            "S-parameters must be finite",
+        ),
+        (
+            lambda: SParameters(np.array([1e6]), s[:1], z0_ohm=0.0),
+            "z0_ohm must be finite and > 0",
+        ),
+    ]
+    for call, message in cases:
+        with pytest.raises(MultiportError) as info:
+            call()
+        assert str(info.value) == message
+
+
+def test_sparameters_converts_numeric_dtypes() -> None:
+    network = SParameters(
+        np.array([1, 2], dtype=int),
+        np.zeros((2, 2, 2), dtype=int),
+    )
+    assert network.frequency_hz.dtype == np.float64
+    assert network.s.dtype == np.complex128
+
+
+def test_sparameter_accessors_and_summary() -> None:
+    network = _matched_attenuator(0.5)
+    assert network.s_param(2, 1) == pytest.approx(network.s[:, 1, 0])
+    with pytest.raises(MultiportError, match=r"port must be in 1\.\.2: 0"):
+        network.s_param(0, 1)
+    with pytest.raises(MultiportError, match=r"port must be in 1\.\.2: 3"):
+        network.s_param(1, 3)
+    assert network.summary() == (
+        "2-port, 3 points, 1e+06–1e+08 Hz, Z0=50 ohm"
+    )
+
+
+def test_from_analysis_rejects_unequal_impedances() -> None:
+    frequency = _frequencies()
+    zeros = np.zeros_like(frequency)
+    result = AnalysisResult(
+        frequency_hz=frequency,
+        s11=zeros,
+        s21=zeros,
+        s12=zeros,
+        s22=zeros,
+        zin_ohm=zeros,
+        zout_ohm=zeros,
+        z0_source_ohm=50.0,
+        z0_load_ohm=75.0,
+        backend="test",
+    )
+    with pytest.raises(MultiportError, match="unequal port impedances"):
+        SParameters.from_analysis(result)
+
+
+def test_terminate_and_connect_exact_errors() -> None:
+    one_port = SParameters(np.array([1e6]), np.zeros((1, 1, 1), dtype=complex))
+    with pytest.raises(MultiportError, match="cannot terminate the only port"):
+        one_port.terminate(1, z_load_ohm=50.0)
+    branch = _matched_attenuator()
+    with pytest.raises(MultiportError, match="load reflection coefficient"):
+        branch.terminate(2, z_load_ohm=complex(np.inf, 1.0))
+    singular_s = np.ones((3, 2, 2), dtype=complex)
+    singular = SParameters(_frequencies(), singular_s)
+    with pytest.raises(MultiportError, match="terminated network is singular"):
+        singular.terminate(2, z_load_ohm=complex(np.inf))
+    with pytest.raises(MultiportError, match="connect needs at least one network"):
+        SParameters.connect((), ())
+    with pytest.raises(MultiportError, match="connect needs at least one port pair"):
+        SParameters.connect((branch,), ())
+    with pytest.raises(MultiportError, match="same reference impedance"):
+        SParameters.connect(
+            (branch, SParameters(_frequencies(), branch.s, z0_ohm=75.0)),
+            ((0, 2, 1, 1),),
+        )
+    with pytest.raises(MultiportError, match="connection network index"):
+        SParameters.connect((branch, branch), ((0, 2, 2, 1),))
+    with pytest.raises(MultiportError, match="connection port is out of range"):
+        SParameters.connect((branch, branch), ((0, 3, 1, 1),))
+    with pytest.raises(MultiportError, match="cannot connect a port to itself"):
+        SParameters.connect((branch,), ((0, 1, 0, 1),))
+    with pytest.raises(MultiportError, match="only one connection"):
+        SParameters.connect(
+            (branch, branch), ((0, 1, 1, 1), (0, 1, 1, 2))
+        )
+    with pytest.raises(MultiportError, match="no external ports"):
+        SParameters.connect(
+            (branch, branch), ((0, 1, 1, 1), (0, 2, 1, 2))
+        )
+    with pytest.raises(MultiportError, match="cascade requires two 2-port"):
+        branch.cascade(SParameters(_frequencies(), np.zeros((3, 3, 3))))
+
+
+def test_parallel_branches_exact_errors() -> None:
+    branch = _matched_attenuator()
+    with pytest.raises(MultiportError, match="at least two branches"):
+        SParameters.parallel_branches((branch,))
+    with pytest.raises(MultiportError, match="must be 2-ports"):
+        SParameters.parallel_branches(
+            (branch, SParameters(_frequencies(), np.zeros((3, 3, 3))))
+        )
+    with pytest.raises(MultiportError, match="same reference impedance"):
+        SParameters.parallel_branches(
+            (branch, SParameters(_frequencies(), branch.s, z0_ohm=75.0))
+        )
+    with pytest.raises(MultiportError, match="S-to-Y conversion is singular"):
+        short = SParameters(
+            _frequencies(), np.broadcast_to(-np.eye(2), (3, 2, 2))
+        )
+        SParameters.parallel_branches((short, short))

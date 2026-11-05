@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import pytest
+
 from filterdesk.analysis.types import SweepConfig, SweepSpacing
 from filterdesk.components_std import (
     STARTER_PARTS,
+    LibraryPart,
     ManufacturerModel,
     ModelPoint,
 )
 from filterdesk.domain.circuit import NonIdealInductor
-from filterdesk.domain.enums import ApproximationFamily
+from filterdesk.domain.enums import ApproximationFamily, ElementRole
 from filterdesk.services.diplexer import DiplexerConfig, design_diplexer
 from filterdesk.services.part_application import apply_assigned_parts
 from filterdesk.services.part_assignment import assign_nearest_parts
@@ -117,3 +120,114 @@ def test_manufacturer_q_curve_is_applied_to_simple_inductor() -> None:
         if el.id == ref and isinstance(el, NonIdealInductor)
     )
     assert element.q_curve == ((1e6, 80.0), (50e6, 40.0))
+
+
+def _part(kind: str, value_si: float, **kwargs) -> LibraryPart:  # type: ignore[no-untyped-def]
+    return LibraryPart(
+        id=f"test-{kind}",
+        manufacturer="Test",
+        mpn=f"TEST-{kind}",
+        kind=kind,
+        value_si=value_si,
+        unit="H" if kind == "inductor" else "F",
+        package="0603",
+        **kwargs,
+    )
+
+
+def test_replace_composite_value_branches() -> None:
+    from filterdesk.domain.circuit import (
+        IdealBruneLC,
+        IdealDualBruneLC,
+        IdealParallelLC,
+        IdealSeriesLC,
+    )
+    from filterdesk.services.part_application import _replace_composite_value
+
+    series = IdealSeriesLC(
+        "X1", 1e-6, 1e-12, "a", "b", ElementRole.SERIES
+    )
+    parallel = IdealParallelLC(
+        "X2", 1e-6, 1e-12, "a", "b", ElementRole.SHUNT
+    )
+    inductor = _part("inductor", 2e-6, dcr_ohm=0.5, srf_hz=1e9)
+    capacitor = _part("capacitor", 2e-12, esr_ohm=0.2, esl_h=1e-10)
+    for element in (series, parallel):
+        updated_l = _replace_composite_value(element, ".L", inductor)
+        assert updated_l.value_h == pytest.approx(2e-6)
+        assert updated_l.l_series_resistance_ohm == pytest.approx(0.5)
+        assert updated_l.l_srf_hz == pytest.approx(1e9)
+        updated_c = _replace_composite_value(element, ".C", capacitor)
+        assert updated_c.value_f == pytest.approx(2e-12)
+        assert updated_c.c_esr_ohm == pytest.approx(0.2)
+        assert updated_c.c_esl_h == pytest.approx(1e-10)
+
+    q_part = _part("inductor", 2e-6, q_min=100.0)
+    updated = _replace_composite_value(series, ".L", q_part)
+    expected_r = 2.0 * 3.141592653589793 * 250e6 * 2e-6 / 100.0
+    assert updated.l_series_resistance_ohm == pytest.approx(expected_r)
+
+    brune = IdealBruneLC(
+        "X3", 1e-6, 1e-12, 2e-6, 2e-12, "a", "b", ElementRole.SERIES
+    )
+    dual = IdealDualBruneLC(
+        "X4", 1e-6, 1e-12, 2e-6, 2e-12, "a", "b", ElementRole.SHUNT
+    )
+    for element in (brune, dual):
+        assert _replace_composite_value(
+            element, ".Ls", inductor
+        ).series_l_h == pytest.approx(2e-6)
+        assert _replace_composite_value(
+            element, ".Cs", capacitor
+        ).series_c_f == pytest.approx(2e-12)
+        assert _replace_composite_value(
+            element, ".Lp", inductor
+        ).parallel_l_h == pytest.approx(2e-6)
+        assert _replace_composite_value(
+            element, ".Cp", capacitor
+        ).parallel_c_f == pytest.approx(2e-12)
+
+    with pytest.raises(ValueError, match="unsupported composite part"):
+        _replace_composite_value(series, ".X", inductor)
+    with pytest.raises(ValueError, match="unsupported composite part"):
+        _replace_composite_value(series, ".L", capacitor)
+
+
+def test_apply_part_errors_and_composite_warnings() -> None:
+    from filterdesk.domain.circuit import (
+        Circuit,
+        IdealBruneLC,
+        Port,
+    )
+    from filterdesk.services.part_application import _apply_part
+
+    ports = (Port("P1", "in", 50.0), Port("P2", "out", 50.0))
+    brune = IdealBruneLC(
+        "X1", 1e-6, 1e-12, 2e-6, 2e-12, "in", "out", ElementRole.SERIES
+    )
+    circuit = Circuit([brune], ports[0], ports[1])
+    updated, warnings = _apply_part(
+        circuit, "X1.Ls", _part("inductor", 3e-6)
+    )
+    assert updated.elements[0].series_l_h == pytest.approx(3e-6)
+    assert any("value only" in warning for warning in warnings)
+
+    with pytest.raises(KeyError, match="unknown component"):
+        _apply_part(circuit, "NOPE", _part("inductor", 3e-6))
+    with pytest.raises(ValueError, match="does not match"):
+        _apply_part(circuit, "X1.Ls", _part("capacitor", 3e-12))
+
+
+def test_apply_assigned_parts_validation_and_warnings() -> None:
+    from filterdesk.services.part_application import (
+        PartApplicationError,
+        apply_assigned_parts,
+    )
+
+    design = _design()
+    with pytest.raises(PartApplicationError, match="no assigned parts"):
+        apply_assigned_parts(design, {})
+    with pytest.raises(PartApplicationError, match="no assigned parts could"):
+        apply_assigned_parts(design, {"bad-key": _part("inductor", 1e-6)})
+    with pytest.raises(PartApplicationError, match="no assigned parts could"):
+        apply_assigned_parts(design, {"Nope:L1": _part("inductor", 1e-6)})
