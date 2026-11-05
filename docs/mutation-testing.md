@@ -48,17 +48,19 @@ First expanded baseline (three modules):
 After targeted `coupled_line`/`circulator` validation, those three modules reached
 **568/705 killed (80.6 %)**.
 
-Full configured scope baseline after targeted multiport/part-application tests:
+Latest full configured-scope run (2026-11-05):
 
 - 1573 mutants generated.
-- 1328 killed.
-- 245 survived.
+- 1516 killed.
+- 57 survived.
 - 0 without associated tests.
-- Mutation score: **84.4 %**.
+- Mutation score: **96.4 %**.
 
-Survivor groups: `multiport` 93, `coupled_line` 76, `part_application` 51,
-`circulator` 13, `manufacturer_model` 12. This is a report-only baseline; no
-threshold is enforced.
+Survivor groups: `multiport` 33, `manufacturer_model` 9, `coupled_line` 8,
+`circulator` 4, `part_application` 3. The remaining mutants are equivalent
+variants (explicit vs. implicit NumPy dtypes, `zip(strict=True)` on equal-length
+sequences, and unreachable numeric-boundary cases). This is a report-only
+baseline; no threshold is enforced.
 
 ## Weekly report-only workflow
 
@@ -72,11 +74,9 @@ started manually. It:
 
 ## Next targets
 
-Improve the `coupled_line` and `circulator` baselines, then add small service
-modules one at a time:
-
-- `services/part_application.py`
-- `analysis/multiport.py`
+The current five-module scope is effectively saturated: the 57 survivors are
+equivalent mutants, so further score gains require either documenting/excluding
+them or expanding the scope to new modules one at a time.
 
 Do not mutate GUI/Qt/plotting modules in the batch runner; their native
 lifecycle is covered by the GUI-stability job.

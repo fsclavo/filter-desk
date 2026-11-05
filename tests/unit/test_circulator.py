@@ -207,3 +207,27 @@ def test_finite_circulator_matrix_all_paths_and_dtype() -> None:
     assert s[:, 0, 0] == pytest.approx(reflection)
     assert s[:, 1, 1] == pytest.approx(reflection)
     assert s[:, 2, 2] == pytest.approx(reflection)
+
+
+def test_circulator_metadata_and_isolator_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from filterdesk.analysis.multiport import MultiportError, SParameters
+
+    config = CirculatorConfig(z0_ohm=75.0)
+    sweep = _sweep()
+    design = design_circulator(config, sweep)
+    assert design.sweep is sweep
+    assert design.network.z0_ohm == pytest.approx(75.0)
+    assert design.network.source == "circulator-model"
+
+    isolator = design_isolator(config, sweep)
+    assert isolator.sweep is sweep
+
+    def fail_terminate(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise MultiportError("boom")
+
+    monkeypatch.setattr(SParameters, "terminate", fail_terminate)
+    with pytest.raises(CirculatorError) as info:
+        design_isolator(config, sweep)
+    assert str(info.value) == "boom"

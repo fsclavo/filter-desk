@@ -353,3 +353,17 @@ def test_exact_error_messages_and_all_confidences() -> None:
 def test_linear_zero_endpoint_with_nonunit_span() -> None:
     points = (ModelPoint(1e6, 0.0), ModelPoint(10e6, 2.0))
     assert _interp_log(3.1622776601683795e6, points) == pytest.approx(1.0)
+
+
+def test_interp_log_non_decade_span_zero_right_and_nan_fallback() -> None:
+    points = (ModelPoint(1e6, 100.0), ModelPoint(100e6, 10.0))
+    expected = 10.0 ** (
+        math.log10(100.0)
+        + 0.5 * (math.log10(10.0) - math.log10(100.0))
+    )
+    assert _interp_log(10e6, points) == pytest.approx(expected)
+
+    zero_right = (ModelPoint(1e6, 1.0), ModelPoint(10e6, 0.0))
+    assert _interp_log(3.1622776601683795e6, zero_right) == pytest.approx(
+        0.5
+    )

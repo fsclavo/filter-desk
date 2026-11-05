@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -22,8 +23,11 @@ from filterdesk.services.coupled_line import (
     CoupledLineBpfConfig,
     CoupledLineError,
     _abcd_to_s,
+    _inverter_values,
+    _sections,
     design_coupled_line_bpf,
 )
+from filterdesk.synthesis.families.chebyshev_i import chebyshev_type_i_g_values
 
 
 def _sweep() -> SweepConfig:
@@ -371,3 +375,223 @@ def test_design_meta_exact_values() -> None:
     )
     assert design.meta["model"] == "parallel-coupled half-wave resonator J-inverter"
     assert design.meta["confidence"] == "experimental"
+
+
+_IDEAL_WARNING = (
+    "Ideal narrowband J-inverter model; even/odd impedances are electrical "
+    "targets. Dispersion, discontinuities and EM coupling are not included; "
+    "verify with a field solver or VNA."
+)
+_GEOMETRY_WARNING = (
+    "Width/gap use a zero-thickness quasi-static Hammerstad-Jensen "
+    "model; finite thickness and dispersion are not included."
+)
+
+
+def test_config_accepts_max_order_and_rejects_zero_ripple() -> None:
+    config = CoupledLineBpfConfig(
+        center_hz=100e6,
+        bandwidth_hz=10e6,
+        order=9,
+        family=ApproximationFamily.BUTTERWORTH,
+        ripple_db=None,
+    )
+    assert config.order == 9
+    with pytest.raises(CoupledLineError) as info:
+        CoupledLineBpfConfig(100e6, 10e6, ripple_db=0.0)
+    assert str(info.value) == "Chebyshev-I needs ripple_db > 0"
+
+
+def test_inverter_values_use_standard_j_formula() -> None:
+    g = (0.5, 2.0, 3.0, 4.0)
+    fbw = 0.1
+    expected = (
+        math.sqrt(math.pi * fbw / (2.0 * g[0] * g[1])),
+        math.pi * fbw / (2.0 * math.sqrt(g[1] * g[2])),
+        math.sqrt(math.pi * fbw / (2.0 * g[2] * g[3])),
+    )
+    assert _inverter_values(g, fbw) == pytest.approx(expected)
+
+
+def test_sections_direct_values_and_geometry_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = CoupledLineBpfConfig(100e6, 10e6, 3)
+    sections = _sections(config, (0.1, 0.2), None)
+    assert [section.index for section in sections] == [1, 2]
+    for section, value in zip(sections, (0.1, 0.2), strict=True):
+        z0e = 50.0 * (1.0 + value + value * value)
+        z0o = 50.0 * (1.0 - value + value * value)
+        assert section.z0e_ohm == pytest.approx(z0e)
+        assert section.z0o_ohm == pytest.approx(z0o)
+        assert section.coupling == pytest.approx((z0e - z0o) / (z0e + z0o))
+        assert section.width_mm is None
+        assert section.gap_mm is None
+        assert section.eeff_even is None
+        assert section.eeff_odd is None
+
+    from filterdesk.services import coupled_line as module
+
+    def fail_geometry(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise CoupledMicrostripError("boom")
+
+    monkeypatch.setattr(module, "design_coupled_microstrip", fail_geometry)
+    substrate = Substrate("Test", 4.4, 1.0, 0.0001, 0.01, 0.2)
+    with pytest.raises(CoupledLineError) as info:
+        _sections(config, (0.1,), substrate)
+    assert str(info.value) == "section 1 geometry failed: boom"
+
+
+def test_abcd_to_s_general_matrix_and_thresholds() -> None:
+    abcd = np.asarray(
+        [[[2.0 + 0.5j, 10.0 - 3.0j], [0.02 + 0.01j, 1.5 - 0.2j]]],
+        dtype=complex,
+    )
+    a = abcd[0, 0, 0]
+    b = abcd[0, 0, 1]
+    c = abcd[0, 1, 0]
+    d = abcd[0, 1, 1]
+    denominator = a + b / 50.0 + c * 50.0 + d
+    expected = (
+        (a + b / 50.0 - c * 50.0 - d) / denominator,
+        2.0 / denominator,
+        2.0 * (a * d - b * c) / denominator,
+        (-a + b / 50.0 - c * 50.0 + d) / denominator,
+    )
+    for got, want in zip(_abcd_to_s(abcd, 50.0), expected, strict=True):
+        assert got[0] == pytest.approx(want)
+
+    with pytest.raises(CoupledLineError) as info:
+        _abcd_to_s(np.zeros((1, 2, 2), dtype=complex), 50.0)
+    assert str(info.value) == "coupled-line network is singular"
+
+    for diagonal in (1e-15, 0.5):
+        matrix = np.zeros((1, 2, 2), dtype=complex)
+        matrix[0, 0, 0] = diagonal
+        s11, s21, s12, s22 = _abcd_to_s(matrix, 50.0)
+        assert s11[0] == pytest.approx(1.0)
+        assert s21[0] == pytest.approx(2.0 / diagonal)
+        assert s12[0] == pytest.approx(0.0)
+        assert s22[0] == pytest.approx(-1.0)
+
+
+def test_design_reference_response_and_exact_metadata() -> None:
+    config = CoupledLineBpfConfig(
+        center_hz=100e6,
+        bandwidth_hz=10e6,
+        order=3,
+        family=ApproximationFamily.CHEBYSHEV_TYPE_I,
+        ripple_db=0.1,
+        z0_ohm=75.0,
+    )
+    sweep = SweepConfig(80e6, 120e6, 5, SweepSpacing.LINEAR)
+    design = design_coupled_line_bpf(config, sweep)
+    g = chebyshev_type_i_g_values(3, 0.1)
+    j_norm = _inverter_values(g, 0.1)
+    y0 = 1.0 / config.z0_ohm
+    slope = y0 * math.pi / 2.0
+    capacitance = slope / (2.0 * math.pi * config.center_hz)
+    inductance = 1.0 / (
+        (2.0 * math.pi * config.center_hz) ** 2 * capacitance
+    )
+    expected = np.zeros((5, 2, 2), dtype=complex)
+    for index, frequency in enumerate(sweep.frequencies_hz()):
+        omega = 2.0 * math.pi * frequency
+        susceptance = 1j * (
+            omega * capacitance - 1.0 / (omega * inductance)
+        )
+        matrix = np.eye(2, dtype=complex)
+        for section_index, value in enumerate(j_norm):
+            inverter = value * y0
+            matrix = matrix @ np.asarray(
+                [[0.0, 1j / inverter], [1j * inverter, 0.0]],
+                dtype=complex,
+            )
+            if section_index < len(j_norm) - 1:
+                matrix = matrix @ np.asarray(
+                    [[1.0, 0.0], [susceptance, 1.0]],
+                    dtype=complex,
+                )
+        s11, s21, s12, s22 = _abcd_to_s(matrix[None, :, :], config.z0_ohm)
+        expected[index, 0, 0] = s11[0]
+        expected[index, 1, 0] = s21[0]
+        expected[index, 0, 1] = s12[0]
+        expected[index, 1, 1] = s22[0]
+
+    assert design.network.s == pytest.approx(expected)
+    assert design.network.source == "coupled-line-model"
+    assert design.network.z0_ohm == pytest.approx(75.0)
+    assert design.sweep is sweep
+    assert design.g_values == pytest.approx(g)
+    assert design.warnings == (
+        _IDEAL_WARNING,
+        "No substrate selected; physical width/gap geometry was not "
+        "synthesized.",
+    )
+
+
+def test_summary_rounding_uses_megahertz() -> None:
+    config = CoupledLineBpfConfig(
+        center_hz=1.0015e6,
+        bandwidth_hz=1.0015e6,
+        order=1,
+        family=ApproximationFamily.BUTTERWORTH,
+        ripple_db=None,
+    )
+    design = design_coupled_line_bpf(
+        config, SweepConfig(0.8e6, 1.2e6, 5, SweepSpacing.LINEAR)
+    )
+    assert design.summary() == (
+        "Coupled-line BPF: 1 resonators, 2 sections, 1.002 MHz, "
+        "BW 1.002 MHz, Z0 50 ohm"
+    )
+
+
+def test_substrate_warning_text_and_narrow_geometry() -> None:
+    config = CoupledLineBpfConfig(100e6, 10e6, 3)
+    sweep = SweepConfig(80e6, 120e6, 5, SweepSpacing.LINEAR)
+    fr4 = design_coupled_line_bpf(config, sweep, substrate="FR4")
+    assert fr4.warnings == (_IDEAL_WARNING, _GEOMETRY_WARNING)
+
+    thin = Substrate("Thin", 4.4, 0.1, 0.0001, 0.01, 0.2)
+    narrow = design_coupled_line_bpf(config, sweep, substrate=thin)
+    assert narrow.warnings == (
+        _IDEAL_WARNING,
+        _GEOMETRY_WARNING,
+        "section 1: narrow trace (0.136 mm); verify fabrication",
+        "section 1: narrow gap (0.018 mm); verify fabrication",
+        "section 2: narrow gap (0.086 mm); verify fabrication",
+        "section 3: narrow gap (0.086 mm); verify fabrication",
+        "section 4: narrow trace (0.136 mm); verify fabrication",
+        "section 4: narrow gap (0.018 mm); verify fabrication",
+    )
+
+
+
+def test_narrow_geometry_threshold_is_strict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from filterdesk.services import coupled_line as module
+    from filterdesk.services.coupled_line import CoupledLineSection
+
+    sections = (
+        CoupledLineSection(
+            1,
+            0.1,
+            50.0,
+            40.0,
+            0.1,
+            width_mm=0.15,
+            gap_mm=0.15,
+        ),
+    )
+    monkeypatch.setattr(module, "_sections", lambda *args, **kwargs: sections)
+    design = design_coupled_line_bpf(
+        CoupledLineBpfConfig(100e6, 10e6, 3),
+        SweepConfig(80e6, 120e6, 5, SweepSpacing.LINEAR),
+        substrate="FR4",
+    )
+    assert not any(
+        "narrow trace" in warning or "narrow gap" in warning
+        for warning in design.warnings
+    )

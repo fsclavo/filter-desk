@@ -9,7 +9,12 @@ import numpy as np
 import pytest
 
 from filterdesk.__main__ import main
-from filterdesk.analysis.multiport import MultiportError, SParameters
+from filterdesk.analysis.multiport import (
+    MultiportError,
+    SParameters,
+    _s_to_y,
+    _y_to_s,
+)
 from filterdesk.analysis.types import AnalysisResult
 from filterdesk.io.touchstone import read_sparameters, write_sparameters
 
@@ -463,3 +468,257 @@ def test_parallel_branches_exact_errors() -> None:
             _frequencies(), np.broadcast_to(-np.eye(2), (3, 2, 2))
         )
         SParameters.parallel_branches((short, short))
+
+
+def _multiport_message(call) -> str:  # type: ignore[no-untyped-def]
+    with pytest.raises(MultiportError) as info:
+        call()
+    return str(info.value)
+
+
+def test_sparameters_accepts_small_z0_and_rejects_duplicate_frequencies() -> None:
+    network = SParameters(
+        np.array([1e6, 2e6]), np.zeros((2, 2, 2)), z0_ohm=0.5
+    )
+    assert network.z0_ohm == pytest.approx(0.5)
+    assert _multiport_message(
+        lambda: SParameters(np.array([1e6, 1e6]), np.zeros((2, 2, 2)))
+    ) == "frequencies must be strictly increasing"
+
+
+def test_from_analysis_preserves_complex_values_and_impedance() -> None:
+    frequency = _frequencies()
+    zeros = np.zeros_like(frequency)
+    result = AnalysisResult(
+        frequency_hz=frequency,
+        s11=zeros + 0.1 + 0.2j,
+        s21=zeros + 0.3 - 0.1j,
+        s12=zeros + 0.4 + 0.05j,
+        s22=zeros - 0.2 + 0.3j,
+        zin_ohm=zeros + 75.0,
+        zout_ohm=zeros + 75.0,
+        z0_source_ohm=75.0,
+        z0_load_ohm=75.0,
+        backend="solver",
+    )
+    network = SParameters.from_analysis(result)
+    assert network.z0_ohm == pytest.approx(75.0)
+    assert network.source == "solver"
+    assert network.s[:, 0, 0] == pytest.approx(0.1 + 0.2j)
+    assert network.s[:, 1, 0] == pytest.approx(0.3 - 0.1j)
+    assert network.s[:, 0, 1] == pytest.approx(0.4 + 0.05j)
+    assert network.s[:, 1, 1] == pytest.approx(-0.2 + 0.3j)
+
+
+def test_from_analysis_rejects_close_unequal_impedances_exactly() -> None:
+    frequency = _frequencies()
+    zeros = np.zeros_like(frequency)
+    result = AnalysisResult(
+        frequency_hz=frequency,
+        s11=zeros,
+        s21=zeros,
+        s12=zeros,
+        s22=zeros,
+        zin_ohm=zeros,
+        zout_ohm=zeros,
+        z0_source_ohm=50.0,
+        z0_load_ohm=50.0001,
+        backend="test",
+    )
+    assert _multiport_message(lambda: SParameters.from_analysis(result)) == (
+        "a 2-port AnalysisResult with unequal port impedances cannot be "
+        "represented by one scalar z0"
+    )
+
+
+def test_port_renumber_exact_message() -> None:
+    network = SParameters(np.array([1e6]), np.zeros((1, 3, 3)))
+    assert _multiport_message(lambda: network.port_renumber((1, 2))) == (
+        "order must be a permutation of 1..3: (1, 2)"
+    )
+
+
+def test_terminate_exact_messages_and_finite_load() -> None:
+    one_port = SParameters(np.array([1e6]), np.zeros((1, 1, 1)))
+    assert _multiport_message(
+        lambda: one_port.terminate(1, z_load_ohm=50.0)
+    ) == "cannot terminate the only port of a 1-port"
+
+    branch = _matched_attenuator()
+    assert _multiport_message(
+        lambda: branch.terminate(2, z_load_ohm=complex(np.inf, 1.0))
+    ) == "load reflection coefficient is not finite"
+
+    singular = SParameters(_frequencies(), np.ones((3, 2, 2), dtype=complex))
+    assert _multiport_message(
+        lambda: singular.terminate(2, z_load_ohm=complex(np.inf))
+    ) == "terminated network is singular"
+
+    s = np.zeros((1, 2, 2), dtype=complex)
+    s[0, 0, 0] = 0.1 + 0.05j
+    s[0, 1, 1] = 0.2 - 0.1j
+    s[0, 1, 0] = 0.6 + 0.2j
+    s[0, 0, 1] = 0.5 - 0.3j
+    network = SParameters(np.array([1e6]), s)
+    reduced = network.terminate(2, z_load_ohm=75.0)
+    gamma = (75.0 - 50.0) / (75.0 + 50.0)
+    expected = s[0, 0, 0] + s[0, 0, 1] * s[0, 1, 0] * gamma / (
+        1.0 - s[0, 1, 1] * gamma
+    )
+    assert reduced.s[0, 0, 0] == pytest.approx(expected)
+
+
+def test_connect_exact_errors_metadata_and_schur_complement() -> None:
+    branch = _matched_attenuator()
+    other_frequency = SParameters(_frequencies() * 2.0, branch.s)
+    other_z0 = SParameters(_frequencies(), branch.s, z0_ohm=75.0)
+
+    assert _multiport_message(
+        lambda: SParameters.connect((), ())
+    ) == "connect needs at least one network"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch,), ())
+    ) == "connect needs at least one port pair"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, other_frequency), ((0, 2, 1, 1),))
+    ) == "connected networks must share one frequency grid"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, other_z0), ((0, 2, 1, 1),))
+    ) == "connected networks must use the same reference impedance"
+    close_z0 = SParameters(_frequencies(), branch.s, z0_ohm=50.00005)
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, close_z0), ((0, 2, 1, 1),))
+    ) == "connected networks must use the same reference impedance"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, branch), ((2, 1, 0, 1),))
+    ) == "connection network index is out of range"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, branch), ((0, 3, 1, 1),))
+    ) == "connection port is out of range"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch, branch), ((0, 1, 1, 3),))
+    ) == "connection port is out of range"
+    assert _multiport_message(
+        lambda: SParameters.connect((branch,), ((0, 1, 0, 1),))
+    ) == "cannot connect a port to itself"
+    assert _multiport_message(
+        lambda: SParameters.connect(
+            (branch, branch), ((0, 1, 1, 1), (0, 1, 1, 2))
+        )
+    ) == "each port can participate in only one connection"
+    assert _multiport_message(
+        lambda: SParameters.connect(
+            (branch, branch), ((0, 1, 1, 1), (0, 2, 1, 2))
+        )
+    ) == "connection leaves no external ports"
+
+    open_s = np.zeros((3, 2, 2), dtype=complex)
+    open_s[:, 0, 0] = 1.0
+    open_network = SParameters(_frequencies(), open_s)
+    assert _multiport_message(
+        lambda: SParameters.connect(
+            (open_network, open_network), ((0, 1, 1, 1),)
+        )
+    ) == "connected network is singular"
+
+    s_a = np.zeros((3, 2, 2), dtype=complex)
+    s_a[:, 0, 0] = 0.1 + 0.05j
+    s_a[:, 1, 0] = 0.7 + 0.2j
+    s_a[:, 0, 1] = 0.6 - 0.1j
+    s_a[:, 1, 1] = -0.2 + 0.3j
+    s_b = np.zeros((3, 2, 2), dtype=complex)
+    s_b[:, 0, 0] = -0.05 + 0.1j
+    s_b[:, 1, 0] = 0.4 - 0.2j
+    s_b[:, 0, 1] = 0.3 + 0.15j
+    s_b[:, 1, 1] = 0.25 - 0.05j
+    first = SParameters(_frequencies(), s_a, z0_ohm=75.0, source="a")
+    second = SParameters(_frequencies(), s_b, z0_ohm=75.0, source="b")
+    result = SParameters.connect((first, second), ((0, 2, 1, 1),))
+    assert result.source == "connected"
+    assert result.z0_ohm == pytest.approx(75.0)
+
+    all_s = np.zeros((3, 4, 4), dtype=complex)
+    all_s[:, :2, :2] = s_a
+    all_s[:, 2:, 2:] = s_b
+    external = [0, 3]
+    internal = [1, 2]
+    s_ee = all_s[:, external, :][:, :, external]
+    s_ei = all_s[:, external, :][:, :, internal]
+    s_ie = all_s[:, internal, :][:, :, external]
+    s_ii = all_s[:, internal, :][:, :, internal]
+    connection = np.array([[0.0, 1.0], [1.0, 0.0]], dtype=complex)
+    expected = s_ee + s_ei @ np.linalg.solve(
+        np.eye(2, dtype=complex) - connection @ s_ii,
+        connection @ s_ie,
+    )
+    assert result.s == pytest.approx(expected)
+
+
+def test_cascade_exact_error_and_port_mapping() -> None:
+    branch = _matched_attenuator()
+    three_port = SParameters(_frequencies(), np.zeros((3, 3, 3)))
+    assert _multiport_message(
+        lambda: branch.cascade(three_port)
+    ) == "cascade requires two 2-port networks"
+
+    s_a = np.zeros((3, 2, 2), dtype=complex)
+    s_a[:, 0, 0] = 0.1
+    s_a[:, 1, 0] = 0.6
+    s_a[:, 0, 1] = 0.5
+    s_a[:, 1, 1] = -0.2
+    s_b = np.zeros((3, 2, 2), dtype=complex)
+    s_b[:, 0, 0] = -0.3
+    s_b[:, 1, 0] = 0.4
+    s_b[:, 0, 1] = 0.2
+    s_b[:, 1, 1] = 0.15
+    first = SParameters(_frequencies(), s_a)
+    second = SParameters(_frequencies(), s_b)
+    assert first.cascade(second).s == pytest.approx(
+        SParameters.connect((first, second), ((0, 2, 1, 1),)).s
+    )
+
+
+def test_parallel_branches_exact_errors_and_metadata() -> None:
+    branch = _matched_attenuator()
+    three_port = SParameters(_frequencies(), np.zeros((3, 3, 3)))
+    other_frequency = SParameters(_frequencies() * 2.0, branch.s)
+    other_z0 = SParameters(_frequencies(), branch.s, z0_ohm=75.0)
+
+    assert _multiport_message(
+        lambda: SParameters.parallel_branches((branch,))
+    ) == "parallel combination needs at least two branches"
+    assert _multiport_message(
+        lambda: SParameters.parallel_branches((branch, three_port))
+    ) == "parallel branches must be 2-ports"
+    assert _multiport_message(
+        lambda: SParameters.parallel_branches((branch, other_frequency))
+    ) == "parallel branches must share one frequency grid"
+    assert _multiport_message(
+        lambda: SParameters.parallel_branches((branch, other_z0))
+    ) == "parallel branches must use the same reference impedance"
+    close_z0 = SParameters(_frequencies(), branch.s, z0_ohm=50.00005)
+    assert _multiport_message(
+        lambda: SParameters.parallel_branches((branch, close_z0))
+    ) == "parallel branches must use the same reference impedance"
+    assert _multiport_message(
+        lambda: _s_to_y(np.broadcast_to(-np.eye(2), (3, 2, 2)), 50.0)
+    ) == "S-to-Y conversion is singular"
+    singular_y = np.array(
+        [[[1.0, 0.0], [0.0, -1.0 / 50.0]]], dtype=complex
+    )
+    assert _multiport_message(
+        lambda: _y_to_s(singular_y, 50.0)
+    ) == "Y-to-S conversion is singular"
+
+    s_a = np.zeros((3, 2, 2), dtype=complex)
+    s_a[:, 1, 0] = 0.5
+    s_a[:, 0, 1] = 0.5
+    s_b = np.zeros((3, 2, 2), dtype=complex)
+    s_b[:, 1, 0] = 0.4
+    s_b[:, 0, 1] = 0.4
+    first = SParameters(_frequencies(), s_a, z0_ohm=75.0, source="first")
+    second = SParameters(_frequencies(), s_b, z0_ohm=75.0, source="second")
+    combined = SParameters.parallel_branches((first, second))
+    assert combined.source == "first"
+    assert combined.z0_ohm == pytest.approx(75.0)
+    assert combined.frequency_hz == pytest.approx(first.frequency_hz)

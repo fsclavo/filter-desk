@@ -1069,8 +1069,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 ### P0 — release quality
 
 - [ ] **Mutation-testing baseline:** `mutmut` covers five modules; baseline
-      **1328/1573 killed (84.4 %)**, 0 without tests. Weekly report-only
-      workflow uploads stats; no gate yet. (M)
+      **1516/1573 killed (96.4 %)**, 0 without tests. Weekly report-only
+      workflow uploads stats; no gate yet. Remaining survivors are equivalent
+      dtype/strict-zip/boundary variants. (M)
 
 - [x] **Clean-machine package acceptance:** AppImage and Windows installer run a
       headless `--self-test` on clean CI runners (GUI construction, synthesize,
