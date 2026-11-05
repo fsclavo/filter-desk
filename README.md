@@ -158,8 +158,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   Monte-Carlo tolerance/yield in the GUI and CLI, `.sNp` export, a combined
   system BOM, real-part assignment with MPN/package, datasheet Q(f) curves for
   18 Coilcraft 0603CS values plus optional manufacturer Q(f)/ESR(f) curves
-  (example library and CSV import in `examples/`), and application of part
-  values/parasitics to simple L/C and series/parallel resonators, 2-port
+  (example library and CSV import in `examples/`), model-vs-measurement curve
+  comparison, and application of part values/parasitics to simple L/C and
+  series/parallel resonators, 2-port
   VNA path comparison, standalone HTML/PDF reports with embedded
   plots/schematics, `.fdsys.json` project save/open, a curated real-part catalog
   and bilingual in-app tutorials with ready-to-open example projects under

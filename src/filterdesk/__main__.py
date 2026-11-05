@@ -82,6 +82,7 @@ from filterdesk.components_std import (
     model_from_curve_csv,
     nonidealize_circuit,
     read_component_library,
+    read_curve_csv,
     search_parts,
     snap_circuit,
     write_component_library,
@@ -201,6 +202,7 @@ from filterdesk.services.duplexer import (
     DuplexerError,
     design_duplexer,
 )
+from filterdesk.services.model_comparison import compare_model_curve
 from filterdesk.services.multiplexer import (
     MultiplexerBand,
     MultiplexerConfig,
@@ -1040,6 +1042,24 @@ def build_parser() -> argparse.ArgumentParser:
     component_curve.add_argument("--model-id", default="")
     component_curve.add_argument("--notes", default="")
     component_curve.add_argument("--json", action="store_true")
+
+    component_compare = sub.add_parser(
+        "component-compare",
+        help="Compare a manufacturer Q/ESR model with a measured CSV curve",
+    )
+    component_compare.add_argument(
+        "--library", type=Path, required=True, help="Input component library"
+    )
+    component_compare.add_argument(
+        "--part", required=True, help="MPN with a model curve"
+    )
+    component_compare.add_argument(
+        "--curve", choices=["q", "esr"], required=True
+    )
+    component_compare.add_argument(
+        "--csv", type=Path, required=True, help="Measured two-column CSV"
+    )
+    component_compare.add_argument("--json", action="store_true")
 
     tsinfo = sub.add_parser(
         "touchstone-info",
@@ -4776,6 +4796,80 @@ def main(argv: list[str] | None = None) -> int:
                 f"{target.mpn}; wrote {args.output}",
                 file=sys.stderr,
             )
+        return 0
+
+    if args.command == "component-compare":
+        try:
+            library_parts = read_component_library(args.library)
+            target = next(
+                (part for part in library_parts if part.mpn == args.part),
+                None,
+            )
+            if target is None:
+                raise ComponentLibraryError(f"unknown part {args.part}")
+            if target.model is None:
+                raise ComponentLibraryError(
+                    f"part {target.mpn} has no model curve"
+                )
+            measured_points = read_curve_csv(args.csv)
+            comparison = compare_model_curve(
+                target.model,
+                measured_points,
+                curve=args.curve,
+                part_mpn=target.mpn,
+            )
+        except (ComponentLibraryError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "part": comparison.part_mpn,
+                        "curve": comparison.curve,
+                        "model_id": comparison.model_id,
+                        "model_min_hz": comparison.model_min_hz,
+                        "model_max_hz": comparison.model_max_hz,
+                        "overlap_points": comparison.overlap_points,
+                        "extrapolated_points": comparison.extrapolated_points,
+                        "rms_error": comparison.rms_error,
+                        "max_abs_error": comparison.max_abs_error,
+                        "mean_abs_relative_error_pct": (
+                            comparison.mean_abs_relative_error_pct
+                        ),
+                        "points": [
+                            {
+                                "frequency_hz": point.frequency_hz,
+                                "measured": point.measured,
+                                "predicted": point.predicted,
+                                "error": point.error,
+                                "relative_error_pct": point.relative_error_pct,
+                                "extrapolated": point.extrapolated,
+                            }
+                            for point in comparison.points
+                        ],
+                        "summary": comparison.summary(),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(comparison.summary())
+            print("frequency_hz measured model error rel_pct range")
+            for point in comparison.points:
+                relative = (
+                    "n/a"
+                    if point.relative_error_pct is None
+                    else f"{point.relative_error_pct:.4g}"
+                )
+                location = "outside" if point.extrapolated else "inside"
+                print(
+                    f"{point.frequency_hz:.6g} "
+                    f"{point.measured:.6g} "
+                    f"{point.predicted:.6g} "
+                    f"{point.error:+.6g} "
+                    f"{relative} {location}"
+                )
         return 0
 
     if args.command == "touchstone-info":

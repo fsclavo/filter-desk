@@ -80,6 +80,7 @@ from filterdesk.components_std import (
     list_substrates,
     model_from_curve_csv,
     read_component_library,
+    read_curve_csv,
     search_parts,
     write_component_library,
 )
@@ -161,6 +162,10 @@ from filterdesk.services.inductor_realization import (
     realize_from_toroid_design,
 )
 from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.services.model_comparison import (
+    ModelCurveComparison,
+    compare_model_curve,
+)
 from filterdesk.services.multiplexer import (
     MultiplexerBand,
     MultiplexerConfig,
@@ -1627,12 +1632,16 @@ class ComponentLibraryDialog(QDialog):
         curve_button = buttons.addButton(
             tr("Import Q/ESR curve…"), QDialogButtonBox.ButtonRole.ActionRole
         )
+        compare_button = buttons.addButton(
+            tr("Model vs measurement…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
         copy_button = buttons.addButton(
             tr("Copy MPN"), QDialogButtonBox.ButtonRole.ActionRole
         )
         load_button.clicked.connect(self._load_library)
         export_button.clicked.connect(self._export_library)
         curve_button.clicked.connect(self._import_curve)
+        compare_button.clicked.connect(self._compare_model)
         copy_button.clicked.connect(self._copy_mpn)
         form = QFormLayout(self)
         form.addRow(top)
@@ -1823,12 +1832,160 @@ class ComponentLibraryDialog(QDialog):
             )
         )
 
+    def _compare_model(self) -> None:
+        part = self.current_part()
+        if part is None:
+            QMessageBox.information(
+                self,
+                tr("Component library"),
+                tr("Select a part first."),
+            )
+            return
+        if part.model is None:
+            QMessageBox.information(
+                self,
+                tr("Model vs measurement"),
+                tr("Part has no model curve."),
+            )
+            return
+        curve = "q" if part.kind == "inductor" else "esr"
+        model_points = (
+            part.model.q_points if curve == "q" else part.model.esr_points
+        )
+        if not model_points:
+            QMessageBox.information(
+                self,
+                tr("Model vs measurement"),
+                tr("The model has no {curve} curve.", curve=curve.upper()),
+            )
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            tr("Model vs measurement"),
+            "",
+            "CSV (*.csv);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            measured = read_curve_csv(path)
+            comparison = compare_model_curve(
+                part.model,
+                measured,
+                curve=curve,
+                part_mpn=part.mpn,
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.critical(
+                self, tr("Model vs measurement"), str(exc)
+            )
+            return
+        self._status.setText(comparison.summary())
+        ModelComparisonDialog(comparison, self).exec()
+
     def _copy_mpn(self) -> None:
         part = self.current_part()
         if part is None:
             return
         QApplication.clipboard().setText(part.mpn)
         self._status.setText(tr("Copied {mpn}", mpn=part.mpn))
+
+
+class ModelComparisonDialog(QDialog):
+    """Table and plot for a manufacturer model vs measured curve."""
+
+    def __init__(
+        self,
+        comparison: ModelCurveComparison,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Model vs measurement"))
+        self.setMinimumSize(780, 560)
+        self._comparison = comparison
+        summary = QLabel(comparison.summary())
+        summary.setWordWrap(True)
+        model_range = QLabel(
+            tr(
+                "Model range: {min} – {max}",
+                min=format_engineering(comparison.model_min_hz, "Hz"),
+                max=format_engineering(comparison.model_max_hz, "Hz"),
+            )
+        )
+        model_range.setWordWrap(True)
+
+        self._table = QTableWidget(len(comparison.points), 6)
+        self._table.setHorizontalHeaderLabels(
+            [
+                tr("Frequency"),
+                tr("Measured"),
+                tr("Model"),
+                tr("Error"),
+                tr("Rel. error"),
+                tr("Range"),
+            ]
+        )
+        self._table.verticalHeader().setVisible(False)
+        self._table.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
+        self._table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
+        )
+        self._table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
+        for row, point in enumerate(comparison.points):
+            relative = (
+                "—"
+                if point.relative_error_pct is None
+                else f"{point.relative_error_pct:.3g} %"
+            )
+            cells = (
+                format_engineering(point.frequency_hz, "Hz"),
+                f"{point.measured:.6g}",
+                f"{point.predicted:.6g}",
+                f"{point.error:+.6g}",
+                relative,
+                tr("outside") if point.extrapolated else tr("inside"),
+            )
+            for column, value in enumerate(cells):
+                self._table.setItem(row, column, QTableWidgetItem(value))
+
+        self._plot = pg.PlotWidget(title=tr("Model vs measurement"))
+        self._plot.setLogMode(x=True, y=False)
+        self._plot.showGrid(x=True, y=True, alpha=0.3)
+        self._plot.setLabel("bottom", tr("Frequency"), units="Hz")
+        self._plot.setLabel(
+            "left", "Q" if comparison.curve == "q" else "ESR (Ω)"
+        )
+        self._plot.addLegend()
+        frequencies = [point.frequency_hz for point in comparison.points]
+        self._plot.plot(
+            frequencies,
+            [point.measured for point in comparison.points],
+            pen=None,
+            symbol="o",
+            symbolSize=7,
+            name=tr("Measured"),
+        )
+        self._plot.plot(
+            frequencies,
+            [point.predicted for point in comparison.points],
+            pen=pg.mkPen("#1f77b4", width=2),
+            symbol="x",
+            symbolSize=7,
+            name=tr("Model"),
+        )
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.rejected.connect(self.reject)
+        layout = QVBoxLayout(self)
+        layout.addWidget(summary)
+        layout.addWidget(model_range)
+        layout.addWidget(self._table, 1)
+        layout.addWidget(self._plot, 2)
+        layout.addWidget(buttons)
 
 
 class SystemMonteCarloDialog(QDialog):

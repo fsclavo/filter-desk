@@ -1617,6 +1617,73 @@ def test_component_library_dialog_imports_q_curve(
     assert app is not None
 
 
+def test_component_library_dialog_compares_model_to_measurement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import widgets
+
+    app = QApplication.instance() or QApplication([])
+    path = tmp_path / "measured_q.csv"
+    path.write_text("250M,30\n900M,70\n", encoding="utf-8")
+    dialog = widgets.ComponentLibraryDialog()
+    dialog._kind.setCurrentIndex(2)  # inductor
+    dialog._search.setText("0603CS-10NXJRW")
+    part = dialog.current_part()
+    assert part is not None
+    assert part.mpn == "0603CS-10NXJRW"
+    monkeypatch.setattr(
+        widgets.QFileDialog,
+        "getOpenFileName",
+        lambda *args, **kwargs: (str(path), ""),
+    )
+    captured: dict[str, object] = {}
+
+    class FakeDialog:
+        def __init__(self, comparison, parent=None) -> None:
+            captured["comparison"] = comparison
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr(widgets, "ModelComparisonDialog", FakeDialog)
+    dialog._compare_model()
+    comparison = captured["comparison"]
+    assert comparison.part_mpn == "0603CS-10NXJRW"  # type: ignore[union-attr]
+    assert len(comparison.points) == 2  # type: ignore[union-attr]
+    assert comparison.overlap_points == 2  # type: ignore[union-attr]
+    assert "Q model vs measurement" in dialog._status.text()
+    dialog.close()
+    assert app is not None
+
+
+def test_model_comparison_dialog_renders() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.components_std import ManufacturerModel, ModelPoint
+    from filterdesk.gui.widgets import ModelComparisonDialog
+    from filterdesk.services.model_comparison import compare_model_curve
+
+    app = QApplication.instance() or QApplication([])
+    model = ManufacturerModel(
+        model_id="test",
+        q_points=(ModelPoint(1e6, 100.0), ModelPoint(10e6, 50.0)),
+    )
+    comparison = compare_model_curve(
+        model,
+        (ModelPoint(1e6, 90.0), ModelPoint(10e6, 60.0)),
+        curve="q",
+        part_mpn="TEST",
+    )
+    dialog = ModelComparisonDialog(comparison)
+    assert dialog._table.rowCount() == 2
+    assert dialog._table.columnCount() == 6
+    assert "TEST Q model vs measurement" in dialog._comparison.summary()
+    dialog.close()
+    assert app is not None
+
+
 def test_system_sensitivity_dialog_runs() -> None:
     from PySide6.QtWidgets import QApplication
 

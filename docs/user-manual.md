@@ -1296,6 +1296,24 @@ A catalog part can include an optional frequency-dependent model:
 
   A template is in
   [`examples/component_curve_template.csv`](../examples/component_curve_template.csv).
+- **Model vs measurement…** compares the selected part's Q or ESR model against
+  a measured two-column CSV. The dialog shows measured/model values, absolute
+  and relative error, marks points outside the model's frequency range, and
+  reports RMS, maximum absolute error and mean relative error over the
+  overlapping range. The same comparison is available from the CLI:
+
+  ```bash
+  filterdesk component-compare \
+    --library components.json \
+    --part 0603CS-10NXJRW \
+    --curve q \
+    --csv measured_q.csv \
+    --json
+  ```
+
+  This is a curve-level comparison, not a full fixture de-embedding or a
+  component-level VNA calibration workflow. Use a calibrated measurement and
+  keep the fixture/reference-plane metadata with the data.
 
 
 ### Microstrip / distributed calculators

@@ -38,6 +38,10 @@ Comments start with `#` or `!`, the header row is optional, and SI suffixes are
 accepted (`1M`, `100m`). The curve is attached to the selected part as Q data
 for an inductor or ESR data for a capacitor.
 
+The same CSV format is accepted by **Model vs measurement…** and
+`filterdesk component-compare`, which compare measured points with the selected
+part's Q/ESR model and report RMS, maximum and relative error.
+
 ## Tutorial projects
 
 The ready-to-open tutorial projects live in the packaged application assets:

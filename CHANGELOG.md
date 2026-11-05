@@ -3,6 +3,25 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.81.0 — 2026-11-05
+
+### Added
+
+- **Component-level model vs measurement comparison.** Import a measured Q or
+  ESR curve from CSV and compare it with the selected part's manufacturer
+  model, with a table, plot, RMS/maximum/mean-relative error and explicit
+  outside-model-range flags.
+- **Tools → Component library… → Model vs measurement…** and
+  `filterdesk component-compare` with optional JSON output.
+- Regression tests for the comparison metrics, GUI dialog and CLI.
+
+### Limitations
+
+- This is a curve-level comparison, not fixture de-embedding or a calibrated
+  component-level VNA workflow.
+- The model is interpolated in log-log space and clamped outside its range;
+  extrapolated points are excluded from the error metrics.
+
 ## v0.80.1 — 2026-11-05
 
 ### Added
