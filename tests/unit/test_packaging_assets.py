@@ -73,3 +73,12 @@ def test_license_collector_present() -> None:
     script = (ROOT / "packaging" / "collect_qt_licenses.py").read_text("utf-8")
     ast.parse(script)
     assert (ROOT / "packaging" / "NOTICE-third-party.md").is_file()
+
+
+def test_deb_build_script_cleans_stale_packages() -> None:
+    script = (ROOT / "packaging" / "debian" / "build_deb.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "CLEAN_OLD_DEBS" in script
+    assert 'FilterDesk-*-${ARCH}.deb' in script
+    assert "-delete" in script

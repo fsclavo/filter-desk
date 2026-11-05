@@ -30,8 +30,19 @@ if [ ! -x "$BUNDLE/FilterDesk" ]; then
   exit 1
 fi
 
-rm -rf "$STAGE"
 mkdir -p "$(dirname "$OUT")"
+if [ "${CLEAN_OLD_DEBS:-1}" = "1" ]; then
+  removed="$(
+    find "$(dirname "$OUT")" -maxdepth 1 -type f \
+      -name "FilterDesk-*-${ARCH}.deb" -print -delete
+  )"
+  if [ -n "$removed" ]; then
+    echo "Removed stale Debian package(s):" >&2
+    printf '%s\n' "$removed" >&2
+  fi
+fi
+
+rm -rf "$STAGE"
 mkdir -p \
   "$STAGE/DEBIAN" \
   "$STAGE/opt/filterdesk" \

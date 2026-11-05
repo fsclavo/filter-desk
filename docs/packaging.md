@@ -118,15 +118,15 @@ and launches the GUI.
 
 `packaging/debian/build_deb.sh` turns the same onedir bundle into
 `dist/FilterDesk-<ver>-amd64.deb`. It installs the payload under
-`/opt/filterdesk`, adds `/usr/bin/filterdesk`, a desktop entry and the 256 px
-icon, and copies the Apache-2.0 copyright plus third-party notice into
-`/usr/share/doc/filterdesk/`.
+`/opt/filterdesk`, adds `/usr/bin/filterdesk`, the AppStream desktop entry and
+metadata, the 256 px icon, and copies the Apache-2.0 copyright plus third-party
+notice into `/usr/share/doc/filterdesk/`.
 
 Build it after the PyInstaller and license steps:
 
 ```bash
 bash packaging/debian/build_deb.sh
-sudo apt install ./dist/FilterDesk-0.79.1-amd64.deb
+sudo apt install ./dist/FilterDesk-0.81.1-amd64.deb
 filterdesk --self-test
 sudo apt remove filterdesk
 ```
@@ -139,6 +139,11 @@ headless `--self-test`, removal and leftover-file check.
 The temporary `/opt/filterdesk` staging tree is removed automatically after
 `dpkg-deb`; set `KEEP_DEB_STAGE=1` only for debugging. The final `.deb` lives in
 `dist/`, which is ignored by git.
+
+Each local build removes stale `FilterDesk-*-<arch>.deb` files in the output
+directory before writing the new package, so rebuilding a different version does
+not leave abandoned `.deb` files behind. Set `CLEAN_OLD_DEBS=0` to keep them for
+comparison.
 
 ## Package acceptance
 

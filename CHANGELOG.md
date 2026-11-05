@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Fixed
+
+- Local Debian builds now remove stale `FilterDesk-*-<arch>.deb` files from the
+  output directory before writing the new package. Set `CLEAN_OLD_DEBS=0` to
+  keep old packages for comparison.
+
 ## v0.81.1 — 2026-11-05
 
 ### Added
