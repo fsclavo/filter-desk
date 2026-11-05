@@ -114,8 +114,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Add CSV parser validation, example template and documentation.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__`/`uv.lock` to 0.80.0.
 - [x] CHANGELOG/manual/README/backlog updated.
-- [ ] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
-- [ ] Release URL recorded above.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
 
 ---
 
