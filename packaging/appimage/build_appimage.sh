@@ -10,7 +10,11 @@ cd "$ROOT"
 
 APPDIR="build/AppDir"
 rm -rf "$APPDIR"
-mkdir -p "$APPDIR/usr/bin"
+mkdir -p \
+  "$APPDIR/usr/bin" \
+  "$APPDIR/usr/share/applications" \
+  "$APPDIR/usr/share/icons/hicolor/256x256/apps" \
+  "$APPDIR/usr/share/metainfo"
 cp -r dist/FilterDesk/* "$APPDIR/usr/bin/"
 
 cat > "$APPDIR/AppRun" <<'EOF'
@@ -20,8 +24,16 @@ exec "$HERE/usr/bin/FilterDesk" "$@"
 EOF
 chmod +x "$APPDIR/AppRun"
 
-cp packaging/appimage/filterdesk.desktop "$APPDIR/filterdesk.desktop"
-cp packaging/appimage/filterdesk.png "$APPDIR/filterdesk.png"
+cp packaging/appimage/io.github.fsclavo.filterdesk.desktop \
+  "$APPDIR/usr/share/applications/io.github.fsclavo.filterdesk.desktop"
+cp packaging/appimage/filterdesk.png \
+  "$APPDIR/usr/share/icons/hicolor/256x256/apps/filterdesk.png"
+cp packaging/linux/io.github.fsclavo.filterdesk.appdata.xml \
+  "$APPDIR/usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml"
+ln -s usr/share/applications/io.github.fsclavo.filterdesk.desktop \
+  "$APPDIR/io.github.fsclavo.filterdesk.desktop"
+ln -s usr/share/icons/hicolor/256x256/apps/filterdesk.png \
+  "$APPDIR/filterdesk.png"
 
 TOOL=/tmp/appimagetool-x86_64.AppImage
 if [ ! -x "$TOOL" ]; then

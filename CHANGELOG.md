@@ -3,6 +3,23 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.81.1 — 2026-11-05
+
+### Added
+
+- **AppStream metadata** for the Linux AppImage and `.deb`, with application
+  name, summary, description, homepage, bug tracker, categories, keywords,
+  license, developer and release version.
+- Release-workflow validation with `appstreamcli` and
+  `desktop-file-validate`.
+
+### Changed
+
+- Linux desktop entry renamed to the reverse-DNS ID
+  `io.github.fsclavo.filterdesk.desktop` so it matches the AppStream component.
+- AppImage AppDir now installs the desktop file, icon and metainfo in their
+  standard `usr/share/...` locations, with root-level compatibility links.
+
 ## v0.81.0 — 2026-11-05
 
 ### Added

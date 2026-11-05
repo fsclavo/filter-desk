@@ -19,10 +19,12 @@ apt-get install -y --no-install-recommends /tmp/filterdesk.deb
 
 test -x /opt/filterdesk/FilterDesk
 test -L /usr/bin/filterdesk
-test -f /usr/share/applications/filterdesk.desktop
+test -f /usr/share/applications/io.github.fsclavo.filterdesk.desktop
 test -f /usr/share/icons/hicolor/256x256/apps/filterdesk.png
+test -f /usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml
 test -f /usr/share/doc/filterdesk/copyright
-grep -q "^Exec=filterdesk$" /usr/share/applications/filterdesk.desktop
+grep -q "^Exec=filterdesk$" \
+  /usr/share/applications/io.github.fsclavo.filterdesk.desktop
 
 clean="$(mktemp -d)"
 env HOME="$clean" \

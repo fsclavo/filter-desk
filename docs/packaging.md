@@ -65,6 +65,24 @@ executable. The NOTICE states the LGPL obligations and the written offer for Qt
 source. Because Qt is dynamically linked and left replaceable, distributing under
 LGPL-3.0 is compliant.
 
+## AppStream metadata
+
+The Linux packages ship AppStream metadata from
+`packaging/linux/io.github.fsclavo.filterdesk.appdata.xml`:
+
+- Component ID: `io.github.fsclavo.filterdesk.desktop`.
+- Desktop entry: `packaging/appimage/io.github.fsclavo.filterdesk.desktop`.
+- Installed path: `/usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml`.
+- AppImage path: `usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml`
+  inside the AppDir.
+
+The release workflow validates the desktop entry with
+`desktop-file-validate` and the metadata with
+`appstreamcli validate --no-net` before building the AppImage and `.deb`.
+`tests/unit/test_packaging_assets.py` also checks that the `<release>` version
+matches `filterdesk.__version__`; update the version/date in the metadata when
+cutting a release.
+
 ## Releases (GitHub Actions)
 
 `.github/workflows/release.yml` runs on **tags `v*`** (and `workflow_dispatch`):

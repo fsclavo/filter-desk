@@ -38,16 +38,19 @@ mkdir -p \
   "$STAGE/usr/bin" \
   "$STAGE/usr/share/applications" \
   "$STAGE/usr/share/icons/hicolor/256x256/apps" \
+  "$STAGE/usr/share/metainfo" \
   "$STAGE/usr/share/doc/filterdesk"
 
 cp -a "$BUNDLE/." "$STAGE/opt/filterdesk/"
 ln -s /opt/filterdesk/FilterDesk "$STAGE/usr/bin/filterdesk"
 
 sed 's|^Exec=FilterDesk$|Exec=filterdesk|' \
-  packaging/appimage/filterdesk.desktop \
-  > "$STAGE/usr/share/applications/filterdesk.desktop"
+  packaging/appimage/io.github.fsclavo.filterdesk.desktop \
+  > "$STAGE/usr/share/applications/io.github.fsclavo.filterdesk.desktop"
 cp packaging/appimage/filterdesk.png \
   "$STAGE/usr/share/icons/hicolor/256x256/apps/filterdesk.png"
+cp packaging/linux/io.github.fsclavo.filterdesk.appdata.xml \
+  "$STAGE/usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml"
 cp LICENSE "$STAGE/usr/share/doc/filterdesk/copyright"
 cp packaging/NOTICE-third-party.md "$STAGE/usr/share/doc/filterdesk/NOTICE-third-party.md"
 
@@ -71,8 +74,9 @@ EOF
 find "$STAGE" -type d -exec chmod 0755 {} +
 chmod 0644 \
   "$STAGE/DEBIAN/control" \
-  "$STAGE/usr/share/applications/filterdesk.desktop" \
+  "$STAGE/usr/share/applications/io.github.fsclavo.filterdesk.desktop" \
   "$STAGE/usr/share/icons/hicolor/256x256/apps/filterdesk.png" \
+  "$STAGE/usr/share/metainfo/io.github.fsclavo.filterdesk.appdata.xml" \
   "$STAGE/usr/share/doc/filterdesk/copyright" \
   "$STAGE/usr/share/doc/filterdesk/NOTICE-third-party.md"
 chmod 0755 "$STAGE/DEBIAN"
