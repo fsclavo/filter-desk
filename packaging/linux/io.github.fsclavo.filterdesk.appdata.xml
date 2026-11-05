@@ -12,10 +12,7 @@
   <launchable type="desktop-id">io.github.fsclavo.filterdesk.desktop</launchable>
   <url type="homepage">https://github.com/fsclavo/filter-desk</url>
   <url type="bugtracker">https://github.com/fsclavo/filter-desk/issues</url>
-  <url type="vcs-browser">https://github.com/fsclavo/filter-desk</url>
-  <developer id="io.github.fsclavo">
-    <name>FilterDesk contributors</name>
-  </developer>
+  <developer_name>FilterDesk contributors</developer_name>
   <categories>
     <category>Science</category>
     <category>Engineering</category>
