@@ -231,3 +231,91 @@ def test_apply_assigned_parts_validation_and_warnings() -> None:
         apply_assigned_parts(design, {"bad-key": _part("inductor", 1e-6)})
     with pytest.raises(PartApplicationError, match="no assigned parts could"):
         apply_assigned_parts(design, {"Nope:L1": _part("inductor", 1e-6)})
+
+
+def test_apply_part_simple_values_and_parasitics() -> None:
+    from filterdesk.domain.circuit import (
+        Circuit,
+        IdealCapacitor,
+        IdealInductor,
+        IdealResistor,
+        Port,
+    )
+    from filterdesk.services.part_application import _apply_part
+
+    ports = (Port("P1", "in", 50.0), Port("P2", "out", 50.0))
+    circuit = Circuit(
+        [
+            IdealResistor("R1", 50.0, "in", "n1", ElementRole.SERIES),
+            IdealInductor("L2", 1e-6, "n1", "n2", ElementRole.SERIES),
+            IdealCapacitor("C3", 1e-12, "n2", "out", ElementRole.SERIES),
+        ],
+        ports[0],
+        ports[1],
+    )
+    updated, _ = _apply_part(
+        circuit, "L2", _part("inductor", 2e-6, dcr_ohm=0.5, srf_hz=1e9)
+    )
+    inductor = next(el for el in updated.elements if el.id == "L2")
+    assert isinstance(inductor, NonIdealInductor)
+    assert inductor.value_h == pytest.approx(2e-6)
+    assert inductor.series_resistance_ohm == pytest.approx(0.5)
+    assert inductor.srf_hz == pytest.approx(1e9)
+
+    q_updated, _ = _apply_part(circuit, "L2", _part("inductor", 2e-6, q_min=100.0))
+    q_inductor = next(el for el in q_updated.elements if el.id == "L2")
+    assert isinstance(q_inductor, NonIdealInductor)
+    assert q_inductor.q_ref == pytest.approx(100.0)
+    assert q_inductor.q_frequency_hz == pytest.approx(250e6)
+
+    cap_updated, _ = _apply_part(
+        circuit, "C3", _part("capacitor", 2e-12, esr_ohm=0.2, esl_h=1e-10)
+    )
+    capacitor = next(el for el in cap_updated.elements if el.id == "C3")
+    assert capacitor.value_f == pytest.approx(2e-12)
+    assert capacitor.esr_ohm == pytest.approx(0.2)
+    assert capacitor.esl_h == pytest.approx(1e-10)
+
+
+def test_composite_manufacturer_curve_warning() -> None:
+    from filterdesk.domain.circuit import (
+        Circuit,
+        IdealSeriesLC,
+        Port,
+    )
+    from filterdesk.services.part_application import _apply_part
+
+    ports = (Port("P1", "in", 50.0), Port("P2", "out", 50.0))
+    circuit = Circuit(
+        [IdealSeriesLC("X1", 1e-6, 1e-12, "in", "out", ElementRole.SERIES)],
+        ports[0],
+        ports[1],
+    )
+    modelled = _part(
+        "inductor",
+        2e-6,
+        model=ManufacturerModel(
+            q_points=(ModelPoint(1e6, 100.0),),
+        ),
+    )
+    _, warnings = _apply_part(circuit, "X1.L", modelled)
+    assert any(
+        "manufacturer Q/ESR curve not applied" in warning
+        for warning in warnings
+    )
+
+
+def test_partial_assignment_reports_warnings() -> None:
+    design = _design()
+    assigned = assign_nearest_parts(
+        [("Low", design.low_circuit), ("High", design.high_circuit)],
+        STARTER_PARTS,
+        max_delta_pct=100.0,
+    )
+    key, part = next(iter(assigned.assignments.items()))
+    result = apply_assigned_parts(
+        design,
+        {key: part, "bad-key": part},
+    )
+    assert result.applied == (key,)
+    assert any("invalid assignment key" in warning for warning in result.warnings)

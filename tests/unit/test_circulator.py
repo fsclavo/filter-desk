@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from filterdesk.__main__ import main
@@ -183,3 +184,26 @@ def test_circulator_and_isolator_summary_exact() -> None:
         "Isolator: IL 0.50 dB, isolation 30.00 dB, RL 20.00 dB, "
         "Z0 50 ohm"
     )
+
+
+def test_finite_circulator_matrix_all_paths_and_dtype() -> None:
+    config = CirculatorConfig(
+        insertion_loss_db=1.0,
+        isolation_db=20.0,
+        return_loss_db=10.0,
+    )
+    design = design_circulator(config, _sweep())
+    s = design.network.s
+    through = 10.0 ** (-1.0 / 20.0)
+    isolated = 10.0 ** (-20.0 / 20.0)
+    reflection = 10.0 ** (-10.0 / 20.0)
+    assert s.dtype == np.complex128
+    assert s[:, 1, 0] == pytest.approx(through)
+    assert s[:, 2, 1] == pytest.approx(through)
+    assert s[:, 0, 2] == pytest.approx(through)
+    assert s[:, 0, 1] == pytest.approx(isolated)
+    assert s[:, 1, 2] == pytest.approx(isolated)
+    assert s[:, 2, 0] == pytest.approx(isolated)
+    assert s[:, 0, 0] == pytest.approx(reflection)
+    assert s[:, 1, 1] == pytest.approx(reflection)
+    assert s[:, 2, 2] == pytest.approx(reflection)

@@ -21,6 +21,7 @@ from filterdesk.io.touchstone import read_sparameters
 from filterdesk.services.coupled_line import (
     CoupledLineBpfConfig,
     CoupledLineError,
+    _abcd_to_s,
     design_coupled_line_bpf,
 )
 
@@ -334,3 +335,39 @@ def test_design_summary_and_meta() -> None:
     )
     assert no_substrate.summary().endswith("Z0 50 ohm")
     assert "No substrate selected" in no_substrate.warnings[1]
+
+
+def test_abcd_to_s_identity_series_and_singular() -> None:
+    identity = np.asarray([[[1.0, 0.0], [0.0, 1.0]]], dtype=complex)
+    s11, s21, s12, s22 = _abcd_to_s(identity, 50.0)
+    assert s11[0] == pytest.approx(0.0)
+    assert s21[0] == pytest.approx(1.0)
+    assert s12[0] == pytest.approx(1.0)
+    assert s22[0] == pytest.approx(0.0)
+
+    z = 10.0
+    series = np.asarray([[[1.0, z], [0.0, 1.0]]], dtype=complex)
+    s11, s21, s12, s22 = _abcd_to_s(series, 50.0)
+    assert s11[0] == pytest.approx(z / (2.0 * 50.0 + z))
+    assert s21[0] == pytest.approx(2.0 * 50.0 / (2.0 * 50.0 + z))
+    assert s12[0] == pytest.approx(s21[0])
+    assert s22[0] == pytest.approx(s11[0])
+
+    with pytest.raises(CoupledLineError, match="coupled-line network is singular"):
+        _abcd_to_s(np.zeros((1, 2, 2), dtype=complex), 50.0)
+
+
+def test_design_meta_exact_values() -> None:
+    design = design_coupled_line_bpf(
+        CoupledLineBpfConfig(100e6, 10e6, 3), _sweep(), substrate="FR4"
+    )
+    assert design.meta["fbw"] == pytest.approx(0.1)
+    assert design.meta["resonator_capacitance_f"] == pytest.approx(
+        1.0 / (4.0 * 50.0 * 100e6)
+    )
+    capacitance = design.meta["resonator_capacitance_f"]
+    assert design.meta["resonator_inductance_h"] == pytest.approx(
+        1.0 / ((2.0 * np.pi * 100e6) ** 2 * capacitance)
+    )
+    assert design.meta["model"] == "parallel-coupled half-wave resonator J-inverter"
+    assert design.meta["confidence"] == "experimental"
