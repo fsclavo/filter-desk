@@ -138,3 +138,48 @@ def test_circulator_dialog_design_and_export(
     assert output.is_file()
     dialog.close()
     assert app is not None
+
+
+def test_circulator_config_messages_and_boundaries() -> None:
+    valid = CirculatorConfig(
+        insertion_loss_db=0.5,
+        isolation_db=0.5,
+        return_loss_db=0.5,
+        z0_ohm=0.5,
+    )
+    assert valid.z0_ohm == pytest.approx(0.5)
+
+    def message(call) -> str:  # type: ignore[no-untyped-def]
+        with pytest.raises(CirculatorError) as info:
+            call()
+        return str(info.value)
+
+    assert message(lambda: CirculatorConfig(insertion_loss_db=-1.0)) == (
+        "insertion_loss_db must be finite and >= 0"
+    )
+    assert message(lambda: CirculatorConfig(isolation_db=-1.0)) == (
+        "isolation_db must be finite and >= 0"
+    )
+    assert message(lambda: CirculatorConfig(return_loss_db=-1.0)) == (
+        "return_loss_db must be finite and >= 0"
+    )
+    assert message(lambda: CirculatorConfig(z0_ohm=0.0)) == (
+        "z0_ohm must be > 0"
+    )
+
+
+def test_circulator_and_isolator_summary_exact() -> None:
+    config = CirculatorConfig(
+        insertion_loss_db=0.5,
+        isolation_db=30.0,
+        return_loss_db=20.0,
+        z0_ohm=50.0,
+    )
+    assert design_circulator(config, _sweep()).summary() == (
+        "Circulator: IL 0.50 dB, isolation 30.00 dB, RL 20.00 dB, "
+        "Z0 50 ohm"
+    )
+    assert design_isolator(config, _sweep()).summary() == (
+        "Isolator: IL 0.50 dB, isolation 30.00 dB, RL 20.00 dB, "
+        "Z0 50 ohm"
+    )

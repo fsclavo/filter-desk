@@ -1068,9 +1068,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ### P0 — release quality
 
-- [ ] **Mutation-testing baseline:** `mutmut` covers `manufacturer_model.py`,
-      `coupled_line.py` and `circulator.py`; expanded baseline **503/705 killed
-      (71.3 %)**. Weekly report-only workflow uploads stats; no gate yet. (M)
+- [ ] **Mutation-testing baseline:** `mutmut` covers five modules; baseline
+      **1089/1573 killed (69.2 %)**, 12 without tests. Weekly report-only
+      workflow uploads stats; no gate yet. (M)
 
 - [x] **Clean-machine package acceptance:** AppImage and Windows installer run a
       headless `--self-test` on clean CI runners (GUI construction, synthesize,

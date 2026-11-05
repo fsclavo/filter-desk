@@ -262,3 +262,75 @@ def test_coupled_line_dialog_design_and_export(
     assert "TOP_COPPER" in dxf_output.read_text(encoding="utf-8")
     dialog.close()
     assert app is not None
+
+
+def test_config_messages_and_boundaries() -> None:
+    valid = CoupledLineBpfConfig(
+        center_hz=0.5,
+        bandwidth_hz=0.1,
+        order=1,
+        family=ApproximationFamily.BUTTERWORTH,
+        ripple_db=None,
+        z0_ohm=0.5,
+    )
+    assert valid.center_hz == pytest.approx(0.5)
+
+    def message(call) -> str:  # type: ignore[no-untyped-def]
+        with pytest.raises(CoupledLineError) as info:
+            call()
+        return str(info.value)
+
+    assert message(lambda: CoupledLineBpfConfig(0.0, 1e6)) == (
+        "center_hz must be > 0"
+    )
+    assert message(lambda: CoupledLineBpfConfig(100e6, 0.0)) == (
+        "bandwidth_hz must be > 0"
+    )
+    assert message(lambda: CoupledLineBpfConfig(100e6, 200e6)) == (
+        "bandwidth must be below 2*center"
+    )
+    assert message(
+        lambda: CoupledLineBpfConfig(
+            100e6, 10e6, order=0, family=ApproximationFamily.BUTTERWORTH
+        )
+    ) == "order must be in 1..9"
+    assert message(
+        lambda: CoupledLineBpfConfig(
+            100e6, 10e6, order=10, family=ApproximationFamily.BUTTERWORTH
+        )
+    ) == "order must be in 1..9"
+    assert message(
+        lambda: CoupledLineBpfConfig(
+            100e6, 10e6, family=ApproximationFamily.ELLIPTIC
+        )
+    ) == "coupled-line synthesis supports Butterworth and Chebyshev-I"
+    assert message(
+        lambda: CoupledLineBpfConfig(100e6, 10e6, ripple_db=None)
+    ) == "Chebyshev-I needs ripple_db > 0"
+    assert message(
+        lambda: CoupledLineBpfConfig(100e6, 10e6, order=4)
+    ) == (
+        "Chebyshev-I coupled-line synthesis requires an odd order "
+        "for equal 50-ohm terminations"
+    )
+    assert message(
+        lambda: CoupledLineBpfConfig(100e6, 10e6, z0_ohm=0.0)
+    ) == "z0_ohm must be > 0"
+
+
+def test_design_summary_and_meta() -> None:
+    design = design_coupled_line_bpf(
+        CoupledLineBpfConfig(100e6, 10e6, 3), _sweep(), substrate="FR4"
+    )
+    assert design.summary() == (
+        "Coupled-line BPF: 3 resonators, 4 sections, 100 MHz, "
+        "BW 10 MHz, Z0 50 ohm, substrate FR4"
+    )
+    assert design.meta["fbw"] == pytest.approx(0.1)
+    assert design.meta["resonator_capacitance_f"] > 0
+    assert design.meta["resonator_inductance_h"] > 0
+    no_substrate = design_coupled_line_bpf(
+        CoupledLineBpfConfig(100e6, 10e6, 3), _sweep()
+    )
+    assert no_substrate.summary().endswith("Z0 50 ohm")
+    assert "No substrate selected" in no_substrate.warnings[1]

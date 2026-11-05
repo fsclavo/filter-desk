@@ -62,6 +62,7 @@ jobs:
               handle.write("## Mutation testing (report-only)\n\n")
               handle.write(f"- Killed: **{killed}**\n")
               handle.write(f"- Survived: **{survived}**\n")
+              handle.write(f"- No associated tests: **{int(data.get('no_tests', 0))}**\n")
               handle.write(f"- Total: **{total}**\n")
               handle.write(f"- Mutation score: **{score:.1f} %**\n")
           PY

@@ -11,6 +11,8 @@ The baseline targets:
 - `src/filterdesk/components_std/manufacturer_model.py`
 - `src/filterdesk/services/coupled_line.py`
 - `src/filterdesk/services/circulator.py`
+- `src/filterdesk/analysis/multiport.py`
+- `src/filterdesk/services/part_application.py`
 
 and runs the matching unit-test files.
 
@@ -36,15 +38,27 @@ Initial `manufacturer_model.py` run: 104/199 killed (52.3 %). After targeted
 validation and exact error-message tests: **187/199 killed (94.0 %)**; the 12
 remaining mutants are equivalent `_interp_log` boundary/strict-zip variants.
 
-Expanded scope baseline:
+First expanded baseline (three modules):
 
 - 705 mutants generated.
 - 503 killed.
 - 202 survived.
 - Mutation score: **71.3 %**.
 
-Survivor groups: `coupled_line` 159, `circulator` 31, `manufacturer_model` 12.
-This is a report-only baseline; no threshold is enforced.
+After targeted `coupled_line`/`circulator` validation, those three modules reached
+**568/705 killed (80.6 %)**.
+
+Full configured scope baseline:
+
+- 1573 mutants generated.
+- 1089 killed.
+- 472 survived.
+- 12 without associated tests.
+- Mutation score: **69.2 %**.
+
+Survivor groups: `multiport` 189, `part_application` 158, `coupled_line` 105,
+`circulator` 20, `manufacturer_model` 12. This is a report-only baseline; no
+threshold is enforced.
 
 ## Weekly report-only workflow
 
@@ -53,7 +67,7 @@ started manually. It:
 
 - runs the configured mutation scope;
 - uploads `mutants/mutmut-cicd-stats.json` as the `mutation-stats` artifact;
-- writes killed/survived/total/score to the GitHub job summary;
+- writes killed/survived/no-tests/total/score to the GitHub job summary;
 - does **not** enforce a score threshold yet.
 
 ## Next targets
