@@ -10,9 +10,9 @@ count or release changes.
 [v0.81.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.81.0) ·
 **Next:** v0.82.0 planning.
 
-**Verification:** local suite **1330 passed**, 4 skipped (ngspice unavailable).
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/42083772389
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/42085292144
+**Verification:** local suite **1331 passed**, 4 skipped (ngspice unavailable).
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/42095101515
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/42096188714
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -115,8 +115,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       `desktop-file-validate`.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__`/`uv.lock` to 0.81.1.
 - [x] CHANGELOG/packaging/backlog updated.
-- [ ] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
-- [ ] Release URL recorded above.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
 
 ---
 
