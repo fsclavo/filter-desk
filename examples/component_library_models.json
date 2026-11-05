@@ -103,6 +103,86 @@
       "model": null
     },
     {
+      "id": "coilcraft-0603cs-3n9xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-3N9XJRW",
+      "kind": "inductor",
+      "value_si": 3.9e-09,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.08,
+      "srf_hz": 6900000000.0,
+      "q_min": 22,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 22 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-3n9xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            22
+          ],
+          [
+            900000000.0,
+            49
+          ],
+          [
+            1700000000.0,
+            67
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-6n8xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-6N8XJRW",
+      "kind": "inductor",
+      "value_si": 6.8000000000000005e-09,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.11,
+      "srf_hz": 5800000000.0,
+      "q_min": 27,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 27 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-6n8xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            27
+          ],
+          [
+            900000000.0,
+            60
+          ],
+          [
+            1700000000.0,
+            81
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
       "id": "coilcraft-0603cs-10nxjrw",
       "manufacturer": "Coilcraft",
       "mpn": "0603CS-10NXJRW",
@@ -115,28 +195,108 @@
       "current_a": 0.7,
       "dcr_ohm": 0.13,
       "srf_hz": 4800000000.0,
-      "q_min": 31.0,
+      "q_min": 31,
       "esr_ohm": null,
       "esl_h": null,
-      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
-      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 31 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
       "model": {
         "model_id": "coilcraft-0603cs-q-0603cs-10nxjrw",
         "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
         "confidence": "datasheet",
-        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
         "q_points": [
           [
             250000000.0,
-            31.0
+            31
           ],
           [
             900000000.0,
-            66.0
+            66
           ],
           [
             1700000000.0,
-            83.0
+            83
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-12nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-12NXJRW",
+      "kind": "inductor",
+      "value_si": 1.2000000000000002e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.13,
+      "srf_hz": 4000000000.0,
+      "q_min": 35,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 35 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-12nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            35
+          ],
+          [
+            900000000.0,
+            72
+          ],
+          [
+            1700000000.0,
+            83
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-18nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-18NXJRW",
+      "kind": "inductor",
+      "value_si": 1.8000000000000002e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.7,
+      "dcr_ohm": 0.17,
+      "srf_hz": 3100000000.0,
+      "q_min": 35,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 35 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-18nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            35
+          ],
+          [
+            900000000.0,
+            70
+          ],
+          [
+            1700000000.0,
+            69
           ]
         ],
         "esr_points": []
@@ -147,7 +307,7 @@
       "manufacturer": "Coilcraft",
       "mpn": "0603CS-22NXJRW",
       "kind": "inductor",
-      "value_si": 2.2e-08,
+      "value_si": 2.2000000000000002e-08,
       "unit": "H",
       "package": "0603",
       "tolerance_pct": 5.0,
@@ -155,28 +315,148 @@
       "current_a": 0.7,
       "dcr_ohm": 0.19,
       "srf_hz": 3000000000.0,
-      "q_min": 38.0,
+      "q_min": 38,
       "esr_ohm": null,
       "esl_h": null,
-      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
-      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 38 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
       "model": {
         "model_id": "coilcraft-0603cs-q-0603cs-22nxjrw",
         "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
         "confidence": "datasheet",
-        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
         "q_points": [
           [
             250000000.0,
-            38.0
+            38
           ],
           [
             900000000.0,
-            73.0
+            73
           ],
           [
             1700000000.0,
-            71.0
+            71
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-27nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-27NXJRW",
+      "kind": "inductor",
+      "value_si": 2.7e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.6,
+      "dcr_ohm": 0.22,
+      "srf_hz": 2800000000.0,
+      "q_min": 40,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 40 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-27nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            40
+          ],
+          [
+            900000000.0,
+            74
+          ],
+          [
+            1700000000.0,
+            65
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-33nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-33NXJRW",
+      "kind": "inductor",
+      "value_si": 3.3000000000000004e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.6,
+      "dcr_ohm": 0.22,
+      "srf_hz": 2300000000.0,
+      "q_min": 40,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 40 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-33nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            40
+          ],
+          [
+            900000000.0,
+            67
+          ],
+          [
+            1700000000.0,
+            42
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-39nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-39NXJRW",
+      "kind": "inductor",
+      "value_si": 3.9000000000000005e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.6,
+      "dcr_ohm": 0.25,
+      "srf_hz": 2200000000.0,
+      "q_min": 40,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 40 at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-39nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            250000000.0,
+            40
+          ],
+          [
+            900000000.0,
+            60
+          ],
+          [
+            1700000000.0,
+            40
           ]
         ],
         "esr_points": []
@@ -187,7 +467,7 @@
       "manufacturer": "Coilcraft",
       "mpn": "0603CS-47NXJRW",
       "kind": "inductor",
-      "value_si": 4.7e-08,
+      "value_si": 4.7000000000000004e-08,
       "unit": "H",
       "package": "0603",
       "tolerance_pct": 5.0,
@@ -195,28 +475,108 @@
       "current_a": 0.6,
       "dcr_ohm": 0.28,
       "srf_hz": 2000000000.0,
-      "q_min": 38.0,
+      "q_min": 38,
       "esr_ohm": null,
       "esl_h": null,
-      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
-      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 38 at 200 MHz; Irms is a 15 C rise reference; verify datasheet.",
       "model": {
         "model_id": "coilcraft-0603cs-q-0603cs-47nxjrw",
         "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
         "confidence": "datasheet",
-        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
         "q_points": [
           [
             200000000.0,
-            38.0
+            38
           ],
           [
             900000000.0,
-            62.0
+            62
           ],
           [
             1700000000.0,
-            35.0
+            35
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-68nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-68NXJRW",
+      "kind": "inductor",
+      "value_si": 6.8e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.6,
+      "dcr_ohm": 0.34,
+      "srf_hz": 1700000000.0,
+      "q_min": 37,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 37 at 200 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-68nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            200000000.0,
+            37
+          ],
+          [
+            900000000.0,
+            54
+          ],
+          [
+            1700000000.0,
+            21
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-82nxjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-82NXJRW",
+      "kind": "inductor",
+      "value_si": 8.2e-08,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.4,
+      "dcr_ohm": 0.54,
+      "srf_hz": 1700000000.0,
+      "q_min": 34,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 34 at 150 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-82nxjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            150000000.0,
+            34
+          ],
+          [
+            900000000.0,
+            54
+          ],
+          [
+            1700000000.0,
+            21
           ]
         ],
         "esr_points": []
@@ -227,7 +587,7 @@
       "manufacturer": "Coilcraft",
       "mpn": "0603CS-R10XJRW",
       "kind": "inductor",
-      "value_si": 1e-07,
+      "value_si": 1.0000000000000001e-07,
       "unit": "H",
       "package": "0603",
       "tolerance_pct": 5.0,
@@ -235,24 +595,132 @@
       "current_a": 0.4,
       "dcr_ohm": 0.58,
       "srf_hz": 1400000000.0,
-      "q_min": 34.0,
+      "q_min": 34,
       "esr_ohm": null,
       "esl_h": null,
-      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
-      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 34 at 150 MHz; Irms is a 15 C rise reference; verify datasheet.",
       "model": {
         "model_id": "coilcraft-0603cs-q-0603cs-r10xjrw",
         "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
         "confidence": "datasheet",
-        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
         "q_points": [
           [
             150000000.0,
-            34.0
+            34
           ],
           [
             900000000.0,
-            49.0
+            49
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r12xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R12XJRW",
+      "kind": "inductor",
+      "value_si": 1.2000000000000002e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.3,
+      "dcr_ohm": 0.65,
+      "srf_hz": 1300000000.0,
+      "q_min": 32,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 32 at 150 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r12xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            150000000.0,
+            32
+          ],
+          [
+            900000000.0,
+            39
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r15xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R15XJRW",
+      "kind": "inductor",
+      "value_si": 1.5000000000000002e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.28,
+      "dcr_ohm": 0.92,
+      "srf_hz": 990000000.0,
+      "q_min": 28,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 28 at 150 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r15xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            150000000.0,
+            28
+          ],
+          [
+            900000000.0,
+            25
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r18xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R18XJRW",
+      "kind": "inductor",
+      "value_si": 1.8000000000000002e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.24,
+      "dcr_ohm": 1.25,
+      "srf_hz": 990000000.0,
+      "q_min": 25,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 25 at 100 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r18xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            100000000.0,
+            25
+          ],
+          [
+            900000000.0,
+            22
           ]
         ],
         "esr_points": []
@@ -271,20 +739,52 @@
       "current_a": 0.2,
       "dcr_ohm": 2.1,
       "srf_hz": 900000000.0,
-      "q_min": 25.0,
+      "q_min": 25,
       "esr_ohm": null,
       "esl_h": null,
-      "source": "https://www.coilcraft.com/en-us/products/rf/ceramic-core-chip-inductors/0603-(1608)/0603cs/",
-      "notes": "Q min at 250 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 25 at 100 MHz; Irms is a 15 C rise reference; verify datasheet.",
       "model": {
         "model_id": "coilcraft-0603cs-q-0603cs-r22xjrw",
         "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
         "confidence": "datasheet",
-        "notes": "Typical Q vs frequency from Coilcraft 0603CS Document 195 (rev. 06/26/24). 250 MHz value is Qmin; 900 MHz/1.7 GHz values are typical. Verify the current datasheet.",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
         "q_points": [
           [
             100000000.0,
-            25.0
+            25
+          ]
+        ],
+        "esr_points": []
+      }
+    },
+    {
+      "id": "coilcraft-0603cs-r27xjrw",
+      "manufacturer": "Coilcraft",
+      "mpn": "0603CS-R27XJRW",
+      "kind": "inductor",
+      "value_si": 2.7e-07,
+      "unit": "H",
+      "package": "0603",
+      "tolerance_pct": 5.0,
+      "voltage_v": null,
+      "current_a": 0.17,
+      "dcr_ohm": 2.16,
+      "srf_hz": 830000000.0,
+      "q_min": 26,
+      "esr_ohm": null,
+      "esl_h": null,
+      "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+      "notes": "Q min 26 at 100 MHz; Irms is a 15 C rise reference; verify datasheet.",
+      "model": {
+        "model_id": "coilcraft-0603cs-q-0603cs-r27xjrw",
+        "source": "https://www.coilcraft.com/getmedia/022eb894-7253-40d0-b07c-650d362fc80e/0603cs.pdf",
+        "confidence": "datasheet",
+        "notes": "Q vs frequency from Coilcraft 0603CS Document 195-2 (rev. 06/26/24). The lowest-frequency point is Qmin at the datasheet test frequency; 900 MHz and 1.7 GHz points are typical. Verify the current datasheet.",
+        "q_points": [
+          [
+            100000000.0,
+            26
           ]
         ],
         "esr_points": []

@@ -19,9 +19,9 @@ def _example() -> Path:
 
 def test_example_library_has_real_q_curves() -> None:
     parts = read_component_library(_example())
-    assert len(parts) == 10
+    assert len(parts) == 23
     inductors = [part for part in parts if part.kind == "inductor"]
-    assert len(inductors) == 5
+    assert len(inductors) == 18
     assert all(part.model is not None for part in inductors)
     for part in inductors:
         assert part.model is not None
@@ -48,7 +48,7 @@ def test_example_library_cli_json(capsys) -> None:
         == 0
     )
     payload = json.loads(capsys.readouterr().out)
-    assert payload["count"] == 10
+    assert payload["count"] == 23
     modelled = [part for part in payload["parts"] if part["model"] is not None]
-    assert len(modelled) == 5
+    assert len(modelled) == 18
     assert modelled[0]["model"]["q_points"]

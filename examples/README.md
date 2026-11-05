@@ -2,12 +2,13 @@
 
 ## Component library with manufacturer models
 
-`component_library_models.json` contains the ten starter parts and optional
+`component_library_models.json` contains the 23 starter parts and optional
 frequency-dependent data:
 
-- **Coilcraft 0603CS** inductors: Q(f) points from the public Coilcraft 0603CS
-  datasheet (Document 195, revised 06/26/24). The 250 MHz value is Qmin; the
-  900 MHz and 1.7 GHz values are typical.
+- **Coilcraft 0603CS** inductors: 18 values from 3.9 nH to 270 nH with Q(f)
+  points from the public Coilcraft 0603CS datasheet (Document 195-2, revised
+  06/26/24). The lowest-frequency point is Qmin at the datasheet test
+  frequency; the 900 MHz and 1.7 GHz points are typical.
 - **Murata GRM1885C1H** C0G capacitors: catalog data only (`model: null`).
   No ESR curve is published in the starter source, so no curve was invented.
 

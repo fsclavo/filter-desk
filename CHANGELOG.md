@@ -3,6 +3,21 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.80.1 — 2026-11-05
+
+### Added
+
+- Expanded the Coilcraft 0603CS starter catalog from 5 to 18 inductance values
+  (3.9 nH–270 nH), each with datasheet Q(f) points at the datasheet test
+  frequency, 900 MHz and 1.7 GHz where published.
+- The Q(f) models now ship directly in `STARTER_PARTS`; loading the example JSON
+  is no longer required to use them.
+
+### Changed
+
+- Regenerated `examples/component_library_models.json` with all 23 starter parts
+  and the expanded Q curves.
+
 ## v0.80.0 — 2026-11-05
 
 ### Added

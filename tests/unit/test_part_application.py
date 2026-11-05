@@ -75,7 +75,10 @@ def test_composite_parts_apply_subpart_models() -> None:
     assigned = assign_nearest_parts(branches, STARTER_PARTS, max_delta_pct=100.0)
     result = apply_assigned_parts(design, assigned.assignments)
     assert result.applied
-    assert not any("composite" in warning for warning in result.warnings)
+    assert any(
+        "manufacturer Q/ESR curve not applied" in warning
+        for warning in result.warnings
+    )
     assert any(
         el.l_series_resistance_ohm > 0.0
         or el.l_srf_hz is not None

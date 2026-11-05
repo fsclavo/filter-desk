@@ -112,3 +112,26 @@ def test_cli_component_curve_import(
     assert part.model is not None
     assert len(part.model.q_points) == 2
     assert part.model.q_points[0].frequency_hz == pytest.approx(1e6)
+
+
+def test_starter_0603cs_q_curves_match_datasheet() -> None:
+    inductors = [
+        part
+        for part in STARTER_PARTS
+        if part.mpn.startswith("0603CS-")
+    ]
+    assert len(inductors) == 18
+    assert all(part.model is not None for part in inductors)
+    assert all(
+        part.model is not None and "0603cs.pdf" in part.model.source.lower()
+        for part in inductors
+    )
+
+    part = next(item for item in inductors if item.mpn == "0603CS-33NXJRW")
+    assert part.model is not None
+    assert [point.frequency_hz for point in part.model.q_points] == [
+        250e6,
+        900e6,
+        1.7e9,
+    ]
+    assert [point.value for point in part.model.q_points] == [40.0, 67.0, 42.0]

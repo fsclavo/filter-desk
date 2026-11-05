@@ -1244,8 +1244,9 @@ three. The triplexer is available in the GUI and as `filterdesk triplexer`.
 
 **Tools → Component library…** (`filterdesk components`) browses a curated
 catalog of real manufacturer part numbers. The starter catalog contains Murata
-C0G 0603 capacitors and Coilcraft 0603CS inductors with catalog-level values,
-package, tolerance, DCR/SRF/Q and source links. Use **Load library…** /
+C0G 0603 capacitors and 18 Coilcraft 0603CS inductor values with catalog-level
+values, package, tolerance, DCR/SRF/Q and source links. The Coilcraft parts
+include datasheet Q(f) curves from 3.9 nH to 270 nH. Use **Load library…** /
 **Export library…** for your own versioned `filterdesk.components` JSON.
 
 The catalog is intentionally **not** a vendor model database: ESR/ESL/SRF/Q
