@@ -517,8 +517,11 @@ reloadable and editable. Each imported Touchstone capture is added to the
 **Measurements** dock with its VNA/calibration/reference metadata when the
 `.vna.json` sidecar is present; select one to make it the active overlay.
 **Details…** shows and edits the complete provenance and compares that capture
-with the current analyzed design. **Tune…** activates the capture and opens the
-existing VNA tuning workflow for the current circuit.
+with the current analyzed design. **Export…** writes the selected capture as a
+`.s2p` file plus a `.s2p.vna.json` metadata sidecar, so the measurement and its
+calibration/reference-plane provenance can be archived or shared. **Tune…**
+activates the capture and opens the existing VNA tuning workflow for the
+current circuit.
 Closing with unsaved changes asks **Save / Discard / Cancel**; cancelling the
 save dialog leaves the application open.
 
@@ -1276,6 +1279,22 @@ A catalog part can include an optional frequency-dependent model:
   [`examples/component_library_models.json`](../examples/component_library_models.json):
   Coilcraft 0603CS Q curves from the public datasheet and Murata C0G parts
   without invented ESR curves.
+- **Import Q/ESR curve…** attaches a two-column `frequency,value` CSV to the
+  selected part. Comments start with `#` or `!`, the header is optional and SI
+  suffixes are accepted (`1M`, `100m`). Inductors receive `q_points`;
+  capacitors receive `esr_points`. The same operation is available from the CLI:
+
+  ```bash
+  filterdesk component-curve \
+    --library components.json \
+    --part 0603CS-10NXJRW \
+    --curve q \
+    --csv q_curve.csv \
+    --output components_with_curve.json
+  ```
+
+  A template is in
+  [`examples/component_curve_template.csv`](../examples/component_curve_template.csv).
 
 
 ### Microstrip / distributed calculators

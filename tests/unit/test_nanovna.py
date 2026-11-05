@@ -198,3 +198,48 @@ def test_main_window_stores_nanovna_measurement(
     assert window._session.measurements[0].name.startswith("NanoVNA")
     window.close()
     assert app is not None
+
+
+def test_main_window_exports_measurement_with_metadata(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from filterdesk.gui import main_window as mw
+    from filterdesk.io.touchstone import read_touchstone
+    from filterdesk.services.measurements import MeasurementRecord
+    from filterdesk.services.session import DesignSession
+    from filterdesk.services.vna_measurement import read_vna_metadata
+
+    app = QApplication.instance() or QApplication([])
+    window = mw.MainWindow(DesignSession(), auto_run=False)
+    record = MeasurementRecord.from_arrays(
+        name="captured.s2p",
+        frequency_hz=(100e6, 110e6, 120e6),
+        s11=(0.1, 0.2, 0.3),
+        s21=(0.9, 0.8, 0.7),
+        s12=(0.9, 0.8, 0.7),
+        s22=(0.1, 0.2, 0.3),
+        metadata=VnaMeasurementMetadata(
+            vna_model="NanoVNA",
+            calibration="SOLT",
+            reference_plane="connector",
+        ),
+    )
+    window._session.add_measurement(record)
+    path = tmp_path / "captured.s2p"
+    monkeypatch.setattr(
+        mw.QFileDialog,
+        "getSaveFileName",
+        lambda *args, **kwargs: (str(path), ""),
+    )
+    window._export_measurement(0)
+    assert path.is_file()
+    assert (tmp_path / "captured.s2p.vna.json").is_file()
+
+    loaded = read_touchstone(path)
+    assert loaded.frequency_hz == pytest.approx(record.frequency_hz)
+    assert loaded.s[:, 1, 0] == pytest.approx(record.s21)
+    metadata = read_vna_metadata(path)
+    assert metadata.calibration == "SOLT"
+    assert metadata.reference_plane == "connector"
+    window.close()
+    assert app is not None

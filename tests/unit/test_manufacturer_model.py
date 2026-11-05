@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -19,6 +20,8 @@ from filterdesk.components_std.library import LibraryPart
 from filterdesk.components_std.manufacturer_model import (
     ManufacturerModelError,
     _interp_log,
+    model_from_curve_csv,
+    read_curve_csv,
 )
 from filterdesk.domain.circuit import (
     Circuit,
@@ -367,3 +370,59 @@ def test_interp_log_non_decade_span_zero_right_and_nan_fallback() -> None:
     assert _interp_log(3.1622776601683795e6, zero_right) == pytest.approx(
         0.5
     )
+
+
+
+def test_read_curve_csv_header_comments_and_units(tmp_path: Path) -> None:
+    path = tmp_path / "q_curve.csv"
+    path.write_text(
+        "# measured with a VNA\n"
+        "frequency_hz,value\n"
+        "1M,100\n"
+        "10M,50\n",
+        encoding="utf-8",
+    )
+    points = read_curve_csv(path)
+    assert [point.frequency_hz for point in points] == pytest.approx(
+        [1e6, 10e6]
+    )
+    assert [point.value for point in points] == pytest.approx([100.0, 50.0])
+
+    model = model_from_curve_csv(path, model_id="q-test", curve="q")
+    assert model.model_id == "q-test"
+    assert model.q_points == points
+    assert model.esr_points == ()
+    assert model.source == str(path)
+    assert model.confidence == "measured"
+
+    esr_model = model_from_curve_csv(
+        path,
+        model_id="esr-test",
+        curve="esr",
+        confidence="datasheet",
+        notes="fixture",
+    )
+    assert esr_model.esr_points == points
+    assert esr_model.q_points == ()
+    assert esr_model.confidence == "datasheet"
+    assert esr_model.notes == "fixture"
+
+
+def test_read_curve_csv_rejects_bad_documents(tmp_path: Path) -> None:
+    empty = tmp_path / "empty.csv"
+    empty.write_text("# only comments\n", encoding="utf-8")
+    with pytest.raises(ManufacturerModelError, match="no data rows"):
+        read_curve_csv(empty)
+
+    duplicate = tmp_path / "duplicate.csv"
+    duplicate.write_text("1M,100\n1M,90\n", encoding="utf-8")
+    with pytest.raises(ManufacturerModelError, match="duplicate frequencies"):
+        read_curve_csv(duplicate)
+
+    negative = tmp_path / "negative.csv"
+    negative.write_text("1M,-1\n", encoding="utf-8")
+    with pytest.raises(ManufacturerModelError, match="value must be >= 0"):
+        read_curve_csv(negative)
+
+    with pytest.raises(ManufacturerModelError, match="curve must be"):
+        model_from_curve_csv(empty, model_id="x", curve="other")

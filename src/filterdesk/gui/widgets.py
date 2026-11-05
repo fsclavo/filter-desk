@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -77,6 +78,7 @@ from filterdesk.components_std import (
     inductor_resistance_ohm_from_q,
     list_cores,
     list_substrates,
+    model_from_curve_csv,
     read_component_library,
     search_parts,
     write_component_library,
@@ -1622,11 +1624,15 @@ class ComponentLibraryDialog(QDialog):
         export_button = buttons.addButton(
             tr("Export library…"), QDialogButtonBox.ButtonRole.ActionRole
         )
+        curve_button = buttons.addButton(
+            tr("Import Q/ESR curve…"), QDialogButtonBox.ButtonRole.ActionRole
+        )
         copy_button = buttons.addButton(
             tr("Copy MPN"), QDialogButtonBox.ButtonRole.ActionRole
         )
         load_button.clicked.connect(self._load_library)
         export_button.clicked.connect(self._export_library)
+        curve_button.clicked.connect(self._import_curve)
         copy_button.clicked.connect(self._copy_mpn)
         form = QFormLayout(self)
         form.addRow(top)
@@ -1758,6 +1764,64 @@ class ComponentLibraryDialog(QDialog):
             QMessageBox.critical(self, tr("Component library"), str(exc))
             return
         self._status.setText(tr("Wrote {path}", path=path))
+
+    def _import_curve(self) -> None:
+        part = self.current_part()
+        if part is None:
+            QMessageBox.information(
+                self,
+                tr("Component library"),
+                tr("Select a part first."),
+            )
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            tr("Import Q/ESR curve"),
+            "",
+            "CSV (*.csv);;All files (*)",
+        )
+        if not path:
+            return
+        confidence, accepted = QInputDialog.getItem(
+            self,
+            tr("Import Q/ESR curve"),
+            tr("Model confidence"),
+            ["datasheet", "measured", "vendor", "estimated"],
+            1,
+            False,
+        )
+        if not accepted:
+            return
+        curve = "q" if part.kind == "inductor" else "esr"
+        try:
+            model = model_from_curve_csv(
+                path,
+                model_id=f"{part.mpn}-{curve}",
+                curve=curve,
+                confidence=confidence,
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.critical(
+                self, tr("Component library"), str(exc)
+            )
+            return
+        updated = replace(part, model=model)
+        self._parts = tuple(
+            updated if item.id == part.id else item for item in self._parts
+        )
+        self._refresh()
+        for row, item in enumerate(self._filtered):
+            if item.id == part.id:
+                self._table.selectRow(row)
+                break
+        points = model.q_points if curve == "q" else model.esr_points
+        self._status.setText(
+            tr(
+                "Imported {count} curve points into {mpn}",
+                count=len(points),
+                mpn=part.mpn,
+            )
+        )
 
     def _copy_mpn(self) -> None:
         part = self.current_part()

@@ -1581,6 +1581,42 @@ def test_component_library_dialog_filters_catalog() -> None:
     assert app is not None
 
 
+def test_component_library_dialog_imports_q_curve(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import widgets
+
+    app = QApplication.instance() or QApplication([])
+    path = tmp_path / "q_curve.csv"
+    path.write_text("1M,100\n10M,50\n", encoding="utf-8")
+    dialog = widgets.ComponentLibraryDialog()
+    dialog._kind.setCurrentIndex(2)  # inductor
+    dialog._search.clear()
+    part = dialog.current_part()
+    assert part is not None
+    mpn = part.mpn
+    monkeypatch.setattr(
+        widgets.QFileDialog,
+        "getOpenFileName",
+        lambda *args, **kwargs: (str(path), ""),
+    )
+    monkeypatch.setattr(
+        widgets.QInputDialog,
+        "getItem",
+        lambda *args, **kwargs: ("measured", True),
+    )
+    dialog._import_curve()
+    updated = next(item for item in dialog._parts if item.mpn == mpn)
+    assert updated.model is not None
+    assert len(updated.model.q_points) == 2
+    assert updated.model.q_points[0].frequency_hz == pytest.approx(1e6)
+    assert "Imported 2 curve points" in dialog._status.text()
+    dialog.close()
+    assert app is not None
+
+
 def test_system_sensitivity_dialog_runs() -> None:
     from PySide6.QtWidgets import QApplication
 

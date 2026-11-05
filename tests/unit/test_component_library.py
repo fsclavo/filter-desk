@@ -76,3 +76,39 @@ def test_cli_components_list_search_and_export(
     capsys.readouterr()
     assert export.is_file()
     assert read_component_library(export) == STARTER_PARTS
+
+
+def test_cli_component_curve_import(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    library = tmp_path / "components.json"
+    write_component_library(STARTER_PARTS, library)
+    curve = tmp_path / "q_curve.csv"
+    curve.write_text("1M,100\n10M,50\n", encoding="utf-8")
+    output = tmp_path / "updated.json"
+    code = main(
+        [
+            "component-curve",
+            "--library",
+            str(library),
+            "--part",
+            "0603CS-10NXJRW",
+            "--curve",
+            "q",
+            "--csv",
+            str(curve),
+            "--output",
+            str(output),
+            "--json",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["part"] == "0603CS-10NXJRW"
+    assert payload["curve"] == "q"
+    assert payload["points"] == 2
+    loaded = read_component_library(output)
+    part = next(item for item in loaded if item.mpn == "0603CS-10NXJRW")
+    assert part.model is not None
+    assert len(part.model.q_points) == 2
+    assert part.model.q_points[0].frequency_hz == pytest.approx(1e6)

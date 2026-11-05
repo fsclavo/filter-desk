@@ -20,6 +20,23 @@ The JSON is a catalog-level, datasheet-derived example. Verify the current
 manufacturer datasheet and your measurement setup before production. No vendor
 SPICE/model deck is redistributed.
 
+## Q/ESR curve CSV template
+
+`component_curve_template.csv` shows the two-column format accepted by
+**Tools → Component library… → Import Q/ESR curve…** and by
+`filterdesk component-curve`:
+
+```csv
+frequency_hz,value
+1M,100
+10M,60
+50M,35
+```
+
+Comments start with `#` or `!`, the header row is optional, and SI suffixes are
+accepted (`1M`, `100m`). The curve is attached to the selected part as Q data
+for an inductor or ESR data for a capacitor.
+
 ## Tutorial projects
 
 The ready-to-open tutorial projects live in the packaged application assets:

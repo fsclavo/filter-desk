@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from filterdesk.analysis.types import AnalysisResult
-from filterdesk.services.vna_measurement import VnaMeasurementMetadata
+from filterdesk.io.touchstone import write_touchstone_s2p
+from filterdesk.services.vna_measurement import (
+    VnaMeasurementMetadata,
+    write_vna_metadata,
+)
 
 
 @dataclass(slots=True)
@@ -141,4 +146,18 @@ class MeasurementRecord:
         return result
 
 
-__all__ = ["MeasurementRecord"]
+def write_measurement(
+    record: MeasurementRecord, path: Path | str
+) -> tuple[Path, Path]:
+    """Write a stored measurement as ``.s2p`` plus its VNA metadata sidecar."""
+    target = Path(path)
+    write_touchstone_s2p(
+        record.to_analysis_result(),
+        target,
+        comment=f"measurement: {record.name}",
+    )
+    sidecar = write_vna_metadata(record.metadata, target)
+    return target, sidecar
+
+
+__all__ = ["MeasurementRecord", "write_measurement"]

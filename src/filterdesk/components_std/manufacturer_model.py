@@ -6,9 +6,13 @@ redistributed; users can import their own model JSON.
 
 from __future__ import annotations
 
+import csv
 import math
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+from filterdesk.domain.units import parse_si
 
 
 class ManufacturerModelError(ValueError):
@@ -25,6 +29,82 @@ class ModelPoint:
             raise ManufacturerModelError("model point frequency must be > 0")
         if not math.isfinite(self.value) or self.value < 0.0:
             raise ManufacturerModelError("model point value must be >= 0")
+
+
+def read_curve_csv(path: Path | str) -> tuple[ModelPoint, ...]:
+    """Read a two-column ``frequency,value`` curve from a CSV file.
+
+    Comments start with ``#`` or ``!``. A first row containing ``freq``,
+    ``value``, ``q`` or ``esr`` is treated as a header. Frequencies and values
+    accept the same SI suffixes as the rest of the GUI/CLI (for example
+    ``1M`` or ``100m``).
+    """
+    target = Path(path)
+    try:
+        lines = target.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        raise ManufacturerModelError(f"cannot read {target}: {exc}") from exc
+
+    points: list[ModelPoint] = []
+    for line_number, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "!")):
+            continue
+        row = next(csv.reader([line]))
+        if len(row) < 2:
+            raise ManufacturerModelError(
+                f"line {line_number}: expected frequency,value"
+            )
+        if not points and any(
+            token in cell.lower()
+            for cell in row
+            for token in ("freq", "value", "q", "esr")
+        ):
+            continue
+        try:
+            frequency = parse_si(row[0])
+            value = parse_si(row[1])
+        except ValueError as exc:
+            raise ManufacturerModelError(
+                f"line {line_number}: {exc}"
+            ) from exc
+        try:
+            points.append(ModelPoint(frequency, value))
+        except ManufacturerModelError as exc:
+            raise ManufacturerModelError(
+                f"line {line_number}: {exc}"
+            ) from exc
+
+    if not points:
+        raise ManufacturerModelError("curve CSV has no data rows")
+    ordered = sorted(points, key=lambda point: point.frequency_hz)
+    frequencies = [point.frequency_hz for point in ordered]
+    if len(set(frequencies)) != len(frequencies):
+        raise ManufacturerModelError("curve CSV has duplicate frequencies")
+    return tuple(ordered)
+
+
+def model_from_curve_csv(
+    path: Path | str,
+    *,
+    model_id: str,
+    curve: str,
+    confidence: str = "measured",
+    source: str = "",
+    notes: str = "",
+) -> ManufacturerModel:
+    """Build a manufacturer model from a Q or ESR CSV curve."""
+    if curve not in {"q", "esr"}:
+        raise ManufacturerModelError("curve must be 'q' or 'esr'")
+    points = read_curve_csv(path)
+    return ManufacturerModel(
+        model_id=model_id,
+        source=source or str(path),
+        confidence=confidence,
+        notes=notes,
+        q_points=points if curve == "q" else (),
+        esr_points=points if curve == "esr" else (),
+    )
 
 
 def _interp_log(
@@ -137,4 +217,6 @@ __all__ = [
     "ManufacturerModel",
     "ManufacturerModelError",
     "ModelPoint",
+    "model_from_curve_csv",
+    "read_curve_csv",
 ]

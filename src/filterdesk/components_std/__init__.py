@@ -57,6 +57,8 @@ from filterdesk.components_std.manufacturer_model import (
     ManufacturerModel,
     ManufacturerModelError,
     ModelPoint,
+    model_from_curve_csv,
+    read_curve_csv,
 )
 from filterdesk.components_std.matching import (
     MatchingDesign,
@@ -151,6 +153,8 @@ __all__ = [
     "MicrostripError",
     "MicrostripLine",
     "ModelPoint",
+    "model_from_curve_csv",
+    "read_curve_csv",
     "QuarterWaveTransformer",
     "Stub",
     "StubKind",

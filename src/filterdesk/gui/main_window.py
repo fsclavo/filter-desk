@@ -162,7 +162,7 @@ from filterdesk.services.examples import (
     load_system_example,
 )
 from filterdesk.services.hf_band import evaluate_band_filter_response
-from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.services.measurements import MeasurementRecord, write_measurement
 from filterdesk.services.nanovna import NanoVnaSweep
 from filterdesk.services.retune import RetuneRequest, retune_spec, scale_response
 from filterdesk.services.session import (
@@ -326,6 +326,9 @@ class MainWindow(QMainWindow):
         self._measurements_panel.use_requested.connect(self._use_measurement)
         self._measurements_panel.details_requested.connect(
             self._show_measurement_details
+        )
+        self._measurements_panel.export_requested.connect(
+            self._export_measurement
         )
         self._measurements_panel.tune_requested.connect(self._tune_measurement)
         self._measurements_panel.delete_requested.connect(self._delete_measurement)
@@ -2501,6 +2504,35 @@ class MainWindow(QMainWindow):
         )
         self._status.setText(
             tr("Updated measurement metadata: {name}", name=updated.name)
+        )
+
+    def _export_measurement(self, index: int) -> None:
+        if not 0 <= index < len(self._session.measurements):
+            return
+        record = self._session.measurements[index]
+        default_name = "".join(
+            char if char.isalnum() or char in "-_." else "_"
+            for char in record.name
+        )
+        if not default_name.lower().endswith(".s2p"):
+            default_name += ".s2p"
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            tr("Export measurement (.s2p)…"),
+            default_name,
+            "Touchstone (*.s2p);;All files (*)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".s2p"):
+            path += ".s2p"
+        try:
+            target, sidecar = write_measurement(record, path)
+        except Exception as exc:  # noqa: BLE001
+            QMessageBox.critical(self, tr("Export failed"), _exc_text(exc))
+            return
+        self._status.setText(
+            tr("Wrote {path} and {metadata}", path=target, metadata=sidecar)
         )
 
     def _tune_measurement(self, index: int) -> None:

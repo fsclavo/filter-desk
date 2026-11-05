@@ -419,7 +419,7 @@ wheels = [
 
 [[package]]
 name = "filterdesk"
-version = "0.79.1"
+version = "0.80.0"
 source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },

@@ -7,6 +7,7 @@ import csv
 import json
 import math
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -78,6 +79,7 @@ from filterdesk.components_std import (
     find_substrate,
     list_cores,
     make_custom_core,
+    model_from_curve_csv,
     nonidealize_circuit,
     read_component_library,
     search_parts,
@@ -1010,6 +1012,34 @@ def build_parser() -> argparse.ArgumentParser:
     components.add_argument("--library", type=Path, default=None)
     components.add_argument("--export", type=Path, default=None)
     components.add_argument("--json", action="store_true")
+
+    component_curve = sub.add_parser(
+        "component-curve",
+        help="Import a Q/ESR curve CSV into a component library",
+    )
+    component_curve.add_argument(
+        "--library", type=Path, required=True, help="Input component library"
+    )
+    component_curve.add_argument(
+        "--part", required=True, help="MPN to update"
+    )
+    component_curve.add_argument(
+        "--curve", choices=["q", "esr"], required=True
+    )
+    component_curve.add_argument(
+        "--csv", type=Path, required=True, help="Two-column frequency,value CSV"
+    )
+    component_curve.add_argument(
+        "--output", type=Path, required=True, help="Output component library"
+    )
+    component_curve.add_argument(
+        "--confidence",
+        choices=["datasheet", "measured", "vendor", "estimated"],
+        default="measured",
+    )
+    component_curve.add_argument("--model-id", default="")
+    component_curve.add_argument("--notes", default="")
+    component_curve.add_argument("--json", action="store_true")
 
     tsinfo = sub.add_parser(
         "touchstone-info",
@@ -4699,6 +4729,53 @@ def main(argv: list[str] | None = None) -> int:
                     f"{part.package:6s}"
                 )
             print(f"{len(selected)} part(s)", file=sys.stderr)
+        return 0
+
+    if args.command == "component-curve":
+        try:
+            library_parts = read_component_library(args.library)
+            target = next(
+                (part for part in library_parts if part.mpn == args.part),
+                None,
+            )
+            if target is None:
+                raise ComponentLibraryError(f"unknown part {args.part}")
+            model = model_from_curve_csv(
+                args.csv,
+                model_id=args.model_id or f"{target.mpn}-{args.curve}",
+                curve=args.curve,
+                confidence=args.confidence,
+                notes=args.notes,
+            )
+            updated = replace(target, model=model)
+            new_parts = tuple(
+                updated if part.id == target.id else part
+                for part in library_parts
+            )
+            write_component_library(new_parts, args.output)
+        except (ComponentLibraryError, OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        points = model.q_points if args.curve == "q" else model.esr_points
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "part": target.mpn,
+                        "curve": args.curve,
+                        "points": len(points),
+                        "output": str(args.output),
+                        "model": model.to_mapping(),
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(
+                f"Imported {len(points)} {args.curve} points into "
+                f"{target.mpn}; wrote {args.output}",
+                file=sys.stderr,
+            )
         return 0
 
     if args.command == "touchstone-info":

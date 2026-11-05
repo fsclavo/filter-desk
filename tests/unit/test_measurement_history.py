@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
-from filterdesk.services.measurements import MeasurementRecord
+from filterdesk.io.touchstone import read_touchstone
+from filterdesk.services.measurements import MeasurementRecord, write_measurement
 from filterdesk.services.session import DesignSession
-from filterdesk.services.vna_measurement import VnaMeasurementMetadata
+from filterdesk.services.vna_measurement import (
+    VnaMeasurementMetadata,
+    read_vna_metadata,
+)
 
 
 def _record(name: str, offset: float = 0.0) -> MeasurementRecord:
@@ -110,3 +116,27 @@ def test_measurement_metadata_roundtrip() -> None:
     assert restored.metadata.reference_plane == "connector"
     assert restored.metadata.cables == "RG-58"
     assert restored.metadata.operator == "Tester"
+
+
+
+def test_write_measurement_touchstone_and_metadata(tmp_path: Path) -> None:
+    record = _record("capture.s2p")
+    record.metadata = VnaMeasurementMetadata(
+        vna_model="NanoVNA",
+        calibration="SOLT",
+        reference_plane="connector",
+        cables="RG-58",
+        operator="Tester",
+    )
+    target, sidecar = write_measurement(record, tmp_path / "capture.s2p")
+    assert target == tmp_path / "capture.s2p"
+    assert sidecar == tmp_path / "capture.s2p.vna.json"
+    assert target.is_file() and sidecar.is_file()
+
+    loaded = read_touchstone(target)
+    assert loaded.frequency_hz == pytest.approx(record.frequency_hz)
+    assert loaded.s[:, 1, 0] == pytest.approx(record.s21)
+    assert loaded.s[:, 0, 1] == pytest.approx(record.s12)
+
+    metadata = read_vna_metadata(target)
+    assert metadata == record.metadata

@@ -884,6 +884,9 @@ _ES.update(
         "Calibration": "Calibración",
         "Reference plane": "Plano de referencia",
         "Import…": "Importar…",
+        "Export…": "Exportar…",
+        "Export measurement (.s2p)…": "Exportar medición (.s2p)…",
+        "Wrote {path} and {metadata}": "Escrito {path} y {metadata}",
         "Use": "Usar",
         "Measurements": "Mediciones",
         "Clear measurements": "Borrar mediciones",
@@ -1262,6 +1265,13 @@ _ES.update(
         "Copied {mpn}": "Copiado {mpn}",
         "Load library…": "Cargar biblioteca…",
         "Export library…": "Exportar biblioteca…",
+        "Import Q/ESR curve…": "Importar curva Q/ESR…",
+        "Import Q/ESR curve": "Importar curva Q/ESR",
+        "Select a part first.": "Seleccioná una pieza primero.",
+        "Model confidence": "Confianza del modelo",
+        "Imported {count} curve points into {mpn}": (
+            "Importados {count} puntos de curva en {mpn}"
+        ),
         "Load component library": "Cargar biblioteca de componentes",
         "Export component library": "Exportar biblioteca de componentes",
         "Loaded {path}": "Cargada {path}",

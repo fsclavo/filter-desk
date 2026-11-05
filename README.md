@@ -122,8 +122,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **VNA-guided tuning**: import a measured `.s2p` and trim L/C/R values to the
   measured S11/S21 magnitude with bounded least squares.
 - **Measurement history**: store multiple captures per project, keep their
-  VNA/calibration/reference metadata, inspect provenance/comparison, tune to a
-  stored capture and switch the active overlay.
+  VNA/calibration/reference metadata, inspect provenance/comparison, export a
+  capture to `.s2p` plus its metadata sidecar, tune to a stored capture and
+  switch the active overlay.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout.
@@ -156,8 +157,9 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
   finite-Q/parasitic reanalysis, deterministic component sensitivity,
   Monte-Carlo tolerance/yield in the GUI and CLI, `.sNp` export, a combined
   system BOM, real-part assignment with MPN/package, optional manufacturer
-  Q(f)/ESR(f) curves (example library in `examples/`) and application of
-  part values/parasitics to simple L/C and series/parallel resonators, 2-port
+  Q(f)/ESR(f) curves (example library and CSV import in `examples/`) and
+  application of part values/parasitics to simple L/C and series/parallel
+  resonators, 2-port
   VNA path comparison, standalone HTML/PDF reports with embedded
   plots/schematics, `.fdsys.json` project save/open, a curated real-part catalog
   and bilingual in-app tutorials with ready-to-open example projects under

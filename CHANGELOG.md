@@ -3,6 +3,25 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## v0.80.0 — 2026-11-05
+
+### Added
+
+- **Export stored measurements** from the Measurements dock as `.s2p` plus a
+  `.s2p.vna.json` metadata sidecar, preserving VNA/calibration/reference-plane
+  provenance.
+- **Import Q/ESR curves from CSV** into the component library, both from
+  **Tools → Component library… → Import Q/ESR curve…** and with
+  `filterdesk component-curve`. The parser accepts comments, an optional header
+  and SI suffixes, validates/sorts points and stores model confidence/source.
+- `examples/component_curve_template.csv` and updated library/measurement
+  documentation.
+
+### Tests
+
+- Touchstone/metadata round-trip for exported measurements.
+- CSV curve parsing/validation, GUI import and CLI import.
+
 ## v0.79.1 — 2026-11-03
 
 ### Changed

@@ -1,0 +1,7 @@
+# FilterDesk Q/ESR curve template.
+# Two columns: frequency,value. SI suffixes are accepted (1M = 1 MHz).
+# Lines starting with # or ! are ignored. The header row is optional.
+frequency_hz,value
+1M,100
+10M,60
+50M,35
