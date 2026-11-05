@@ -9,6 +9,7 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication
 
+from filterdesk.gui.fonts import apply_saved_font_size
 from filterdesk.gui.main_window import MainWindow
 from filterdesk.services.session import DesignSession
 
@@ -71,6 +72,8 @@ def run_gui(argv: list[str] | None = None) -> int:
     icon = _app_icon()
     if not icon.isNull() and isinstance(app, QApplication):
         app.setWindowIcon(icon)
+    if isinstance(app, QApplication):
+        apply_saved_font_size(app)
     session = DesignSession()
     window = MainWindow(session)
     window.show()

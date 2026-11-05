@@ -71,6 +71,7 @@ from filterdesk.gui.commands import (
     SynthesizeCommand,
 )
 from filterdesk.gui.coupled_line_dialog import CoupledLineDialog
+from filterdesk.gui.fonts import FontSize, apply_saved_font_size
 from filterdesk.gui.i18n import (
     Language,
     current_language,
@@ -95,6 +96,7 @@ from filterdesk.gui.recent_files import (
     remove_recent,
 )
 from filterdesk.gui.settings import (
+    FONT_SIZE_KEY,
     GEOMETRY_KEY,
     LANGUAGE_KEY,
     STATE_KEY,
@@ -243,6 +245,11 @@ class MainWindow(QMainWindow):
         auto_run: bool = True,
     ) -> None:
         super().__init__()
+        self._font_size = FontSize.DEFAULT
+        self._font_size_actions: dict[FontSize, QAction] = {}
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            self._font_size = apply_saved_font_size(app)
         self.setWindowTitle("FilterDesk")
         self.resize(1280, 800)
         self._session = session or DesignSession()
@@ -545,6 +552,24 @@ class MainWindow(QMainWindow):
             theme_group.addAction(action)
             theme_menu.addAction(action)
             self._theme_actions[mode] = action
+        font_menu = view_menu.addMenu(tr("&Font size"))
+        font_group = QActionGroup(self)
+        font_group.setExclusive(True)
+        for size, label in (
+            (FontSize.SMALL, tr("Small")),
+            (FontSize.DEFAULT, tr("Default")),
+            (FontSize.LARGE, tr("Large")),
+            (FontSize.EXTRA_LARGE, tr("Extra large")),
+        ):
+            action = QAction(label, self)
+            action.setCheckable(True)
+            action.setChecked(size is self._font_size)
+            action.triggered.connect(
+                lambda checked=False, s=size: self._request_font_size(s)
+            )
+            font_group.addAction(action)
+            font_menu.addAction(action)
+            self._font_size_actions[size] = action
         language_menu = view_menu.addMenu(tr("&Language"))
         language_group = QActionGroup(self)
         language_group.setExclusive(True)
@@ -824,6 +849,20 @@ class MainWindow(QMainWindow):
             self,
             tr("Language"),
             tr("Language changed. Restart FilterDesk to apply."),
+        )
+
+    def _request_font_size(self, size: FontSize) -> None:
+        if size is self._font_size:
+            return
+        get_settings_store().set_str(FONT_SIZE_KEY, size.value)
+        self._font_size = size
+        action = self._font_size_actions.get(size)
+        if action is not None:
+            action.setChecked(True)
+        QMessageBox.information(
+            self,
+            tr("Font size"),
+            tr("Font size changed. Restart FilterDesk to apply."),
         )
 
     def _apply_theme(self, mode: ThemeMode, *, persist: bool = True) -> None:

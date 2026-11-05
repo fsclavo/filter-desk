@@ -640,6 +640,15 @@ _ES.update(
         "Language changed. Restart FilterDesk to apply.": (
             "Idioma cambiado. Reinicie FilterDesk para aplicarlo."
         ),
+        "&Font size": "&Tamaño de fuente",
+        "Font size": "Tamaño de fuente",
+        "Small": "Pequeña",
+        "Default": "Predeterminada",
+        "Large": "Grande",
+        "Extra large": "Muy grande",
+        "Font size changed. Restart FilterDesk to apply.": (
+            "Tamaño de fuente cambiado. Reinicie FilterDesk para aplicarlo."
+        ),
         "Saved {path}": "Guardado en {path}",
         "Monte-Carlo tolerances": "Tolerancias Monte-Carlo",
         "Optimize to limits": "Optimizar a límites",

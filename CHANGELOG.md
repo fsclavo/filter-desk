@@ -5,6 +5,12 @@ scheme while the public CLI/GUI stabilizes.
 
 ## Unreleased
 
+### Added
+
+- Configurable GUI font size: **View → Font size** with **Small**, **Default**,
+  **Large** and **Extra large** presets. The choice is persisted in QSettings
+  and applies on the next start; schematic labels follow the selected size.
+
 ### Fixed
 
 - Local Debian builds now remove stale `FilterDesk-*-<arch>.deb` files from the

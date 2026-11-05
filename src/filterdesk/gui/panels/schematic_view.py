@@ -35,6 +35,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtSvg import QSvgGenerator
 from PySide6.QtWidgets import (
+    QApplication,
     QGraphicsItem,
     QGraphicsItemGroup,
     QGraphicsLineItem,
@@ -356,12 +357,12 @@ class SchematicPanel(QWidget):
         fg = self._fg_color()
         pen = QPen(fg, 2)
         brush = QBrush(fg)
-        label_font = QFont("Sans Serif", 10)
+        label_font = QFont(QApplication.font())
 
         if circuit is None or not circuit.elements:
             placeholder = QGraphicsSimpleTextItem(tr("No circuit — click Synthesize"))
             placeholder.setBrush(brush)
-            placeholder.setFont(QFont("Sans Serif", 11))
+            placeholder.setFont(label_font)
             self._scene.addItem(placeholder)
             self._fit_view()
             return

@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from PySide6.QtCore import QByteArray, QSettings
 
 THEME_KEY = "appearance/theme"
+FONT_SIZE_KEY = "appearance/font_size"
 LANGUAGE_KEY = "appearance/language"
 RECENT_KEY = "files/recent"
 GEOMETRY_KEY = "window/geometry"
@@ -145,6 +146,7 @@ def set_settings_store(store: SettingsStore | None) -> None:
 
 
 __all__ = [
+    "FONT_SIZE_KEY",
     "GEOMETRY_KEY",
     "LANGUAGE_KEY",
     "RECENT_KEY",

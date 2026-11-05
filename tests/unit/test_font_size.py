@@ -1,0 +1,88 @@
+"""GUI font-size presets and persistence."""
+
+from __future__ import annotations
+
+import pytest
+from PySide6.QtWidgets import QApplication, QMessageBox
+
+from filterdesk.gui.fonts import (
+    FontSize,
+    apply_font_size,
+    font_size_from_code,
+    reset_font_base,
+)
+from filterdesk.gui.settings import (
+    FONT_SIZE_KEY,
+    InMemorySettingsStore,
+    get_settings_store,
+    set_settings_store,
+)
+
+
+def test_font_size_presets_scale_relative_to_base() -> None:
+    app = QApplication.instance() or QApplication([])
+    reset_font_base()
+    apply_font_size(app, FontSize.DEFAULT)
+    base = app.font().pointSizeF()
+    assert base > 0.0
+
+    assert apply_font_size(app, FontSize.SMALL).pointSizeF() == pytest.approx(
+        base * 0.9
+    )
+    assert apply_font_size(app, FontSize.LARGE).pointSizeF() == pytest.approx(
+        base * 1.15
+    )
+    assert apply_font_size(
+        app, FontSize.EXTRA_LARGE
+    ).pointSizeF() == pytest.approx(base * 1.3)
+    assert apply_font_size(app, FontSize.DEFAULT).pointSizeF() == pytest.approx(
+        base
+    )
+    assert app is not None
+
+
+def test_font_size_from_code_falls_back_to_default() -> None:
+    assert font_size_from_code("large") is FontSize.LARGE
+    assert font_size_from_code("not-a-size") is FontSize.DEFAULT
+
+
+def test_main_window_applies_saved_font_size() -> None:
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    set_settings_store(
+        InMemorySettingsStore({FONT_SIZE_KEY: FontSize.LARGE.value})
+    )
+    reset_font_base()
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    assert window._font_size is FontSize.LARGE
+    assert window._font_size_actions[FontSize.LARGE].isChecked()
+    assert app.font().pointSizeF() > 0.0
+    window.close()
+    assert app is not None
+
+
+def test_request_font_size_persists_and_warns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    messages: list[str] = []
+    monkeypatch.setattr(
+        QMessageBox,
+        "information",
+        lambda *args, **kwargs: messages.append(str(args[2])),
+    )
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    window._request_font_size(FontSize.EXTRA_LARGE)
+    assert get_settings_store().get_str(FONT_SIZE_KEY) == (
+        FontSize.EXTRA_LARGE.value
+    )
+    assert window._font_size_actions[FontSize.EXTRA_LARGE].isChecked()
+    assert messages
+    assert "Restart FilterDesk" in messages[0]
+    window.close()
+    assert app is not None
