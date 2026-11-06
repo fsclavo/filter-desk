@@ -10,9 +10,9 @@ count or release changes.
 [v0.83.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.83.0) ·
 **Next:** v0.85.0 planning.
 
-**Verification:** local suite **1341 passed**, 4 skipped (ngspice unavailable).
-Main CI: https://github.com/fsclavo/filter-desk/actions/runs/42258224092
-Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/42259499121
+**Verification:** local suite **1349 passed**, 4 skipped (ngspice unavailable).
+Main CI: https://github.com/fsclavo/filter-desk/actions/runs/42270483840
+Release workflow: https://github.com/fsclavo/filter-desk/actions/runs/42271763987
 
 Legend: **P0** blocks release/correctness · **P1** completes a shipped feature ·
 **P2** future/optional. Effort: **S** ≤ ½ day · **M** 1–3 days · **L** > 3 days.
@@ -115,8 +115,8 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Fix hairpin resonator pitch to leave a real gap between adjacent arms.
 - [x] ADR-049, manual, README, CHANGELOG and tests updated.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__`/`uv.lock` to 0.84.0.
-- [ ] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
-- [ ] Release URL recorded above.
+- [x] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [x] Release URL recorded above.
 
 ---
 
