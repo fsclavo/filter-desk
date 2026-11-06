@@ -11,8 +11,20 @@ scheme while the public CLI/GUI stabilizes.
   **Large** and **Extra large** presets. The choice is persisted in QSettings
   and applies on the next start; schematic labels follow the selected size.
 
+### Changed
+
+- The project now requires **Python 3.12+**, matching the Python version used
+  by the AppImage and Debian bundles. CI and development environments use 3.12
+  as well.
+
 ### Fixed
 
+- A freshly opened window is no longer marked as having unsaved changes after
+  the initial automatic synthesis. Closing an untouched window no longer asks
+  “Save changes before closing?”.
+- Avoiding that unnecessary modal dialog also avoids the PySide6/Qt shutdown
+  crash (`Fatal Python error: bool_dealloc`) that occurred when the process
+  exited while the dialog was still alive on Python 3.11.
 - Local Debian builds now remove stale `FilterDesk-*-<arch>.deb` files from the
   output directory before writing the new package. Set `CLEAN_OLD_DEBS=0` to
   keep old packages for comparison.

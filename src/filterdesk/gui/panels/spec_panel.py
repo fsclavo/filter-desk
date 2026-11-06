@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TypeVar
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -44,10 +43,8 @@ from filterdesk.synthesis.order_estimate import (
     supports_order_estimation,
 )
 
-E = TypeVar("E", bound=Enum)
 
-
-def _enum_from_combo(combo: QComboBox, enum_cls: type[E]) -> E:
+def _enum_from_combo[E: Enum](combo: QComboBox, enum_cls: type[E]) -> E:
     """Read combo userData; PySide6 stores StrEnum values as plain str."""
     data = combo.currentData()
     if data is None:

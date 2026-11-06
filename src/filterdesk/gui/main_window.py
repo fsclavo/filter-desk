@@ -347,7 +347,16 @@ class MainWindow(QMainWindow):
         self._apply_theme(self._theme_mode, persist=False)
         self._restore_window_state()
         if auto_run:
+            was_dirty = self._session.dirty
             self._run_synthesize_and_analyze()
+            if not was_dirty:
+                # The startup synthesis is derived state, not an unsaved edit.
+                # Leaving the session dirty here makes every close prompt for
+                # a save and, on Python 3.11/PySide6 6.12, can expose a fatal
+                # Qt teardown race when the modal dialog is still alive.
+                self._session.dirty = False
+                self._undo.setClean()
+                self._update_title()
 
     def _add_dock(
         self, title: str, widget: QWidget, area: Qt.DockWidgetArea

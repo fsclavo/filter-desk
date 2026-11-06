@@ -27,7 +27,7 @@ FilterDesk will be a **cross-platform desktop application** for **passive lumped
 
 **Core principle:** own a **canonical domain model** (specification → synthesis → circuit → analysis results). Use **scikit-rf as an analysis backend adapter**, not as the domain. Keep **GUI**, **math**, and **I/O** strictly separated.
 
-**Recommended stack:** Python ≥3.11, PySide6/Qt 6, NumPy, SciPy, scikit-rf (adapter), PyQtGraph (interactive plots) + Matplotlib (export/Smith helpers), pytest, Ruff, mypy, uv, PyInstaller + AppImage (Linux first).
+**Recommended stack:** Python ≥3.12, PySide6/Qt 6, NumPy, SciPy, scikit-rf (adapter), PyQtGraph (interactive plots) + Matplotlib (export/Smith helpers), pytest, Ruff, mypy, uv, PyInstaller + AppImage (Linux first).
 
 **First engineering milestone (not GUI):** synthesize and analyze a known reference filter (e.g. 7th-order Chebyshev Type I high-pass, 0.01 dB ripple, 140 MHz, 50 Ω/50 Ω) and match golden component values and response metrics within defined tolerances.
 
@@ -265,7 +265,7 @@ Repository: [NanoVNA-Saver/nanovna-saver](https://github.com/NanoVNA-Saver/nanov
 
 | Layer | Choice | Rationale |
 | --- | --- | --- |
-| Language | Python 3.11–3.13 | RF libs, packaging maturity, NanoVNASaver-proven |
+| Language | Python 3.12–3.13 | RF libs, packaging maturity, NanoVNASaver-proven |
 | GUI | **PySide6** (Qt 6) | Native desktop; LGPL; Designer optional |
 | Arrays | NumPy | Vectorized sweeps |
 | Sci / optimize | SciPy | Roots, special functions, `optimize`, stats |

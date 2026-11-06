@@ -178,7 +178,7 @@ step.
 
 `.github/workflows/test.yml` runs on every push / pull request:
 
-- **Matrix**: `ubuntu-latest` and `windows-latest` × Python `3.11` / `3.12`
+- **Matrix**: `ubuntu-latest` and `windows-latest` × Python `3.12`
   (Ruff, Mypy, Import-linter, Pytest).
 - **Coverage**: `pytest-cov` (`--cov=filterdesk`, branch coverage) with a
   `--cov-fail-under=80` gate (currently ~81 %).

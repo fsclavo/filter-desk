@@ -29,6 +29,76 @@ def test_main_window_constructs() -> None:
     assert app is not None
 
 
+def test_fresh_window_closes_without_save_prompt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication, QMessageBox
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    monkeypatch.setattr(mw.MainWindow, "_run_analyze", lambda self: None)
+    prompts: list[object] = []
+    monkeypatch.setattr(
+        QMessageBox,
+        "question",
+        lambda *args, **kwargs: prompts.append(args),
+    )
+
+    session = DesignSession()
+    window = mw.MainWindow(session)
+    assert not session.dirty
+    assert "*" not in window.windowTitle()
+
+    window.close()
+    assert prompts == []
+    assert app is not None
+
+
+def test_auto_run_preserves_explicit_dirty_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    monkeypatch.setattr(mw.MainWindow, "_run_analyze", lambda self: None)
+
+    session = DesignSession()
+    session.dirty = True
+    window = mw.MainWindow(session)
+    assert session.dirty
+    assert "*" in window.windowTitle()
+
+    window._session.dirty = False
+    window.close()
+    assert app is not None
+
+
+def test_analyze_does_not_dirty_unchanged_spec() -> None:
+    from PySide6.QtWidgets import QApplication
+
+    from filterdesk.gui import main_window as mw
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    session = DesignSession()
+    window = mw.MainWindow(session, auto_run=False)
+    session.dirty = False
+
+    window._apply_spec_and_sweep_from_ui()
+    assert not session.dirty
+
+    window._spec._order.setValue(window._spec._order.value() + 1)
+    window._apply_spec_and_sweep_from_ui()
+    assert session.dirty
+    window.close()
+    assert app is not None
+
+
 def test_window_title_uses_neutral_default() -> None:
     from PySide6.QtWidgets import QApplication
 

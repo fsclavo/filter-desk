@@ -223,6 +223,8 @@ class DesignSession:
 
     def set_spec(self, spec: FilterSpec) -> None:
         validate_spec(spec)
+        if spec == self.spec:
+            return
         self.spec = spec
         self.dirty = True
 

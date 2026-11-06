@@ -107,7 +107,7 @@ open the desktop application. Passing command-line arguments (for example
 
 ### From source
 
-Requires Python **3.11+** and either [`uv`](https://docs.astral.sh/uv/)
+Requires Python **3.12+** and either [`uv`](https://docs.astral.sh/uv/)
 (recommended) or `pip`.
 
 ```bash
