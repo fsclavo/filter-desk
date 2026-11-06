@@ -180,6 +180,10 @@ from filterdesk.services.coupled_line import (
     CoupledLineError,
     design_coupled_line_bpf,
 )
+from filterdesk.services.coupled_pcb import (
+    check_layout_drc,
+    write_layout_gerber,
+)
 from filterdesk.services.design_sweep import (
     DesignSweepConfig,
     DesignSweepRow,
@@ -1191,6 +1195,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write a conceptual layout SVG (requires --layout-output)",
     )
     coupled.add_argument("--layout-output", type=Path, default=None)
+    coupled.add_argument(
+        "--gerber-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Write routed copper/outline Gerber and drill files "
+            "(default layout: hairpin)"
+        ),
+    )
     coupled.add_argument("--json", action="store_true")
 
     diplexer = sub.add_parser(
@@ -4569,17 +4582,40 @@ def main(argv: list[str] | None = None) -> int:
                 raise CoupledLayoutError(
                     "--layout-output requires --layout"
                 )
-            if args.layout is not None:
-                if args.layout_output is None:
-                    raise CoupledLayoutError(
-                        "--layout requires --layout-output"
-                    )
-                layout = build_coupled_layout(coupled_design, args.layout)
+            layout = None
+            layout_mode = args.layout or (
+                "hairpin" if args.gerber_dir is not None else None
+            )
+            if layout_mode is not None:
+                layout = build_coupled_layout(coupled_design, layout_mode)
+            if (
+                args.layout is not None
+                and args.layout_output is None
+                and args.gerber_dir is None
+            ):
+                raise CoupledLayoutError(
+                    "--layout requires --layout-output or --gerber-dir"
+                )
+            if args.layout_output is not None:
+                assert layout is not None
                 if args.layout_output.suffix.lower() == ".dxf":
                     layout_text = render_coupled_layout_dxf(layout)
                 else:
                     layout_text = render_coupled_layout_svg(layout)
                 args.layout_output.write_text(layout_text, encoding="utf-8")
+            gerber_paths: tuple[Path, Path, Path] | None = None
+            drc_summary = None
+            if args.gerber_dir is not None:
+                assert layout is not None
+                drc_report = check_layout_drc(layout)
+                drc_summary = drc_report.summary()
+                if not drc_report.ok:
+                    raise CoupledLayoutError(drc_summary)
+                gerber_paths = write_layout_gerber(
+                    layout,
+                    args.gerber_dir,
+                    stem=args.output.stem or "filterdesk",
+                )
             if args.json:
                 print(
                     json.dumps(
@@ -4613,6 +4649,13 @@ def main(argv: list[str] | None = None) -> int:
                                 if args.layout_output is None
                                 else str(args.layout_output)
                             ),
+                            "routed": None if layout is None else layout.routed,
+                            "drc": drc_summary,
+                            "gerber": (
+                                None
+                                if gerber_paths is None
+                                else [str(path) for path in gerber_paths]
+                            ),
                         },
                         indent=2,
                     )
@@ -4633,6 +4676,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Wrote {args.output}", file=sys.stderr)
                 if args.layout is not None and args.layout_output is not None:
                     print(f"Wrote {args.layout_output}", file=sys.stderr)
+                if gerber_paths is not None:
+                    for path in gerber_paths:
+                        print(f"Wrote {path}", file=sys.stderr)
+                if drc_summary is not None:
+                    print(drc_summary, file=sys.stderr)
         except (
             CoupledLayoutError,
             CoupledLineError,

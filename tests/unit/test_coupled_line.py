@@ -233,8 +233,10 @@ def test_coupled_line_dialog_design_and_export(
     assert dialog._table.columnCount() == 7
     assert dialog._export_button.isEnabled()
     assert dialog._layout_mode.count() == 3
+    assert not dialog._export_gerber_button.isEnabled()
     dialog._layout_mode.setCurrentIndex(1)
-    assert "Conceptual" in dialog._layout_status.text()
+    assert "Routed hairpin" in dialog._layout_status.text()
+    assert dialog._export_gerber_button.isEnabled()
     dialog._family.setCurrentIndex(1)
     dialog._order.setValue(4)
     dialog._run_design()
@@ -265,6 +267,16 @@ def test_coupled_line_dialog_design_and_export(
     )
     dialog._export_layout()
     assert "TOP_COPPER" in dxf_output.read_text(encoding="utf-8")
+    gerber_dir = tmp_path / "gerber"
+    monkeypatch.setattr(
+        module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(gerber_dir),
+    )
+    dialog._export_gerber()
+    assert (gerber_dir / "filterdesk_coupled-F_Cu.gbr").is_file()
+    assert (gerber_dir / "filterdesk_coupled-Edge_Cuts.gbr").is_file()
+    assert (gerber_dir / "filterdesk_coupled.drl").is_file()
     dialog.close()
     assert app is not None
 

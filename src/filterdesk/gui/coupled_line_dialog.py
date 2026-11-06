@@ -42,6 +42,10 @@ from filterdesk.services.coupled_line import (
     CoupledLineError,
     design_coupled_line_bpf,
 )
+from filterdesk.services.coupled_pcb import (
+    check_layout_drc,
+    write_layout_gerber,
+)
 
 
 class CoupledLineDialog(QDialog):
@@ -95,7 +99,7 @@ class CoupledLineDialog(QDialog):
         self._layout_mode = QComboBox()
         for label, mode in (
             (tr("Edge-coupled"), LayoutMode.EDGE),
-            (tr("Hairpin"), LayoutMode.HAIRPIN),
+            (tr("Hairpin (routed)"), LayoutMode.HAIRPIN),
             (tr("Interdigital"), LayoutMode.INTERDIGITAL),
         ):
             self._layout_mode.addItem(label, mode.value)
@@ -115,6 +119,12 @@ class CoupledLineDialog(QDialog):
         self._export_layout_button = QPushButton(tr("Export layout…"))
         self._export_layout_button.setEnabled(False)
         self._export_layout_button.clicked.connect(self._export_layout)
+        self._export_gerber_button = QPushButton(tr("Export Gerber…"))
+        self._export_gerber_button.setEnabled(False)
+        self._export_gerber_button.setToolTip(
+            tr("Gerber export requires the routed Hairpin layout.")
+        )
+        self._export_gerber_button.clicked.connect(self._export_gerber)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         buttons.rejected.connect(self.reject)
         buttons.accepted.connect(self.accept)
@@ -122,6 +132,9 @@ class CoupledLineDialog(QDialog):
         buttons.addButton(self._export_button, QDialogButtonBox.ButtonRole.ActionRole)
         buttons.addButton(
             self._export_layout_button, QDialogButtonBox.ButtonRole.ActionRole
+        )
+        buttons.addButton(
+            self._export_gerber_button, QDialogButtonBox.ButtonRole.ActionRole
         )
         form = QFormLayout()
         form.addRow(tr("Center frequency"), self._center)
@@ -192,6 +205,7 @@ class CoupledLineDialog(QDialog):
             self._status.setText(str(exc))
             self._export_button.setEnabled(False)
             self._export_layout_button.setEnabled(False)
+            self._export_gerber_button.setEnabled(False)
             self._layout_widget.load(QByteArray())
             self._layout_status.setText("")
             return
@@ -219,6 +233,7 @@ class CoupledLineDialog(QDialog):
             self._layout_widget.load(QByteArray())
             self._layout_status.setText("")
             self._export_layout_button.setEnabled(False)
+            self._export_gerber_button.setEnabled(False)
             return
         try:
             layout = build_coupled_layout(
@@ -233,6 +248,7 @@ class CoupledLineDialog(QDialog):
         self._layout_widget.load(QByteArray(svg.encode("utf-8")))
         self._layout_status.setText(" ".join(layout.warnings))
         self._export_layout_button.setEnabled(True)
+        self._export_gerber_button.setEnabled(layout.routed)
 
     def _export_layout(self) -> None:
         if self._design is None:
@@ -260,6 +276,41 @@ class CoupledLineDialog(QDialog):
             QMessageBox.critical(self, tr("Export failed"), str(exc))
             return
         self._status.setText(tr("Wrote {path}", path=path))
+
+    def _export_gerber(self) -> None:
+        if self._design is None:
+            return
+        try:
+            layout = build_coupled_layout(
+                self._design, str(self._layout_mode.currentData())
+            )
+            report = check_layout_drc(layout)
+        except CoupledLayoutError as exc:
+            QMessageBox.critical(self, tr("Export Gerber"), str(exc))
+            return
+        if not report.ok:
+            QMessageBox.critical(
+                self, tr("DRC failed"), report.summary()
+            )
+            return
+        directory = QFileDialog.getExistingDirectory(
+            self, tr("Export Gerber"), ""
+        )
+        if not directory:
+            return
+        try:
+            paths = write_layout_gerber(
+                layout, directory, stem="filterdesk_coupled"
+            )
+        except OSError as exc:
+            QMessageBox.critical(self, tr("Export failed"), str(exc))
+            return
+        self._status.setText(
+            tr(
+                "Gerber files written to {path}",
+                path=str(paths[0].parent),
+            )
+        )
 
     def _export(self) -> None:
         if self._design is None:

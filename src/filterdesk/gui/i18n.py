@@ -836,9 +836,17 @@ _ES.update(
         "Layout sketch": "Esquema de layout",
         "Edge-coupled": "Líneas acopladas rectas",
         "Hairpin": "Hairpin",
+        "Hairpin (routed)": "Hairpin (ruteado)",
         "Interdigital": "Interdigital",
         "Export layout…": "Exportar layout…",
         "Export layout": "Exportar layout",
+        "Export Gerber…": "Exportar Gerber…",
+        "Export Gerber": "Exportar Gerber",
+        "DRC failed": "DRC falló",
+        "Gerber files written to {path}": "Archivos Gerber escritos en {path}",
+        "Gerber export requires the routed Hairpin layout.": (
+            "La exportación Gerber requiere el layout Hairpin ruteado."
+        ),
         "Export coupled-line filter": "Exportar filtro de líneas acopladas",
         "Synthesize an ideal coupled-line bandpass filter.": (
             "Sintetizar un filtro pasa-banda ideal de líneas acopladas."

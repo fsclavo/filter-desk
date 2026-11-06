@@ -35,6 +35,7 @@ class LayoutTrace:
     y1_mm: float
     width_mm: float
     label: str
+    net: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +46,7 @@ class CoupledLayout:
     traces: tuple[LayoutTrace, ...]
     section_lengths_mm: tuple[float, ...]
     warnings: tuple[str, ...] = ()
+    routed: bool = False
     meta: dict[str, object] = field(default_factory=dict)
 
     def summary(self) -> str:
@@ -86,7 +88,10 @@ def _edge_layout(
         max_width = max(max_width, width)
         max_x = max(max_x, length)
         traces.append(
-            LayoutTrace(0.0, y, length, y, width, f"S{section.index}a")
+            LayoutTrace(
+                0.0, y, length, y, width, f"S{section.index}a",
+                net=f"S{section.index}a",
+            )
         )
         traces.append(
             LayoutTrace(
@@ -96,6 +101,7 @@ def _edge_layout(
                 y + width + gap,
                 width,
                 f"S{section.index}b",
+                net=f"S{section.index}b",
             )
         )
         y += 2.0 * width + gap + 3.0
@@ -125,22 +131,27 @@ def _hairpin_layout(
     lambda_half = 2.0 * sum(lengths) / len(lengths)
     bend = width + gap
     arm = max((lambda_half - bend) / 2.0, 0.0)
-    spacing = width + gap
+    # Adjacent resonators need one gap between their facing arms, so the
+    # pitch is twice the arm-to-arm spacing.
+    spacing = 2.0 * (width + gap)
     traces: list[LayoutTrace] = []
     for index in range(design.config.order):
         x_left = index * spacing
         x_right = x_left + width + gap
-        traces.append(
-            LayoutTrace(x_left, 0.0, x_left, arm, width, f"R{index + 1}a")
-        )
+        net = f"R{index + 1}"
         traces.append(
             LayoutTrace(
-                x_right, 0.0, x_right, arm, width, f"R{index + 1}b"
+                x_left, 0.0, x_left, arm, width, f"R{index + 1}a", net=net
             )
         )
         traces.append(
             LayoutTrace(
-                x_left, arm, x_right, arm, width, f"R{index + 1}bend"
+                x_right, 0.0, x_right, arm, width, f"R{index + 1}b", net=net
+            )
+        )
+        traces.append(
+            LayoutTrace(
+                x_left, arm, x_right, arm, width, f"R{index + 1}bend", net=net
             )
         )
     return CoupledLayout(
@@ -150,9 +161,10 @@ def _hairpin_layout(
         traces=tuple(traces),
         section_lengths_mm=lengths,
         warnings=(
-            "Conceptual hairpin sketch only: uniform average width/gap, "
-            "idealized bends and no routing/discontinuity/EM model.",
+            "Routed hairpin geometry handoff: uniform average width/gap, "
+            "idealized bends and no discontinuity/EM model.",
         ),
+        routed=True,
         meta={"arm_mm": arm, "bend_mm": bend, "average_width_mm": width},
     )
 
@@ -181,6 +193,7 @@ def _interdigital_layout(
                 length if top else 0.0,
                 width,
                 f"R{index + 1}",
+                net=f"R{index + 1}",
             )
         )
     return CoupledLayout(

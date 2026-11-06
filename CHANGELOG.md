@@ -3,6 +3,22 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Added
+
+- **Routed hairpin coupled-line layout** with DRC and Gerber/drill export:
+  minimum width/gap/board-margin checks, RS-274X copper/outline Gerbers and an
+  Excellon drill file. Gerber export rejects non-routed edge/interdigital
+  sketches.
+- **Hairpin (routed)** label in the coupled-line dialog and **Export Gerber…**
+  action.
+
+### Fixed
+
+- Hairpin resonator pitch now leaves one real edge-to-edge gap between adjacent
+  resonators instead of overlapping their facing arms.
+
 ## v0.83.0 — 2026-11-06
 
 ### Changed

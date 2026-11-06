@@ -1358,7 +1358,11 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] **Conceptual layout sketches:** edge-coupled, hairpin and interdigital
       SVG preview/export (ADR-046).
 - [x] **DXF geometry handoff:** `TOP_COPPER`/`BOARD_OUTLINE` layers for external
-      EM/CAD (ADR-047). Routed layout/EM remain pending.
+      EM/CAD (ADR-047).
+- [x] **Routed hairpin + DRC/Gerber:** connected hairpin resonators, width/gap/
+      board-margin DRC, RS-274X copper/outline Gerbers and Excellon drill
+      export (ADR-049). Edge/interdigital routing and EM validation remain
+      pending.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, hairpin/interdigital layout, step
       discontinuities and hardware validation. (L)

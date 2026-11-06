@@ -1404,10 +1404,11 @@ It supports **Butterworth** (order 1–9) and **Chebyshev-I** (odd order, equal
   coupled section;
 - first-pass **width and gap** for the selected substrate, plus even/odd
   effective permittivity;
-- a **conceptual layout sketch** in edge-coupled, hairpin or interdigital style;
+- a layout in edge-coupled, **hairpin (routed)** or interdigital style;
 - the ideal 2-port S11/S21 response from cascaded J-inverters and shunt
   resonators;
-- Touchstone `.s2p` plus SVG/DXF layout export.
+- Touchstone `.s2p`, SVG/DXF sketches and, for hairpin, **DRC + Gerber/drill**
+  fabrication files.
 
 Example:
 
@@ -1419,16 +1420,22 @@ filterdesk coupled-line --center 100M --bandwidth 10M --order 3 \
 ```
 
 `--substrate NAME` selects the PCB stackup; `--layout {edge,hairpin,interdigital}`
-with `--layout-output FILE.svg` or `FILE.dxf` writes the conceptual sketch. The
-DXF is a geometry handoff for a field solver/CAD tool, not a fabrication drawing.
+with `--layout-output FILE.svg` or `FILE.dxf` writes the sketch. Add
+`--gerber-dir DIR` to write routed copper/outline Gerbers and an Excellon drill
+file. Gerber export is available for the **Hairpin (routed)** mode; edge and
+interdigital modes stay sketches until routing/via support is added.
 
-Width/gap use a zero-thickness, quasi-static Hammerstad-Jensen model with a
-bounded numerical fit. The layout selector produces a **conceptual to-scale
-sketch**, not a routed fabrication layout: edge-coupled sections, idealized
-hairpin folds or interdigital lines are drawn with average width/gap where
-needed. Finite copper thickness, coupled-line dispersion, bends,
-discontinuities, open-end effects, shorting vias and EM coupling are not
-included. Use a 2-D/3-D field solver or VNA before building the board.
+```bash
+filterdesk coupled-line --center 100M --bandwidth 10M --order 3   --substrate FR4 --layout hairpin --gerber-dir ./gerber   --output coupled.s2p
+```
+
+The DRC checks minimum width, gap between different nets, board-edge margin and
+zero-length/width segments before writing Gerber. Non-routed modes are rejected.
+The DXF/Gerber output is a **geometry handoff**, not an EM-validated board:
+width/gap use a zero-thickness quasi-static Hammerstad-Jensen fit; finite copper
+thickness, coupled-line dispersion, bends, discontinuities, open-end effects,
+shorting vias and EM coupling are not included. Use a 2-D/3-D field solver or
+VNA before building the board.
 
 Manual line and stub elements are also part of the canonical netlist and both
 ABCD/skrf backends. Stubs are not produced by the v1 low-pass synthesis; series
