@@ -19,6 +19,7 @@ class CoupledPcbError(ValueError):
 class DrcRules:
     min_width_mm: float = 0.15
     min_gap_mm: float = 0.15
+    min_annular_mm: float = 0.15
     board_margin_mm: float = 0.5
     board_edge_margin_mm: float = _MARGIN_MM
 
@@ -225,6 +226,84 @@ def check_layout_drc(
                         f"{selected.min_gap_mm:.3f} mm",
                     )
                 )
+
+    for via in layout.vias:
+        if via.pad_diameter_mm <= 0.0 or via.drill_diameter_mm <= 0.0:
+            violations.append(
+                DrcViolation(
+                    "via-size",
+                    f"{via.label}: pad and drill must be positive",
+                )
+            )
+            continue
+        annular = (via.pad_diameter_mm - via.drill_diameter_mm) / 2.0
+        if annular < selected.min_annular_mm - 1e-9:
+            violations.append(
+                DrcViolation(
+                    "via-annular",
+                    f"{via.label}: annular ring {annular:.3f} mm < "
+                    f"{selected.min_annular_mm:.3f} mm",
+                )
+            )
+        pad_half = via.pad_diameter_mm / 2.0
+        board_left = -selected.board_edge_margin_mm
+        board_bottom = -selected.board_edge_margin_mm
+        board_right = layout.width_mm + selected.board_edge_margin_mm
+        board_top = layout.height_mm + selected.board_edge_margin_mm
+        if (
+            via.x_mm - pad_half < board_left + selected.board_margin_mm
+            or via.x_mm + pad_half > board_right - selected.board_margin_mm
+            or via.y_mm - pad_half < board_bottom + selected.board_margin_mm
+            or via.y_mm + pad_half > board_top - selected.board_margin_mm
+        ):
+            violations.append(
+                DrcViolation(
+                    "via-board-margin",
+                    f"{via.label}: outside board margin",
+                )
+            )
+        for trace in layout.traces:
+            if via.net and via.net == trace.net:
+                continue
+            gap = (
+                _point_segment_distance(
+                    via.x_mm,
+                    via.y_mm,
+                    trace.x0_mm,
+                    trace.y0_mm,
+                    trace.x1_mm,
+                    trace.y1_mm,
+                )
+                - pad_half
+                - trace.width_mm / 2.0
+            )
+            if gap < selected.min_gap_mm - 1e-9:
+                violations.append(
+                    DrcViolation(
+                        "via-trace-gap",
+                        f"{via.label}/{trace.label}: gap {gap:.3f} mm < "
+                        f"{selected.min_gap_mm:.3f} mm",
+                    )
+                )
+
+    for index, first_via in enumerate(layout.vias):
+        for second_via in layout.vias[index + 1 :]:
+            gap = (
+                math.hypot(
+                    first_via.x_mm - second_via.x_mm,
+                    first_via.y_mm - second_via.y_mm,
+                )
+                - (first_via.pad_diameter_mm + second_via.pad_diameter_mm) / 2.0
+            )
+            if gap < selected.min_gap_mm - 1e-9:
+                violations.append(
+                    DrcViolation(
+                        "via-gap",
+                        f"{first_via.label}/{second_via.label}: "
+                        f"gap {gap:.3f} mm < "
+                        f"{selected.min_gap_mm:.3f} mm",
+                    )
+                )
     return DrcReport(tuple(violations), selected)
 
 
@@ -242,21 +321,27 @@ def render_layout_gerber(
     holes_mm: tuple[tuple[float, float, float], ...] = (),
 ) -> GerberSet:
     """Render RS-274X copper/outline Gerbers plus an Excellon drill file."""
-    widths = sorted({trace.width_mm for trace in layout.traces})
-    codes = {width: 10 + index for index, width in enumerate(widths)}
+    diameters = sorted(
+        {trace.width_mm for trace in layout.traces}
+        | {via.pad_diameter_mm for via in layout.vias}
+    )
+    codes = {diameter: 10 + index for index, diameter in enumerate(diameters)}
     copper = [
         "G04 FilterDesk routed coupled-line copper*",
         "%FSLAX46Y46*%",
         "%MOMM*%",
         "%LPD*%",
     ]
-    for width in widths:
-        copper.append(f"%ADD{codes[width]}{_aperture(width)}*%")
+    for diameter in diameters:
+        copper.append(f"%ADD{codes[diameter]}{_aperture(diameter)}*%")
     copper.append("G01*")
     for trace in layout.traces:
         copper.append(f"D{codes[trace.width_mm]}*")
         copper.append(f"X{_coordinate(trace.x0_mm)}Y{_coordinate(trace.y0_mm)}D02*")
         copper.append(f"X{_coordinate(trace.x1_mm)}Y{_coordinate(trace.y1_mm)}D01*")
+    for via in layout.vias:
+        copper.append(f"D{codes[via.pad_diameter_mm]}*")
+        copper.append(f"X{_coordinate(via.x_mm)}Y{_coordinate(via.y_mm)}D03*")
     copper.append("M02*")
 
     board_w = layout.width_mm + 2.0 * _MARGIN_MM
@@ -283,16 +368,19 @@ def render_layout_gerber(
         )
     outline.append("M02*")
 
+    all_holes = tuple(
+        (via.x_mm, via.y_mm, via.drill_diameter_mm) for via in layout.vias
+    ) + tuple(holes_mm)
     drill = ["M48", "METRIC,TZ"]
-    if holes_mm:
-        diameters = sorted({diameter for _, _, diameter in holes_mm})
+    if all_holes:
+        diameters = sorted({diameter for _, _, diameter in all_holes})
         tools = {diameter: index + 1 for index, diameter in enumerate(diameters)}
         for diameter in diameters:
             drill.append(f"T{tools[diameter]}C{diameter:.3f}")
         drill.append("%")
         for diameter in diameters:
             drill.append(f"T{tools[diameter]}")
-            for x, y, hole_diameter in holes_mm:
+            for x, y, hole_diameter in all_holes:
                 if hole_diameter == diameter:
                     drill.append(f"X{x:.3f}Y{y:.3f}")
     else:

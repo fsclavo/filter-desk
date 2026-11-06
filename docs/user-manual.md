@@ -1404,7 +1404,7 @@ It supports **Butterworth** (order 1–9) and **Chebyshev-I** (odd order, equal
   coupled section;
 - first-pass **width and gap** for the selected substrate, plus even/odd
   effective permittivity;
-- a layout in edge-coupled, **hairpin (routed)** or interdigital style;
+- a layout in edge-coupled, **hairpin (routed)** or **interdigital (vias)** style;
 - the ideal 2-port S11/S21 response from cascaded J-inverters and shunt
   resonators;
 - Touchstone `.s2p`, SVG/DXF sketches and, for hairpin, **DRC + Gerber/drill**
@@ -1422,8 +1422,10 @@ filterdesk coupled-line --center 100M --bandwidth 10M --order 3 \
 `--substrate NAME` selects the PCB stackup; `--layout {edge,hairpin,interdigital}`
 with `--layout-output FILE.svg` or `FILE.dxf` writes the sketch. Add
 `--gerber-dir DIR` to write routed copper/outline Gerbers and an Excellon drill
-file. Gerber export is available for the **Hairpin (routed)** mode; edge and
-interdigital modes stay sketches until routing/via support is added.
+file. Gerber export is available for **Hairpin (routed)** and **Interdigital
+(vias)**; edge-coupled stays a sketch until its physical routing topology is
+implemented. Interdigital vias are included in the DRC, copper Gerber and drill
+file.
 
 ```bash
 filterdesk coupled-line --center 100M --bandwidth 10M --order 3   --substrate FR4 --layout hairpin --gerber-dir ./gerber   --output coupled.s2p

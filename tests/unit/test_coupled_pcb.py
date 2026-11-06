@@ -55,12 +55,16 @@ def test_hairpin_layout_passes_default_drc() -> None:
     assert report.summary() == "DRC: no violations"
 
 
-def test_disconnected_modes_are_rejected() -> None:
+def test_edge_mode_is_rejected_but_interdigital_is_routed() -> None:
     design = _design()
-    for mode in (LayoutMode.EDGE, LayoutMode.INTERDIGITAL):
-        report = check_layout_drc(build_coupled_layout(design, mode))
-        assert not report.ok
-        assert any(v.code == "not-routed" for v in report.errors)
+    edge = check_layout_drc(build_coupled_layout(design, LayoutMode.EDGE))
+    assert not edge.ok
+    assert any(v.code == "not-routed" for v in edge.errors)
+    interdigital = build_coupled_layout(design, LayoutMode.INTERDIGITAL)
+    assert interdigital.routed
+    assert interdigital.vias
+    report = check_layout_drc(interdigital)
+    assert report.ok
 
 
 def test_drc_flags_width_and_gap() -> None:
@@ -177,3 +181,49 @@ def test_cli_rejects_gerber_for_unrouted_mode(
         == 2
     )
     assert "not-routed" in capsys.readouterr().err
+
+
+def test_interdigital_gerber_flashes_vias_and_drills_holes() -> None:
+    layout = build_coupled_layout(_design(), LayoutMode.INTERDIGITAL)
+    gerber = render_layout_gerber(layout)
+    assert layout.vias
+    assert gerber.copper.count("D03*") == len(layout.vias)
+    assert "T1C0.300" in gerber.drill
+    hole_lines = [
+        line for line in gerber.drill.splitlines() if line.startswith("X")
+    ]
+    assert len(hole_lines) == len(layout.vias)
+
+
+def test_cli_interdigital_gerber(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "coupled.s2p"
+    gerber_dir = tmp_path / "gerber"
+    assert (
+        main(
+            [
+                "coupled-line",
+                "--center",
+                "100M",
+                "--bandwidth",
+                "10M",
+                "--order",
+                "3",
+                "--substrate",
+                "FR4",
+                "--layout",
+                "interdigital",
+                "--gerber-dir",
+                str(gerber_dir),
+                "--output",
+                str(output),
+                "--json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["routed"] is True
+    assert payload["drc"] == "DRC: no violations"
+    assert len(payload["gerber"]) == 3

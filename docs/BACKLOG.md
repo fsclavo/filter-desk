@@ -1375,8 +1375,10 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       EM/CAD (ADR-047).
 - [x] **Routed hairpin + DRC/Gerber:** connected hairpin resonators, width/gap/
       board-margin DRC, RS-274X copper/outline Gerbers and Excellon drill
-      export (ADR-049). Edge/interdigital routing and EM validation remain
-      pending.
+      export (ADR-049).
+- [x] **Interdigital via routing:** alternating shorting vias, via annular/
+      clearance DRC, copper flashes and drill holes. Edge-coupled routing and
+      EM validation remain pending.
 - [ ] **Distributed synthesis depth:** all-response distributed design,
       stub-only/Kuroda topologies, hairpin/interdigital layout, step
       discontinuities and hardware validation. (L)

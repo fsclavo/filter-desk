@@ -39,12 +39,23 @@ class LayoutTrace:
 
 
 @dataclass(frozen=True, slots=True)
+class LayoutVia:
+    x_mm: float
+    y_mm: float
+    pad_diameter_mm: float
+    drill_diameter_mm: float
+    label: str
+    net: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class CoupledLayout:
     mode: LayoutMode
     width_mm: float
     height_mm: float
     traces: tuple[LayoutTrace, ...]
     section_lengths_mm: tuple[float, ...]
+    vias: tuple[LayoutVia, ...] = ()
     warnings: tuple[str, ...] = ()
     routed: bool = False
     meta: dict[str, object] = field(default_factory=dict)
@@ -182,9 +193,13 @@ def _interdigital_layout(
     length = sum(lengths) / len(lengths)
     spacing = width + gap
     traces: list[LayoutTrace] = []
+    vias: list[LayoutVia] = []
+    via_drill = 0.3
+    via_pad = max(width, 0.8)
     for index in range(design.config.order):
         x = index * spacing
         top = index % 2 == 0
+        net = f"R{index + 1}"
         traces.append(
             LayoutTrace(
                 x,
@@ -192,8 +207,18 @@ def _interdigital_layout(
                 x,
                 length if top else 0.0,
                 width,
-                f"R{index + 1}",
-                net=f"R{index + 1}",
+                net,
+                net=net,
+            )
+        )
+        vias.append(
+            LayoutVia(
+                x,
+                length if top else 0.0,
+                via_pad,
+                via_drill,
+                f"R{index + 1}via",
+                net=net,
             )
         )
     return CoupledLayout(
@@ -202,11 +227,18 @@ def _interdigital_layout(
         height_mm=length,
         traces=tuple(traces),
         section_lengths_mm=lengths,
+        vias=tuple(vias),
         warnings=(
-            "Conceptual interdigital sketch only: uniform average width/gap, "
-            "no shorting vias, bends, discontinuities or EM model.",
+            "Interdigital via-routed geometry handoff: uniform average "
+            "width/gap, idealized shorting vias and no via/EM model.",
         ),
-        meta={"average_width_mm": width, "average_gap_mm": gap},
+        routed=True,
+        meta={
+            "average_width_mm": width,
+            "average_gap_mm": gap,
+            "via_drill_mm": via_drill,
+            "via_pad_mm": via_pad,
+        },
     )
 
 
@@ -384,6 +416,7 @@ __all__ = [
     "CoupledLayoutError",
     "LayoutMode",
     "LayoutTrace",
+    "LayoutVia",
     "build_coupled_layout",
     "render_coupled_layout_dxf",
     "render_coupled_layout_svg",

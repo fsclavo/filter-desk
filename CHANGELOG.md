@@ -3,6 +3,14 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Added
+
+- **Interdigital (vias)** routed layout: alternating shorting vias, via annular
+  ring/clearance DRC, copper via flashes and Excellon via holes. Edge-coupled
+  remains a sketch until its physical routing topology is implemented.
+
 ## v0.84.0 — 2026-11-06
 
 ### Added

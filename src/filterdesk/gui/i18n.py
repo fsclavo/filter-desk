@@ -838,6 +838,7 @@ _ES.update(
         "Hairpin": "Hairpin",
         "Hairpin (routed)": "Hairpin (ruteado)",
         "Interdigital": "Interdigital",
+        "Interdigital (vias)": "Interdigital (vías)",
         "Export layout…": "Exportar layout…",
         "Export layout": "Exportar layout",
         "Export Gerber…": "Exportar Gerber…",

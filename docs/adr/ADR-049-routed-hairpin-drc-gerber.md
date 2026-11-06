@@ -18,17 +18,21 @@ validated by the internal narrowband model.
 
 ## Decision
 
-- Treat **Hairpin** as the routed mode. Its resonators are connected traces; the
+- Treat **Hairpin** as a routed mode. Its resonators are connected traces; the
   UI label is **Hairpin (routed)**.
+- Treat **Interdigital** as a via-routed mode: alternating resonators receive
+  shorting vias; the UI label is **Interdigital (vias)**. Edge-coupled remains a
+  sketch until a physical routing topology is defined.
 - Add a DRC pass before Gerber export:
   - minimum trace width;
   - minimum gap between different nets, including parallel and crossing traces;
+  - via annular ring, via-to-trace and via-to-via clearance;
   - board-edge margin;
   - zero-length/zero-width segments;
-  - reject non-routed edge/interdigital modes for Gerber output.
+  - reject non-routed edge-coupled mode for Gerber output.
 - Export RS-274X copper and board-outline Gerbers plus an Excellon drill file.
-  The default drill file has no holes; an API accepts optional mounting/via
-  holes.
+  Interdigital via pads are flashed on copper and their holes are written to the
+  drill file; the API also accepts optional mounting holes.
 - Keep the DXF/SVG sketch path. Do not claim EM validation, impedance control,
   discontinuity compensation, copper thickness or via modeling.
 - State the limits in the GUI, CLI JSON and documentation.
@@ -38,5 +42,4 @@ validated by the internal narrowband model.
 - Users get a manufacturable starting geometry for a hairpin filter, with
   explicit DRC failures instead of silent bad geometry.
 - The electrical design still requires a field solver or VNA validation.
-- Edge-coupled and interdigital modes remain sketches until a real routing/via
-  model is implemented.
+- Edge-coupled remains a sketch until a real routing topology is implemented.

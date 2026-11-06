@@ -100,7 +100,7 @@ class CoupledLineDialog(QDialog):
         for label, mode in (
             (tr("Edge-coupled"), LayoutMode.EDGE),
             (tr("Hairpin (routed)"), LayoutMode.HAIRPIN),
-            (tr("Interdigital"), LayoutMode.INTERDIGITAL),
+            (tr("Interdigital (vias)"), LayoutMode.INTERDIGITAL),
         ):
             self._layout_mode.addItem(label, mode.value)
         self._layout_widget = QSvgWidget()
