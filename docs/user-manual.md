@@ -249,19 +249,19 @@ name it, the saved file name or `Untitled`.
 
 ### Language
 
-**View → Language** switches the GUI between **English** and **Español**. The
+**Edit → Preferences → Language** switches the GUI between **English** and **Español**. The
 choice is saved with the other preferences and **applies on the next start**
 (FilterDesk asks you to restart). The command-line interface and exported files
 (netlists, CSV, Touchstone) stay in English so scripts and EDA tools keep
 working. Domain/technical error text may also remain in English.
 
-**View → Theme** switches between **System**, **Light** and **Dark**. The choice
+**Edit → Preferences → Theme** switches between **System**, **Light** and **Dark**. The choice
 is remembered across sessions, and the window size and dock layout are restored
 on the next launch. The theme and language are stored in the platform's user settings
 (QSettings), not inside the project file, so opening a project does not change
 your appearance.
 
-**View → Font size** offers **Small**, **Default**, **Large** and **Extra
+**Edit → Preferences → Font size** offers **Small**, **Default**, **Large** and **Extra
 large** presets. The choice is saved with the other preferences and applies on
 the next start (FilterDesk asks you to restart). It scales the standard widgets
 and schematic labels; exported PDF reports keep their fixed print font.

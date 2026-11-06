@@ -550,6 +550,9 @@ class MainWindow(QMainWindow):
         act_add_m.setShortcut("Ctrl+M")
         act_add_m.triggered.connect(self._add_marker_at_cursor)
         edit_menu.addAction(act_add_m)
+        edit_menu.addSeparator()
+        preferences_menu = edit_menu.addMenu(tr("&Preferences"))
+        theme_menu = preferences_menu.addMenu(tr("&Theme"))
 
         view_menu = self.menuBar().addMenu(tr("&View"))
         for dock in self._docks:
@@ -570,8 +573,7 @@ class MainWindow(QMainWindow):
         self._act_harmonics.setChecked(True)
         self._act_harmonics.toggled.connect(self._plots.set_harmonics_visible)
         view_menu.addAction(self._act_harmonics)
-        view_menu.addSeparator()
-        theme_menu = view_menu.addMenu(tr("&Theme"))
+
         theme_group = QActionGroup(self)
         theme_group.setExclusive(True)
         for mode, label in (
@@ -586,7 +588,7 @@ class MainWindow(QMainWindow):
             theme_group.addAction(action)
             theme_menu.addAction(action)
             self._theme_actions[mode] = action
-        font_menu = view_menu.addMenu(tr("&Font size"))
+        font_menu = preferences_menu.addMenu(tr("&Font size"))
         font_group = QActionGroup(self)
         font_group.setExclusive(True)
         for size, label in (
@@ -604,7 +606,7 @@ class MainWindow(QMainWindow):
             font_group.addAction(action)
             font_menu.addAction(action)
             self._font_size_actions[size] = action
-        language_menu = view_menu.addMenu(tr("&Language"))
+        language_menu = preferences_menu.addMenu(tr("&Language"))
         language_group = QActionGroup(self)
         language_group.setExclusive(True)
         for language, label in (
@@ -731,7 +733,8 @@ class MainWindow(QMainWindow):
         menu_tips = {
             file_menu: tr("Project files, imports and exports."),
             edit_menu: tr("Undo, redo and measurement markers."),
-            view_menu: tr("Docks, overlays, theme and language."),
+            view_menu: tr("Docks and overlay visibility."),
+            preferences_menu: tr("Theme, font size and language."),
             design_menu: tr("Synthesis, tuning, optimization and compliance."),
             tools_menu: tr("Independent RF calculators and analysis tools."),
             help_menu: tr("Documentation, model confidence and About."),

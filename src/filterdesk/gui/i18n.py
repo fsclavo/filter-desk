@@ -248,6 +248,7 @@ _ES.update(
         "Show &measured overlay": "Mostrar superposición &medida",
         "Show Monte-Carlo &envelope": "Mostrar &envolvente Monte-Carlo",
         "Show &harmonic markers": "Mostrar marcadores de &armónicos",
+        "&Preferences": "&Preferencias",
         "&Theme": "&Tema",
         "&Language": "&Idioma",
         "&Design": "&Diseño",
@@ -969,8 +970,11 @@ _ES.update(
         "Design transformers, baluns, ununs and chokes.": (
             "Diseñar transformadores, baluns, ununs y choques."
         ),
-        "Docks, overlays, theme and language.": (
-            "Paneles, superposiciones, tema e idioma."
+        "Docks and overlay visibility.": (
+            "Paneles y visibilidad de superposiciones."
+        ),
+        "Theme, font size and language.": (
+            "Tema, tamaño de fuente e idioma."
         ),
         "Documentation, model confidence and About.": (
             "Documentación, confianza de modelos y Acerca de."

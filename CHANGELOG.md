@@ -3,6 +3,13 @@
 All notable changes to FilterDesk. The project follows a `0.x` versioning
 scheme while the public CLI/GUI stabilizes.
 
+## Unreleased
+
+### Changed
+
+- Moved **Theme**, **Font size** and **Language** under
+  **Edit → Preferences**.
+
 ## v0.82.0 — 2026-11-06
 
 ### Added

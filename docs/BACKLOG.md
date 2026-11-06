@@ -1314,8 +1314,9 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       native-font mismatch. Covered at all four presets. (S)
       - 2026-11-06 implemented with explicit chrome-font sync and regression
         test.
-- [ ] **Live font-size application and plot scaling:** apply **View → Font
-      size** without restarting; refresh schematic labels, pyqtgraph axes,
+- [ ] **Live font-size application and plot scaling:** apply **Edit →
+      Preferences → Font size** without restarting; refresh schematic labels,
+      pyqtgraph axes,
       ticks and legends, docks/dialogs and re-fit layouts. Keep the restart
       fallback only for widgets that cannot update safely. (M)
 

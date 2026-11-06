@@ -126,3 +126,36 @@ def test_menu_and_toolbar_follow_app_font() -> None:
     )
     window.close()
     assert app is not None
+
+
+def test_preferences_submenu_holds_appearance_actions() -> None:
+    from PySide6.QtWidgets import QApplication, QMenu
+
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    menus = {
+        action.text().replace("&", ""): action.menu()
+        for action in window.menuBar().actions()
+        if isinstance(action.menu(), QMenu)
+    }
+    edit_menu = menus["Edit"]
+    assert edit_menu is not None
+    preferences = next(
+        action.menu()
+        for action in edit_menu.actions()
+        if action.text().replace("&", "") == "Preferences"
+    )
+    assert preferences is not None
+    labels = [action.text().replace("&", "") for action in preferences.actions()]
+    assert labels == ["Theme", "Font size", "Language"]
+    view_menu = menus["View"]
+    assert view_menu is not None
+    view_labels = [action.text().replace("&", "") for action in view_menu.actions()]
+    assert not any(
+        label in view_labels for label in ("Theme", "Font size", "Language")
+    )
+    window.close()
+    assert app is not None
