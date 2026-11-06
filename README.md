@@ -128,7 +128,7 @@ HF”, “calculadora de toroides” y “diseño de balun/unun”.
 - **Toroid / air-core realization**: turn a synthesized inductor into a physical
   winding (turns, wire gauge, DCR) from the built-in coil calculators.
 - **Light/dark/system theme** with remembered window layout and configurable
-  **UI font size** presets (applies on restart).
+  **UI font size** presets (applies immediately).
 - **English/Spanish GUI** (applies on restart).
 - **QA matrix** and independent LP/HP numerical oracle; see
   [`docs/qa-matrix.md`](docs/qa-matrix.md).

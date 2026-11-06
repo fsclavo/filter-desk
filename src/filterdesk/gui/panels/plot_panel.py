@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QTabWidget, QVBoxLayout, QWidget
 
 from filterdesk.analysis.derived import group_delay_s, mag_db, phase_deg, vswr
@@ -17,7 +18,11 @@ from filterdesk.domain.units import format_engineering
 from filterdesk.gui.i18n import tr
 from filterdesk.gui.panels.smith_chart import SmithChartWidget
 from filterdesk.gui.plot_axes import freq_plot as _freq_plot
-from filterdesk.gui.theme import ThemeColors, apply_plot_theme
+from filterdesk.gui.theme import (
+    ThemeColors,
+    apply_plot_font,
+    apply_plot_theme,
+)
 from filterdesk.gui.widgets import ConfidenceStrip
 from filterdesk.services.compare import measured_at_frequency, wrap_degrees
 
@@ -282,6 +287,12 @@ class PlotPanel(QWidget):
         for plot in self._plots:
             apply_plot_theme(plot, colors)
         self._smith.set_theme(colors)
+
+    def set_font(self, font: QFont) -> None:
+        """Scale plot titles, axes, ticks and legends."""
+        for plot in self._plots:
+            apply_plot_font(plot, font)
+        self._smith.set_font(font)
 
     def _redraw_harmonics(self) -> None:
         for line in self._harmonic_lines:

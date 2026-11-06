@@ -219,6 +219,16 @@ class SchematicPanel(QWidget):
         if self._circuit is not None:
             self.set_circuit(self._circuit)
 
+    def refresh_font(self, font: QFont) -> None:
+        """Rescale existing schematic labels after a font-size change."""
+        for item in self._scene.items():
+            if isinstance(item, QGraphicsSimpleTextItem):
+                item.setFont(font)
+        bounds = self._scene.itemsBoundingRect()
+        if not bounds.isEmpty():
+            self._scene.setSceneRect(bounds.adjusted(-30, -24, 30, 24))
+            self._fit_view()
+
     def render_image(
         self,
         path: Path | str,

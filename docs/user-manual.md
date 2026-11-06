@@ -261,10 +261,11 @@ on the next launch. The theme and language are stored in the platform's user set
 (QSettings), not inside the project file, so opening a project does not change
 your appearance.
 
-**Edit → Preferences → Font size** offers **Small**, **Default**, **Large** and **Extra
-large** presets. The choice is saved with the other preferences and applies on
-the next start (FilterDesk asks you to restart). It scales the standard widgets
-and schematic labels; exported PDF reports keep their fixed print font.
+**Edit → Preferences → Font size** offers **Small**, **Default**, **Large** and
+**Extra large** presets. The choice is saved with the other preferences and
+applies immediately: it scales the standard widgets, menus/toolbar, schematic
+labels and plot axes/ticks/legends. Exported PDF reports keep their fixed print
+font.
 
 ### Guided tutorials
 

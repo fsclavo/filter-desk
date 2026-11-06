@@ -73,7 +73,11 @@ from filterdesk.gui.commands import (
     SynthesizeCommand,
 )
 from filterdesk.gui.coupled_line_dialog import CoupledLineDialog
-from filterdesk.gui.fonts import FontSize, apply_saved_font_size
+from filterdesk.gui.fonts import (
+    FontSize,
+    apply_font_size,
+    apply_saved_font_size,
+)
 from filterdesk.gui.i18n import (
     Language,
     current_language,
@@ -892,16 +896,27 @@ class MainWindow(QMainWindow):
     def _request_font_size(self, size: FontSize) -> None:
         if size is self._font_size:
             return
-        get_settings_store().set_str(FONT_SIZE_KEY, size.value)
+        self._apply_font_size(size)
+
+    def _apply_font_size(
+        self, size: FontSize, *, persist: bool = True
+    ) -> None:
+        app = QApplication.instance()
+        if not isinstance(app, QApplication):
+            return
+        font = apply_font_size(app, size)
         self._font_size = size
         action = self._font_size_actions.get(size)
         if action is not None:
             action.setChecked(True)
-        QMessageBox.information(
-            self,
-            tr("Font size"),
-            tr("Font size changed. Restart FilterDesk to apply."),
-        )
+        self._plots.set_font(font)
+        self._schematic.refresh_font(font)
+        self._sync_chrome_fonts()
+        if persist:
+            get_settings_store().set_str(FONT_SIZE_KEY, size.value)
+            self._status.setText(
+                tr("Font size: {size}", size=size.value)
+            )
 
     def _apply_theme(self, mode: ThemeMode, *, persist: bool = True) -> None:
         app = QApplication.instance()

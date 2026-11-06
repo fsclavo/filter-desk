@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 import pyqtgraph as pg
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
 
 
@@ -180,6 +180,30 @@ def apply_plot_theme(plot: pg.PlotWidget, colors: ThemeColors) -> None:
             label.setDefaultTextColor(QColor(colors.plot_foreground))
 
 
+def apply_plot_font(plot: pg.PlotWidget, font: QFont) -> None:
+    """Scale a plot's title, axis labels, ticks and legend with ``font``."""
+    item = plot.getPlotItem()
+    title = item.titleLabel
+    if title.text:
+        title.setText(title.text, size=f"{font.pointSizeF():g}pt")
+    for name in ("left", "right", "bottom", "top"):
+        axis = item.getAxis(name)
+        if axis is None:
+            continue
+        axis.setTickFont(QFont(font))
+        if axis.labelText or axis.labelUnits:
+            style = dict(axis.labelStyle)
+            style["font-size"] = f"{font.pointSizeF():g}pt"
+            axis.setLabel(
+                axis.labelText,
+                units=axis.labelUnits,
+                **style,
+            )
+    legend = item.legend
+    if legend is not None:
+        legend.setLabelTextSize(f"{font.pointSizeF():g}pt")
+
+
 def colors_for_mode(mode: ThemeMode) -> ThemeColors:
     """Static colours for light/dark (system falls back to dark)."""
     return LIGHT if mode is ThemeMode.LIGHT else DARK
@@ -190,6 +214,7 @@ __all__ = [
     "LIGHT",
     "ThemeColors",
     "ThemeMode",
+    "apply_plot_font",
     "apply_plot_theme",
     "apply_theme",
     "build_palette",

@@ -9,6 +9,8 @@ scheme while the public CLI/GUI stabilizes.
 
 - Moved **Theme**, **Font size** and **Language** under
   **Edit → Preferences**.
+- Font-size changes now apply immediately and rescale schematic labels and
+  pyqtgraph titles, axes, ticks and legends.
 
 ## v0.82.0 — 2026-11-06
 

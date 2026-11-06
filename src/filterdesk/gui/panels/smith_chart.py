@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from filterdesk.analysis.smith import (
@@ -16,7 +17,11 @@ from filterdesk.analysis.smith import (
 from filterdesk.domain.overlays import LimitMetric, LimitRegion, Marker
 from filterdesk.domain.units import format_engineering
 from filterdesk.gui.i18n import tr
-from filterdesk.gui.theme import ThemeColors, apply_plot_theme
+from filterdesk.gui.theme import (
+    ThemeColors,
+    apply_plot_font,
+    apply_plot_theme,
+)
 
 _GRID_Z = -20
 _LIMIT_Z = -15
@@ -203,6 +208,9 @@ class SmithChartWidget(QWidget):
 
     def set_theme(self, colors: ThemeColors) -> None:
         apply_plot_theme(self._plot, colors)
+
+    def set_font(self, font: QFont) -> None:
+        apply_plot_font(self._plot, font)
 
     def clear(self) -> None:
         self.set_s_params(

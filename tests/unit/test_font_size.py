@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QApplication, QMessageBox, QToolBar
+from PySide6.QtWidgets import QApplication, QToolBar
 
 from filterdesk.gui.fonts import (
     FontSize,
@@ -72,27 +72,25 @@ def test_main_window_applies_saved_font_size() -> None:
     assert app is not None
 
 
-def test_request_font_size_persists_and_warns(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_request_font_size_applies_and_persists() -> None:
     from filterdesk.gui.main_window import MainWindow
     from filterdesk.services.session import DesignSession
 
-    messages: list[str] = []
-    monkeypatch.setattr(
-        QMessageBox,
-        "information",
-        lambda *args, **kwargs: messages.append(str(args[2])),
-    )
     app = QApplication.instance() or QApplication([])
     window = MainWindow(DesignSession(), auto_run=False)
+    base = app.font().pointSizeF()
     window._request_font_size(FontSize.EXTRA_LARGE)
     assert get_settings_store().get_str(FONT_SIZE_KEY) == (
         FontSize.EXTRA_LARGE.value
     )
     assert window._font_size_actions[FontSize.EXTRA_LARGE].isChecked()
-    assert messages
-    assert "Restart FilterDesk" in messages[0]
+    assert app.font().pointSizeF() == pytest.approx(base * 1.3)
+    assert "Font size: extra_large" in window._status.text()
+    tick_font = window._plots._mag.getPlotItem().getAxis("left").style.get(
+        "tickFont"
+    )
+    assert tick_font is not None
+    assert tick_font.pointSizeF() == pytest.approx(app.font().pointSizeF())
     window.close()
     assert app is not None
 
