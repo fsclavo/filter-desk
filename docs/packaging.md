@@ -126,7 +126,7 @@ Build it after the PyInstaller and license steps:
 
 ```bash
 bash packaging/debian/build_deb.sh
-sudo apt install ./dist/FilterDesk-0.81.1-amd64.deb
+sudo apt install ./dist/FilterDesk-0.82.0-amd64.deb
 filterdesk --self-test
 sudo apt remove filterdesk
 ```
