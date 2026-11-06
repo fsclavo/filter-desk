@@ -1294,6 +1294,16 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       - 2026-10-29 v0.29.1: Auto view also refits when a new result has a
         different frequency span; same-span reanalysis keeps the zoom.
 
+- [ ] **Menu/toolbar font consistency:** after selecting a font-size preset,
+      the **QMenuBar/QMenu/QToolBar** must use the same scale as the rest of the
+      UI and must not look oversized, clipped or mismatched (see the attached
+      menu-bar screenshot). Cover all four presets and the 100/115/130 %
+      layouts. (S)
+- [ ] **Live font-size application and plot scaling:** apply **View → Font
+      size** without restarting; refresh schematic labels, pyqtgraph axes,
+      ticks and legends, docks/dialogs and re-fit layouts. Keep the restart
+      fallback only for widgets that cannot update safely. (M)
+
 ### P2 — data / ergonomics
 
 - [x] **Distributed SPICE export:** microstrip lines and stubs now export as
