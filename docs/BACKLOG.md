@@ -4,11 +4,11 @@
 decisions. It is the first document to update when a feature, menu path, test
 count or release changes.  
 **Status:** living document.  
-**Last verified:** 2026-11-06 · **App version:** 0.84.0 · **Released:**
-[v0.84.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.84.0) ·
+**Last verified:** 2026-11-06 · **App version:** 0.85.0 · **Released:**
+[v0.85.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.85.0) ·
 **Previous:**
-[v0.83.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.83.0) ·
-**Next:** v0.85.0 planning.
+[v0.84.0](https://github.com/fsclavo/filter-desk/releases/tag/v0.84.0) ·
+**Next:** v0.86.0 planning.
 
 **Verification:** local suite **1349 passed**, 4 skipped (ngspice unavailable).
 Main CI: https://github.com/fsclavo/filter-desk/actions/runs/42270483840
@@ -106,7 +106,21 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 3. v0.84.0 release
+## 3. v0.85.0 release
+
+- [x] Route interdigital layout with alternating shorting vias.
+- [x] Add via annular-ring, via-to-trace and via-to-via DRC.
+- [x] Flash via pads on copper Gerber and write via holes to the drill file.
+- [x] GUI **Interdigital (vias)** label and Gerber export.
+- [x] CLI `--layout interdigital --gerber-dir`.
+- [x] ADR-049, manual, README, CHANGELOG and tests updated.
+- [x] Bump `pyproject.toml`/`filterdesk.__version__`/`uv.lock` to 0.85.0.
+- [ ] Tag, publish and verify Windows/Linux/AppImage/`.deb` assets.
+- [ ] Release URL recorded above.
+
+---
+
+## 4. v0.84.0 release
 
 - [x] Routed hairpin coupled-line layout with connected resonator geometry.
 - [x] DRC for width, gap, board margin, zero-length/width and non-routed modes.
@@ -120,7 +134,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 4. v0.83.0 release
+## 5. v0.83.0 release
 
 - [x] Move Theme, Font size and Language under **Edit → Preferences**.
 - [x] Apply font-size changes immediately without restarting.
@@ -132,7 +146,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 5. v0.82.0 release
+## 6. v0.82.0 release
 
 - [x] Add configurable GUI font-size presets (Small/Default/Large/Extra large)
       with QSettings persistence and schematic-label scaling.
@@ -147,7 +161,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 6. v0.81.1 release
+## 7. v0.81.1 release
 
 - [x] Add AppStream metadata for AppImage and `.deb`.
 - [x] Rename the Linux desktop entry to the reverse-DNS component ID.
@@ -161,7 +175,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 7. v0.81.0 release
+## 8. v0.81.0 release
 
 - [x] Add component-level **Model vs measurement…** comparison with measured
       Q/ESR CSV curves.
@@ -176,7 +190,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 8. v0.80.1 release
+## 9. v0.80.1 release
 
 - [x] Expand the Coilcraft 0603CS starter catalog to 18 values with datasheet
       Q(f) points.
@@ -190,7 +204,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 9. v0.80.0 release
+## 10. v0.80.0 release
 
 - [x] Export stored measurements as `.s2p` plus a `.s2p.vna.json` sidecar.
 - [x] Import Q/ESR curves from CSV in the component library and via
@@ -203,7 +217,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 10. v0.79.1 release
+## 11. v0.79.1 release
 
 - [x] Merge Dependabot bumps for ruff, mypy, pytest, setup-uv and upload-artifact.
 - [x] Revert hypothesis 6.170.13 after a native Python abort in property tests.
@@ -215,7 +229,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 11. v0.79.0 release
+## 12. v0.79.0 release
 
 - [x] Add `examples/component_library_models.json` with all ten starter parts.
 - [x] Add Coilcraft 0603CS Q(f) points from public Document 195.
@@ -228,7 +242,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 12. v0.78.0 release
+## 13. v0.78.0 release
 
 - [x] Add optional manufacturer `Q(f)`/`ESR(f)` curves to catalog JSON.
 - [x] Add log-log interpolation and provenance/confidence display.
@@ -243,7 +257,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 13. v0.77.0 release
+## 14. v0.77.0 release
 
 - [x] Add minimal ASCII DXF export with `TOP_COPPER`/`BOARD_OUTLINE`.
 - [x] Support SVG/DXF suffix selection in GUI and CLI.
@@ -256,7 +270,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 14. v0.76.0 release
+## 15. v0.76.0 release
 
 - [x] Add conceptual edge-coupled, hairpin and interdigital layout sketches.
 - [x] Compute to-scale traces from section width/gap and quarter-wave length.
@@ -270,7 +284,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 15. v0.75.0 release
+## 16. v0.75.0 release
 
 - [x] Add Hammerstad-Jensen coupled-microstrip forward model.
 - [x] Add bounded multi-start width/gap synthesis and substrate selection.
@@ -284,7 +298,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 16. v0.74.0 release
+## 17. v0.74.0 release
 
 - [x] Add ideal coupled-line BPF synthesis (Butterworth / odd Chebyshev-I).
 - [x] Compute J-inverter, `Z0e`, `Z0o` and coupling tables.
@@ -298,7 +312,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 17. v0.73.0 release
+## 18. v0.73.0 release
 
 - [x] Add general N-port `connect`/`cascade` with wave-domain elimination.
 - [x] Add `network cascade` and `network connect` CLI commands.
@@ -311,7 +325,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 18. v0.72.0 release
+## 19. v0.72.0 release
 
 - [x] Add independent NanoVNA serial client (`version`, `help`, `sweep`,
       `frequencies`, `data`, `scan` fallback).
@@ -326,7 +340,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 19. v0.71.0 release
+## 20. v0.71.0 release
 
 - [x] Add **File → Open example** with the three bundled tutorial projects.
 - [x] Use bilingual example titles and status tips.
@@ -338,7 +352,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 20. v0.70.0 release
+## 21. v0.70.0 release
 
 - [x] Add ready-to-open example projects for the three guided tutorials.
 - [x] Add **Open example** to **Help → Tutorials…**.
@@ -351,7 +365,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 21. v0.69.0 release
+## 22. v0.69.0 release
 
 - [x] Add bilingual **Help → Tutorials…** dialog with 40 m RX, 80 m TX LPF and
       2 m diplexer/VNA walkthroughs.
@@ -363,7 +377,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 22. v0.68.0 release
+## 23. v0.68.0 release
 
 - [x] Add structural validation for LTspice `.asc`, Qucs `.sch` and SPICE.
 - [x] Add LP/HP/BP/BS validation matrix and negative cases.
@@ -375,7 +389,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 23. v0.67.0 release
+## 24. v0.67.0 release
 
 - [x] Add sub-part DCR/SRF/ESR/ESL fields to series/parallel LC resonators.
 - [x] Extend ABCD, global parasitics and assigned-part application.
@@ -389,7 +403,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 24. v0.66.0 release
+## 25. v0.66.0 release
 
 - [x] Add system path comparison service for 2-port VNA captures.
 - [x] Compare common→output and adjacent output↔output paths.
@@ -402,7 +416,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 25. v0.65.0 release
+## 26. v0.65.0 release
 
 - [x] Add `apply_assigned_parts` for simple L/C values and available parasitics.
 - [x] Rebuild/reanalyze the system after applying parts.
@@ -416,7 +430,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 26. v0.64.0 release
+## 27. v0.64.0 release
 
 - [x] Add nearest-part assignment service with conservative delta threshold.
 - [x] Add **Assign parts…** dialog with auto/manual assignment and library loading.
@@ -429,7 +443,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 27. v0.63.0 release
+## 28. v0.63.0 release
 
 - [x] Add `--montecarlo` and `--mc-*` options to system CLI commands.
 - [x] Emit Monte Carlo yield/statistics in JSON and text.
@@ -441,7 +455,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 28. v0.62.0 release
+## 29. v0.62.0 release
 
 - [x] Add direct PDF rendering of the system report.
 - [x] Reuse embedded HTML/images via `QTextDocument` and `QPdfWriter`.
@@ -454,7 +468,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 29. v0.61.0 release
+## 30. v0.61.0 release
 
 - [x] Add magnitude PNG and standalone HTML system report.
 - [x] Embed system metrics, magnitude plot, per-branch schematics, BOM and notes.
@@ -467,7 +481,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 30. v0.60.0 release
+## 31. v0.60.0 release
 
 - [x] Add `SystemMonteCarloConfig` and `analyze_system_montecarlo`.
 - [x] Support uniform/normal L/C/R tolerances, seed and yield criteria.
@@ -481,7 +495,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 31. v0.59.0 release
+## 32. v0.59.0 release
 
 - [x] Add deterministic ±delta system sensitivity service.
 - [x] Rank components by isolation/insertion/out-of-band impact.
@@ -495,7 +509,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 32. v0.58.0 release
+## 33. v0.58.0 release
 
 - [x] Add versioned `filterdesk.components` JSON catalog.
 - [x] Ship 10 real Murata/Coilcraft starter parts with source links.
@@ -509,7 +523,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 33. v0.57.0 release
+## 34. v0.57.0 release
 
 - [x] Add `SchematicPanel.render_image` for PNG/SVG/PDF.
 - [x] Render printable light style independent of the application theme.
@@ -522,7 +536,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 34. v0.56.0 release
+## 35. v0.56.0 release
 
 - [x] Add versioned `.fdsys.json` system project schema.
 - [x] Persist kind, bands, filter settings, sweep, E-series and parasitics.
@@ -537,7 +551,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 35. v0.55.0 release
+## 36. v0.55.0 release
 
 - [x] Add general `multiplexer --band LABEL:CENTER:BANDWIDTH` CLI.
 - [x] Support arbitrary `.sNp` output and repeatable branch outputs.
@@ -551,7 +565,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 36. v0.54.0 release
+## 37. v0.54.0 release
 
 - [x] Add `SystemParasiticsConfig` and `apply_system_parasitics`.
 - [x] Convert every branch with finite Q/DCR/Cp/SRF/ESR/ESL and reanalyze.
@@ -566,7 +580,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 37. v0.53.0 release
+## 38. v0.53.0 release
 
 - [x] Add `snap_system_design` with per-branch snap reports.
 - [x] Reanalyze the combined network on the original sweep and recompute metrics.
@@ -581,7 +595,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 38. v0.52.0 release
+## 39. v0.52.0 release
 
 - [x] Add combined system BOM/build sheet with branch column.
 - [x] Include system metrics, component rows, assumptions and notes.
@@ -595,7 +609,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 39. v0.51.0 release
+## 40. v0.51.0 release
 
 - [x] Add **Schematic** tab to the diplexer / multiplexer designer.
 - [x] Reuse `SchematicPanel` with branch sub-tabs (Low/High, TX/RX, Low/Mid/High).
@@ -608,7 +622,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 40. v0.50.0 release
+## 41. v0.50.0 release
 
 - [x] Replace stacked band pages with mode-specific row visibility.
 - [x] Pair common input fields to reduce dialog height.
@@ -622,7 +636,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 41. v0.49.0 release
+## 42. v0.49.0 release
 
 - [x] Add general labelled-band multiplexer service.
 - [x] Report per-band insertion loss, worst out-of-band and return loss.
@@ -637,7 +651,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 42. v0.48.0 release
+## 43. v0.48.0 release
 
 - [x] Add `DuplexerConfig`/`design_duplexer` with fixed antenna/TX/RX ports.
 - [x] Report TX/RX insertion loss, return loss and `|S32|` isolation.
@@ -652,7 +666,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 43. v0.47.0 release
+## 44. v0.47.0 release
 
 - [x] Add `BandDiplexerConfig`/`design_band_diplexer` with independent BPF bands.
 - [x] Reject overlapping passbands and sweeps that miss either band.
@@ -666,7 +680,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 44. v0.46.0 release
+## 45. v0.46.0 release
 
 - [x] Add **Tools → Diplexer LPF+HPF…** dialog.
 - [x] Show combined metrics and a 21-point response sample table.
@@ -679,7 +693,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 45. v0.45.0 release
+## 46. v0.45.0 release
 
 - [x] Add `DiplexerConfig`/`design_diplexer` LPF+HPF service.
 - [x] Combine both branches into a 3-port with port 1 common, 2 low, 3 high.
@@ -693,7 +707,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 46. v0.44.0 release
+## 47. v0.44.0 release
 
 - [x] Add `SParameters` N-port container with validation.
 - [x] Add port renumbering, terminal-load reduction and parallel branch combination.
@@ -707,7 +721,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 47. v0.43.0 release
+## 48. v0.43.0 release
 
 - [x] Report worst-case Vpk/Ipk over up to 25 sweep points.
 - [x] Track voltage and current maxima independently with their frequencies.
@@ -719,7 +733,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 48. v0.42.0 release
+## 49. v0.42.0 release
 
 - [x] Add TX harmonic-rejection table to Markdown/HTML build sheets.
 - [x] Pass harmonics from GUI and `analyze --harmonics --export-build-sheet`.
@@ -730,7 +744,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 49. v0.41.0 release
+## 50. v0.41.0 release
 
 - [x] Add **Tune…** to the Measurements dock.
 - [x] Reuse the existing VNA tuning workflow after activating the capture.
@@ -741,7 +755,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 50. v0.40.0 release
+## 51. v0.40.0 release
 
 - [x] Make measurement metadata editable with validation.
 - [x] Persist edited metadata in the project.
@@ -752,7 +766,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 51. v0.39.0 release
+## 52. v0.39.0 release
 
 - [x] Add measurement details/provenance view.
 - [x] Add per-capture comparison against the current analysis.
@@ -763,7 +777,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 52. v0.38.0 release
+## 53. v0.38.0 release
 
 - [x] Add persistent measurement history per project.
 - [x] Store VNA/calibration/reference metadata and active overlay.
@@ -775,7 +789,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 53. v0.37.1 release
+## 54. v0.37.1 release
 
 - [x] Reuse the main S21/S11 SI/log-frequency axis in the coax notch plot.
 - [x] Show plain tick numbers without exponent notation.
@@ -786,7 +800,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 54. v0.37.0 release
+## 55. v0.37.0 release
 
 - [x] Plot estimated S21/S11 in the coax notch dialog.
 - [x] Export full notch response to CSV with design metadata.
@@ -797,7 +811,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 55. v0.36.0 release
+## 56. v0.36.0 release
 
 - [x] Add typical coax cable presets with frequency-dependent loss.
 - [x] Add estimated notch response, depth, −3 dB bandwidth and loaded Q.
@@ -808,7 +822,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 56. v0.35.0 release
+## 57. v0.35.0 release
 
 - [x] Add coax stub notch calculator and CLI (`open λ/4`, `short λ/2`).
 - [x] Add Tools dialog with velocity factor, cable loss and physical length.
@@ -819,7 +833,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 57. v0.34.1 release
+## 58. v0.34.1 release
 
 - [x] Write `.deb` output under `dist/`.
 - [x] Remove the staging tree after each build; keep it only with `KEEP_DEB_STAGE=1`.
@@ -831,7 +845,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 58. v0.34.0 release
+## 59. v0.34.0 release
 
 - [x] Add Specification field and plot-tab tooltips.
 - [x] Add status tips for main menu actions.
@@ -843,7 +857,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 59. v0.33.0 release
+## 60. v0.33.0 release
 
 - [x] Add CSV/JSON export for 4-port mixed-mode results.
 - [x] Export full frequency set with dB metrics and JSON references.
@@ -854,7 +868,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 60. v0.32.0 release
+## 61. v0.32.0 release
 
 - [x] Add mixed-mode plot tab to the 4-port dialog.
 - [x] Keep the table and sampled-view behavior.
@@ -865,7 +879,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 61. v0.31.1 release
+## 62. v0.31.1 release
 
 - [x] Ask Save / Discard / Cancel when closing with unsaved changes.
 - [x] Cancel a failed/cancelled save and keep the application open.
@@ -877,7 +891,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 62. v0.31.0 release
+## 63. v0.31.0 release
 
 - [x] Add **Tools → 4-port mixed-mode…** with `.s4p` import and table.
 - [x] Show Sdd21/Sdc21/Scd21/Scc21 and mixed-mode reference impedances.
@@ -888,7 +902,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 63. v0.30.0 release
+## 64. v0.30.0 release
 
 - [x] Add 4-port `.s4p` mixed-mode transform and `filterdesk mixed-mode`.
 - [x] Expose Sdd/Sdc/Scd/Scc with differential/common reference impedances.
@@ -899,7 +913,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 64. v0.29.4 release
+## 65. v0.29.4 release
 
 - [x] Add all-preset plot-state regression matrix.
 - [x] Verify current harmonics, hidden cursors and data range at auto-fit.
@@ -910,7 +924,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 65. v0.29.3 release
+## 66. v0.29.3 release
 
 - [x] Hide stale cursor lines before the auto plot fit.
 - [x] Add regression coverage for a cursor outside the new sweep.
@@ -921,7 +935,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 66. v0.29.2 release
+## 67. v0.29.2 release
 
 - [x] Refresh harmonic markers before running the auto plot fit.
 - [x] Add regression coverage for sequential presets with stale harmonics.
@@ -932,7 +946,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 67. v0.29.1 release
+## 68. v0.29.1 release
 
 - [x] Refit the plot when the data frequency span changes and Auto is on.
 - [x] Keep zoom when reanalysing the same sweep; skip fitting hidden panels.
@@ -943,7 +957,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 68. v0.29.0 release
+## 69. v0.29.0 release
 
 - [x] Add Auto sweep mode with suggested ranges per filter response.
 - [x] Preserve custom ranges and band-wizard sweeps; infer Auto on project load.
@@ -954,7 +968,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 69. v0.28.2 release
+## 70. v0.28.2 release
 
 - [x] Refit plots after deliberate synthesis, wizard apply, scale or project load.
 - [x] Keep manual zoom for tuning until the next deliberate synthesis.
@@ -965,7 +979,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 70. v0.28.1 release
+## 71. v0.28.1 release
 
 - [x] Use resonance-preserving snap in the wizard with E24/E48/E96 choice.
 - [x] Default to E96 above 100 MHz and warn when the snapped response misses target.
@@ -976,7 +990,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 71. v0.28.0 release
+## 72. v0.28.0 release
 
 - [x] Add 2 m, 1.25 m (Region 2) and 70 cm band presets.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.28.0.
@@ -986,7 +1000,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 72. v0.27.1 release
+## 73. v0.27.1 release
 
 - [x] Apply the wizard band sweep to the visible range controls and undo.
 - [x] Restrict AM/FM broadcast presets to Band-stop in the GUI.
@@ -997,7 +1011,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 73. v0.27.0 release
+## 74. v0.27.0 release
 
 - [x] Add unified Band filter wizard (Quick and Guided LP/HP/BP/BS).
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.27.0.
@@ -1007,7 +1021,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 74. v0.26.0 release
+## 75. v0.26.0 release
 
 - [x] Add self-contained Debian/Ubuntu amd64 package and clean-container check.
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.26.0.
@@ -1017,7 +1031,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 75. v0.25.1 release
+## 76. v0.25.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1026,7 +1040,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 76. v0.25.0 release
+## 77. v0.25.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.25.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1035,7 +1049,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 77. v0.24.1 release
+## 78. v0.24.1 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.1.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1044,7 +1058,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 78. v0.24.0 release
+## 79. v0.24.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.24.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1053,7 +1067,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 79. v0.23.0 release
+## 80. v0.23.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.23.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1062,7 +1076,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 80. v0.22.0 release
+## 81. v0.22.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.22.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1071,7 +1085,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 81. v0.21.0 release
+## 82. v0.21.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.21.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1080,7 +1094,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 82. v0.20.0 release
+## 83. v0.20.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.20.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1089,7 +1103,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 83. v0.19.0 release
+## 84. v0.19.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.19.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1098,7 +1112,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 84. v0.18.0 release
+## 85. v0.18.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.18.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1107,7 +1121,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 85. v0.17.0 release
+## 86. v0.17.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.17.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1116,7 +1130,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 86. v0.16.0 release
+## 87. v0.16.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.16.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1125,7 +1139,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 87. v0.15.0 release
+## 88. v0.15.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.15.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1134,7 +1148,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 88. v0.14.0 release
+## 89. v0.14.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.14.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1143,7 +1157,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 89. v0.13.0 release
+## 90. v0.13.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.13.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1152,7 +1166,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 90. v0.12.0 release
+## 91. v0.12.0 release
 
 - [x] Bump `pyproject.toml`/`filterdesk.__version__` to 0.12.0.
 - [x] CHANGELOG/manual/backlog updated.
@@ -1161,7 +1175,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 91. Open backlog
+## 92. Open backlog
 
 ### P0 — release quality
 
@@ -1406,7 +1420,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 
 ---
 
-## 92. Guided tutorials and examples
+## 93. Guided tutorials and examples
 
 - [x] Bilingual **Help → Tutorials…** dialog with 40 m RX, 80 m TX LPF and
       2 m diplexer/VNA walkthroughs.
@@ -1414,7 +1428,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Ready-to-open example projects with **Open example**.
 - [x] **File → Open example** submenu with bilingual titles.
 
-## 93. Ham-radio onboarding and discoverability
+## 94. Ham-radio onboarding and discoverability
 
 - [x] README/manual onboarding sections for radio amateurs: first-five-minute
       path, common tasks, glossary, Spanish introduction and natural search
@@ -1422,7 +1436,7 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
 - [x] Package metadata description/keywords include amateur radio, homebrew,
       toroid, balun and VNA.
 
-## 94. Maintenance rule
+## 95. Maintenance rule
 
 Every change must update, in the same commit:
 
