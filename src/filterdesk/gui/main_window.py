@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from PySide6.QtGui import (
     QActionGroup,
     QCloseEvent,
     QDesktopServices,
+    QFont,
     QKeySequence,
     QUndoCommand,
     QUndoStack,
@@ -369,6 +371,29 @@ class MainWindow(QMainWindow):
         self.addDockWidget(area, dock)
         self._docks.append(dock)
         return dock
+
+    def _sync_chrome_fonts(self) -> None:
+        """Keep menu bar, menus and toolbar on the application font.
+
+        Windows can use a native menu bar whose font ignores
+        ``QApplication.setFont``; forcing the Qt-drawn bar keeps the selected
+        size and theme consistent. macOS keeps its global native menu bar.
+        """
+        app = QApplication.instance()
+        if not isinstance(app, QApplication):
+            return
+        font = QFont(app.font())
+        menu_bar = self.menuBar()
+        if sys.platform == "win32":
+            menu_bar.setNativeMenuBar(False)
+        menu_bar.setFont(font)
+        for action in menu_bar.actions():
+            menu = action.menu()
+            if isinstance(menu, QMenu):
+                menu.setFont(font)
+        toolbar = self.findChild(QToolBar, "MainToolBar")
+        if toolbar is not None:
+            toolbar.setFont(font)
 
     def _build_toolbar(self) -> None:
         tb = QToolBar("Main")
@@ -767,6 +792,7 @@ class MainWindow(QMainWindow):
         for action, tip in action_tips.items():
             action.setToolTip(tip)
             action.setStatusTip(tip)
+        self._sync_chrome_fonts()
 
     def _load_session_into_ui(self) -> None:
         # Populating the widgets emits ``spec_changed``; keep the session's

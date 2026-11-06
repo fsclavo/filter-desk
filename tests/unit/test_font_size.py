@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox, QToolBar
 
 from filterdesk.gui.fonts import (
     FontSize,
@@ -93,5 +93,36 @@ def test_request_font_size_persists_and_warns(
     assert window._font_size_actions[FontSize.EXTRA_LARGE].isChecked()
     assert messages
     assert "Restart FilterDesk" in messages[0]
+    window.close()
+    assert app is not None
+
+
+
+def test_menu_and_toolbar_follow_app_font() -> None:
+    from filterdesk.gui.main_window import MainWindow
+    from filterdesk.services.session import DesignSession
+
+    set_settings_store(
+        InMemorySettingsStore({FONT_SIZE_KEY: FontSize.EXTRA_LARGE.value})
+    )
+    reset_font_base()
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(DesignSession(), auto_run=False)
+    menu_bar = window.menuBar()
+    assert menu_bar.font().pointSizeF() == pytest.approx(
+        app.font().pointSizeF()
+    )
+    assert menu_bar.sizeHint().height() >= menu_bar.fontMetrics().height()
+    for action in menu_bar.actions():
+        menu = action.menu()
+        if menu is not None:
+            assert menu.font().pointSizeF() == pytest.approx(
+                app.font().pointSizeF()
+            )
+    toolbar = window.findChild(QToolBar, "MainToolBar")
+    assert toolbar is not None
+    assert toolbar.font().pointSizeF() == pytest.approx(
+        app.font().pointSizeF()
+    )
     window.close()
     assert app is not None

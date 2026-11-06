@@ -19,6 +19,8 @@ scheme while the public CLI/GUI stabilizes.
 
 ### Fixed
 
+- Menu bar, menus and toolbar now follow the selected font size. On Windows the
+  Qt-drawn menu bar is used so the native menu font cannot mismatch the app.
 - A freshly opened window is no longer marked as having unsaved changes after
   the initial automatic synthesis. Closing an untouched window no longer asks
   “Save changes before closing?”.

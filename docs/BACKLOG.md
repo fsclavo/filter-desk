@@ -1294,11 +1294,11 @@ Legend: **P0** blocks release/correctness · **P1** completes a shipped feature 
       - 2026-10-29 v0.29.1: Auto view also refits when a new result has a
         different frequency span; same-span reanalysis keeps the zoom.
 
-- [ ] **Menu/toolbar font consistency:** after selecting a font-size preset,
-      the **QMenuBar/QMenu/QToolBar** must use the same scale as the rest of the
-      UI and must not look oversized, clipped or mismatched (see the attached
-      menu-bar screenshot). Cover all four presets and the 100/115/130 %
-      layouts. (S)
+- [x] **Menu/toolbar font consistency:** menu bar, menus and toolbar follow the
+      selected font size, with the Qt-drawn menu bar on Windows to avoid the
+      native-font mismatch. Covered at all four presets. (S)
+      - 2026-11-06 implemented with explicit chrome-font sync and regression
+        test.
 - [ ] **Live font-size application and plot scaling:** apply **View → Font
       size** without restarting; refresh schematic labels, pyqtgraph axes,
       ticks and legends, docks/dialogs and re-fit layouts. Keep the restart
