@@ -32,6 +32,11 @@ FilterDesk turns a short list of requirements — response type, cutoff frequenc
 impedances, ripple/attenuation targets — into a **ladder of inductors and
 capacitors**, then shows you how that ladder actually behaves across frequency.
 
+### Project author
+
+FilterDesk is designed and maintained by **LU2EFI**, an amateur radio operator,
+for the ham radio and RF homebrew community.
+
 Typical uses:
 
 - Design an LC filter to a classic approximation (Butterworth, Chebyshev,
@@ -1634,3 +1639,5 @@ detailed test cases and tolerances are in
 
 FilterDesk is licensed under **Apache-2.0**. See [`../LICENSE`](../LICENSE) and
 [`../NOTICE`](../NOTICE). The GUI dynamically links Qt via PySide6 (LGPL-3.0).
+
+FilterDesk is developed by **LU2EFI**, an amateur radio operator (callsign).

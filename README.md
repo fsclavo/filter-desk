@@ -17,6 +17,8 @@ image.
 > An independent implementation of classical network-synthesis theory and
 > practical LC filter design.
 
+**Developed by LU2EFI** — amateur radio operator and RF homebrewer.
+
 ## Built for radio amateurs and RF builders
 
 FilterDesk is a workbench companion for **ham radio homebrew, repair, antenna
@@ -89,6 +91,9 @@ resultado con mediciones de un VNA. La interfaz está disponible en español y e
 flujo recomendado para empezar es **Diseño → Asistente de filtro de banda HF**.
 Buscá también “calculadora de filtros para radioaficionados”, “filtro pasa-banda
 HF”, “calculadora de toroides” y “diseño de balun/unun”.
+
+FilterDesk es un proyecto desarrollado por **LU2EFI**, radioaficionado, para la
+comunidad de homebrew y RF.
 
 ## Features
 
@@ -253,7 +258,10 @@ calculator**, **HF band-pass filter designer**, **LC low-pass filter calculator*
 - [packaging.md](docs/packaging.md) — how the release bundles are built.
 - [`docs/adr/`](docs/adr/) — architecture decision records and
   [`docs/math/`](docs/math/) — the synthesis math.
+- [Authors](AUTHORS.md) — project authorship and credits.
 
 ## License
 
 Apache-2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+FilterDesk is developed by **LU2EFI**, an amateur radio operator (callsign).
