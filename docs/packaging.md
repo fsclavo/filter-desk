@@ -196,5 +196,5 @@ Dependency upkeep:
   against the locked environment.
 
 CI pins the current Node 24-based action releases (`checkout@v7.0.1`,
-`setup-uv@v10.3.2`, `upload-artifact@v7.0.2`, `download-artifact@v8.0.2`,
-`action-gh-release@v3.0.3`); Dependabot keeps them current.
+`setup-uv@v10.4.0`, `upload-artifact@v7`, `download-artifact@v8.0.2`,
+`action-gh-release@v3.0.4`); Dependabot keeps them current.
